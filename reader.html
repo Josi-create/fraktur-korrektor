@@ -96,7 +96,7 @@ const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (location.search.includes('notrans')) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
 const HELP = {
-  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> rotes Wort der Zeile ist richtig · <kbd>Enter</kbd> rotes Wort der Zeile ändern bzw. Zeile frei bearbeiten (<kbd>F2</kbd> immer frei) · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen',
+  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> nächstes rotes Wort ist richtig · <kbd>Enter</kbd> rotes Wort der Zeile ändern bzw. Zeile frei bearbeiten (<kbd>F2</kbd> immer frei) · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen',
   fix: '<kbd>Enter</kbd> übernehmen, weiterlesen · <kbd>F8</kbd> Wort ist richtig (merken) · <kbd>Tab</kbd> nächstes rotes Wort · <kbd>F9</kbd> Serienkorrektur · <kbd>Esc</kbd> zurück zum Lesen',
   free: '<kbd>Enter</kbd> übernehmen · <kbd>Esc</kbd> verwerfen'
 };
@@ -368,8 +368,10 @@ function startSeries() {
 }
 async function whitelistRead() {
   // Lesemodus: erstes rotes Wort der Lesezeile bestätigen (nochmal F8 = nächstes)
-  const f = data.flags.find(x => isJoin(x) && x.line + 1 == li) || data.flags.find(x => x.line == li);  // von links nach rechts
-  if (!f) { msg = 'Kein rotes Wort in dieser Zeile.'; render(); return; }
+  // von links nach rechts; ohne rotes Wort in der Lesezeile: das nächste weiter unten auf der Seite, diese Zeile wird Lesezeile
+  const f = data.flags.find(x => isJoin(x) && x.line + 1 == li) || data.flags.find(x => x.line == li) || data.flags.find(x => x.line > li);
+  if (!f) { msg = 'Kein rotes Wort mehr auf dieser Seite.'; render(); return; }
+  if (f.line > li) { li = f.line; bookmark(); }
   const w = f.word.replace('¬', '');
   await fetch('/api/whitelist', { method: 'POST', body: JSON.stringify({ word: w }) });
   data = await (await fetch('/api/page/' + pg)).json(); updateCount();
