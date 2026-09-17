@@ -2,7 +2,7 @@
 
 Lesen und Korrekturlesen in einem: ein kleiner lokaler „E-Book-Reader“ für OCR-Text gescannter
 (Fraktur-)Bücher. Links das Seitenbild, rechts der erkannte Text. Ein Lesecursor (aktuelle Zeile,
-immer in der Mitte) hält Bild und Text synchron. Fragliche Wörter (nicht im Wörterbuch, unsichere
+immer im oberen Viertel) hält Bild und Text synchron. Fragliche Wörter (nicht im Wörterbuch, unsichere
 automatische Ersetzungen) sind rot markiert. Alles ist mit der Tastatur bedienbar.
 
 Ziel ist ein sauberer Text als Grundlage für ein Epub.
