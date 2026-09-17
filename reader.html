@@ -93,7 +93,7 @@ const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (location.search.includes('notrans')) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
 const HELP = {
-  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>Enter</kbd> diese Zeile frei bearbeiten · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen',
+  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> rotes Wort der Zeile ist richtig · <kbd>Enter</kbd> diese Zeile frei bearbeiten · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen',
   fix: '<kbd>Enter</kbd> übernehmen, weiterlesen · <kbd>F8</kbd> Wort ist richtig (merken) · <kbd>Tab</kbd> nächstes rotes Wort · <kbd>F9</kbd> Serienkorrektur · <kbd>Esc</kbd> zurück zum Lesen',
   free: '<kbd>Enter</kbd> übernehmen · <kbd>Esc</kbd> verwerfen'
 };
@@ -358,6 +358,16 @@ function startSeries() {
   if (mode == 'fix' && cf) { li = cf.line; return openSeries(cf.word.replace('¬', ''), ''); }
   return openSeries('', '');
 }
+async function whitelistRead() {
+  // Lesemodus: erstes rotes Wort der Lesezeile bestätigen (nochmal F8 = nächstes)
+  const f = data.flags.find(x => x.line == li) || data.flags.find(x => isJoin(x) && x.line + 1 == li);
+  if (!f) { msg = 'Kein rotes Wort in dieser Zeile.'; render(); return; }
+  const w = f.word.replace('¬', '');
+  await fetch('/api/whitelist', { method: 'POST', body: JSON.stringify({ word: w }) });
+  data = await (await fetch('/api/page/' + pg)).json(); updateCount();
+  pending = null; msg = '„' + w + '“ als richtig gemerkt.'; render();
+  loadOverview();
+}
 function setZoom(z) { zoom = Math.min(4, Math.max(0.4, z)); try { localStorage.setItem('zoom', zoom); } catch (e) {} layoutImage(); }
 
 async function onKey(e) {
@@ -378,6 +388,7 @@ async function onKey(e) {
     else if (k == '+') setZoom(zoom * 1.15);
     else if (k == '-') setZoom(zoom / 1.15);
     else if (k == '0') setZoom(1);
+    else if (k == 'F8') await whitelistRead();
     else if (k == 'u' || k == 'U') await undoSeries();
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
     else if (k == 'g' || k == 'G') { const p = prompt('Gehe zu Seite (PDF-Seite):'); if (p) await loadPage(String(parseInt(p, 10)).padStart(3, '0'), 0); }
