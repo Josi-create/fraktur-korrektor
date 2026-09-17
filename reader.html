@@ -202,6 +202,7 @@ function render() {
     const n = data.flags.filter(f => f.line == li).length;
     $('word').innerHTML = n ? '<span style="color:#c00">' + n + ' fragliche Stelle' + (n > 1 ? 'n' : '') + ' in dieser Zeile</span>' : '<span style="color:#888">Lesemodus</span>';
   }
+  layoutText(); layoutImage();  // nochmal, falls das Korrekturfeld oben seine Höhe geändert hat
 }
 function layoutText() {
   const el = lineEls[li]; if (!el) return;
@@ -216,14 +217,16 @@ function layoutText() {
 function layoutImage() {
   const im = $('img'); if (!im.naturalWidth || !data) return;
   const pane = $('imgpane'), W = pane.clientWidth, H = pane.clientHeight;
+  // Lesezeile im Bild auf dieselbe Bildschirmhöhe wie im Textfenster (das wegen des Korrekturfelds tiefer beginnt)
+  const tr = $('text').getBoundingClientRect(), RY = tr.top + $('text').clientTop - (pane.getBoundingClientRect().top + pane.clientTop) + $('text').clientHeight * READ_POS;
   let x0 = 0, x1 = im.naturalWidth;
   const gs = data.geo ? data.geo.filter(g => g) : [];
   if (gs.length) { x0 = Math.min(...gs.map(g => g.x0)); x1 = Math.max(...gs.map(g => g.x1)); }
   const k = W / ((x1 - x0) * 1.08) * zoom;
   const g = data.geo ? data.geo[li] : null;
   if (g) lastCy = (g.y0 + g.y1) / 2;
-  const cy = lastCy != null ? lastCy : H * READ_POS / k;
-  $('imgwrap').style.transform = 'translate(' + (W / 2 - (x0 + x1) / 2 * k) + 'px,' + (H * READ_POS - cy * k) + 'px) scale(' + k + ')';
+  const cy = lastCy != null ? lastCy : RY / k;
+  $('imgwrap').style.transform = 'translate(' + (W / 2 - (x0 + x1) / 2 * k) + 'px,' + (RY - cy * k) + 'px) scale(' + k + ')';
   const box = (el, x, y, w, h) => { el.style.display = ''; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px'; el.style.borderWidth = (2.5 / k) + 'px'; };
   const hl = $('hlLine'), hw = $('hlWord'), hw2 = $('hlWord2');
   hl.style.display = hw.style.display = hw2.style.display = 'none';
