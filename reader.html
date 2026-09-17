@@ -360,7 +360,7 @@ function startSeries() {
 }
 async function whitelistRead() {
   // Lesemodus: erstes rotes Wort der Lesezeile bestätigen (nochmal F8 = nächstes)
-  const f = data.flags.find(x => x.line == li) || data.flags.find(x => isJoin(x) && x.line + 1 == li);
+  const f = data.flags.find(x => isJoin(x) && x.line + 1 == li) || data.flags.find(x => x.line == li);  // von links nach rechts
   if (!f) { msg = 'Kein rotes Wort in dieser Zeile.'; render(); return; }
   const w = f.word.replace('¬', '');
   await fetch('/api/whitelist', { method: 'POST', body: JSON.stringify({ word: w }) });
