@@ -114,7 +114,7 @@ const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
 const HELP = {
-  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> nächstes rotes Wort ist richtig · <kbd>Enter</kbd> rotes Wort der Zeile ändern bzw. Zeile frei bearbeiten (<kbd>F2</kbd> immer frei) · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen · <kbd>W</kbd> Whitelist',
+  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> nächstes rotes Wort ist richtig · <kbd>Enter</kbd> rotes Wort der Zeile ändern bzw. Zeile frei bearbeiten (<kbd>F2</kbd> immer frei) · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen · <kbd>W</kbd> Whitelist · <kbd>F</kbd> Fußnoten beginnen hier',
   fix: '<kbd>Enter</kbd> übernehmen, weiterlesen · <kbd>F7</kbd> Trennzeichen ¬ · <kbd>F8</kbd> Wort ist richtig (merken) · <kbd>Tab</kbd> nächstes rotes Wort · <kbd>F9</kbd> Serienkorrektur · <kbd>Esc</kbd> zurück zum Lesen',
   free: '<kbd>Enter</kbd> übernehmen · <kbd>F7</kbd> Trennzeichen ¬ · <kbd>Esc</kbd> verwerfen'
 };
@@ -450,6 +450,15 @@ async function whitelistRead() {
   pending = null; msg = '„' + w + '“ als richtig gemerkt.'; render();
   loadOverview();
 }
+async function footnoteSep() {
+  // F: Fußnoten beginnen mit der Lesezeile (Trenner --- davor setzen/verschieben; steht er schon dort: entfernen)
+  if (skippable(li) || (li == 0 && data.lines[0].startsWith('#'))) return;
+  const r = await fetch('/api/fnsep/' + pg, { method: 'POST', body: JSON.stringify({ line: li, old: data.lines[li] }) });
+  if (r.status == 409) { await loadPage(pg, li); msg = 'Seite wurde außerhalb geändert – neu geladen.'; render(); return; }
+  const x = await r.json(); data = x.data; li = x.line; pending = null;
+  msg = x.action == 'gesetzt' ? 'Fußnoten beginnen jetzt mit dieser Zeile (nochmal F nimmt den Trenner wieder weg).' : 'Fußnotentrenner entfernt.';
+  updateCount(); renderText(); render(); bookmark();
+}
 function setZoom(z) { zoom = Math.min(4, Math.max(0.4, z)); try { localStorage.setItem('zoom', zoom); } catch (e) {} layoutImage(); }
 
 async function onKey(e) {
@@ -478,6 +487,7 @@ async function onKey(e) {
     else if (k == 'F8') await whitelistRead();
     else if (k == 'u' || k == 'U') await undoSeries();
     else if (k == 'w' || k == 'W') await openWhitelist();
+    else if (k == 'f' || k == 'F') await footnoteSep();
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
     else if (k == 'g' || k == 'G') { const p = prompt('Gehe zu Seite (PDF-Seite):'); if (p) await loadPage(String(parseInt(p, 10)).padStart(3, '0'), 0); }
     else return;

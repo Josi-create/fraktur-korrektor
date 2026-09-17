@@ -26,6 +26,7 @@ Ziel ist ein sauberer Text als Grundlage für ein Epub.
 | Korrektur | `Esc` | zurück zum Lesen, ohne zu ändern |
 | Lesen/Korrektur | `F9` | Serienkorrektur: alle Fundstellen eines Wortes mit Scan-Ausschnitt; `Leertaste` Haken, `A` alle, `Enter` ersetzen, `Esc` abbrechen |
 | Lesen | `U` | letzte Serienkorrektur zurücknehmen |
+| Lesen | `F` | Fußnoten beginnen mit der Lesezeile: setzt bzw. verschiebt den Trenner `---` vor diese Zeile (Fußnoten laufen immer bis zum Seitenende); auf der ersten Fußnotenzeile nimmt `F` den Trenner wieder weg |
 | Lesen | `W` | Whitelist anzeigen (neueste zuerst, Filter); `Entf`/`Leertaste`/Klick nimmt ein Wort heraus bzw. wieder auf |
 
 Bei Wörtern mit Zeilentrennung (`Zu¬` / `kunft`) erscheinen beide Zeilen als Eingabefelder.

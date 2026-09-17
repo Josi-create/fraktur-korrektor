@@ -120,10 +120,14 @@ class Book:
                     out.append(dict(line=i, start=s, len=len(w), word=w, kind='oov'))
         have = {(f['line'], f['start']) for f in out}
         for i, cand in UNSICHER.get(pg, []):
-            if i < len(toks) and cand not in wl:
-                for s, w in toks[i]:
-                    if w == cand and (i, s) not in have:
-                        out.append(dict(line=i, start=s, len=len(w), word=w, kind='auto'))
+            if cand in wl:
+                continue
+            for ii in (i, i - 1, i + 1):
+                hit = [(s, w) for s, w in toks[ii] if w == cand and (ii, s) not in have] if 0 <= ii < len(toks) else []
+                if hit:
+                    out.append(dict(line=ii, start=hit[0][0], len=len(cand), word=cand, kind='auto'))
+                    have.add((ii, hit[0][0]))
+                    break
         out.sort(key=lambda f: (f['line'], f['start']))
         self.fcache[pg] = (key, out)
         return out
@@ -156,10 +160,19 @@ def geo_lines(pg, lines):
     head = [l for l in L if l['kind'] == 'head']
     body = [l for l in L if l['kind'] == 'body']
     fn = [l for l in L if l['kind'] == 'fn']
-    seq = ([head[0] if head else None] if lines and lines[0].startswith('#') else []) + body + ([None] if '---' in lines else []) + fn
-    while len(seq) > len(lines) and seq[-1] is not None and seq[-1]['text'].strip() == '':
-        seq.pop()
-    if len(seq) != len(lines):
+    # Textzeilen der Reihe nach auf die XML-Zeilen legen; '---' (Fußnotentrenner) darf an beliebiger Stelle stehen
+    geoms, k, seq = body + fn, 0, []
+    for n, l in enumerate(lines):
+        if n == 0 and l.startswith('#'):
+            seq.append(head[0] if head else None)
+        elif l == '---':
+            seq.append(None)
+        elif k < len(geoms):
+            seq.append(geoms[k])
+            k += 1
+        else:
+            return None
+    if any(x['text'].strip() for x in geoms[k:]):  # nur leere Zeilen dürfen am Ende im Text fehlen
         return None
     w, h = sz
     s = h / g['h']
@@ -354,6 +367,29 @@ class H(BaseHTTPRequestHandler):
                 for e in body['edits']:
                     klog('edit', pg, e['line'], e['old'], e['new'])
                 return self.send(200, json.dumps(page_data(pg), ensure_ascii=False))
+        m = re.fullmatch(r'/api/fnsep/(\d{3})', u.path)
+        if m:
+            # Fußnotentrenner '---' vor die angegebene Zeile setzen/verschieben; steht er schon dort, entfernen
+            pg = m.group(1)
+            with LOCK:
+                BOOK.refresh()
+                lines = list(BOOK.pages[pg])
+                i = body['line']
+                if not (0 <= i < len(lines)) or lines[i] != body['old'] or lines[i] == '---':
+                    return self.send(409, '{}')
+                had = lines.index('---') if '---' in lines else None
+                if had is not None:
+                    del lines[had]
+                    if had < i:
+                        i -= 1
+                if had is None or had != i:
+                    lines.insert(i, '---')
+                    act, i = 'gesetzt', i + 1
+                else:
+                    act = 'entfernt'
+                write_page(pg, lines)
+                klog('fnsep', pg, i, act, lines[i])
+                return self.send(200, json.dumps(dict(line=i, action=act, data=page_data(pg)), ensure_ascii=False))
         if u.path == '/api/series':
             if not body.get('word') or not body.get('new') or re.search(r'\s', body['new']):
                 return self.send(400, '{}')
