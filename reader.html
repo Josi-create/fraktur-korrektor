@@ -115,8 +115,8 @@ if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transiti
 
 const HELP = {
   read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> nächstes rotes Wort ist richtig · <kbd>Enter</kbd> rotes Wort der Zeile ändern bzw. Zeile frei bearbeiten (<kbd>F2</kbd> immer frei) · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen · <kbd>W</kbd> Whitelist',
-  fix: '<kbd>Enter</kbd> übernehmen, weiterlesen · <kbd>F8</kbd> Wort ist richtig (merken) · <kbd>Tab</kbd> nächstes rotes Wort · <kbd>F9</kbd> Serienkorrektur · <kbd>Esc</kbd> zurück zum Lesen',
-  free: '<kbd>Enter</kbd> übernehmen · <kbd>Esc</kbd> verwerfen'
+  fix: '<kbd>Enter</kbd> übernehmen, weiterlesen · <kbd>F7</kbd> Trennzeichen ¬ · <kbd>F8</kbd> Wort ist richtig (merken) · <kbd>Tab</kbd> nächstes rotes Wort · <kbd>F9</kbd> Serienkorrektur · <kbd>Esc</kbd> zurück zum Lesen',
+  free: '<kbd>Enter</kbd> übernehmen · <kbd>F7</kbd> Trennzeichen ¬ · <kbd>Esc</kbd> verwerfen'
 };
 
 function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
@@ -489,6 +489,11 @@ async function onKey(e) {
     else if (e.key == 'Tab' && mode == 'fix') { e.preventDefault(); await toFlag({ line: cf.line, start: cf.start }); }
   }
 }
+// F7: Trennzeichen ¬ an der Schreibmarke einfügen (in jedem Eingabefeld)
+document.addEventListener('keydown', e => {
+  if (e.key != 'F7' || e.target.tagName != 'INPUT') return;
+  e.preventDefault(); const t = e.target; t.setRangeText('¬', t.selectionStart, t.selectionEnd, 'end'); t.dispatchEvent(new Event('input'));
+}, true);
 document.addEventListener('keydown', async e => { if (busy) { e.preventDefault(); return; } busy = true; try { await onKey(e); } finally { busy = false; } });
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
 $('img').onload = layoutImage;

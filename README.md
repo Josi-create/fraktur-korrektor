@@ -20,6 +20,7 @@ Ziel ist ein sauberer Text als Grundlage für ein Epub.
 | Lesen | `+` `−` `0` | Zoom des Seitenbildes |
 | Lesen | `R` | Seite neu laden (nach Änderungen in einem anderen Editor) |
 | Korrektur | `Enter` | übernehmen und weiterlesen (steht in derselben Zeile noch ein rotes Wort, kommt dieses zuerst) |
+| Korrektur / Zeile bearbeiten | `F7` | Trennzeichen `¬` an der Schreibmarke einfügen |
 | Korrektur | `F8` | Wort ist richtig → `whitelist.txt` |
 | Korrektur | `Tab` | nächstes rotes Wort, ohne zu ändern |
 | Korrektur | `Esc` | zurück zum Lesen, ohne zu ändern |
