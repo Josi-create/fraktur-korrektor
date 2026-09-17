@@ -37,7 +37,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .flag{background:#f99;border-radius:2px}
 .auto{background:#fc8;border-radius:2px}
 .curflag{outline:2px solid #c00}
-#centerline{position:absolute;left:0;width:5px;top:50%;height:30px;margin-top:-15px;background:#c90;border-radius:0 3px 3px 0}
+#centerline{position:absolute;left:0;width:5px;top:25%;height:30px;margin-top:-15px;background:#c90;border-radius:0 3px 3px 0}
 </style>
 </head>
 <body>
@@ -66,6 +66,7 @@ const $ = id => document.getElementById(id);
 let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null;
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
 let lineEls = [], bmTimer = null;
+const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (location.search.includes('notrans')) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
 const HELP = {
@@ -145,7 +146,7 @@ function render() {
 function layoutText() {
   const el = lineEls[li]; if (!el) return;
   const H = $('text').clientHeight;
-  $('lines').style.transform = 'translateY(' + (H / 2 - (el.offsetTop + el.offsetHeight / 2)) + 'px)';
+  $('lines').style.transform = 'translateY(' + (H * READ_POS - (el.offsetTop + el.offsetHeight / 2)) + 'px)';
 }
 function layoutImage() {
   const im = $('img'); if (!im.naturalWidth || !data) return;
@@ -156,8 +157,8 @@ function layoutImage() {
   const k = W / ((x1 - x0) * 1.08) * zoom;
   const g = data.geo ? data.geo[li] : null;
   if (g) lastCy = (g.y0 + g.y1) / 2;
-  const cy = lastCy != null ? lastCy : H / 2 / k;
-  $('imgwrap').style.transform = 'translate(' + (W / 2 - (x0 + x1) / 2 * k) + 'px,' + (H / 2 - cy * k) + 'px) scale(' + k + ')';
+  const cy = lastCy != null ? lastCy : H * READ_POS / k;
+  $('imgwrap').style.transform = 'translate(' + (W / 2 - (x0 + x1) / 2 * k) + 'px,' + (H * READ_POS - cy * k) + 'px) scale(' + k + ')';
   const box = (el, x, y, w, h) => { el.style.display = ''; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px'; el.style.borderWidth = (2.5 / k) + 'px'; };
   const hl = $('hlLine'), hw = $('hlWord'), hw2 = $('hlWord2');
   hl.style.display = hw.style.display = hw2.style.display = 'none';
