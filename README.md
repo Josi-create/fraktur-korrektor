@@ -29,6 +29,31 @@ Die Leseposition wird in `lesezeichen.json` gespeichert. Jede Korrektur wird sof
 Textdatei geschrieben; die Dateien dürfen parallel in einem Editor bearbeitet werden
 (die Zeilenzahl einer Seite dabei nicht ändern, sonst fehlt die Bildzuordnung).
 
+## Serienkorrektur (F9)
+
+Derselbe OCR-Fehler kommt in einem Buch oft dutzendfach vor (`ber` statt „der“, `bie` statt „die“).
+Die Serienkorrektur zeigt alle Fundstellen eines Wortes auf einmal und ersetzt sie nach einem kurzen Blick auf die Scan-Ausschnitte.
+
+**F9 nach einer Korrektur**
+- Wer z. B. `ber` → `der` korrigiert, sieht unter dem Eingabefeld einen Hinweis in der Art „‚ber‘ kommt noch 74× im Buch vor – F9 zeigt alle Stellen“.
+- Im Korrekturmodus nimmt F9 ohne vorherige Korrektur das aktuelle rote Wort; die Ersetzung wird eingetippt.
+- Im Lesemodus werden beide Wörter frei eingegeben.
+
+**Die Liste**
+- Jede Fundstelle zeigt Seite und Zeile, den Scan-Ausschnitt mit rotem Rahmen und den Text.
+- Alle Stellen sind vorab angehakt. Auch über das Zeilenende getrennte Wörter (`¬`) werden gefunden.
+
+**Tasten in der Liste**
+- `↓` `↑` wandern durch die Liste.
+- `Leertaste` setzt oder entfernt den Haken, `A` schaltet alle an oder aus.
+- `Tab` ändert die Ersetzung.
+- `Enter` ersetzt alle angehakten Stellen, `Esc` bricht ab.
+
+**Zurücknehmen:** `U` im Lesemodus nimmt die letzte Serie zurück. Zeilen, die seither von Hand geändert wurden, bleiben dabei unangetastet.
+
+**Protokoll:** Jede Korrektur steht in `korrekturen.log` im Buchordner, egal ob einzeln, als Serie oder als Rücknahme
+(Zeit, Art, Seite, Zeile, alte Zeile, neue Zeile). Die Datei gehört zusammen mit `lesezeichen.json` und `whitelist.txt` in jede Sicherung des Buchordners.
+
 ## Start
 
     pip install spylls
