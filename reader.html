@@ -55,6 +55,15 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .crop{flex:none;position:relative;overflow:hidden;background-repeat:no-repeat;border:1px solid #ddd;background-color:#f4f4f4}
 .crop i{position:absolute;border:2px solid red;box-sizing:border-box}
 .stext{font-family:Georgia,serif;font-size:16px;white-space:pre-wrap}
+#wlist{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
+#wlist.on{display:flex}
+#whead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
+#whead input{font-family:Consolas,monospace;font-size:17px;padding:4px 6px;width:220px}
+#wgrid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,230px);grid-auto-rows:30px;gap:2px 8px;padding:10px 14px;align-content:start}
+.wl{font-family:Georgia,serif;font-size:16px;padding:3px 8px;border-radius:3px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid transparent}
+.wl:hover{background:#f3f3f3}
+.wl.sel{background:#fff3b8;border-color:#c90}
+.wl.gone{text-decoration:line-through;color:#c33;background:#fdeaea}
 </style>
 </head>
 <body>
@@ -79,6 +88,12 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
    <input id="edit2" type="text" spellcheck="false" style="display:none" title="Folgezeile (zweiter Teil des getrennten Wortes)">
   </div>
  </div>
+ <div id="wlist">
+  <div id="whead">Whitelist (als richtig gemerkte Wörter, neueste zuerst) <input id="wfilter" spellcheck="false" placeholder="Filter"><span id="winfo" style="margin-left:14px;color:#a40"></span>
+   <div style="color:#666;font-size:13.5px;margin-top:6px"><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> Wort · <kbd>Entf</kbd> oder <kbd>Leertaste</kbd> oder Klick: herausnehmen / wieder aufnehmen · <kbd>Tab</kbd> Filter · <kbd>Esc</kbd> schließen</div>
+  </div>
+  <div id="wgrid"></div>
+ </div>
  <div id="serie">
   <div id="shead">Serienkorrektur: <input id="sOld" spellcheck="false" placeholder="Wort"> → <input id="sNew" spellcheck="false" placeholder="ersetzen durch"><span id="sinfo"></span>
    <div id="shelp" style="color:#666;font-size:13.5px;margin-top:6px"><kbd>↓</kbd> <kbd>↑</kbd> Stelle · <kbd>Leertaste</kbd> Haken an/aus · <kbd>A</kbd> alle an/aus · <kbd>Tab</kbd> Ersetzung ändern · <kbd>Enter</kbd> alle angehakten ersetzen · <kbd>Esc</kbd> abbrechen</div>
@@ -96,7 +111,7 @@ const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (location.search.includes('notrans')) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
 const HELP = {
-  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> nächstes rotes Wort ist richtig · <kbd>Enter</kbd> rotes Wort der Zeile ändern bzw. Zeile frei bearbeiten (<kbd>F2</kbd> immer frei) · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen',
+  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> nächstes rotes Wort ist richtig · <kbd>Enter</kbd> rotes Wort der Zeile ändern bzw. Zeile frei bearbeiten (<kbd>F2</kbd> immer frei) · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen · <kbd>W</kbd> Whitelist',
   fix: '<kbd>Enter</kbd> übernehmen, weiterlesen · <kbd>F8</kbd> Wort ist richtig (merken) · <kbd>Tab</kbd> nächstes rotes Wort · <kbd>F9</kbd> Serienkorrektur · <kbd>Esc</kbd> zurück zum Lesen',
   free: '<kbd>Enter</kbd> übernehmen · <kbd>Esc</kbd> verwerfen'
 };
@@ -361,6 +376,45 @@ async function serieKey(e) {
   else return;
   e.preventDefault(); updateSeries();
 }
+let wl = null;
+async function openWhitelist() {
+  const r = await (await fetch('/api/whitelist')).json();
+  wl = { all: r.words.slice().reverse().map(w => ({ w, gone: false })), sel: 0, changed: false };
+  mode = 'wlist'; cf = null; $('wlist').classList.add('on'); $('wfilter').value = ''; document.activeElement.blur(); renderWl();
+}
+function wlShown() { const q = $('wfilter').value.trim().toLowerCase(); return wl.all.filter(o => !q || o.w.toLowerCase().includes(q)); }
+function renderWl() {
+  const box = $('wgrid'); box.innerHTML = ''; const items = wlShown(); wl.sel = Math.min(wl.sel, Math.max(0, items.length - 1));
+  items.forEach((o, n) => {
+    const d = document.createElement('div'); d.className = 'wl' + (n == wl.sel ? ' sel' : '') + (o.gone ? ' gone' : ''); d.textContent = o.w; d.title = o.w;
+    d.onclick = async () => { wl.sel = n; await toggleWl(o); };
+    box.appendChild(d);
+  });
+  const g = wl.all.filter(o => o.gone).length;
+  $('winfo').textContent = wl.all.length + ' Wörter' + (g ? ' · ' + g + ' herausgenommen (werden wieder rot)' : '');
+  const el = box.children[wl.sel]; if (el) el.scrollIntoView({ block: 'nearest' });
+}
+async function toggleWl(o) {
+  o.gone = !o.gone; wl.changed = true;
+  await fetch(o.gone ? '/api/whitelist_remove' : '/api/whitelist', { method: 'POST', body: JSON.stringify({ word: o.w }) });
+  renderWl();
+}
+async function closeWl() {
+  const ch = wl.changed; $('wlist').classList.remove('on'); wl = null; mode = 'read'; document.activeElement.blur();
+  if (ch) { await loadOverview(); await loadPage(pg, li); } else render();
+}
+async function wlKey(e) {
+  const k = e.key, inp = e.target.tagName == 'INPUT';
+  if (k == 'Escape') { e.preventDefault(); await closeWl(); return; }
+  if (inp) { if (k == 'Enter' || k == 'Tab' || k == 'ArrowDown') { e.preventDefault(); e.target.blur(); } return; }
+  const items = wlShown(), cols = Math.max(1, Math.floor(($('wgrid').clientWidth - 28 + 8) / 238));
+  if (k == 'ArrowRight') wl.sel++; else if (k == 'ArrowLeft') wl.sel--;
+  else if (k == 'ArrowDown') wl.sel += cols; else if (k == 'ArrowUp') wl.sel -= cols;
+  else if (k == 'Delete' || k == ' ') { e.preventDefault(); if (items[wl.sel]) await toggleWl(items[wl.sel]); return; }
+  else if (k == 'Tab') { e.preventDefault(); $('wfilter').focus(); $('wfilter').select(); return; }
+  else return;
+  e.preventDefault(); wl.sel = Math.max(0, Math.min(items.length - 1, wl.sel)); renderWl();
+}
 function startSeries() {
   if (pending) return openSeries(pending.old, pending.new);
   if (mode == 'fix' && cf) { li = cf.line; return openSeries(cf.word.replace('¬', ''), ''); }
@@ -383,6 +437,7 @@ function setZoom(z) { zoom = Math.min(4, Math.max(0.4, z)); try { localStorage.s
 async function onKey(e) {
   if (e.ctrlKey || e.altKey || e.metaKey || !data) return;
   if (mode == 'serie') return serieKey(e);
+  if (mode == 'wlist') return wlKey(e);
   if (e.key == 'F9') { e.preventDefault(); await startSeries(); return; }
   if (mode == 'read') {
     if (e.target.tagName == 'SELECT') return;
@@ -404,6 +459,7 @@ async function onKey(e) {
     else if (k == '0') setZoom(1);
     else if (k == 'F8') await whitelistRead();
     else if (k == 'u' || k == 'U') await undoSeries();
+    else if (k == 'w' || k == 'W') await openWhitelist();
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
     else if (k == 'g' || k == 'G') { const p = prompt('Gehe zu Seite (PDF-Seite):'); if (p) await loadPage(String(parseInt(p, 10)).padStart(3, '0'), 0); }
     else return;
@@ -418,6 +474,7 @@ async function onKey(e) {
 document.addEventListener('keydown', async e => { if (busy) { e.preventDefault(); return; } busy = true; try { await onKey(e); } finally { busy = false; } });
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
 $('img').onload = layoutImage;
+$('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });
 window.addEventListener('resize', () => { layoutText(); layoutImage(); });
 $('lines').addEventListener('click', e => { if (mode != 'read') return; const d = e.target.closest('#lines > div'); const i = lineEls.indexOf(d); if (i >= 0 && !skippable(i)) { li = i; render(); bookmark(); } });
 

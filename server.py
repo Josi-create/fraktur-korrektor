@@ -308,6 +308,10 @@ class H(BaseHTTPRequestHandler):
             return self.send(404, '{}')
         if u.path == '/api/overview':
             return self.send(200, json.dumps(dict(title=TITLE, pages=overview())))
+        if u.path == '/api/whitelist':
+            with LOCK:
+                ws = open(WL, encoding='utf-8').read().split() if os.path.exists(WL) else []
+            return self.send(200, json.dumps(dict(words=list(dict.fromkeys(ws))), ensure_ascii=False))
         if u.path == '/api/bookmark':
             return self.send(200, open(BM, encoding='utf-8').read() if os.path.exists(BM) else '{}')
         if u.path == '/api/occurrences':
@@ -355,10 +359,17 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(series_replace(body['word'], body['new'], body.get('items', []))))
         if u.path == '/api/series_undo':
             return self.send(200, json.dumps(series_undo()))
+        if u.path == '/api/whitelist_remove':
+            with LOCK:
+                ws = open(WL, encoding='utf-8').read().split() if os.path.exists(WL) else []
+                write_atomic(WL, ''.join(w + '\n' for w in ws if w != body['word']))
+                klog('whitelist-', '-', -1, body['word'], '')
+            return self.send(200, '{}')
         if u.path == '/api/whitelist':
             with LOCK:
                 with open(WL, 'a', encoding='utf-8') as f:
                     f.write(body['word'] + '\n')
+                klog('whitelist+', '-', -1, body['word'], '')
             return self.send(200, '{}')
         if u.path == '/api/bookmark':
             with LOCK:
