@@ -23,8 +23,10 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #korr{flex:none;padding:10px 12px;min-height:118px;overflow:visible}
 #word{font-size:19px;margin-bottom:6px}
 #word b{color:#c00}
-#edit,#edit2{width:100%;font-family:Consolas,monospace;font-size:18px;padding:6px;box-sizing:border-box;margin-top:4px}
+/* Eingabefelder liegen im Textfenster genau über der Lesezeile (und der Folgezeile bei getrennten Wörtern) */
+#edit,#edit2{position:absolute;left:21px;right:21px;z-index:3;margin:0;padding:0 5px;box-sizing:border-box;border:2px solid #c33;border-radius:3px;background:#fffbe6;color:#000;font-family:Georgia,'Times New Roman',serif;font-size:19px;outline:none;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 #edit2{border-color:#c60}
+#korr{min-height:78px}
 #help{color:#666;font-size:13.5px;line-height:1.7}
 kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:3px;padding:0 5px;font-family:Consolas,monospace;font-size:12.5px;color:#222}
 #text{flex:1}
@@ -69,12 +71,13 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <div id="right">
   <div class="pane" id="korr">
    <div id="word"></div>
-   <input id="edit" type="text" spellcheck="false" style="display:none">
-   <input id="edit2" type="text" spellcheck="false" style="display:none" title="Folgezeile (zweiter Teil des getrennten Wortes)">
    <div id="help"></div>
    <div id="shint"></div>
   </div>
-  <div class="pane" id="text"><div id="centerline"></div><div id="lines"></div></div>
+  <div class="pane" id="text"><div id="centerline"></div><div id="lines"></div>
+   <input id="edit" type="text" spellcheck="false" style="display:none">
+   <input id="edit2" type="text" spellcheck="false" style="display:none" title="Folgezeile (zweiter Teil des getrennten Wortes)">
+  </div>
  </div>
  <div id="serie">
   <div id="shead">Serienkorrektur: <input id="sOld" spellcheck="false" placeholder="Wort"> → <input id="sNew" spellcheck="false" placeholder="ersetzen durch"><span id="sinfo"></span>
@@ -171,6 +174,11 @@ function layoutText() {
   const el = lineEls[li]; if (!el) return;
   const H = $('text').clientHeight;
   $('lines').style.transform = 'translateY(' + (H * READ_POS - (el.offsetTop + el.offsetHeight / 2)) + 'px)';
+  // Eingabefelder deckungsgleich über Lesezeile und Folgezeile
+  const top = H * READ_POS - el.offsetHeight / 2, e1 = $('edit'), e2 = $('edit2'), nx = lineEls[li + 1];
+  const fs = getComputedStyle(el).fontSize;
+  e1.style.top = (top - 2) + 'px'; e1.style.height = (el.offsetHeight + 4) + 'px'; e1.style.fontSize = fs;
+  e2.style.top = (top + el.offsetHeight + 3) + 'px'; e2.style.height = ((nx ? nx.offsetHeight : el.offsetHeight) + 4) + 'px'; e2.style.fontSize = nx ? getComputedStyle(nx).fontSize : fs;
 }
 function layoutImage() {
   const im = $('img'); if (!im.naturalWidth || !data) return;
