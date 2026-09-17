@@ -12,7 +12,7 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #mode.fix{background:#c33}
 #mode.free{background:#c80}
 #pos{color:#ccc}
-#main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px;min-height:0}
+#main{position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px;min-height:0}
 .pane{background:#fff;border:1px solid #bbb;border-radius:4px;position:relative;overflow:hidden;min-height:0}
 #imgwrap{position:absolute;left:0;top:0;transform-origin:0 0;transition:transform .18s ease-out}
 #imgwrap img{display:block}
@@ -38,6 +38,21 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .auto{background:#fc8;border-radius:2px}
 .curflag{outline:2px solid #c00}
 #centerline{position:absolute;left:0;width:5px;top:25%;height:30px;margin-top:-15px;background:#c90;border-radius:0 3px 3px 0}
+#shint{margin-top:6px;font-size:14.5px;color:#a40}
+#serie{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
+#serie.on{display:flex}
+#shead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
+#shead input{font-family:Consolas,monospace;font-size:18px;padding:4px 6px;width:220px}
+#sinfo{margin-left:14px;color:#a40}
+#slist{flex:1;overflow:auto}
+.srow{display:flex;align-items:center;gap:14px;padding:3px 10px;border-bottom:1px solid #eee;border-left:6px solid transparent}
+.srow.sel{background:#fff3b8;border-left-color:#c90}
+.srow.off{opacity:.35}
+.srow .chk{font-size:20px;width:22px;flex:none}
+.srow .pgno{color:#888;font-size:13px;width:70px;flex:none}
+.crop{flex:none;position:relative;overflow:hidden;background-repeat:no-repeat;border:1px solid #ddd;background-color:#f4f4f4}
+.crop i{position:absolute;border:2px solid red;box-sizing:border-box}
+.stext{font-family:Georgia,serif;font-size:16px;white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -57,21 +72,29 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
    <input id="edit" type="text" spellcheck="false" style="display:none">
    <input id="edit2" type="text" spellcheck="false" style="display:none" title="Folgezeile (zweiter Teil des getrennten Wortes)">
    <div id="help"></div>
+   <div id="shint"></div>
   </div>
   <div class="pane" id="text"><div id="centerline"></div><div id="lines"></div></div>
+ </div>
+ <div id="serie">
+  <div id="shead">Serienkorrektur: <input id="sOld" spellcheck="false" placeholder="Wort"> → <input id="sNew" spellcheck="false" placeholder="ersetzen durch"><span id="sinfo"></span>
+   <div id="shelp" style="color:#666;font-size:13.5px;margin-top:6px"><kbd>↓</kbd> <kbd>↑</kbd> Stelle · <kbd>Leertaste</kbd> Haken an/aus · <kbd>A</kbd> alle an/aus · <kbd>Tab</kbd> Ersetzung ändern · <kbd>Enter</kbd> alle angehakten ersetzen · <kbd>Esc</kbd> abbrechen</div>
+  </div>
+  <div id="slist"></div>
  </div>
 </div>
 <script>
 const $ = id => document.getElementById(id);
 let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null;
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
-let lineEls = [], bmTimer = null;
+let lineEls = [], bmTimer = null, pending = null, msg = '', ser = null;
+const WRE = /^[A-Za-zÄÖÜäöüß]+/;
 const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (location.search.includes('notrans')) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
 const HELP = {
-  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>Enter</kbd> diese Zeile frei bearbeiten · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden',
-  fix: '<kbd>Enter</kbd> übernehmen, weiterlesen · <kbd>F8</kbd> Wort ist richtig (merken) · <kbd>Tab</kbd> nächstes rotes Wort · <kbd>Esc</kbd> zurück zum Lesen',
+  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>Enter</kbd> diese Zeile frei bearbeiten · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen',
+  fix: '<kbd>Enter</kbd> übernehmen, weiterlesen · <kbd>F8</kbd> Wort ist richtig (merken) · <kbd>Tab</kbd> nächstes rotes Wort · <kbd>F9</kbd> Serienkorrektur · <kbd>Esc</kbd> zurück zum Lesen',
   free: '<kbd>Enter</kbd> übernehmen · <kbd>Esc</kbd> verwerfen'
 };
 
@@ -135,7 +158,8 @@ function render() {
   const total = ov.reduce((a, o) => a + o.n, 0);
   $('pos').textContent = 'Zeile ' + (li + 1) + '/' + data.lines.length + ' · rot auf dieser Seite: ' + data.flags.length + ' · im Buch: ' + total + (data.geo ? '' : ' · (keine Bildzuordnung für diese Seite)');
   // Korrekturfeld
-  $('help').innerHTML = HELP[mode];
+  $('help').innerHTML = HELP[mode] || '';
+  $('shint').innerHTML = pending ? '„' + esc(pending.old) + '“ kommt noch <b>' + pending.n + '×</b> im Buch vor – <kbd>F9</kbd> zeigt alle Stellen zum Ersetzen durch „' + esc(pending.new) + '“' : esc(msg);
   const e1 = $('edit'), e2 = $('edit2');
   if (mode == 'read') {
     e1.style.display = 'none'; e2.style.display = 'none'; e1.blur(); e2.blur();
@@ -187,7 +211,7 @@ async function move(d) {
   let i = li + d;
   while (i >= 0 && i < data.lines.length && skippable(i)) i += d;
   if (i < 0 || i >= data.lines.length) { await gotoPage(d); return; }
-  li = i; render(); bookmark();
+  li = i; msg = ''; render(); bookmark();
 }
 
 function enterFix(f) {
@@ -225,11 +249,22 @@ async function commit() {
   const line = mode == 'fix' ? cf.line : li, f = cf, edits = [];
   const v = $('edit').value; if (v !== data.lines[line]) edits.push({ line, old: data.lines[line], new: v });
   if (mode == 'fix' && isJoin(f)) { const v2 = $('edit2').value; if (v2 !== data.lines[line + 1]) edits.push({ line: line + 1, old: data.lines[line + 1], new: v2 }); }
+  let oldW = '', newW = '';
+  if (mode == 'fix') {
+    oldW = f.word.replace('¬', '');
+    const a = (v.slice(f.start).match(WRE) || [''])[0];
+    newW = isJoin(f) && v.trimEnd().endsWith('¬') && v.trimEnd().length - 1 == f.start + a.length ? a + (($('edit2').value.match(WRE) || [''])[0]) : a;
+  }
   if (edits.length) {
     const r = await fetch('/api/edit/' + pg, { method: 'POST', body: JSON.stringify({ edits }) });
     if (r.status == 409) { alert('Die Datei wurde inzwischen außerhalb geändert – Seite wird neu geladen, bitte Korrektur wiederholen.'); await loadPage(pg, line); return; }
     data = await r.json(); updateCount();
     if (data.lines.length != lineEls.length) renderText();
+    pending = null; msg = '';
+    if (oldW && newW && oldW != newW) {
+      const c = await (await fetch('/api/occurrences?count=1&word=' + encodeURIComponent(oldW))).json();
+      if (c.n > 0) pending = { old: oldW, new: newW, n: c.n };
+    }
   }
   if (mode == 'fix') afterFix(f.line, f.start); else toRead(line);
 }
@@ -240,10 +275,95 @@ async function whitelist() {
   afterFix(f.line, f.start);
   loadOverview();  // das Wort kann auch auf anderen Seiten vorkommen
 }
+async function openSeries(oldW, newW) {
+  mode = 'serie'; cf = null; ser = { items: [], sel: 0, sizes: {} };
+  $('serie').classList.add('on'); $('sOld').value = oldW || ''; $('sNew').value = newW || '';
+  await loadOcc();
+  if (!oldW) $('sOld').focus(); else if (!newW) $('sNew').focus(); else document.activeElement.blur();
+}
+async function loadOcc() {
+  const w = $('sOld').value.trim();
+  const r = w ? await (await fetch('/api/occurrences?word=' + encodeURIComponent(w))).json() : { items: [], sizes: {} };
+  ser.items = r.items.map(o => ({ ...o, on: true })); ser.sizes = r.sizes; ser.sel = 0; ser.word = w;
+  renderSeries();
+}
+function renderSeries() {
+  const box = $('slist'); box.innerHTML = '';
+  const CW = 460, K = 0.95;
+  ser.items.forEach((o, n) => {
+    const row = document.createElement('div'); row.className = 'srow';
+    let crop = '<div class="crop" style="width:' + CW + 'px;height:36px"></div>';
+    const sz = ser.sizes[o.page];
+    if (o.geo && sz) {
+      const g = o.geo, L = o.text.length || 1, lh = g.y1 - g.y0, pad = lh * 0.35;
+      const wx0 = g.x0 + (g.x1 - g.x0) * o.start / L, wx1 = g.x0 + (g.x1 - g.x0) * (o.start + o.len) / L;
+      let left = (wx0 + wx1) / 2 - CW / K / 2; left = Math.max(0, Math.min(left, sz[0] - CW / K));
+      const top = g.y0 - pad, h = (lh + 2 * pad) * K;
+      crop = '<div class="crop" style="width:' + CW + 'px;height:' + h + 'px;background-image:url(' + o.img + ');background-size:' + (sz[0] * K) + 'px ' + (sz[1] * K) + 'px;background-position:' + (-left * K) + 'px ' + (-top * K) + 'px">' +
+        '<i style="left:' + ((wx0 - left) * K - 4) + 'px;top:' + (pad * K - 2) + 'px;width:' + ((wx1 - wx0) * K + 8) + 'px;height:' + (lh * K + 4) + 'px"></i></div>';
+    }
+    const a = Math.max(0, o.start - 40), b = Math.min(o.text.length, o.start + o.len + 40);
+    let t = (a > 0 ? '…' : '') + esc(o.text.slice(a, o.start)) + '<span class="flag">' + esc(o.text.slice(o.start, o.start + o.len)) + '</span>' + esc(o.text.slice(o.start + o.len, b)) + (b < o.text.length ? '…' : '');
+    if (o.join) t += ' <span style="color:#999">⏎</span> <span class="flag">' + esc((o.text2.match(WRE) || [''])[0]) + '</span>' + esc(o.text2.slice((o.text2.match(WRE) || [''])[0].length, 30)) + '…';
+    row.innerHTML = '<span class="chk"></span><span class="pgno">S. ' + o.page + ' / ' + (o.line + 1) + '</span>' + crop + '<span class="stext">' + t + '</span>';
+    row.onclick = () => { ser.sel = n; o.on = !o.on; updateSeries(); };
+    box.appendChild(row);
+  });
+  updateSeries();
+}
+function updateSeries() {
+  const rows = $('slist').children;
+  ser.items.forEach((o, n) => { const r = rows[n]; r.classList.toggle('sel', n == ser.sel); r.classList.toggle('off', !o.on); r.firstChild.textContent = o.on ? '☑' : '☐'; });
+  if (rows[ser.sel]) rows[ser.sel].scrollIntoView({ block: 'nearest' });
+  const on = ser.items.filter(o => o.on).length;
+  $('sinfo').textContent = ser.word ? (ser.items.length ? on + ' von ' + ser.items.length + ' Stellen angehakt' : 'keine Fundstellen für „' + ser.word + '“') : 'Wort eingeben, Enter';
+}
+async function closeSeries(m) {
+  $('serie').classList.remove('on'); ser = null; pending = null; msg = m || ''; mode = 'read';
+  document.activeElement.blur();
+  if (m) { await loadOverview(); await loadPage(pg, li); msg = m; render(); } else render();
+}
+async function applySeries() {
+  const w = ser.word, nw = $('sNew').value.trim();
+  if (!w || !nw || /\s/.test(nw) || nw == w) { $('sNew').focus(); return; }
+  const items = ser.items.filter(o => o.on).map(o => ({ page: o.page, line: o.line, start: o.start, join: o.join, text: o.text, text2: o.text2 }));
+  if (!items.length) return;
+  const r = await (await fetch('/api/series', { method: 'POST', body: JSON.stringify({ word: w, new: nw, items }) })).json();
+  await closeSeries('Serie „' + w + '“ → „' + nw + '“: ' + r.done + ' Stellen ersetzt' + (r.skipped ? ', ' + r.skipped + ' übersprungen' : '') + ' (U nimmt sie zurück)');
+}
+async function undoSeries() {
+  if (!confirm('Letzte Serienkorrektur zurücknehmen?')) return;
+  const r = await (await fetch('/api/series_undo', { method: 'POST', body: '{}' })).json();
+  await loadOverview(); await loadPage(pg, li);
+  msg = r.id ? 'Serie ' + r.id + ' zurückgenommen: ' + r.done + ' Zeilen' + (r.skipped ? ', ' + r.skipped + ' inzwischen geändert und belassen' : '') : 'Keine Serie zum Zurücknehmen.'; render();
+}
+async function serieKey(e) {
+  const inp = e.target.tagName == 'INPUT', k = e.key;
+  if (k == 'Escape') { e.preventDefault(); await closeSeries(); return; }
+  if (inp) {
+    if (k == 'Enter' || k == 'Tab') { e.preventDefault(); if (e.target.id == 'sOld') { await loadOcc(); $('sNew').focus(); } else e.target.blur(); }
+    return;
+  }
+  if (k == 'ArrowDown' || k == 'j') ser.sel = Math.min(ser.items.length - 1, ser.sel + 1);
+  else if (k == 'ArrowUp' || k == 'k') ser.sel = Math.max(0, ser.sel - 1);
+  else if (k == ' ') { const o = ser.items[ser.sel]; if (o) { o.on = !o.on; ser.sel = Math.min(ser.items.length - 1, ser.sel + 1); } }
+  else if (k == 'a' || k == 'A') { const all = ser.items.every(o => o.on); ser.items.forEach(o => o.on = !all); }
+  else if (k == 'Tab') { e.preventDefault(); $('sNew').focus(); $('sNew').select(); return; }
+  else if (k == 'Enter') { e.preventDefault(); await applySeries(); return; }
+  else return;
+  e.preventDefault(); updateSeries();
+}
+function startSeries() {
+  if (pending) return openSeries(pending.old, pending.new);
+  if (mode == 'fix' && cf) { li = cf.line; return openSeries(cf.word.replace('¬', ''), ''); }
+  return openSeries('', '');
+}
 function setZoom(z) { zoom = Math.min(4, Math.max(0.4, z)); try { localStorage.setItem('zoom', zoom); } catch (e) {} layoutImage(); }
 
 async function onKey(e) {
   if (e.ctrlKey || e.altKey || e.metaKey || !data) return;
+  if (mode == 'serie') return serieKey(e);
+  if (e.key == 'F9') { e.preventDefault(); await startSeries(); return; }
   if (mode == 'read') {
     if (e.target.tagName == 'SELECT') return;
     const k = e.key;
@@ -258,6 +378,7 @@ async function onKey(e) {
     else if (k == '+') setZoom(zoom * 1.15);
     else if (k == '-') setZoom(zoom / 1.15);
     else if (k == '0') setZoom(1);
+    else if (k == 'u' || k == 'U') await undoSeries();
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
     else if (k == 'g' || k == 'G') { const p = prompt('Gehe zu Seite (PDF-Seite):'); if (p) await loadPage(String(parseInt(p, 10)).padStart(3, '0'), 0); }
     else return;
@@ -283,7 +404,8 @@ $('lines').addEventListener('click', e => { if (mode != 'read') return; const d 
   const ks = new URLSearchParams(location.search).get('keys');
   for (const k of ks ? ks.split(',') : []) {
     if (k.startsWith('=')) $('edit').value = k.slice(1);
-    else document.dispatchEvent(new KeyboardEvent('keydown', { key: k == 'Space' ? ' ' : k }));
+    else if (k.includes('=')) $(k.split('=')[0]).value = k.split('=')[1];
+    else (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k == 'Space' ? ' ' : k, bubbles: true }));
     await new Promise(r => setTimeout(r, 400));
   }
 })();
