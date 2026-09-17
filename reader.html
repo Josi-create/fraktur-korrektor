@@ -36,6 +36,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 #lines div.head{color:#aaa;font-size:14px;font-family:Segoe UI,Arial,sans-serif}
 #lines div.sep{border-top:1px solid #999;height:0;margin:10px 0;padding:0}
 #lines div.fn{font-size:16px}
+#lines div.pgsep{text-align:center;color:#999;font:13px Segoe UI,Arial,sans-serif;letter-spacing:1px;margin:18px 0 10px 0;white-space:nowrap;overflow:hidden}
 .flag{background:#f99;border-radius:2px}
 .auto{background:#fc8;border-radius:2px}
 .curflag{outline:2px solid #c00}
@@ -105,10 +106,12 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 const $ = id => document.getElementById(id);
 let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null;
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
+let prevD = null, nextD = null, nbEls = {}, wheelAcc = 0;
+const NOTRANS = location.search.includes('notrans');
 let lineEls = [], bmTimer = null, pending = null, msg = '', ser = null;
 const WRE = /^[A-Za-zÄÖÜäöüß]+/;
 const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
-if (location.search.includes('notrans')) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
+if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
 const HELP = {
   read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> nächstes rotes Wort ist richtig · <kbd>Enter</kbd> rotes Wort der Zeile ändern bzw. Zeile frei bearbeiten (<kbd>F2</kbd> immer frei) · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen · <kbd>W</kbd> Whitelist',
@@ -117,7 +120,7 @@ const HELP = {
 };
 
 function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
-function isJoin(f) { return f && f.word.indexOf('¬') >= 0 && f.line + 1 < data.lines.length; }
+function isJoin(f) { return f && f.word.indexOf('¬') >= 0; }
 function part2len(f) { return f.word.length - f.len - 1; }
 function skippable(i) { const l = data.lines[i]; return l.trim() === '' || l === '---'; }
 
@@ -132,21 +135,31 @@ function updateCount() {
   const o = ov.find(o => o.page == pg); if (!o) return; o.n = data.flags.length;
   const op = [...$('pagesel').options].find(x => x.value == pg); if (op) op.textContent = pg + ' (' + o.n + ')';
 }
-async function loadPage(p, line) {
+async function fetchPage(p) { try { const r = await fetch('/api/page/' + p); return r.ok ? await r.json() : null; } catch (e) { return null; } }
+async function loadPage(p, line, smooth) {
+  const old = smooth && pg ? { p: pg, i: li } : null;
   const r = await fetch('/api/page/' + p); if (!r.ok) return false;
-  data = await r.json(); pg = p; $('pagesel').value = p; lastCy = null; passed = null; cf = null; mode = 'read';
+  const d = await r.json();
+  const idx = ov.findIndex(o => o.page == p);
+  [prevD, nextD] = await Promise.all([idx > 0 ? fetchPage(ov[idx - 1].page) : null, idx >= 0 && idx < ov.length - 1 ? fetchPage(ov[idx + 1].page) : null]);
+  data = d; pg = p; $('pagesel').value = p; lastCy = null; passed = null; cf = null; mode = 'read';
   li = line == 'last' ? data.lines.length - 1 : Math.min(Math.max(0, line || 0), data.lines.length - 1);
   if (line == 'last') { while (li > 0 && skippable(li)) li--; }
   else { while (li < data.lines.length - 1 && (skippable(li) || (!line && data.lines[li].startsWith('#')))) li++; }
   const im = $('img'); if (!im.src.endsWith(data.img)) { im.src = data.img; }
-  updateCount(); renderText(); render();
+  updateCount(); renderText();
+  // fließender Seitenwechsel: erst unsichtbar auf die alte Lesezeile (jetzt in der Nachbarseite) setzen, dann weich zur neuen
+  const oe = old && nbEls[old.p] ? nbEls[old.p][old.i] : null;
+  if (oe) { const L = $('lines'); L.style.transition = 'none'; L.style.transform = 'translateY(' + ($('text').clientHeight * READ_POS - (oe.offsetTop + oe.offsetHeight / 2)) + 'px)'; L.offsetHeight; if (!NOTRANS) L.style.transition = ''; }
+  render();
   return true;
 }
 
-function mark(i) {
-  const l = data.lines[i];
-  const fs = data.flags.filter(f => f.line == i).map(f => ({ s: f.start, n: f.len, k: f.kind, c: f === cf }));
-  for (const f of data.flags) if (isJoin(f) && f.line + 1 == i) fs.push({ s: 0, n: part2len(f), k: f.kind, c: f === cf });
+function mark(i, b) {
+  b = b || data;
+  const l = b.lines[i];
+  const fs = b.flags.filter(f => f.line == i).map(f => ({ s: f.start, n: f.len, k: f.kind, c: f === cf }));
+  for (const f of b.flags) if (isJoin(f) && f.line + 1 == i) fs.push({ s: 0, n: part2len(f), k: f.kind, c: f === cf });
   fs.sort((a, b) => b.s - a.s);
   let parts = [], last = l.length;
   for (const f of fs) {
@@ -158,14 +171,19 @@ function mark(i) {
   return parts.join('') || ' ';
 }
 function renderText() {
-  const box = $('lines'); box.innerHTML = ''; lineEls = [];
-  let fn = false;
-  data.lines.forEach((l, i) => {
-    const d = document.createElement('div');
-    if (l === '---') { d.className = 'sep'; fn = true; }
-    else { d.innerHTML = mark(i); if (l.startsWith('#') && i == 0) d.className = 'head'; else if (fn) d.className = 'fn'; }
-    box.appendChild(d); lineEls.push(d);
-  });
+  const box = $('lines'); box.innerHTML = ''; lineEls = []; nbEls = {};
+  for (const b of [prevD, data, nextD]) {
+    if (!b) continue;
+    const ps = document.createElement('div'); ps.className = 'pgsep'; ps.textContent = '―――――――――――  Seite ' + b.page + '  ―――――――――――'; box.appendChild(ps);
+    let fn = false; const els = [];
+    b.lines.forEach((l, i) => {
+      const d = document.createElement('div'); d.dataset.p = b.page; d.dataset.i = i;
+      if (l === '---') { d.className = 'sep'; fn = true; }
+      else { d.innerHTML = mark(i, b); if (l.startsWith('#') && i == 0) d.className = 'head'; else if (fn) d.className = 'fn'; }
+      box.appendChild(d); els.push(d);
+    });
+    nbEls[b.page] = els; if (b === data) lineEls = els;
+  }
 }
 function render() {
   // Textspalte
@@ -228,7 +246,7 @@ function bookmark() {
 function pageIdx() { return ov.findIndex(o => o.page == pg); }
 async function gotoPage(d) {
   const i = pageIdx() + d; if (i < 0 || i >= ov.length) return;
-  await loadPage(ov[i].page, d < 0 ? 'last' : 0); bookmark();
+  await loadPage(ov[i].page, d < 0 ? 'last' : 0, true); bookmark();
 }
 async function move(d) {
   let i = li + d;
@@ -476,7 +494,21 @@ $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target
 $('img').onload = layoutImage;
 $('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });
 window.addEventListener('resize', () => { layoutText(); layoutImage(); });
-$('lines').addEventListener('click', e => { if (mode != 'read') return; const d = e.target.closest('#lines > div'); const i = lineEls.indexOf(d); if (i >= 0 && !skippable(i)) { li = i; render(); bookmark(); } });
+$('lines').addEventListener('click', async e => {
+  if (mode != 'read' || busy) return; const d = e.target.closest('#lines > div'); if (!d || d.dataset.i == null) return;
+  const i = +d.dataset.i;
+  if (d.dataset.p == pg) { if (!skippable(i)) { li = i; msg = ''; render(); bookmark(); } }
+  else { busy = true; try { await loadPage(d.dataset.p, i, true); bookmark(); } finally { busy = false; } }
+});
+function onWheel(e) {
+  // Mausrad: eine Raste = eine Zeile, läuft fließend über Seitengrenzen
+  if (mode != 'read') return; e.preventDefault();
+  wheelAcc += e.deltaMode == 1 ? e.deltaY * 33 : e.deltaY;
+  if (busy) return;
+  const n = Math.trunc(wheelAcc / 100); if (!n) return; wheelAcc -= n * 100;
+  busy = true; (async () => { try { for (let k = 0; k < Math.min(Math.abs(n), 6); k++) await move(Math.sign(n)); } finally { busy = false; } })();
+}
+$('text').addEventListener('wheel', onWheel, { passive: false }); $('imgpane').addEventListener('wheel', onWheel, { passive: false });
 
 (async () => {
   await loadOverview();

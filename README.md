@@ -11,7 +11,7 @@ Ziel ist ein sauberer Text als Grundlage für ein Epub.
 
 | Modus | Taste | Wirkung |
 |---|---|---|
-| Lesen | `↓` `↑` (oder `j` `k`) | nächste / vorige Zeile (läuft über Seitengrenzen) |
+| Lesen | `↓` `↑` (oder `j` `k`), Mausrad | nächste / vorige Zeile; der Text läuft fließend über Seitengrenzen (Trennlinie „――― Seite NNN ―――“), Klick auf eine Zeile macht sie zur Lesezeile |
 | Lesen | `Leertaste` | zum nächsten roten Wort → Korrekturmodus |
 | Lesen | `F8` | erstes rotes Wort der Lesezeile ist richtig → `whitelist.txt` (nochmal `F8` = nächstes; ohne rotes Wort in der Lesezeile: das nächste weiter unten auf der Seite, die Lesezeile springt dorthin) |
 | Lesen | `Enter` | steht in der Lesezeile ein rotes Wort: direkt dorthin (Korrekturmodus, Wort markiert); sonst wie `F2` |
