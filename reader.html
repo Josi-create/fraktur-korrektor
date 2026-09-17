@@ -263,12 +263,12 @@ function enterFix(f) {
   const j = isJoin(f); e2.style.display = j ? '' : 'none'; if (j) e2.value = data.lines[f.line + 1];
   render(); e1.focus(); setTimeout(() => e1.setSelectionRange(f.start, f.start + f.len), 0); bookmark();
 }
-function enterFree() {
+function enterFree(sel) {
   if (skippable(li)) return;
   mode = 'free'; cf = null;
   $('word').innerHTML = 'Zeile ' + (li + 1) + ' bearbeiten';
   const e1 = $('edit'); e1.style.display = ''; e1.value = data.lines[li]; $('edit2').style.display = 'none';
-  render(); e1.focus(); setTimeout(() => e1.setSelectionRange(0, 0), 0);
+  render(); e1.focus(); setTimeout(() => e1.setSelectionRange(sel ? sel[0] : 0, sel ? sel[1] : 0), 0);
 }
 function toRead(line) { mode = 'read'; cf = null; li = line; render(); bookmark(); }
 async function toFlag(from) {
@@ -509,8 +509,32 @@ $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target
 $('img').onload = layoutImage;
 $('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });
 window.addEventListener('resize', () => { layoutText(); layoutImage(); });
+let lastClick = null;
+function charOffset(d, x, y) {
+  // Zeichenposition in der Zeile unter dem Mauszeiger
+  const r = document.caretRangeFromPoint ? document.caretRangeFromPoint(x, y) : null;
+  if (!r || !d.contains(r.startContainer)) return null;
+  const r2 = document.createRange(); r2.selectNodeContents(d); r2.setEnd(r.startContainer, r.startOffset);
+  return r2.toString().length;
+}
+$('lines').addEventListener('dblclick', async e => {
+  // Doppelklick auf ein Wort: Korrekturmodus mit diesem Wort markiert (Position stammt vom ersten Klick, weil der Text danach rollt)
+  const c = lastClick; if (!c || c.off == null) return;
+  try { getSelection().removeAllRanges(); } catch (x) {}
+  for (let n = 0; n < 80 && busy; n++) await new Promise(r => setTimeout(r, 25));
+  if (mode != 'read' || busy || pg != c.p || c.i >= data.lines.length) return;
+  li = c.i; const l = data.lines[li];
+  const f = data.flags.find(x => x.line == li && c.off >= x.start && c.off <= x.start + x.len) || data.flags.find(x => isJoin(x) && x.line + 1 == li && c.off <= part2len(x));
+  if (f) { enterFix(f); return; }
+  let a = c.off, b = c.off; const W = /[A-Za-zÄÖÜäöüß]/;
+  if (a > 0 && !W.test(l[a] || '') && W.test(l[a - 1])) { a--; b--; }
+  while (a > 0 && W.test(l[a - 1])) a--; while (b < l.length && W.test(l[b])) b++;
+  enterFree([a, b]);
+});
 $('lines').addEventListener('click', async e => {
   if (mode != 'read' || busy) return; const d = e.target.closest('#lines > div'); if (!d || d.dataset.i == null) return;
+  if (e.detail <= 1) lastClick = { p: d.dataset.p, i: +d.dataset.i, off: charOffset(d, e.clientX, e.clientY) };
+  else return;  // zweiter Klick eines Doppelklicks: der Text ist schon gerollt, nicht nochmal springen
   const i = +d.dataset.i;
   if (d.dataset.p == pg) { if (!skippable(i)) { li = i; msg = ''; render(); bookmark(); } }
   else { busy = true; try { await loadPage(d.dataset.p, i, true); bookmark(); } finally { busy = false; } }
