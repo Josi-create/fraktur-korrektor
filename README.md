@@ -21,6 +21,8 @@ Ziel ist ein sauberer Text als Grundlage für ein Epub.
 | Korrektur | `F8` | Wort ist richtig → `whitelist.txt` |
 | Korrektur | `Tab` | nächstes rotes Wort, ohne zu ändern |
 | Korrektur | `Esc` | zurück zum Lesen, ohne zu ändern |
+| Lesen/Korrektur | `F9` | Serienkorrektur: alle Fundstellen eines Wortes mit Scan-Ausschnitt; `Leertaste` Haken, `A` alle, `Enter` ersetzen, `Esc` abbrechen |
+| Lesen | `U` | letzte Serienkorrektur zurücknehmen |
 
 Bei Wörtern mit Zeilentrennung (`Zu¬` / `kunft`) erscheinen beide Zeilen als Eingabefelder.
 Die Leseposition wird in `lesezeichen.json` gespeichert. Jede Korrektur wird sofort in die
@@ -43,6 +45,7 @@ von 1901. Pfad per `--dic` oder Umgebungsvariable `FRAKTUR_DIC`.
     autokorr.log   optional: Protokoll der automatischen Ersetzungen (unsichere werden orange markiert)
     whitelist.txt  bestätigte Wörter
     lesezeichen.json
+    korrekturen.log  Protokoll aller Korrekturen (Zeit, Art, Seite, Zeile, alt, neu)
 
 Buchdaten gehören **nicht** in dieses Repository.
 
