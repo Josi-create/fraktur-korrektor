@@ -60,7 +60,10 @@ Die Serienkorrektur zeigt alle Fundstellen eines Wortes auf einmal und ersetzt s
 ## Start
 
     pip install spylls
-    py server.py <buchordner> [--port 8765] [--dic <hunspell-pfad-ohne-endung>] [--title "…"]
+    py server.py <buchordner> [--port 8765] [--dic <hunspell-pfad-ohne-endung>] [--title "…"] [--lan]
+
+Mit `--lan` ist die App auch von anderen Rechnern im lokalen Netz erreichbar (die Adresse wird beim Start angezeigt;
+Windows fragt beim ersten Mal nach der Firewall-Freigabe für „Private Netzwerke“). Es gibt keinen Passwortschutz – nur im eigenen Heimnetz verwenden.
 
 Wörterbuch: ein Hunspell-Wörterbuch (`.dic`/`.aff`), für alte Drucke am besten deutsche Rechtschreibung
 von 1901. Pfad per `--dic` oder Umgebungsvariable `FRAKTUR_DIC`.

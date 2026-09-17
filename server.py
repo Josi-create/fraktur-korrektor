@@ -1,5 +1,5 @@
 """Fraktur-Korrektor: Lesen und Korrigieren von OCR-Text neben dem Seitenbild.
-py -3.14 server.py <buchordner> [--port 8765] [--dic <hunspell-pfad>] [--no-browser]
+py -3.14 server.py <buchordner> [--port 8765] [--dic <hunspell-pfad>] [--no-browser] [--lan]
 
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png,
 optional autokorr.log, whitelist.txt; lesezeichen.json wird angelegt."""
@@ -14,6 +14,7 @@ ap.add_argument('--port', type=int, default=8765)
 ap.add_argument('--dic')
 ap.add_argument('--title')
 ap.add_argument('--no-browser', action='store_true')
+ap.add_argument('--lan', action='store_true', help='auch für andere Rechner im lokalen Netz erreichbar (kein Passwortschutz!)')
 A = ap.parse_args()
 if A.dic:
     korrlib.set_dic(A.dic)
@@ -383,6 +384,14 @@ if __name__ == '__main__':
     overview()
     url = 'http://localhost:%d' % A.port
     print('Fraktur-Korrektor: %s  (Strg+C beendet)' % url)
+    if A.lan:
+        import socket
+        try:
+            so = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); so.connect(('10.255.255.255', 1)); ip = so.getsockname()[0]; so.close()
+        except OSError:
+            ip = socket.gethostname()
+        print('Im lokalen Netz:   http://%s:%d   oder   http://%s:%d' % (ip, A.port, socket.gethostname(), A.port))
+        print('Achtung: ohne Passwort - jeder im selben Netz kann lesen und korrigieren. Nur im eigenen Heimnetz verwenden.')
     if not A.no_browser:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
-    ThreadingHTTPServer(('127.0.0.1', A.port), H).serve_forever()
+    ThreadingHTTPServer(('0.0.0.0' if A.lan else '127.0.0.1', A.port), H).serve_forever()
