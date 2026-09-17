@@ -14,7 +14,8 @@ Ziel ist ein sauberer Text als Grundlage für ein Epub.
 | Lesen | `↓` `↑` (oder `j` `k`) | nächste / vorige Zeile (läuft über Seitengrenzen) |
 | Lesen | `Leertaste` | zum nächsten roten Wort → Korrekturmodus |
 | Lesen | `F8` | erstes rotes Wort der Lesezeile ist richtig → `whitelist.txt` (nochmal `F8` = nächstes) |
-| Lesen | `Enter` oder `F2` | aktuelle Zeile frei bearbeiten (Satzzeichen, Fußnotenzeichen, alles, was die Automatik nicht bemerkt) |
+| Lesen | `Enter` | steht in der Lesezeile ein rotes Wort: direkt dorthin (Korrekturmodus, Wort markiert); sonst wie `F2` |
+| Lesen | `F2` | aktuelle Zeile frei bearbeiten (Satzzeichen, Fußnotenzeichen, alles, was die Automatik nicht bemerkt) |
 | Lesen | `Bild↓` `Bild↑`, `Pos1` `Ende`, `G` | Seite vor/zurück, Seitenanfang/-ende, gehe zu Seite |
 | Lesen | `+` `−` `0` | Zoom des Seitenbildes |
 | Lesen | `R` | Seite neu laden (nach Änderungen in einem anderen Editor) |
