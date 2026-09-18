@@ -55,10 +55,10 @@ class Client:
     def __init__(self, port, folder):
         self.base, self.folder, self.book = 'http://127.0.0.1:%d' % port, folder, ''
 
-    def _req(self, path, body=None):
+    def _req(self, path, body=None, timeout=30):
         data = None if body is None else json.dumps(body).encode('utf-8')
         try:
-            with urllib.request.urlopen(urllib.request.Request(self.base + path, data=data), timeout=30) as r:
+            with urllib.request.urlopen(urllib.request.Request(self.base + path, data=data), timeout=timeout) as r:
                 return r.status, r.read()
         except urllib.error.HTTPError as e:
             return e.code, e.read()
@@ -69,8 +69,8 @@ class Client:
     def post(self, path, body):
         return self.lpost(self.book + path, body)
 
-    def lget(self, path):
-        code, b = self._req(path)
+    def lget(self, path, timeout=30):
+        code, b = self._req(path, timeout=timeout)
         return code, json.loads(b)
 
     def lpost(self, path, body):
@@ -98,17 +98,18 @@ def start(tmp_path, folder=None):
     p = subprocess.Popen([sys.executable, os.path.join(ROOT, 'server.py')] + ([folder] if folder else []) + ['--port', str(port), '--no-browser'],
                          env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     c = Client(port, folder)
-    for _ in range(600):
+    deadline = time.time() + 120
+    while True:
         if p.poll() is not None:
             raise RuntimeError('Server beendet: ' + p.stdout.read().decode('utf-8', 'replace'))
         try:
-            books = c.lget('/api/library')[1]['books']
+            books = c.lget('/api/library', timeout=5)[1]['books']
             break
-        except OSError:
+        except OSError as e:
+            if time.time() > deadline:
+                p.kill()
+                raise RuntimeError('Server antwortet nicht (%r): %s' % (e, p.stdout.read().decode('utf-8', 'replace')))
             time.sleep(0.1)
-    else:
-        p.kill()
-        raise RuntimeError('Server startet nicht')
     if folder:
         c.book = '/buch/' + books[0]['id']
     return p, c
