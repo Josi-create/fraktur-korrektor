@@ -16,7 +16,7 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Transkribus-Export (ZIP oder Ordner) per Knopfdruck importieren, Seitenbilder aus dem Export oder einem Bilderordner; JPG-Bilder.
 - Hilfe im Programm (`F1`): `docs/de`, `docs/en` werden im Browser angezeigt.
 - Oberfläche auf Deutsch und Englisch.
-- Hinweis beim ersten, langsamen Laden eines Buchs; vorbereiteter Spenden-Link (`DONATE_URL` in `server.py`).
+- Hinweis beim ersten, langsamen Laden eines Buchs; Spenden-Link »Kaffee spendieren« im Fuß der Bibliothek.
 - Freies Wörterbuch für die Rechtschreibung von 1901 wird mitgeliefert (`dict/`); das Programm läuft ohne `--dic`.
 - Wörterbuchwahl zusätzlich über `~/.fraktur-korrektor/config.json` (`"dic"`).
 - `dict/zusatz.txt` (Abkürzungen gelten als richtig) und `dict/fallen.txt` („baß“ wird immer markiert).

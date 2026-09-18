@@ -72,6 +72,11 @@ und Mac, zweisprachige Dokumentation; später Zeilen teilen/verbinden und Epub-E
 
 Die Tests starten eigene Serverinstanzen auf freien Ports mit einem Wegwerf-Buch im Temp-Ordner.
 
+## Unterstützen
+
+Das Programm entsteht in der Freizeit. Wer mag, spendiert einen Kaffee: <https://buymeacoffee.com/josicreate> ☕
+Genauso willkommen sind Fehlerberichte, Wünsche und Mitarbeit.
+
 ## Lizenz
 
 [GPL-3.0-or-later](LICENSE). Das mitgelieferte Wörterbuch hat eigene Lizenzangaben, siehe [dict/](dict/README.md).

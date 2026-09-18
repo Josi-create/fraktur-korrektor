@@ -124,3 +124,7 @@ def test_t_wird_nicht_verdeckt():
     for f in ('reader.html', 'bibliothek.html'):
         html = open(os.path.join(ROOT, f), encoding='utf-8').read()
         assert not re.search(r'\b(?:let|const|var)\s+t\b|\bt\s*=>|\(t\)\s*=>|function\s*\w*\([^)]*\bt\b[^)]*\)', html), f
+
+
+def test_spendenlink(lib):
+    assert lib.lget('/api/library')[1]['donate'].startswith('https://buymeacoffee.com/')

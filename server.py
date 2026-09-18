@@ -10,7 +10,7 @@ import korrlib, pagexml, ocr
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DONATE_URL = ''  # z. B. https://buymeacoffee.com/<name>; leer = kein Spenden-Link
+DONATE_URL = 'https://buymeacoffee.com/josicreate'  # leer = kein Spenden-Link
 LIBFILE = os.path.join(korrlib.HOME, 'bibliothek.json')
 LIBLOCK = threading.RLock()
 BOOKS = {}
