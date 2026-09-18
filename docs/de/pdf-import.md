@@ -15,10 +15,23 @@ nichts ins Internet übertragen. Tesseract muss einmal installiert werden:
 5. **Texterkennung starten.** Ein Balken zeigt den Fortschritt; rechnen Sie mit wenigen Sekunden je Seite.
    Mit *Abbrechen* lässt sich der Vorgang jederzeit stoppen.
 
+## Durchsuchbare PDFs: Text übernehmen
+
+Viele PDFs sind schon „durchsuchbar“: Ein anderes Programm (ABBYY FineReader, OCRmyPDF, der Scanner selbst) hat
+den Text bereits erkannt und unsichtbar hinter das Seitenbild gelegt. Der Fraktur-Korrektor bemerkt das und fragt:
+
+- **Text übernehmen** – dauert nur Sekunden, auch bei mehreren hundert Seiten. Die Seitenbilder werden unverändert
+  aus dem PDF genommen. Tesseract wird dafür nicht gebraucht.
+- **Text neu erkennen** – sinnvoll, wenn der vorhandene Text schlecht ist, zum Beispiel weil ein Frakturbuch mit
+  einem Programm für lateinische Schrift erkannt wurde.
+
+Im Zweifel erst übernehmen und die Ampel ansehen. Ist sie nicht grün, das Buch noch einmal einlesen und neu erkennen lassen.
+
 ## Die Ampel
 
 Nach der Erkennung schätzt das Programm, wie gut das Ergebnis ist. Es benutzt dafür zwei Werte: wie sicher
-sich Tesseract bei den Wörtern war, und wie viele Wörter im Wörterbuch stehen.
+sich Tesseract bei den Wörtern war, und wie viele Wörter im Wörterbuch stehen. (Bei übernommenem Text zählt nur das
+Wörterbuch – ein PDF speichert nicht, wie sicher die Erkennung war.)
 
 | Ampel | Bedeutung | Was tun? |
 |---|---|---|
@@ -56,7 +69,6 @@ entzerrt Wölbungen und schneidet Ränder ab. ([Installation](install-tools.md))
 ## Grenzen
 
 - Mehrspaltiger Satz (Zeitungen, Lexika) wird nicht spaltenweise gelesen.
-- Eine schon vorhandene Textebene im PDF wird nicht übernommen; das Programm erkennt den Text neu.
 - Das mitgelieferte Wörterbuch kennt die Rechtschreibung von 1901 bis 1996. Bei neueren Büchern („dass“)
   und bei Drucken vor 1901 („Thür“, „giebt“) fällt die Wörterbuchquote deshalb niedriger aus, als die
   Erkennung verdient.

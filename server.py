@@ -464,7 +464,7 @@ def import_transkribus(source, title=None, images=None, target=None):
     return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], warnings=r['warnings'])
 
 
-def import_ocr(source, title, target, script, progress, cancelled):
+def import_ocr(source, title, target, script, textlayer, progress, cancelled):
     """PDF oder Bilderordner mit Tesseract einlesen (läuft als Auftrag im Hintergrund)."""
     if not source or not os.path.exists(source):
         raise ValueError('quelle_fehlt')
@@ -473,7 +473,7 @@ def import_ocr(source, title, target, script, progress, cancelled):
         title = os.path.basename(os.path.dirname(os.path.dirname(src)))  # …/<Titel>/scantailor/out
     name, out = new_folder(title, source, target)
     try:
-        r = ocr.build(source, out, progress, cancelled, 'antiqua' if script == 'antiqua' else 'fraktur')
+        r = ocr.build(source, out, progress, cancelled, 'antiqua' if script == 'antiqua' else 'fraktur', bool(textlayer))
     except ValueError:
         raise
     except Exception:
@@ -703,7 +703,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/scantailor', '/api/set_tool', '/api/forget'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -713,8 +713,15 @@ class H(BaseHTTPRequestHandler):
                     return self.sendjson(dict(error='quelle_fehlt'), 400)
                 korrlib.set_config(body['tool'], body['path'])
                 return self.sendjson(ocr.tools())
+            if u.path == '/api/pdf_info':
+                src = body.get('source') or ''
+                try:
+                    ok = os.path.isfile(src) and src.lower().endswith('.pdf')
+                    return self.sendjson(dict(pages=ocr.pdf_count(src), text=ocr.pdf_has_text(src)) if ok else dict(pages=0, text=False))
+                except Exception:
+                    return self.sendjson(dict(pages=0, text=False))
             if u.path == '/api/import_ocr':
-                return self.sendjson(dict(job=start_job(import_ocr, body.get('source'), body.get('title'), body.get('target'), body.get('script'))))
+                return self.sendjson(dict(job=start_job(import_ocr, body.get('source'), body.get('title'), body.get('target'), body.get('script'), body.get('textlayer'))))
             if u.path == '/api/scantailor':
                 return self.sendjson(dict(job=start_job(scantailor, body.get('source'), body.get('title'))))
             if u.path == '/api/forget':

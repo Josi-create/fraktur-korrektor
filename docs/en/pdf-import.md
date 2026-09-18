@@ -14,10 +14,24 @@ internet. Tesseract has to be installed once: [Installing the tools](install-too
 5. **Start text recognition.** A bar shows the progress; expect a few seconds per page. *Stop* cancels at
    any time.
 
+## Searchable PDFs: using the existing text
+
+Many PDFs are already “searchable”: another program (ABBYY FineReader, OCRmyPDF, the scanner itself) has recognised
+the text and placed it invisibly behind the page image. Fraktur-Korrektor notices this and asks:
+
+- **Use this text** – takes only seconds, even for several hundred pages. The page images are taken from the PDF
+  unchanged. Tesseract is not needed for this.
+- **Recognise the text afresh** – sensible if the existing text is poor, for example because a Fraktur book was
+  recognised by a program made for roman type.
+
+If in doubt, use the text first and look at the traffic light. If it is not green, read the book in again and have
+it recognised afresh.
+
 ## The traffic light
 
 After recognition the program estimates how good the result is. It uses two values: how confident Tesseract
-was about the words, and how many of the words are in the dictionary.
+was about the words, and how many of the words are in the dictionary. (For text taken from the PDF only the
+dictionary counts – a PDF does not store how confident the recognition was.)
 
 | Light | Meaning | What to do |
 |---|---|---|
@@ -54,6 +68,5 @@ flattens curvature and crops margins. ([Installation](install-tools.md))
 ## Limitations
 
 - Multi-column layouts (newspapers, encyclopaedias) are not read column by column.
-- A text layer already present in the PDF is not used; the program recognises the text afresh.
 - The bundled dictionary covers German spelling from 1901 to 1996. For newer books (“dass”) and for prints
   before 1901 (“Thür”, “giebt”) the dictionary rate is therefore lower than the recognition deserves.

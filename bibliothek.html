@@ -35,6 +35,8 @@ button:disabled{opacity:.5;cursor:default}
 .dlg .hint{color:#777;font-size:13px;margin-top:12px} .dlg .msg{color:#a40;margin-top:12px;min-height:20px;line-height:1.5}
 .dlg .btns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
 #tools{font-size:14px;line-height:1.7;background:#f6f3ea;border-radius:4px;padding:8px 12px} #tools .no{color:#a40} #tools .ok{color:#285}
+#tl{display:none;margin-top:10px;padding:8px 12px;background:#eaf5ee;border:1px solid #9c9;border-radius:4px;font-size:14.5px}
+#tl label{margin:4px 0 0;display:flex;align-items:center;gap:6px;cursor:pointer} #tl input{width:auto}
 #prog{margin-top:14px;display:none} #bar{height:10px;background:#ddd;border-radius:5px;overflow:hidden} #bar i{display:block;height:100%;width:0;background:#3a6;transition:width .4s}
 #ptext{font-size:13.5px;color:#555}
 .amp{display:inline-block;width:13px;height:13px;border-radius:50%;margin-right:7px;vertical-align:-1px}
@@ -74,6 +76,9 @@ button:disabled{opacity:.5;cursor:default}
  <div id="tools"></div>
  <label data-t="ocr_source"></label>
  <div class="row"><input id="oSource" spellcheck="false"><button type="button" id="cPdf" data-t="choose_pdf"></button><button type="button" id="cImgDir" data-t="choose_folder"></button></div>
+ <div id="tl"><b id="tlinfo"></b>
+  <label><input type="radio" name="tl" value="1" checked> <span data-t="tl_use"></span></label>
+  <label><input type="radio" name="tl" value=""> <span data-t="tl_redo"></span></label></div>
  <label data-t="imp_name"></label>
  <input id="oTitle" spellcheck="false" data-t-ph="ocr_name_ph">
  <label data-t="ocr_script"></label>
@@ -141,7 +146,17 @@ $('form').onsubmit = async e => {
   $('bGo').disabled = false;
 };
 // ---- PDF oder Bilder einlesen: Auftrag im Hintergrund, Fortschritt abfragen
-let job = null;
+let job = null, tools = {}, pdfText = false;
+const useText = () => pdfText && document.querySelector('input[name=tl]:checked').value == '1';
+function updateGo() {  // die Textebene zu übernehmen braucht kein Tesseract
+  $('oGo').disabled = !!job || !(tools.tesseract || useText()); $('oGo').textContent = t(useText() ? 'ocr_go_text' : 'ocr_go');
+  for (const el of document.querySelectorAll('input[name=script]')) el.disabled = useText();
+}
+async function checkPdf() {
+  const src = $('oSource').value.trim(); pdfText = false;
+  if (/\.pdf$/i.test(src)) { try { const i = await post('/api/pdf_info', { source: src }); pdfText = i.text; $('tlinfo').textContent = t('tl_found', { n: i.pages }); } catch (e) {} }
+  $('tl').style.display = pdfText ? 'block' : 'none'; updateGo();
+}
 const help = (page, text) => '<a target="_blank" href="/hilfe/' + LANG + '/' + page + '">' + text + '</a>';
 async function showTools() {
   const x = await (await fetch('/api/tools')).json();
@@ -156,7 +171,7 @@ async function showTools() {
     try { const p = (await post('/api/choose', { kind: 'exe' })).path; if (p) { await post('/api/set_tool', { tool: a.dataset.tool, path: p }); await showTools(); } }
     catch (err) { $('omsg').textContent = err.message; }
   };
-  $('oGo').disabled = !x.tesseract; $('oST').disabled = !x.scantailor;
+  tools = x; $('oST').disabled = !x.scantailor; updateGo();
 }
 function busyUi(on) {
   $('prog').style.display = on ? 'block' : 'none'; $('oGo').disabled = $('oST').disabled = on;
@@ -174,23 +189,26 @@ async function runJob(path, body) {
       if (j.state == 'done') return j.result;
       if (j.state == 'error') throw new Error(t('err_' + j.error));
     }
-  } finally { job = null; busyUi(false); await showTools(); }
+  } finally { job = null; busyUi(false); await showTools(); updateGo(); }
 }
 function qualityHtml(r) {
   const q = r.quality;
-  let h = '<b><span class="amp ' + q.level + '"></span>' + t('q_' + q.level) + '</b><br><small>' + t('q_values', { n: r.pages, c: q.conf, d: Math.round(q.dict * 100) }) + '</small>';
-  if (q.level != 'gruen') h += '<br>' + t('q_advice') + ' ' + help('transkribus', t('q_advice_link'));
+  const fromPdf = q.conf == null;  // Text aus dem PDF übernommen: keine Erkennungssicherheit bekannt
+  let h = '<b><span class="amp ' + q.level + '"></span>' + t('q_' + q.level) + '</b><br><small>' + t(fromPdf ? 'q_values_text' : 'q_values', { n: r.pages, c: q.conf, d: Math.round(q.dict * 100) }) + '</small>';
+  if (q.level != 'gruen') h += '<br>' + (fromPdf ? t('q_advice_text') + ' ' : '') + t('q_advice') + ' ' + help('transkribus', t('q_advice_link'));
   if (q.ends.length * 4 >= r.pages) h += '<br>' + t('q_ends', { n: q.ends.length }) + ' ' + help('pdf-import', t('q_ends_link'));
   else if (q.weak.length) h += '<br><small>' + t('q_weak', { p: q.weak.slice(0, 25).join(', ') + (q.weak.length > 25 ? ' …' : '') }) + '</small>';
   return h + '<br><br><a href="/buch/' + r.id + '"><b>' + t('open_now') + ' →</b></a>';
 }
-$('bOcr').onclick = () => { $('omsg').textContent = ''; $('result').innerHTML = ''; $('dlg2').classList.add('on'); showTools(); $('oSource').focus(); };
+$('bOcr').onclick = () => { $('omsg').textContent = ''; $('result').innerHTML = ''; $('dlg2').classList.add('on'); showTools(); checkPdf(); $('oSource').focus(); };
 $('oCancel').onclick = () => { if (job) post('/api/job/' + job + '/cancel', {}); else $('dlg2').classList.remove('on'); };
 $('cPdf').onclick = () => choose('pdf', $('oSource'));
+$('oSource').addEventListener('change', checkPdf);
+for (const el of document.querySelectorAll('input[name=tl]')) el.onchange = updateGo;
 $('cImgDir').onclick = () => choose('folder', $('oSource'));
 $('form2').onsubmit = async e => {
   e.preventDefault();
-  try { const r = await runJob('/api/import_ocr', { source: $('oSource').value.trim(), title: $('oTitle').value.trim(), script: document.querySelector('input[name=script]:checked').value }); $('result').innerHTML = qualityHtml(r); load(); }
+  try { const r = await runJob('/api/import_ocr', { source: $('oSource').value.trim(), title: $('oTitle').value.trim(), script: document.querySelector('input[name=script]:checked').value, textlayer: useText() }); $('result').innerHTML = qualityHtml(r); load(); }
   catch (err) { $('omsg').textContent = err.message; }
 };
 $('oST').onclick = async () => {
@@ -202,7 +220,10 @@ $('oST').onclick = async () => {
 };
 document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) { $('dlg').classList.remove('on'); $('dlg2').classList.remove('on'); } if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
 load();
-if (location.hash == '#ocr') $('bOcr').click();  // Einstieg aus der Hilfe
+if (location.hash.startsWith('#ocr')) {  // Einstieg aus der Hilfe; #ocr=<pfad> wählt die Quelle gleich mit
+  if (location.hash.includes('=')) $('oSource').value = decodeURIComponent(location.hash.split('=').slice(1).join('='));
+  $('bOcr').click();
+}
 if (location.hash == '#transkribus') $('bImport').click();
 </script>
 </body>

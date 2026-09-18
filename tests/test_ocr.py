@@ -126,3 +126,57 @@ def test_durchlauf_mit_tesseract(lib, tmp_path):
     page = lib.lget('/buch/%s/api/page/001' % r['id'])[1]
     assert page['lines'][0].startswith('#') and page['lines'][2].endswith('Zu¬') and page['lines'][3].startswith('kunft')
     assert page['img'].endswith('/img/001.jpg') and None not in page['geo'][1:] and page['flags'] == []
+
+
+def test_zeilen_aus_textebene():
+    """Grundlinie entscheidet: Bruchstücke derselben Zeile kommen zusammen, eine durch Störzeichen aufgeblähte Zeile
+    (Rahmen reicht in die Nachbarzeile) bleibt getrennt; Randzeichen fallen weg; weite Lücke trennt Spalten."""
+    w = lambda x0, x1, y0, y1, text, bl: (x0, y0, x1, y1, text, bl)
+    words = [w(100, 200, 100, 130, 'welcher', 125), w(210, 300, 100, 130, 'Geld', 125), w(310, 420, 101, 131, 'hatte.', 126),  # zwei PDF-Zeilen,
+             w(430, 600, 99, 129, 'In', 124),                                                                                 # eine Druckzeile
+             w(40, 50, 60, 260, '|', 160),                                                                                   # Seitenrand
+             w(100, 250, 150, 180, 'auf', 175), w(260, 500, 150, 180, 'seinem', 175),
+             w(60, 90, 145, 235, r'\_', 225), w(100, 300, 145, 235, 'begehrt,', 225), w(310, 500, 145, 235, 'denn', 225),     # aufgebläht
+             w(100, 300, 300, 325, '1)', 320), w(310, 500, 300, 325, 'Ebenda.', 320), w(1200, 1300, 300, 325, '2)', 320), w(1310, 1500, 300, 325, 'Vgl.', 320)]
+    lines = ocr.group_words(words)
+    assert [l['text'] for l in lines] == ['welcher Geld hatte. In', 'auf seinem', 'begehrt, denn', '1) Ebenda.', '2) Vgl.']
+    assert lines[2]['y0'] >= 225 - 1.1 * 30 - 1 and lines[2]['y1'] <= 225 + 0.4 * 30 + 1  # Rahmen an der Grundlinie, nicht 145–235
+    assert ocr.group_words([]) == []
+
+
+def make_searchable_pdf(path, fitz):
+    """Wie ein gescanntes, durchsuchbares PDF: je Seite ein seitenfüllendes JPEG und unsichtbarer Text darüber."""
+    d = fitz.open()
+    pix = fitz.Pixmap(fitz.csGRAY, fitz.IRect(0, 0, 840, 1190), False); pix.clear_with(255)
+    jpg = pix.tobytes('jpeg')
+    for n in range(3):
+        pg = d.new_page(width=420, height=595)
+        pg.insert_image(pg.rect, stream=jpg)
+        for k, l in enumerate(['Die Kolonisten zogen nach Rußland, und der', 'Weg war weit. Sie dachten an die Zu-', 'kunft und an die Heimat.']):
+            pg.insert_text((50, 100 + 22 * k), l, fontsize=13, fontname='tiro', render_mode=3)
+    d.save(path); d.close()
+
+
+def test_textebene_uebernehmen(lib, tmp_path):
+    fitz = pytest.importorskip('fitz')
+    src = str(tmp_path / 'durchsuchbar.pdf')
+    make_searchable_pdf(src, fitz)
+    assert lib.lpost('/api/pdf_info', dict(source=src))[1] == dict(pages=3, text=True)
+    assert lib.lpost('/api/pdf_info', dict(source=str(tmp_path / 'fehlt.pdf')))[1] == dict(pages=0, text=False)
+    j = wait(lib, lib.lpost('/api/import_ocr', dict(source=src, title='Durchsuchbar', textlayer=True, target=str(tmp_path / 'ziel')))[1]['job'])
+    assert j['state'] == 'done', j  # geht auch ganz ohne Tesseract
+    q = j['result']['quality']
+    assert (j['result']['pages'], q['level'], q['conf']) == (3, 'gruen', None)
+    page = lib.lget('/buch/%s/api/page/002' % j['result']['id'])[1]
+    assert page['lines'] == ['# ', 'Die Kolonisten zogen nach Rußland, und der', 'Weg war weit. Sie dachten an die Zu¬', 'kunft und an die Heimat.']
+    assert page['img'].endswith('/img/002.jpg') and page['flags'] == []
+    g = page['geo'][1]  # PDF-Punkte -> Pixel des entnommenen Bildes (840 px auf 420 pt: Faktor 2)
+    assert 95 <= g['x0'] <= 105 and 170 <= g['y0'] <= 185 and 195 <= g['y1'] <= 215
+    import server
+    assert server.image_size(str(tmp_path / 'ziel' / 'img' / '002.jpg')) == (840, 1190)  # unverändert entnommen, nicht neu berechnet
+
+
+def test_pdf_ohne_textebene(tmp_path):
+    fitz = pytest.importorskip('fitz')
+    d = fitz.open(); d.new_page(); d.new_page(); d.save(str(tmp_path / 'leer.pdf')); d.close()
+    assert ocr.pdf_has_text(str(tmp_path / 'leer.pdf')) is False

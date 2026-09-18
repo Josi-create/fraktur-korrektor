@@ -1,7 +1,8 @@
-"""PDF oder Bilderordner -> Buchordner per Tesseract: img/NNN.jpg|png, NNN.txt, lines.json, qualitaet.json.
+"""PDF oder Bilderordner -> Buchordner: img/NNN.jpg|png, NNN.txt, lines.json, qualitaet.json – per Tesseract oder,
+wenn das PDF schon durchsuchbar ist, aus seiner Textebene.
 Tesseract und ScanTailor finden, Fraktur-Modell bei Bedarf laden, Qualität je Seite schätzen."""
 import os, re, sys, json, glob, shutil, statistics, subprocess, urllib.request
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import korrlib, pagexml
 
 FRAKTUR = ['frak2021', 'deu_latf', 'deu_frak', 'frk', 'Fraktur']  # Modelle in der Reihenfolge der Vorliebe
@@ -11,6 +12,7 @@ TESSDATA = os.path.join(korrlib.HOME, 'tessdata')  # eigene Modelle; der Tessera
 SRCEXT = ('.png', '.jpg', '.jpeg', '.tif', '.tiff')
 NOWIN = dict(creationflags=subprocess.CREATE_NO_WINDOW) if os.name == 'nt' else {}
 DPI = 300
+NOISE = re.compile(r"[|\\/_{}\[\]~^·.,;:'`´-]{1,3}")  # allein stehende Zeichen, wie sie die OCR aus Rändern und Flecken liest
 
 
 def _find(conf_key, names, places):
@@ -98,10 +100,10 @@ def hyphens(texts):
     return out
 
 
-def ocr_image(tess, img, model, tessdata=None):
+def ocr_image(tess, img, model, tessdata=None, dpi=DPI):
     """Eine Seite erkennen. Liefert (zeilen, wörter): Zeilen als dicts text, x0, x1, y0, y1, bl, conf;
     Wörter als (konfidenz, text, steht_am_zeilenende)."""
-    cmd = [tess, img, 'stdout', '-l', model, '--psm', '3', '--dpi', str(DPI)] + (['--tessdata-dir', tessdata] if tessdata else [])
+    cmd = [tess, img, 'stdout', '-l', model, '--psm', '3', '--dpi', str(int(dpi))] + (['--tessdata-dir', tessdata] if tessdata else [])
     cmd += ['-c', 'tessedit_create_tsv=1']  # nicht die Konfigurationsdatei "tsv": die fehlt im eigenen Modellordner
     r = subprocess.run(cmd, capture_output=True, env=dict(os.environ, OMP_THREAD_LIMIT='1'), **NOWIN)
     if r.returncode:
@@ -126,8 +128,10 @@ def ocr_image(tess, img, model, tessdata=None):
 def page_quality(words):
     """Mittlere Wortkonfidenz (nach Wortlänge gewichtet), Anteil der Wörter, die das Wörterbuch kennt, und
     ends: um wie viel die Konfidenz der Wörter am Zeilenende unter der der übrigen liegt (am Bund gestauchte Zeilen)."""
-    n = sum(len(t) for c, t, e in words)
     toks = [w for c, t, e in words for w in korrlib.WORD.findall(t) if len(w) > 1]
+    if words and words[0][0] is None:  # Text aus dem PDF übernommen: keine Konfidenz bekannt
+        return dict(conf=None, words=len(toks), dict=round(sum(korrlib.in_dict(w) for w in toks) / len(toks), 3) if toks else 0.0, ends=0.0)
+    n = sum(len(t) for c, t, e in words)
     end, mid = [c for c, t, e in words if e], [c for c, t, e in words if not e]
     return dict(conf=round(sum(c * len(t) for c, t, e in words) / n, 1) if n else 0.0, words=len(toks),
                 dict=round(sum(korrlib.in_dict(w) for w in toks) / len(toks), 3) if toks else 0.0,
@@ -142,11 +146,22 @@ def rating(pages):
     ps = [p for p in pages.values() if p['words'] >= 20]
     if not ps:
         return dict(level='rot', conf=0, dict=0, weak=[], ends=[])
-    conf, dq = statistics.median(p['conf'] for p in ps), statistics.median(p['dict'] for p in ps)
+    dq = statistics.median(p['dict'] for p in ps)
+    if ps[0]['conf'] is None:  # übernommene Textebene: nur die Wörterbuchquote zählt
+        weak = sorted(pg for pg, p in pages.items() if p['words'] >= 20 and p['dict'] < 0.78)
+        return dict(level='gruen' if dq >= 0.88 else 'rot' if dq < 0.78 else 'gelb', conf=None, dict=round(dq, 3), weak=weak, ends=[])
+    conf = statistics.median(p['conf'] for p in ps)
     level = 'gruen' if conf >= 85 and dq >= 0.88 else 'rot' if conf < 75 or dq < 0.78 else 'gelb'
     weak = sorted(pg for pg, p in pages.items() if p['words'] >= 20 and (p['conf'] < 75 or p['dict'] < 0.78))
     ends = sorted(pg for pg, p in pages.items() if p['words'] >= 20 and p['ends'] >= 10)
     return dict(level=level, conf=round(conf, 1), dict=round(dq, 3), weak=weak, ends=ends)
+
+
+def render_pdf(pdf, n, out):
+    """Seite n (ab 0) als Graustufen-JPEG mit 300 dpi."""
+    import fitz
+    with fitz.open(pdf) as d:
+        d[n].get_pixmap(dpi=DPI, colorspace=fitz.csGRAY).save(out, jpg_quality=85)
 
 
 def pdf_count(pdf):
@@ -155,11 +170,86 @@ def pdf_count(pdf):
         return d.page_count
 
 
-def render_pdf(pdf, n, out):
-    """Seite n (ab 0) als Graustufen-JPEG mit 300 dpi."""
+def pdf_has_text(pdf):
+    """Durchsuchbares PDF? Stichprobe über das Buch: mindestens die Hälfte der Seiten trägt Text."""
     import fitz
     with fitz.open(pdf) as d:
-        d[n].get_pixmap(dpi=DPI, colorspace=fitz.csGRAY).save(out, jpg_quality=85)
+        ns = sorted({int(k * (d.page_count - 1) / 11) for k in range(12)}) if d.page_count else []
+        return bool(ns) and sum(len(d[n].get_text('words')) >= 10 for n in ns) * 2 >= len(ns)
+
+
+def pdf_page(d, n, stem, text=False):
+    """Seite n (ab 0) des geöffneten PDF als Bild nach stem.jpg|png. Besteht die Seite aus genau einem ungedrehten,
+    seitenfüllenden JPEG/PNG (der Normalfall bei Scans), wird es unverändert entnommen – schneller und ohne
+    Qualitätsverlust; sonst wird die Seite mit 300 dpi berechnet.
+    Liefert (bildpfad, breite, höhe, dpi, wörter); wörter = [(x0, y0, x1, y1, text, grundlinie)] in Bildpixeln, wenn text."""
+    import fitz
+    page = d[n]
+    img = None
+    ims = page.get_images(full=True)
+    if len(ims) == 1 and page.rotation == 0 and not ims[0][1]:
+        xref, _, w, h, *_ = ims[0]
+        r = page.get_image_bbox(ims[0])  # ohne das Bild zu dekodieren (get_image_rects täte das: 0,1 s je Seite)
+        if not r.is_infinite and abs(r & page.rect) >= 0.9 * abs(page.rect) and abs(w / h / (r.width / r.height) - 1) < 0.03:
+            if ims[0][8] == 'DCTDecode':
+                img, data = stem + '.jpg', d.xref_stream_raw(xref)  # der Datenstrom ist die JPEG-Datei
+            else:
+                x = d.extract_image(xref)
+                ext = dict(jpeg='.jpg', jpg='.jpg', png='.png').get(x['ext'])
+                img, data = (stem + ext, x['image']) if ext else (None, None)
+            if img:
+                with open(img, 'wb') as f:
+                    f.write(data)
+    if img is None:
+        img, r = stem + '.jpg', page.rect
+        pix = page.get_pixmap(dpi=DPI, colorspace=fitz.csGRAY)
+        pix.save(img, jpg_quality=85)
+        w, h = pix.width, pix.height
+    sx, sy = w / r.width, h / r.height
+    words = []
+    if text:
+        tp = page.get_textpage()
+        # Grundlinie je PDF-Zeile: verlässlicher als die Wortrahmen, die bei Störzeichen über mehrere Zeilen reichen
+        base = {(b['number'], k): l['spans'][0]['origin'][1] for b in page.get_text('dict', textpage=tp)['blocks'] if b['type'] == 0
+                for k, l in enumerate(b['lines']) if l['spans'] and abs(l['dir'][0]) > 0.95}
+        for x0, y0, x1, y1, t, b, l, _ in page.get_text('words', textpage=tp):
+            if t.strip() and (b, l) in base:
+                words.append(((x0 - r.x0) * sx, (y0 - r.y0) * sy, (x1 - r.x0) * sx, (y1 - r.y0) * sy, clean(t), (base[b, l] - r.y0) * sy))
+    return img, w, h, 72 * sx, words
+
+
+def group_words(words):
+    """Wörter einer Textebene (x0, y0, x1, y1, text, grundlinie) zu Zeilen ordnen: Was auf derselben Grundlinie steht,
+    gehört zusammen – das PDF selbst zerlegt Zeilen oft in Bruchstücke. Eine Lücke von mehr als drei Zeilenhöhen
+    trennt Spalten (zweispaltige Fußnoten)."""
+    if not words:
+        return []
+    hmed = statistics.median(w[3] - w[1] for w in words)
+    rows = []
+    for w in sorted(words, key=lambda w: w[5]):
+        if rows and abs(w[5] - rows[-1]['bl']) < 0.35 * hmed:
+            r = rows[-1]
+            r['ws'].append(w); r['bl'] += (w[5] - r['bl']) / len(r['ws'])
+        else:
+            rows.append(dict(bl=w[5], ws=[w]))
+    out = []
+    for r in rows:
+        part = []
+        for w in sorted(r['ws']) + [None]:
+            if w is None or (part and w[0] - part[-1][2] > 3 * hmed):
+                while part and NOISE.fullmatch(part[0][4]): del part[0]    # mitgescannter Seitenrand: | \_ / } am Zeilenrand
+                while part and NOISE.fullmatch(part[-1][4]): del part[-1]
+                if not part:
+                    continue
+                bl = statistics.median(x[5] for x in part)
+                out.append(dict(text=' '.join(x[4] for x in part), x0=round(part[0][0]), x1=round(max(x[2] for x in part)),
+                                # Rahmen an der Grundlinie ausrichten: Störzeichen blähen die Wortrahmen auf
+                                y0=round(max(min(x[1] for x in part), bl - 1.1 * hmed)), y1=round(min(max(x[3] for x in part), bl + 0.4 * hmed)),
+                                bl=round(bl)))
+                part = []
+            if w is not None:
+                part.append(w)
+    return out
 
 
 def image_files(folder):
@@ -177,13 +267,15 @@ def copy_image(src, stem):
     return stem + ('.jpg' if ext == '.jpeg' else ext)
 
 
-def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda: False, script='fraktur'):
+def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda: False, script='fraktur', textlayer=False):
     """source: PDF-Datei oder Ordner mit Seitenbildern. Schreibt den Buchordner out; liefert dict(pages, quality).
+    textlayer: den Text eines durchsuchbaren PDF übernehmen, statt ihn neu zu erkennen (braucht kein Tesseract).
     Fehler als ValueError mit Schlüssel: kein_tesseract, kein_pymupdf, quelle_fehlt, keine_seiten, modell_laden, abgebrochen."""
-    tess = find_tesseract()
-    if not tess:
-        raise ValueError('kein_tesseract')
     is_pdf = os.path.isfile(source) and source.lower().endswith('.pdf')
+    textlayer = textlayer and is_pdf
+    tess = find_tesseract()
+    if not tess and not textlayer:
+        raise ValueError('kein_tesseract')
     if is_pdf:
         try:
             total = pdf_count(source)
@@ -200,7 +292,7 @@ def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda:
         raise ValueError('keine_seiten')
     if total > 999:
         raise ValueError('zu_viele_seiten')
-    model, tessdata = pick_model(tess, script)
+    model, tessdata = ('textebene', None) if textlayer else pick_model(tess, script)
     if not model:
         progress(0, total, 'modell')
         try:
@@ -212,37 +304,54 @@ def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda:
             raise ValueError('modell_laden')
     os.makedirs(os.path.join(out, 'img'), exist_ok=True)
 
+    def finish(pg, w, h, lines, words):
+        pagexml.classify(lines, h / 3508)
+        for kind in ('body', 'fn'):  # Trennungen je Textteil, nicht vom Haupttext in die Fußnoten
+            part = [d for d in lines if d['kind'] == kind]
+            for d, t in zip(part, hyphens([d['text'] for d in part])):
+                d['text'] = t
+        with open(os.path.join(out, pg + '.txt'), 'w', encoding='utf-8') as f:
+            f.write('\n'.join(pagexml.page_text(lines)) + '\n')
+        geo[pg] = dict(w=w, h=h, lines=lines)
+        quality[pg] = page_quality(words)
+
     def one(n):
         if cancelled():
             return None
         pg = '%03d' % (n + 1)
         stem = os.path.join(out, 'img', pg)
         if is_pdf:
-            img = stem + '.jpg'
-            render_pdf(source, n, img)
+            import fitz
+            with fitz.open(source) as d:  # je Aufruf öffnen: ein PDF-Objekt verträgt keine mehreren Threads
+                img, w, h, dpi, _ = pdf_page(d, n, stem)
         else:
-            img = copy_image(files[n], stem)
-        lines, words = ocr_image(tess, img, model, tessdata)
-        w, h = image_size(img)
+            img, dpi = copy_image(files[n], stem), DPI
+            w, h = image_size(img)
+        lines, words = ocr_image(tess, img, model, tessdata, dpi)
         return pg, w, h, lines, words
 
     geo, quality, done = {}, {}, 0
-    with ThreadPoolExecutor(max_workers=max(1, (os.cpu_count() or 2) - 1)) as ex:
-        for r in ex.map(one, range(total)):
-            if r is None:
-                continue
-            pg, w, h, lines, words = r
-            pagexml.classify(lines, h / 3508)
-            for kind in ('body', 'fn'):  # Trennungen je Textteil, nicht vom Haupttext in die Fußnoten
-                part = [d for d in lines if d['kind'] == kind]
-                for d, t in zip(part, hyphens([d['text'] for d in part])):
-                    d['text'] = t
-            with open(os.path.join(out, pg + '.txt'), 'w', encoding='utf-8') as f:
-                f.write('\n'.join(pagexml.page_text(lines)) + '\n')
-            geo[pg] = dict(w=w, h=h, lines=lines)
-            quality[pg] = page_quality(words)
-            done += 1
-            progress(done, total, 'ocr')
+    if textlayer:
+        import fitz
+        with fitz.open(source) as d:
+            for n in range(total):
+                if cancelled():
+                    break
+                pg = '%03d' % (n + 1)
+                img, w, h, dpi, words = pdf_page(d, n, os.path.join(out, 'img', pg), text=True)
+                finish(pg, w, h, group_words(words), [(None, x[4], False) for x in words])
+                progress(n + 1, total, 'text')
+    else:
+        with ThreadPoolExecutor(max_workers=max(1, (os.cpu_count() or 2) - 1)) as ex:
+            # in der Reihenfolge des Fertigwerdens: eine langsame Seite (Abbildung) hält die Anzeige nicht auf
+            for fu in as_completed([ex.submit(one, n) for n in range(total)]):
+                r = fu.result()
+                if r is None:
+                    continue
+                finish(*r)
+                done += 1
+                progress(done, total, 'ocr')
+    geo, quality = dict(sorted(geo.items())), dict(sorted(quality.items()))
     if cancelled():
         cleanup(out)
         raise ValueError('abgebrochen')
