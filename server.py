@@ -4,7 +4,7 @@ py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"
 Ohne Buchordner erscheint die Bibliothek (Bücher öffnen, Transkribus-Export importieren).
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png|jpg,
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
-import sys, os, json, re, glob, time, hashlib, threading, subprocess, urllib.parse, webbrowser, argparse
+import sys, os, json, re, glob, time, hashlib, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import korrlib, pagexml
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
@@ -675,6 +675,15 @@ class H(BaseHTTPRequestHandler):
         self.send(404, '{}')
 
 
+class Server(ThreadingHTTPServer):
+    allow_reuse_address = os.name != 'nt'  # unter Windows ließe SO_REUSEADDR mehrere Server auf demselben Port zu
+
+    def server_bind(self):
+        # HTTPServer.server_bind fragt mit socket.getfqdn() den Rechnernamen ab – auf dem Mac dauert das bis zu 30 s
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
+
+
 def main():
     global DEFAULT
     ap = argparse.ArgumentParser()
@@ -687,10 +696,8 @@ def main():
     A = ap.parse_args()
     if A.dic:
         korrlib.set_dic(A.dic)
-    # unter Windows ließe SO_REUSEADDR mehrere Server auf demselben Port zu
-    ThreadingHTTPServer.allow_reuse_address = os.name != 'nt'
     try:
-        httpd = ThreadingHTTPServer(('0.0.0.0' if A.lan else '127.0.0.1', A.port), H)
+        httpd = Server(('0.0.0.0' if A.lan else '127.0.0.1', A.port), H)
     except OSError:
         sys.exit('Port %d ist belegt – läuft der Fraktur-Korrektor schon? Sonst mit --port <nummer> einen anderen Port wählen.' % A.port)
     if A.folder:
