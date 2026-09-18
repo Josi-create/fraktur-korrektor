@@ -4,9 +4,9 @@ py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"
 Ohne Buchordner erscheint die Bibliothek (Bücher öffnen, Transkribus-Export importieren).
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png|jpg,
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
-import sys, os, json, re, glob, time, hashlib, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
+import sys, os, json, re, glob, time, uuid, hashlib, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-import korrlib, pagexml
+import korrlib, pagexml, ocr
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -417,8 +417,12 @@ def lib_list():
             bm = json.load(open(os.path.join(e['folder'], 'lesezeichen.json'), encoding='utf-8')).get('page')
         except (OSError, ValueError):
             bm = None
+        try:
+            q = json.load(open(os.path.join(e['folder'], 'qualitaet.json'), encoding='utf-8'))['rating']['level']
+        except (OSError, ValueError, KeyError):
+            q = None
         out.append(dict(id=book_id(e['folder']), title=e.get('title') or default_title(e['folder']), folder=e['folder'],
-                        pages=n, bookmark=bm, last=e.get('last', '')))
+                        pages=n, bookmark=bm, last=e.get('last', ''), quality=q))
     out.sort(key=lambda b: b['last'], reverse=True)
     return out
 
@@ -437,21 +441,88 @@ def books_dir():
     return korrlib.config().get('buecher') or os.path.join(os.path.expanduser('~'), 'Fraktur-Korrektor')
 
 
+def new_folder(title, source, target=None):
+    """(name, ordner) für ein neues Buch; vorhandene Bücher nie überschreiben."""
+    name = re.sub(r'[\\/:*?"<>|]+', ' ', title or os.path.splitext(os.path.basename(source.rstrip('/\\')))[0]).strip() or 'Buch'
+    base = target or os.path.join(books_dir(), name)
+    out, n = base, 1
+    while page_files(out):
+        n += 1
+        out = base + ' (%d)' % n
+    return name, out
+
+
 def import_transkribus(source, title=None, images=None, target=None):
     if not source or not os.path.exists(source):
         raise ValueError('quelle_fehlt')
-    name = re.sub(r'[\\/:*?"<>|]+', ' ', title or os.path.splitext(os.path.basename(source.rstrip('/\\')))[0]).strip() or 'Buch'
-    out = target or os.path.join(books_dir(), name)
-    n = 1
-    while page_files(out):  # vorhandene Bücher nie überschreiben
-        n += 1
-        out = (target or os.path.join(books_dir(), name)) + ' (%d)' % n
+    name, out = new_folder(title, source, target)
     try:
         r = pagexml.import_export(source, out, images or None)
     except ValueError:
         raise ValueError('keine_xml')
     e = lib_touch(out, title or r.get('title') or name)
     return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], warnings=r['warnings'])
+
+
+def import_ocr(source, title, target, script, progress, cancelled):
+    """PDF oder Bilderordner mit Tesseract einlesen (läuft als Auftrag im Hintergrund)."""
+    if not source or not os.path.exists(source):
+        raise ValueError('quelle_fehlt')
+    src = source.rstrip('/\\')
+    if os.path.isdir(src) and os.path.basename(src).lower() == 'out' and not title:
+        title = os.path.basename(os.path.dirname(os.path.dirname(src)))  # …/<Titel>/scantailor/out
+    name, out = new_folder(title, source, target)
+    try:
+        r = ocr.build(source, out, progress, cancelled, 'antiqua' if script == 'antiqua' else 'fraktur')
+    except ValueError:
+        raise
+    except Exception:
+        ocr.cleanup(out)
+        raise
+    e = lib_touch(out, title or name)
+    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], quality=r['quality'])
+
+
+def scantailor(source, title, progress, cancelled):
+    """PDF-Seiten als Bilder in <Buchordner>/scantailor ablegen und ScanTailor starten (ohne PDF: nur starten)."""
+    exe = ocr.find_scantailor()
+    if not exe:
+        raise ValueError('kein_scantailor')
+    folder = None
+    if source:
+        if not (os.path.isfile(source) and source.lower().endswith('.pdf')):
+            raise ValueError('nur_pdf')
+        folder = os.path.join(new_folder(title, source)[1], 'scantailor')
+        try:
+            ocr.export_pages(source, folder, progress, cancelled)
+        except ImportError:
+            raise ValueError('kein_pymupdf')
+    ocr.launch(exe)
+    return dict(folder=folder, out=os.path.join(folder, 'out') if folder else None)
+
+
+# ---- Aufträge: lange Arbeiten im Hintergrund, der Browser fragt den Fortschritt ab
+
+JOBS = {}
+
+
+def start_job(fn, *args):
+    jid = uuid.uuid4().hex[:8]
+    j = JOBS[jid] = dict(state='running', done=0, total=0, msg='', cancel=False, result=None, error=None)
+
+    def progress(done, total, msg):
+        j.update(done=done, total=total, msg=msg)
+
+    def run():
+        try:
+            j['result'] = fn(*args, progress, lambda: j['cancel'])
+            j['state'] = 'done'
+        except ValueError as e:
+            j.update(state='error', error=str(e))
+        except Exception as e:
+            j.update(state='error', error='unknown', detail=repr(e))
+    threading.Thread(target=run, daemon=True).start()
+    return jid
 
 
 def dialog(kind):
@@ -462,7 +533,7 @@ def dialog(kind):
     root.withdraw()
     root.attributes('-topmost', True)
     p = filedialog.askdirectory(parent=root) if kind == 'folder' else \
-        filedialog.askopenfilename(parent=root, filetypes=[('ZIP', '*.zip'), ('*', '*.*')])
+        filedialog.askopenfilename(parent=root, filetypes=dict(pdf=[('PDF', '*.pdf')], exe=[('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
     sys.stdout.buffer.write((p or '').encode('utf-8'))
 
 
@@ -485,10 +556,13 @@ nav{flex:none;width:210px;font-size:15px} nav a{display:block;padding:4px 8px;bo
 nav a.cur{background:#fff;font-weight:bold} nav a:hover{background:#f4f2ec}
 main{flex:1;min-width:0;background:#fff;border:1px solid #bbb;border-radius:4px;padding:10px 34px 30px}
 main img{max-width:100%%} table{border-collapse:collapse} td,th{border:1px solid #ccc;padding:4px 9px;vertical-align:top;text-align:left}
-th{background:#f6f3ea} code,kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:0 4px;font-family:Consolas,monospace;font-size:.9em}
+th{background:#f6f3ea} td:first-child{white-space:nowrap} code,kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:0 4px;font-family:Consolas,monospace;font-size:.9em}
 pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} h1{margin-top:.6em}
 </style></head><body><div id="top"><b>Fraktur-Korrektor</b><a href="/">%(home)s</a><span class="sp"></span>%(langs)s</div>
 <div id="wrap"><nav>%(nav)s</nav><main>%(body)s</main></div></body></html>'''
+
+
+HELP_ORDER = ['index', 'add-book', 'pdf-import', 'transkribus', 'usage', 'install-tools']
 
 
 def help_pages(lang):
@@ -497,7 +571,7 @@ def help_pages(lang):
     for f in sorted(glob.glob(os.path.join(HERE, 'docs', lang, '*.md'))):
         m = re.search(r'^#\s+(.+)$', open(f, encoding='utf-8').read(), re.M)
         out.append((os.path.basename(f)[:-3], m.group(1).strip() if m else os.path.basename(f)[:-3]))
-    out.sort(key=lambda x: (x[0] != 'index', ))
+    out.sort(key=lambda x: HELP_ORDER.index(x[0]) if x[0] in HELP_ORDER else len(HELP_ORDER))
     return out
 
 
@@ -560,6 +634,12 @@ class H(BaseHTTPRequestHandler):
             return self.sendfile('bibliothek.html')
         if u.path == '/i18n.js':
             return self.sendfile('i18n.js', 'text/javascript')
+        if u.path == '/api/tools':
+            return self.sendjson(ocr.tools())
+        m = re.fullmatch(r'/api/job/([0-9a-f]{8})', u.path)
+        if m:
+            j = JOBS.get(m.group(1))
+            return self.sendjson({k: v for k, v in j.items() if k != 'cancel'}) if j else self.send(404, '{}')
         if u.path == '/api/library':
             return self.sendjson(dict(books=lib_list(), local=self.local(), version=version(), donate=DONATE_URL, booksdir=books_dir()))
         if u.path in ('/hilfe', '/hilfe/', '/help'):
@@ -619,11 +699,24 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
         body = json.loads(self.rfile.read(int(self.headers.get('Content-Length', 0))) or b'{}')
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/forget'):
+        m = re.fullmatch(r'/api/job/([0-9a-f]{8})/cancel', u.path)
+        if m and m.group(1) in JOBS and self.local():
+            JOBS[m.group(1)]['cancel'] = True
+            return self.sendjson({})
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/scantailor', '/api/set_tool', '/api/forget'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
-                return self.sendjson(dict(path=choose('folder' if body.get('kind') == 'folder' else 'zip')))
+                return self.sendjson(dict(path=choose(body.get('kind') if body.get('kind') in ('folder', 'pdf', 'exe') else 'zip')))
+            if u.path == '/api/set_tool':
+                if body.get('tool') not in ('tesseract', 'scantailor') or not os.path.isfile(body.get('path') or ''):
+                    return self.sendjson(dict(error='quelle_fehlt'), 400)
+                korrlib.set_config(body['tool'], body['path'])
+                return self.sendjson(ocr.tools())
+            if u.path == '/api/import_ocr':
+                return self.sendjson(dict(job=start_job(import_ocr, body.get('source'), body.get('title'), body.get('target'), body.get('script'))))
+            if u.path == '/api/scantailor':
+                return self.sendjson(dict(job=start_job(scantailor, body.get('source'), body.get('title'))))
             if u.path == '/api/forget':
                 lib_forget(body.get('id'))
                 return self.sendjson({})

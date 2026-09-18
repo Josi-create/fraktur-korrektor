@@ -4,7 +4,7 @@ from conftest import ROOT, make_book, png
 
 PAGE_XML = '''<?xml version="1.0" encoding="UTF-8"?>
 <PcGts xmlns="http://schema.primaresearch.org/PAGE/gts/pagecontent/2013-07-15">
- <Page imageFilename="%(img)s" imageWidth="1000" imageHeight="1500"><TextRegion id="r1">
+ <Page imageFilename="%(img)s" imageWidth="2480" imageHeight="3508"><TextRegion id="r1">
 %(lines)s
  </TextRegion></Page></PcGts>'''
 LINE = ('  <TextLine id="l%(n)d"><Coords points="100,%(y0)d 900,%(y0)d 900,%(y1)d 100,%(y1)d"/>'
@@ -13,7 +13,7 @@ LINE = ('  <TextLine id="l%(n)d"><Coords points="100,%(y0)d 900,%(y0)d 900,%(y1)
 
 def make_export(path, images=True):
     """Transkribus-Export als ZIP: <docid>/<titel>/page/NNNN_name.xml, metadata.xml, optional Bilder."""
-    pages = {'0001_scan': [(100, '— 7 —'), (200, 'Die Kolonisten zogen'), (260, 'nach Rußland.'), (400, '1) Vgl. die Quellen.'), (440, 'Zweite Zeile der Fußnote.')],
+    pages = {'0001_scan': [(100, '— 7 —'), (400, 'Die Kolonisten zogen'), (470, 'nach Rußland.'), (800, '1) Vgl. die Quellen.'), (850, 'Zweite Zeile der Fußnote.')],
              '0002_scan': [(100, 'Der Vater und ber Sohn.')]}
     with zipfile.ZipFile(path, 'w') as z:
         z.writestr('4711/Probebuch/metadata.xml', '<trpDocMetadata><docId>4711</docId><title>Probebuch 1818</title></trpDocMetadata>')
@@ -22,7 +22,7 @@ def make_export(path, images=True):
                 LINE % dict(n=n, y0=y, y1=y + 40, bl=y + 32, text=t) for n, (y, t) in enumerate(lines)))
             z.writestr('4711/Probebuch/page/%s.xml' % name, xml)
             if images:
-                z.writestr('4711/Probebuch/%s.png' % name, png(1000, 1500))
+                z.writestr('4711/Probebuch/%s.png' % name, png(1240, 1754))  # halbe Größe -> Maßstab 0.5
 
 
 def test_start_mit_ordner_leitet_zum_buch(app):
@@ -64,7 +64,7 @@ def test_transkribus_import(lib, tmp_path):
     assert code == 200 and (r['title'], r['pages'], r['images'], r['warnings']) == ('Probebuch 1818', 2, 2, [])
     d = lib.lget('/buch/%s/api/page/001' % r['id'])[1]
     assert d['lines'] == ['# — 7 —', 'Die Kolonisten zogen', 'nach Rußland.', '---', '1) Vgl. die Quellen.', 'Zweite Zeile der Fußnote.']
-    assert d['geo'][1] == dict(x0=100, x1=900, y0=200, y1=240) and d['geo'][3] is None
+    assert d['geo'][1] == dict(x0=50, x1=450, y0=200, y1=220) and d['geo'][3] is None
     # zweiter Import desselben Ziels überschreibt nicht
     r2 = lib.lpost('/api/import_transkribus', dict(source=z, target=str(tmp_path / 'ziel')))[1]
     assert r2['folder'].endswith('ziel (2)')
@@ -114,7 +114,7 @@ def test_sprachdatei_vollstaendig():
     for f in ('reader.html', 'bibliothek.html'):
         html = open(os.path.join(ROOT, f), encoding='utf-8').read()
         used |= set(re.findall(r"\bt\('(\w+)'", html)) | set(re.findall(r'data-t(?:-ph|-title)?="(\w+)"', html))
-    used -= {'err_', 'warn_'}  # zusammengesetzte Schlüssel: t('err_' + code)
+    used = {k for k in used if not k.endswith('_')}  # zusammengesetzte Schlüssel: t('err_' + code)
     assert used <= de, used - de
     assert {'err_kein_buch', 'err_quelle_fehlt', 'err_keine_xml', 'err_nur_lokal', 'err_unknown', 'warn_bilder_fehlen'} <= de
 

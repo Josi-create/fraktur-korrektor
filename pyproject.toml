@@ -1,12 +1,12 @@
 [project]
 name = "fraktur-korrektor"
-version = "0.6.0"
+version = "0.7.0"
 description = "Lesen und Korrekturlesen in einem: OCR-Text (Fraktur) neben dem Seitenbild, tastaturgesteuert"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 authors = [{ name = "Johannes Wack" }]
 requires-python = ">=3.10"
-dependencies = ["spylls>=0.1.7", "markdown>=3.4"]
+dependencies = ["spylls>=0.1.7", "markdown>=3.4", "pymupdf>=1.23"]
 keywords = ["ocr", "fraktur", "proofreading", "transkribus", "tesseract", "digital-humanities"]
 
 [project.optional-dependencies]

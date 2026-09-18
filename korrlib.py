@@ -17,6 +17,11 @@ def config():
     except ValueError as e:
         print('Warnung: %s ist kein gültiges JSON und wird ignoriert (%s)' % (p, e))
         return {}
+def set_config(key, value):
+    c = config(); c[key] = value
+    os.makedirs(HOME, exist_ok=True)
+    with open(os.path.join(HOME, 'config.json'), 'w', encoding='utf-8') as f:
+        json.dump(c, f, ensure_ascii=False, indent=2)
 def _base(path):
     return path[:-4] if path.lower().endswith(('.dic', '.aff')) else path
 def find_dic():

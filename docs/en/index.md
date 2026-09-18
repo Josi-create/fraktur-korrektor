@@ -10,9 +10,13 @@ as its window.
 
 ## Three steps
 
-1. **Text recognition** – the book is read by OCR software such as
-   [Transkribus](https://www.transkribus.org/). This happens outside this program.
-2. **Add the book** – bring the result into the library: [Adding a book](add-book.md).
+1. **Text recognition** – the page images are turned into text. There are two routes:
+   - *built in, one click:* [Reading in a PDF or images](pdf-import.md) with the free program Tesseract;
+     everything stays on your computer. Afterwards a traffic light shows how good the result is.
+   - *for difficult scans:* [Transkribus](transkribus.md), an internet service that usually recognises
+     Fraktur better.
+2. **Add the book** – reading in does this by itself; an export from Transkribus is brought into the
+   library with two clicks: [Adding a book](add-book.md).
 3. **Read and correct** – [Usage](usage.md). Everything works from the keyboard; the most important keys
    are always shown at the top right.
 

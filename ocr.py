@@ -1,0 +1,292 @@
+"""PDF oder Bilderordner -> Buchordner per Tesseract: img/NNN.jpg|png, NNN.txt, lines.json, qualitaet.json.
+Tesseract und ScanTailor finden, Fraktur-Modell bei Bedarf laden, Qualität je Seite schätzen."""
+import os, re, sys, json, glob, shutil, statistics, subprocess, urllib.request
+from concurrent.futures import ThreadPoolExecutor
+import korrlib, pagexml
+
+FRAKTUR = ['frak2021', 'deu_latf', 'deu_frak', 'frk', 'Fraktur']  # Modelle in der Reihenfolge der Vorliebe
+MODELS = dict(fraktur=FRAKTUR, antiqua=['deu'] + FRAKTUR)  # frak2021 ist auch an Antiqua trainiert – Ersatz, wenn deu fehlt
+MODEL_URL = 'https://ub-backup.bib.uni-mannheim.de/~stweil/tesstrain/frak2021/tessdata_fast/frak2021_0.905.traineddata'
+TESSDATA = os.path.join(korrlib.HOME, 'tessdata')  # eigene Modelle; der Tesseract-Ordner ist oft nicht beschreibbar
+SRCEXT = ('.png', '.jpg', '.jpeg', '.tif', '.tiff')
+NOWIN = dict(creationflags=subprocess.CREATE_NO_WINDOW) if os.name == 'nt' else {}
+DPI = 300
+
+
+def _find(conf_key, names, places):
+    c = korrlib.config().get(conf_key)
+    if c and os.path.exists(c):
+        return c
+    for n in names:
+        w = shutil.which(n)
+        if w:
+            return w
+    for pat in places:
+        hits = sorted(glob.glob(os.path.expandvars(os.path.expanduser(pat))))
+        if hits:
+            return hits[-1]
+    return None
+
+
+def find_tesseract():
+    return _find('tesseract', ['tesseract'], [
+        r'%ProgramFiles%\Tesseract-OCR\tesseract.exe', r'%ProgramFiles(x86)%\Tesseract-OCR\tesseract.exe',
+        r'%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe', '/opt/homebrew/bin/tesseract', '/usr/local/bin/tesseract'])
+
+
+def find_scantailor():
+    return _find('scantailor', ['scantailor', 'scantailor-advanced', 'ScanTailor'], [
+        r'%LOCALAPPDATA%\Programs\ScanTailor*\scantailor*.exe', r'%ProgramFiles%\ScanTailor*\scantailor*.exe',
+        r'%ProgramFiles%\Scan Tailor*\scantailor*.exe', r'%ProgramFiles(x86)%\Scan Tailor*\scantailor*.exe',
+        '/Applications/ScanTailor*.app/Contents/MacOS/*', '/Applications/Scan Tailor*.app/Contents/MacOS/*',
+        '/opt/homebrew/bin/scantailor', '/usr/local/bin/scantailor'])  # eine Mac-App sieht den PATH des Terminals nicht
+
+
+def _langs(tess, tessdata=None):
+    try:
+        r = subprocess.run([tess, '--list-langs'] + (['--tessdata-dir', tessdata] if tessdata else []), capture_output=True, timeout=60, **NOWIN)
+        return [l.strip() for l in r.stdout.decode('utf-8', 'replace').splitlines()[1:] if l.strip()]
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+
+
+def pick_model(tess, script='fraktur'):
+    """(modell, tessdata-ordner oder None) für fraktur | antiqua; bei gleichem Rang gehen die eigenen Modelle vor."""
+    dirs = ([TESSDATA] if os.path.isdir(TESSDATA) else []) + [None]
+    have = [(d, _langs(tess, d)) for d in dirs]
+    for m in MODELS.get(script, FRAKTUR):
+        for d, langs in have:
+            if m in langs:
+                return m, d
+    return None, None
+
+
+def download_model():
+    os.makedirs(TESSDATA, exist_ok=True)
+    out = os.path.join(TESSDATA, 'frak2021.traineddata')
+    with urllib.request.urlopen(MODEL_URL, timeout=120) as r, open(out + '.tmp', 'wb') as f:
+        shutil.copyfileobj(r, f)
+    os.replace(out + '.tmp', out)
+
+
+def tools():
+    """Was vorhanden ist – für die Anzeige im Importdialog."""
+    tess = find_tesseract()
+    try:
+        import fitz  # noqa: F401
+        pdf = True
+    except ImportError:
+        pdf = False
+    return dict(tesseract=tess, model=pick_model(tess)[0] if tess else None, antiqua=pick_model(tess, 'antiqua')[0] if tess else None,
+                scantailor=find_scantailor(), pdf=pdf)
+
+
+def clean(text):
+    """Langes s, rundes r und überschriebenes e der Frakturmodelle in heutige Zeichen."""
+    for a, b in (('ſ', 's'), ('ꝛ', 'r'), ('aͤ', 'ä'), ('oͤ', 'ö'), ('uͤ', 'ü'), ('Aͤ', 'Ä'), ('Oͤ', 'Ö'), ('Uͤ', 'Ü'), ('⸗', '-')):
+        text = text.replace(a, b)
+    return text
+
+
+def hyphens(texts):
+    """Trennstrich am Zeilenende -> '¬', wenn die nächste Zeile klein weitergeht (Fraktur-Doppelstrich wird oft als '=' gelesen)."""
+    out = list(texts)
+    for i in range(len(out) - 1):
+        m = re.search(r'(?<=[A-Za-zÄÖÜäöüß])[-=]\s*$', out[i])
+        if m and re.match(r'[a-zäöüß]', out[i + 1]):
+            out[i] = out[i][:m.start()] + '¬'
+    return out
+
+
+def ocr_image(tess, img, model, tessdata=None):
+    """Eine Seite erkennen. Liefert (zeilen, wörter): Zeilen als dicts text, x0, x1, y0, y1, bl, conf;
+    Wörter als (konfidenz, text, steht_am_zeilenende)."""
+    cmd = [tess, img, 'stdout', '-l', model, '--psm', '3', '--dpi', str(DPI)] + (['--tessdata-dir', tessdata] if tessdata else [])
+    cmd += ['-c', 'tessedit_create_tsv=1']  # nicht die Konfigurationsdatei "tsv": die fehlt im eigenen Modellordner
+    r = subprocess.run(cmd, capture_output=True, env=dict(os.environ, OMP_THREAD_LIMIT='1'), **NOWIN)
+    if r.returncode:
+        raise RuntimeError(r.stderr.decode('utf-8', 'replace')[-300:])
+    lines = {}
+    for row in r.stdout.decode('utf-8', 'replace').splitlines()[1:]:
+        f = row.split('\t')
+        if len(f) < 12 or f[0] != '5' or not f[11].strip():
+            continue
+        x, y, w, h, conf, t = int(f[6]), int(f[7]), int(f[8]), int(f[9]), float(f[10]), clean(f[11].strip())
+        lines.setdefault((f[2], f[3], f[4]), []).append((x, y, w, h, conf, t))
+    out, words = [], []
+    for ws in lines.values():
+        ws.sort()
+        words += [(w[4], w[5], len(ws) >= 4 and w is ws[-1]) for w in ws]
+        y0, y1 = min(w[1] for w in ws), max(w[1] + w[3] for w in ws)
+        out.append(dict(text=' '.join(w[5] for w in ws), x0=ws[0][0], x1=max(w[0] + w[2] for w in ws), y0=y0, y1=y1,
+                        bl=int(statistics.median(w[1] + w[3] for w in ws)), conf=round(sum(w[4] for w in ws) / len(ws), 1)))
+    return out, words
+
+
+def page_quality(words):
+    """Mittlere Wortkonfidenz (nach Wortlänge gewichtet), Anteil der Wörter, die das Wörterbuch kennt, und
+    ends: um wie viel die Konfidenz der Wörter am Zeilenende unter der der übrigen liegt (am Bund gestauchte Zeilen)."""
+    n = sum(len(t) for c, t, e in words)
+    toks = [w for c, t, e in words for w in korrlib.WORD.findall(t) if len(w) > 1]
+    end, mid = [c for c, t, e in words if e], [c for c, t, e in words if not e]
+    return dict(conf=round(sum(c * len(t) for c, t, e in words) / n, 1) if n else 0.0, words=len(toks),
+                dict=round(sum(korrlib.in_dict(w) for w in toks) / len(toks), 3) if toks else 0.0,
+                ends=round(sum(mid) / len(mid) - sum(end) / len(end), 1) if end and mid else 0.0)
+
+
+def rating(pages):
+    """Ampel fürs ganze Buch aus den Seitenwerten: gruen | gelb | rot, dazu die Mediane. Seiten fast ohne Text zählen nicht.
+    Geeicht an einem Frakturbuch von 1928: korrigierter Text hat Wörterbuchquote 0,95, Transkribus roh 0,88,
+    Tesseract auf einem Handy-Scan 0,83 bei Konfidenz 81. Grün heißt: etwa so gut wie Transkribus.
+    ends: Seiten, deren Zeilenenden deutlich schwächer sind als der Rest (Hinweis auf ScanTailor)."""
+    ps = [p for p in pages.values() if p['words'] >= 20]
+    if not ps:
+        return dict(level='rot', conf=0, dict=0, weak=[], ends=[])
+    conf, dq = statistics.median(p['conf'] for p in ps), statistics.median(p['dict'] for p in ps)
+    level = 'gruen' if conf >= 85 and dq >= 0.88 else 'rot' if conf < 75 or dq < 0.78 else 'gelb'
+    weak = sorted(pg for pg, p in pages.items() if p['words'] >= 20 and (p['conf'] < 75 or p['dict'] < 0.78))
+    ends = sorted(pg for pg, p in pages.items() if p['words'] >= 20 and p['ends'] >= 10)
+    return dict(level=level, conf=round(conf, 1), dict=round(dq, 3), weak=weak, ends=ends)
+
+
+def pdf_count(pdf):
+    import fitz
+    with fitz.open(pdf) as d:
+        return d.page_count
+
+
+def render_pdf(pdf, n, out):
+    """Seite n (ab 0) als Graustufen-JPEG mit 300 dpi."""
+    import fitz
+    with fitz.open(pdf) as d:
+        d[n].get_pixmap(dpi=DPI, colorspace=fitz.csGRAY).save(out, jpg_quality=85)
+
+
+def image_files(folder):
+    return sorted(f for f in glob.glob(os.path.join(folder, '*')) if f.lower().endswith(SRCEXT))
+
+
+def copy_image(src, stem):
+    """Seitenbild in den Buchordner; TIFF (kann der Browser nicht) wird PNG. Liefert den Zielpfad."""
+    ext = os.path.splitext(src)[1].lower()
+    if ext in ('.tif', '.tiff'):
+        import fitz
+        fitz.Pixmap(src).save(stem + '.png')
+        return stem + '.png'
+    shutil.copyfile(src, stem + ('.jpg' if ext == '.jpeg' else ext))
+    return stem + ('.jpg' if ext == '.jpeg' else ext)
+
+
+def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda: False, script='fraktur'):
+    """source: PDF-Datei oder Ordner mit Seitenbildern. Schreibt den Buchordner out; liefert dict(pages, quality).
+    Fehler als ValueError mit Schlüssel: kein_tesseract, kein_pymupdf, quelle_fehlt, keine_seiten, modell_laden, abgebrochen."""
+    tess = find_tesseract()
+    if not tess:
+        raise ValueError('kein_tesseract')
+    is_pdf = os.path.isfile(source) and source.lower().endswith('.pdf')
+    if is_pdf:
+        try:
+            total = pdf_count(source)
+        except ImportError:
+            raise ValueError('kein_pymupdf')
+        except Exception:
+            raise ValueError('quelle_fehlt')
+    elif os.path.isdir(source):
+        files = image_files(source)
+        total = len(files)
+    else:
+        raise ValueError('quelle_fehlt')
+    if not total:
+        raise ValueError('keine_seiten')
+    if total > 999:
+        raise ValueError('zu_viele_seiten')
+    model, tessdata = pick_model(tess, script)
+    if not model:
+        progress(0, total, 'modell')
+        try:
+            download_model()
+        except OSError:
+            raise ValueError('modell_laden')
+        model, tessdata = pick_model(tess, script)
+        if not model:
+            raise ValueError('modell_laden')
+    os.makedirs(os.path.join(out, 'img'), exist_ok=True)
+
+    def one(n):
+        if cancelled():
+            return None
+        pg = '%03d' % (n + 1)
+        stem = os.path.join(out, 'img', pg)
+        if is_pdf:
+            img = stem + '.jpg'
+            render_pdf(source, n, img)
+        else:
+            img = copy_image(files[n], stem)
+        lines, words = ocr_image(tess, img, model, tessdata)
+        w, h = image_size(img)
+        return pg, w, h, lines, words
+
+    geo, quality, done = {}, {}, 0
+    with ThreadPoolExecutor(max_workers=max(1, (os.cpu_count() or 2) - 1)) as ex:
+        for r in ex.map(one, range(total)):
+            if r is None:
+                continue
+            pg, w, h, lines, words = r
+            pagexml.classify(lines, h / 3508)
+            for kind in ('body', 'fn'):  # Trennungen je Textteil, nicht vom Haupttext in die Fußnoten
+                part = [d for d in lines if d['kind'] == kind]
+                for d, t in zip(part, hyphens([d['text'] for d in part])):
+                    d['text'] = t
+            with open(os.path.join(out, pg + '.txt'), 'w', encoding='utf-8') as f:
+                f.write('\n'.join(pagexml.page_text(lines)) + '\n')
+            geo[pg] = dict(w=w, h=h, lines=lines)
+            quality[pg] = page_quality(words)
+            done += 1
+            progress(done, total, 'ocr')
+    if cancelled():
+        cleanup(out)
+        raise ValueError('abgebrochen')
+    with open(os.path.join(out, 'lines.json'), 'w', encoding='utf-8') as f:
+        json.dump(geo, f, ensure_ascii=False)
+    q = dict(model=model, rating=rating(quality), pages=quality)
+    with open(os.path.join(out, 'qualitaet.json'), 'w', encoding='utf-8') as f:
+        json.dump(q, f, ensure_ascii=False, indent=1)
+    korrlib.save_cache()
+    return dict(pages=total, quality=q['rating'])
+
+
+def cleanup(out):
+    """Nur das Erzeugte wieder entfernen – im Buchordner kann schon ein ScanTailor-Projekt liegen."""
+    shutil.rmtree(os.path.join(out, 'img'), ignore_errors=True)
+    for f in glob.glob(os.path.join(out, '[0-9][0-9][0-9].txt')) + [os.path.join(out, n) for n in ('lines.json', 'qualitaet.json')]:
+        try: os.remove(f)
+        except OSError: pass
+    try: os.rmdir(out)
+    except OSError: pass
+
+
+def image_size(path):
+    import fitz
+    p = fitz.Pixmap(path)
+    return p.width, p.height
+
+
+def export_pages(pdf, folder, progress=lambda done, total, msg: None, cancelled=lambda: False):
+    """PDF-Seiten als PNG für ScanTailor (das keine PDFs liest)."""
+    import fitz
+    os.makedirs(folder, exist_ok=True)
+    with fitz.open(pdf) as d:
+        for n, page in enumerate(d):
+            if cancelled():
+                raise ValueError('abgebrochen')
+            page.get_pixmap(dpi=DPI).save(os.path.join(folder, 'seite_%03d.png' % (n + 1)))
+            progress(n + 1, d.page_count, 'export')
+    return n + 1
+
+
+def launch(exe):
+    subprocess.Popen([exe], close_fds=True, **(dict(creationflags=subprocess.DETACHED_PROCESS) if os.name == 'nt' else dict(start_new_session=True)))
+
+
+if __name__ == '__main__':  # py ocr.py <pdf-oder-bilderordner> <buchordner>
+    print(build(sys.argv[1], sys.argv[2], progress=lambda d, t, m: print('\r%s %d/%d' % (m, d, t), end='', flush=True)))

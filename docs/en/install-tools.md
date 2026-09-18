@@ -1,0 +1,65 @@
+# Installing the tools
+
+For reading and correcting, Fraktur-Korrektor needs nothing else. Two free additional programs extend it:
+
+| Program | What for | Needed? |
+|---|---|---|
+| **Tesseract** | text recognition: [Reading in a PDF or images](pdf-import.md) | only if you do not work with Transkribus |
+| **ScanTailor Advanced** | cleaning up poor scans (splitting double pages, deskewing, dewarping) | only for difficult scans |
+
+Fraktur-Korrektor finds both programs by itself if they are installed in the usual place. The window
+*Read in PDF or images* shows at the top what was found.
+
+## Tesseract
+
+**Windows**
+
+1. Download the installer provided by Mannheim University Library:
+   <https://github.com/UB-Mannheim/tesseract/wiki> (the file is called something like
+   `tesseract-ocr-w64-setup-….exe`).
+2. Double-click it and confirm the questions with *Next*. Keep the suggested folder
+   (`C:\Program Files\Tesseract-OCR`).
+3. Restart Fraktur-Korrektor.
+
+**Mac**
+
+1. If you do not have it yet, install the package manager [Homebrew](https://brew.sh/) (its home page shows
+   the one command to paste into the *Terminal* app).
+2. In Terminal, type: `brew install tesseract tesseract-lang`
+3. Restart Fraktur-Korrektor.
+
+**Linux:** `sudo apt install tesseract-ocr tesseract-ocr-deu` (Debian/Ubuntu) or your distribution's package.
+
+Fraktur-Korrektor downloads the **Fraktur model** (`frak2021` by Mannheim University Library, 5 MB) by itself
+the first time you read in a book and stores it in `~/.fraktur-korrektor/tessdata`. If Fraktur models are
+already installed (`deu_latf`, `deu_frak`, `frk`, `Fraktur`), it uses those.
+
+## ScanTailor Advanced
+
+**Windows**
+
+1. From <https://github.com/ScanTailor-Advanced/scantailor-advanced/releases> download the newest file whose
+   name ends in `x64.zip` (newer versions without a ZIP file are for Linux only).
+2. Unpack the ZIP file (right-click → *Extract All*), for example to `Documents\ScanTailor`. No installation
+   is needed; the program is called `scantailor.exe`.
+3. In Fraktur-Korrektor, in the window *Read in PDF or images*, click **Show me the program …** and select
+   this `scantailor.exe`. Fraktur-Korrektor remembers it.
+
+**Mac:** in Terminal `brew install yb85/homebrew-tap/scantailor-advanced`
+(project: <https://github.com/yb85/scantailor-advanced-osx>; for Homebrew see Tesseract above).
+
+**Linux:** `.deb` package or AppImage from the page mentioned above, or your distribution's package.
+
+## If a program is not found
+
+In the window *Read in PDF or images*, click **Show me the program …** next to the message and select the
+program file (`tesseract.exe` or `scantailor.exe`). You can also do it by hand: the path is stored in the file
+`~/.fraktur-korrektor/config.json` (on Windows: `C:\Users\<name>\.fraktur-korrektor\config.json`):
+
+    {
+      "tesseract": "D:\\Programs\\Tesseract\\tesseract.exe",
+      "scantailor": "D:\\Programs\\ScanTailor\\scantailor.exe"
+    }
+
+In the same file, `"buecher"` sets the folder in which new books are created (otherwise `Fraktur-Korrektor`
+in your home folder), and `"dic"` selects a different dictionary.

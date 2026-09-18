@@ -22,6 +22,10 @@ stimmt, korrigieren Sie es beim Lesen mit der Taste `F` (siehe [Bedienung](usage
 Ein Import überschreibt nie ein vorhandenes Buch. Gibt es den Titel schon, entsteht ein zweiter Ordner mit
 dem Zusatz „(2)“.
 
+## Ein PDF oder Seitenbilder einlesen
+
+Siehe [PDF oder Bilder einlesen](pdf-import.md).
+
 ## Einen vorhandenen Buchordner öffnen
 
 **Buchordner öffnen …** zeigt den Ordner-Dialog Ihres Betriebssystems. Wählen Sie den Ordner, in dem die

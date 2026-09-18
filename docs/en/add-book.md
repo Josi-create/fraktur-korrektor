@@ -20,6 +20,10 @@ Where it gets this wrong, fix it while reading with the `F` key (see [Usage](usa
 An import never overwrites an existing book. If the title already exists, a second folder with the suffix
 “(2)” is created.
 
+## Reading in a PDF or page images
+
+See [Reading in a PDF or images](pdf-import.md).
+
 ## Opening an existing book folder
 
 **Open book folder …** shows your operating system's folder dialog. Choose the folder that contains the

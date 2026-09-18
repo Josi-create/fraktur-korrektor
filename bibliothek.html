@@ -24,15 +24,22 @@ button:disabled{opacity:.5;cursor:default}
 .book.gone{cursor:default;opacity:.55} .book .x{border:0;background:none;color:#999;font-size:18px;padding:4px 8px} .book .x:hover{color:#c00;background:none}
 #empty{padding:26px;color:#666;line-height:1.6}
 #foot{margin-top:22px;color:#777;font-size:13.5px;display:flex;gap:18px;flex-wrap:wrap} #foot a{color:#456}
-#dlg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
-#dlg.on{display:flex}
-#dlg form{background:#fff;border-radius:6px;padding:22px 26px;width:640px;max-width:92vw;box-shadow:0 6px 30px rgba(0,0,0,.3)}
-#dlg h2{margin:0 0 14px;font:22px Georgia,serif}
-#dlg label{display:block;margin:14px 0 4px;font-size:14.5px;color:#333}
-#dlg input{width:100%;box-sizing:border-box;font:15px Consolas,monospace;padding:6px 8px;border:1px solid #999;border-radius:3px}
-#dlg .row{display:flex;gap:8px} #dlg .row input{flex:1} #dlg .row button{flex:none;padding:5px 10px;font-size:14px}
-#dlg .hint{color:#777;font-size:13px;margin-top:12px} #dlg .msg{color:#a40;margin-top:12px;min-height:20px;line-height:1.5}
-#dlg .btns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.dlg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
+.dlg.on{display:flex}
+.dlg form{background:#fff;border-radius:6px;padding:22px 26px;width:640px;max-width:92vw;box-shadow:0 6px 30px rgba(0,0,0,.3)}
+.dlg h2{margin:0 0 14px;font:22px Georgia,serif}
+.dlg label{display:block;margin:14px 0 4px;font-size:14.5px;color:#333}
+.dlg input{width:100%;box-sizing:border-box;font:15px Consolas,monospace;padding:6px 8px;border:1px solid #999;border-radius:3px}
+.dlg .radio{display:flex;gap:26px} .dlg .radio label{margin:0;display:flex;align-items:center;gap:6px;cursor:pointer} .dlg .radio input{width:auto}
+.dlg .row{display:flex;gap:8px} .dlg .row input{flex:1} .dlg .row button{flex:none;padding:5px 10px;font-size:14px}
+.dlg .hint{color:#777;font-size:13px;margin-top:12px} .dlg .msg{color:#a40;margin-top:12px;min-height:20px;line-height:1.5}
+.dlg .btns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+#tools{font-size:14px;line-height:1.7;background:#f6f3ea;border-radius:4px;padding:8px 12px} #tools .no{color:#a40} #tools .ok{color:#285}
+#prog{margin-top:14px;display:none} #bar{height:10px;background:#ddd;border-radius:5px;overflow:hidden} #bar i{display:block;height:100%;width:0;background:#3a6;transition:width .4s}
+#ptext{font-size:13.5px;color:#555}
+.amp{display:inline-block;width:13px;height:13px;border-radius:50%;margin-right:7px;vertical-align:-1px}
+.amp.gruen{background:#3a6} .amp.gelb{background:#e6a700} .amp.rot{background:#c33}
+#result{line-height:1.55;margin-top:12px} #result small{color:#666}
 </style>
 <script src="/i18n.js"></script>
 </head>
@@ -44,12 +51,13 @@ button:disabled{opacity:.5;cursor:default}
  <div id="actions">
   <button id="bOpen" class="main" data-t="open_folder"></button>
   <button id="bImport" data-t="import_tk"></button>
+  <button id="bOcr" data-t="import_ocr"></button>
  </div>
  <div id="note"></div>
  <div id="books"></div>
  <div id="foot"><span id="ver"></span><a data-help="index" target="_blank" data-t="help"></a><a href="https://github.com/Josi-create/fraktur-korrektor" target="_blank" data-t="source"></a><a id="donate" target="_blank" style="display:none" data-t="donate"></a></div>
 </div>
-<div id="dlg"><form id="form">
+<div id="dlg" class="dlg"><form id="form">
  <h2 data-t="imp_title"></h2>
  <label data-t="imp_source"></label>
  <div class="row"><input id="iSource" spellcheck="false"><button type="button" id="cZip" data-t="choose_zip"></button><button type="button" id="cDir" data-t="choose_folder"></button></div>
@@ -60,6 +68,21 @@ button:disabled{opacity:.5;cursor:default}
  <div class="hint" id="target"></div>
  <div class="msg" id="imsg"></div>
  <div class="btns"><button type="button" id="bCancel" data-t="cancel"></button><button type="submit" id="bGo" class="main" data-t="imp_go"></button></div>
+</form></div>
+<div id="dlg2" class="dlg"><form id="form2">
+ <h2 data-t="ocr_title"></h2>
+ <div id="tools"></div>
+ <label data-t="ocr_source"></label>
+ <div class="row"><input id="oSource" spellcheck="false"><button type="button" id="cPdf" data-t="choose_pdf"></button><button type="button" id="cImgDir" data-t="choose_folder"></button></div>
+ <label data-t="imp_name"></label>
+ <input id="oTitle" spellcheck="false" data-t-ph="ocr_name_ph">
+ <label data-t="ocr_script"></label>
+ <div class="radio"><label><input type="radio" name="script" value="fraktur" checked> <span data-t="script_fraktur"></span></label><label><input type="radio" name="script" value="antiqua"> <span data-t="script_antiqua"></span></label></div>
+ <div class="hint" data-t="ocr_hint"></div>
+ <div id="prog"><div id="bar"><i></i></div><span id="ptext"></span></div>
+ <div class="msg" id="omsg"></div>
+ <div id="result"></div>
+ <div class="btns"><button type="button" id="oCancel" data-t="cancel"></button><button type="button" id="oST" data-t="st_button"></button><button type="submit" id="oGo" class="main" data-t="ocr_go"></button></div>
 </form></div>
 <script>
 const $ = id => document.getElementById(id);
@@ -76,12 +99,12 @@ async function load() {
   $('ver').textContent = lib.version ? 'Version ' + lib.version : '';
   if (lib.donate) { $('donate').href = lib.donate; $('donate').style.display = ''; }
   $('target').textContent = t('imp_target', { dir: lib.booksdir });
-  if (!lib.local) { $('bOpen').disabled = $('bImport').disabled = true; $('note').textContent = t('remote'); }
+  if (!lib.local) { $('bOpen').disabled = $('bImport').disabled = $('bOcr').disabled = true; $('note').textContent = t('remote'); }
   const box = $('books'); box.innerHTML = '';
   if (!lib.books.length) { box.innerHTML = '<div id="empty">' + t('empty') + '</div>'; return; }
   for (const b of lib.books) {
     const a = document.createElement(b.pages ? 'a' : 'div'); a.className = 'book' + (b.pages ? '' : ' gone'); if (b.pages) a.href = '/buch/' + b.id;
-    a.innerHTML = '<span class="ti"><b>' + esc(b.title) + '</b><small title="' + esc(b.folder) + '">' + esc(b.folder) + '</small></span>' +
+    a.innerHTML = '<span class="ti"><b>' + (b.quality ? '<span class="amp ' + b.quality + '" title="' + t('q_dot_' + b.quality) + '"></span>' : '') + esc(b.title) + '</b><small title="' + esc(b.folder) + '">' + esc(b.folder) + '</small></span>' +
       '<span class="nr">' + (b.pages ? b.pages + ' ' + t('col_pages') + (b.bookmark ? '<small>' + t('col_pos') + ': ' + t('p_abbr') + ' ' + esc(b.bookmark) + '</small>' : '') : t('missing')) + '</span>' +
       '<span class="nr"><small>' + t('col_last') + '</small>' + esc((b.last || '').slice(0, 16)) + '</span>' +
       (lib.local ? '<button class="x" title="' + t('forget') + '">✕</button>' : '');
@@ -117,8 +140,70 @@ $('form').onsubmit = async e => {
   } catch (err) { $('imsg').textContent = err.message; }
   $('bGo').disabled = false;
 };
-document.addEventListener('keydown', e => { if (e.key == 'Escape') $('dlg').classList.remove('on'); if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
+// ---- PDF oder Bilder einlesen: Auftrag im Hintergrund, Fortschritt abfragen
+let job = null;
+const help = (page, text) => '<a target="_blank" href="/hilfe/' + LANG + '/' + page + '">' + text + '</a>';
+async function showTools() {
+  const x = await (await fetch('/api/tools')).json();
+  const row = (ok, text) => '<div class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '✔ ' : '✘ ') + text + '</div>';
+  const show = tool => ' · <a href="#" data-tool="' + tool + '">' + t('show_program') + '</a>';
+  $('tools').innerHTML = row(x.tesseract, x.tesseract ? t('tool_tess_ok') : t('tool_tess_no') + ' ' + help('install-tools', t('how_install')) + show('tesseract')) +
+    (x.tesseract ? row(true, x.model ? t('tool_model_ok', { m: x.model }) : t('tool_model_no')) : '') +
+    (x.pdf ? '' : row(false, t('tool_pdf_no'))) +
+    row(x.scantailor, x.scantailor ? t('tool_st_ok') : t('tool_st_no') + ' ' + help('install-tools', t('how_install')) + show('scantailor'));
+  for (const a of $('tools').querySelectorAll('a[data-tool]')) a.onclick = async e => {
+    e.preventDefault();
+    try { const p = (await post('/api/choose', { kind: 'exe' })).path; if (p) { await post('/api/set_tool', { tool: a.dataset.tool, path: p }); await showTools(); } }
+    catch (err) { $('omsg').textContent = err.message; }
+  };
+  $('oGo').disabled = !x.tesseract; $('oST').disabled = !x.scantailor;
+}
+function busyUi(on) {
+  $('prog').style.display = on ? 'block' : 'none'; $('oGo').disabled = $('oST').disabled = on;
+  $('oCancel').textContent = t(on ? 'stop' : 'cancel'); if (on) { $('bar').firstChild.style.width = '0'; $('ptext').textContent = ''; $('omsg').textContent = ''; $('result').innerHTML = ''; }
+}
+async function runJob(path, body) {
+  busyUi(true);
+  try {
+    job = (await post(path, body)).job;
+    while (true) {
+      await new Promise(r => setTimeout(r, 600));
+      const j = await (await fetch('/api/job/' + job)).json();
+      if (j.total) $('bar').firstChild.style.width = (100 * j.done / j.total) + '%';
+      $('ptext').textContent = j.msg ? t('prog_' + j.msg, { d: j.done, t: j.total }) : '';
+      if (j.state == 'done') return j.result;
+      if (j.state == 'error') throw new Error(t('err_' + j.error));
+    }
+  } finally { job = null; busyUi(false); await showTools(); }
+}
+function qualityHtml(r) {
+  const q = r.quality;
+  let h = '<b><span class="amp ' + q.level + '"></span>' + t('q_' + q.level) + '</b><br><small>' + t('q_values', { n: r.pages, c: q.conf, d: Math.round(q.dict * 100) }) + '</small>';
+  if (q.level != 'gruen') h += '<br>' + t('q_advice') + ' ' + help('transkribus', t('q_advice_link'));
+  if (q.ends.length * 4 >= r.pages) h += '<br>' + t('q_ends', { n: q.ends.length }) + ' ' + help('pdf-import', t('q_ends_link'));
+  else if (q.weak.length) h += '<br><small>' + t('q_weak', { p: q.weak.slice(0, 25).join(', ') + (q.weak.length > 25 ? ' …' : '') }) + '</small>';
+  return h + '<br><br><a href="/buch/' + r.id + '"><b>' + t('open_now') + ' →</b></a>';
+}
+$('bOcr').onclick = () => { $('omsg').textContent = ''; $('result').innerHTML = ''; $('dlg2').classList.add('on'); showTools(); $('oSource').focus(); };
+$('oCancel').onclick = () => { if (job) post('/api/job/' + job + '/cancel', {}); else $('dlg2').classList.remove('on'); };
+$('cPdf').onclick = () => choose('pdf', $('oSource'));
+$('cImgDir').onclick = () => choose('folder', $('oSource'));
+$('form2').onsubmit = async e => {
+  e.preventDefault();
+  try { const r = await runJob('/api/import_ocr', { source: $('oSource').value.trim(), title: $('oTitle').value.trim(), script: document.querySelector('input[name=script]:checked').value }); $('result').innerHTML = qualityHtml(r); load(); }
+  catch (err) { $('omsg').textContent = err.message; }
+};
+$('oST').onclick = async () => {
+  try {
+    const r = await runJob('/api/scantailor', { source: $('oSource').value.trim(), title: $('oTitle').value.trim() });
+    $('result').innerHTML = r.folder ? t('st_done', { folder: esc(r.folder), out: esc(r.out) }) + ' ' + help('pdf-import', t('q_ends_link')) : t('st_started');
+    if (r.out) $('oSource').value = r.out;
+  } catch (err) { $('omsg').textContent = err.message; }
+};
+document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) { $('dlg').classList.remove('on'); $('dlg2').classList.remove('on'); } if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
 load();
+if (location.hash == '#ocr') $('bOcr').click();  // Einstieg aus der Hilfe
+if (location.hash == '#transkribus') $('bImport').click();
 </script>
 </body>
 </html>

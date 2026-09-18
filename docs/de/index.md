@@ -10,9 +10,13 @@ lediglich als Fenster.
 
 ## Die drei Schritte
 
-1. **Texterkennung** – Das Buch wird von einer OCR-Software gelesen, zum Beispiel von
-   [Transkribus](https://www.transkribus.org/). Das geschieht außerhalb dieses Programms.
-2. **Buch hinzufügen** – Sie holen das Ergebnis in die Bibliothek: [Ein Buch hinzufügen](add-book.md).
+1. **Texterkennung** – Aus den Seitenbildern wird Text. Dafür gibt es zwei Wege:
+   - *eingebaut, ein Klick:* [PDF oder Bilder einlesen](pdf-import.md) mit dem freien Programm Tesseract;
+     alles bleibt auf Ihrem Rechner. Eine Ampel zeigt danach, wie gut das Ergebnis ist.
+   - *für schwierige Vorlagen:* [Transkribus](transkribus.md), ein Internetdienst mit meist besserer
+     Fraktur-Erkennung.
+2. **Buch hinzufügen** – Beim Einlesen geschieht das von selbst; einen Export aus Transkribus holen Sie mit
+   zwei Klicks in die Bibliothek: [Ein Buch hinzufügen](add-book.md).
 3. **Lesen und korrigieren** – [Bedienung](usage.md). Alles geht mit der Tastatur; die wichtigsten Tasten
    stehen immer oben rechts im Fenster.
 

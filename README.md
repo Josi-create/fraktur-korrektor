@@ -11,8 +11,10 @@ Ziel ist ein sauberer Text als Grundlage für ein Epub.
 
 Alles geht mit der Tastatur; die wichtigsten Tasten stehen im Programm immer oben rechts, `F1` öffnet die Hilfe.
 
-- [Hilfe: Überblick](docs/de/index.md) · [Ein Buch hinzufügen](docs/de/add-book.md) · [Bedienung und alle Tasten](docs/de/usage.md)
-- English: [Help](docs/en/index.md) · [Adding a book](docs/en/add-book.md) · [Usage](docs/en/usage.md)
+- [Hilfe: Überblick](docs/de/index.md) · [Ein Buch hinzufügen](docs/de/add-book.md) · [PDF oder Bilder einlesen](docs/de/pdf-import.md) ·
+  [Mit Transkribus arbeiten](docs/de/transkribus.md) · [Bedienung und alle Tasten](docs/de/usage.md) · [Werkzeuge installieren](docs/de/install-tools.md)
+- English: [Help](docs/en/index.md) · [Adding a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
+  [Working with Transkribus](docs/en/transkribus.md) · [Usage](docs/en/usage.md) · [Installing the tools](docs/en/install-tools.md)
 
 Jede Korrektur wird sofort in die Textdatei geschrieben und in `korrekturen.log` protokolliert; die Leseposition steht in
 `lesezeichen.json`. Die Dateien dürfen parallel in einem Editor bearbeitet werden (die Zeilenzahl einer Seite dabei nicht
@@ -20,8 +22,8 @@ Jede Korrektur wird sofort in die Textdatei geschrieben und in `korrekturen.log`
 
 ## Start
 
-    pip install spylls markdown
-    py server.py                  Bibliothek: Bücher öffnen, Transkribus-Export importieren
+    pip install spylls markdown pymupdf
+    py server.py                  Bibliothek: Bücher öffnen, Transkribus-Export importieren, PDF/Bilder mit Tesseract einlesen
     py server.py <buchordner>     direkt ein Buch öffnen
 
 Optionen: `--port 8765`, `--dic <hunspell-pfad-ohne-endung>`, `--title "…"`, `--no-browser`, `--lan`.
@@ -44,10 +46,14 @@ danach sind die Prüfergebnisse zwischengespeichert.
     whitelist.txt  bestätigte Wörter
     lesezeichen.json
     korrekturen.log  Protokoll aller Korrekturen (Zeit, Art, Seite, Zeile, alt, neu)
+    qualitaet.json   nur nach dem Einlesen mit Tesseract: Konfidenz und Wörterbuchquote je Seite, Ampel
 
 Buchdaten gehören **nicht** in dieses Repository.
 
 ## Werkzeuge (tools/)
+
+Die Importwege stecken in `pagexml.py` (Transkribus) und `ocr.py` (PDF/Bilder → Tesseract; auch als
+`py ocr.py <pdf-oder-bilderordner> <buchordner>` aufrufbar).
 
 - `page2txt.py` – Text aus Transkribus-PAGE-XML
 - `build_text.py` – PAGE-XML → `NNN.txt` + `lines.json`, trennt Fußnoten (Grundlinienabstand, „N)“-Anfang); dasselbe macht der Import in der Bibliothek (`pagexml.py`)
@@ -56,7 +62,7 @@ Buchdaten gehören **nicht** in dieses Repository.
 
 ## Geplant
 
-Siehe [ROADMAP.md](ROADMAP.md): PDF-Import mit Tesseract, Installer für Windows
+Siehe [ROADMAP.md](ROADMAP.md): Installer für Windows
 und Mac, zweisprachige Dokumentation; später Zeilen teilen/verbinden und Epub-Export.
 
 ## Entwicklung
@@ -69,4 +75,5 @@ Die Tests starten eigene Serverinstanzen auf freien Ports mit einem Wegwerf-Buch
 ## Lizenz
 
 [GPL-3.0-or-later](LICENSE). Das mitgelieferte Wörterbuch hat eigene Lizenzangaben, siehe [dict/](dict/README.md).
+Für PDF-Dateien wird PyMuPDF benutzt (AGPL-3.0, mit der GPL-3.0 verträglich).
 Mitarbeit ist willkommen.

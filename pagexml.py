@@ -6,6 +6,35 @@ FN = re.compile(r'^\s*[\d*]{1,2}\)')          # Fußnotenbeginn: "1)" "12)" "*)"
 IMGEXT = ('.png', '.jpg', '.jpeg')
 
 
+def classify(lines, scale=1.0):
+    """Ordnet die Zeilen (dicts mit text, x0, bl = Grundlinie) in Lesereihenfolge und setzt kind = head | body | fn.
+    Die Pixelschwellen gelten für Seiten von 3508 px Höhe (Transkribus-Format); scale = Seitenhöhe / 3508."""
+    # Zeilen mit nahezu gleicher Grundlinie (Fußnoten in zwei Spalten) nach x ordnen
+    lines.sort(key=lambda d: d['bl'])
+    row = 0; last = -999
+    for d in lines:
+        if d['bl'] - last > 15 * scale: row += 1
+        d['row'] = row; last = d['bl']
+    lines.sort(key=lambda d: (d['row'], d['x0']))
+    for d in lines: d['kind'] = 'body'
+    # Kopfzeile (Seitenzahl): erste Zeile, kurz, nur Ziffern/Striche
+    if lines and re.fullmatch(r'[\s\d—\-–]+', lines[0]['text']) and len(lines[0]['text']) <= 8:
+        lines[0]['kind'] = 'head'
+    body = [d for d in lines if d['kind'] == 'body']
+    # Fußnoten: ab der ersten Zeile, die wie "N)" beginnt und deren Zeilenabstand danach klein ist
+    lo, hi = 20 * scale, 120 * scale
+    gaps = [b2['bl'] - b1['bl'] for b1, b2 in zip(body, body[1:]) if lo < b2['bl'] - b1['bl'] < hi]
+    main_gap = statistics.median(gaps) if gaps else 52 * scale
+    for i, d in enumerate(body):
+        if FN.match(d['text']) and i > 0:
+            # Abstand der folgenden Zeilen deutlich kleiner als im Haupttext?
+            nxt = [b2['bl'] - b1['bl'] for b1, b2 in zip(body[i:], body[i+1:]) if lo < b2['bl'] - b1['bl'] < hi]
+            if not nxt or statistics.median(nxt) < main_gap * 0.9:
+                for x in body[i:]: x['kind'] = 'fn'
+                break
+    return lines
+
+
 def parse_page(f):
     """Liefert (Breite, Höhe, Bilddateiname, Zeilen) einer PAGE-XML-Datei; Zeilen in Lesereihenfolge mit kind head|body|fn."""
     root = ET.parse(f).getroot()
@@ -22,28 +51,7 @@ def parse_page(f):
         xs = [x for x, y in pts]; ys = [y for x, y in pts]
         lines.append(dict(id=l.get('id'), text=t, x0=min(xs), x1=max(xs), y0=min(ys), y1=max(ys),
                           bl=int(statistics.median(y for x, y in bpts))))
-    # Zeilen mit nahezu gleicher Grundlinie (Fußnoten in zwei Spalten) nach x ordnen
-    lines.sort(key=lambda d: d['bl'])
-    row = 0; last = -999
-    for d in lines:
-        if d['bl'] - last > 15: row += 1
-        d['row'] = row; last = d['bl']
-    lines.sort(key=lambda d: (d['row'], d['x0']))
-    for d in lines: d['kind'] = 'body'
-    # Kopfzeile (Seitenzahl): erste Zeile, kurz, nur Ziffern/Striche
-    if lines and re.fullmatch(r'[\s\d—\-–]+', lines[0]['text']) and len(lines[0]['text']) <= 8:
-        lines[0]['kind'] = 'head'
-    body = [d for d in lines if d['kind'] == 'body']
-    # Fußnoten: ab der ersten Zeile, die wie "N)" beginnt und deren Zeilenabstand danach klein ist
-    gaps = [b2['bl'] - b1['bl'] for b1, b2 in zip(body, body[1:]) if 20 < b2['bl'] - b1['bl'] < 120]
-    main_gap = statistics.median(gaps) if gaps else 52
-    for i, d in enumerate(body):
-        if FN.match(d['text']) and i > 0:
-            # Abstand der folgenden Zeilen deutlich kleiner als im Haupttext?
-            nxt = [b2['bl'] - b1['bl'] for b1, b2 in zip(body[i:], body[i+1:]) if 20 < b2['bl'] - b1['bl'] < 120]
-            if not nxt or statistics.median(nxt) < main_gap * 0.9:
-                for x in body[i:]: x['kind'] = 'fn'
-                break
+    classify(lines, H / 3508)
     return W, H, page.get('imageFilename') or '', lines
 
 
