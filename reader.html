@@ -11,7 +11,10 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #mode{padding:2px 10px;border-radius:10px;font-weight:bold;background:#3a6;color:#fff}
 #mode.fix{background:#c33}
 #mode.free{background:#c80}
-#pos{color:#ccc}
+#pos{color:#ccc;flex:1}
+#top a{color:#ddd}
+#top .langsw b{color:#fff}
+#loading{position:absolute;inset:0;z-index:9;background:#e9e6df;display:flex;align-items:center;justify-content:center;padding:0 15%;text-align:center;font-size:18px;line-height:1.6;color:#555}
 #main{position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px;min-height:0}
 .pane{background:#fff;border:1px solid #bbb;border-radius:4px;position:relative;overflow:hidden;min-height:0}
 #imgwrap{position:absolute;left:0;top:0;transform-origin:0 0;transition:transform .18s ease-out}
@@ -66,15 +69,20 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .wl.sel{background:#fff3b8;border-color:#c90}
 .wl.gone{text-decoration:line-through;color:#c33;background:#fdeaea}
 </style>
+<script src="/i18n.js"></script>
 </head>
 <body>
 <div id="top">
+ <a href="/bibliothek" data-t="library"></a>
  <b id="title">Fraktur-Korrektor</b>
- <label>Seite <select id="pagesel"></select></label>
- <span id="mode">Lesen</span>
+ <label><span data-t="page"></span> <select id="pagesel"></select></label>
+ <span id="mode"></span>
  <span id="pos"></span>
+ <a id="helplink" data-help="usage" target="_blank" data-t="help_f1"></a>
+ <span class="langsw"></span>
 </div>
 <div id="main">
+ <div id="loading" data-t="loading"></div>
  <div class="pane" id="imgpane">
   <div id="imgwrap"><img id="img" alt=""><div class="hl" id="hlLine"></div><div class="hl" id="hlWord"></div><div class="hl" id="hlWord2"></div></div>
  </div>
@@ -86,24 +94,26 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
   </div>
   <div class="pane" id="text"><div id="centerline"></div><div id="lines"></div>
    <input id="edit" type="text" spellcheck="false" style="display:none">
-   <input id="edit2" type="text" spellcheck="false" style="display:none" title="Folgezeile (zweiter Teil des getrennten Wortes)">
+   <input id="edit2" type="text" spellcheck="false" style="display:none" data-t-title="edit2_title">
   </div>
  </div>
  <div id="wlist">
-  <div id="whead">Whitelist (als richtig gemerkte Wörter, neueste zuerst) <input id="wfilter" spellcheck="false" placeholder="Filter"><span id="winfo" style="margin-left:14px;color:#a40"></span>
-   <div style="color:#666;font-size:13.5px;margin-top:6px"><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> Wort · <kbd>Entf</kbd> oder <kbd>Leertaste</kbd> oder Klick: herausnehmen / wieder aufnehmen · <kbd>Tab</kbd> Filter · <kbd>Esc</kbd> schließen</div>
+  <div id="whead"><span data-t="wl_head"></span> <input id="wfilter" spellcheck="false" data-t-ph="filter"><span id="winfo" style="margin-left:14px;color:#a40"></span>
+   <div style="color:#666;font-size:13.5px;margin-top:6px" data-t="wl_help"></div>
   </div>
   <div id="wgrid"></div>
  </div>
  <div id="serie">
-  <div id="shead">Serienkorrektur: <input id="sOld" spellcheck="false" placeholder="Wort"> → <input id="sNew" spellcheck="false" placeholder="ersetzen durch"><span id="sinfo"></span>
-   <div id="shelp" style="color:#666;font-size:13.5px;margin-top:6px"><kbd>↓</kbd> <kbd>↑</kbd> Stelle · <kbd>Leertaste</kbd> Haken an/aus · <kbd>A</kbd> alle an/aus · <kbd>Tab</kbd> Ersetzung ändern · <kbd>Enter</kbd> alle angehakten ersetzen · <kbd>Esc</kbd> abbrechen</div>
+  <div id="shead"><span data-t="ser_head"></span> <input id="sOld" spellcheck="false" data-t-ph="ser_word"> → <input id="sNew" spellcheck="false" data-t-ph="ser_new"><span id="sinfo"></span>
+   <div id="shelp" style="color:#666;font-size:13.5px;margin-top:6px" data-t="ser_help"></div>
   </div>
   <div id="slist"></div>
  </div>
 </div>
 <script>
 const $ = id => document.getElementById(id);
+const BASE = (location.pathname.match(/^\/buch\/[0-9a-f]+/) || [''])[0];  // jedes Buch hat seine eigene Adresse
+applyI18n();
 let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null;
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
 let prevD = null, nextD = null, nbEls = {}, wheelAcc = 0;
@@ -113,11 +123,7 @@ const WRE = /^[A-Za-zÄÖÜäöüß]+/;
 const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
-const HELP = {
-  read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> nächstes rotes Wort ist richtig · <kbd>Enter</kbd> rotes Wort der Zeile ändern bzw. Zeile frei bearbeiten (<kbd>F2</kbd> immer frei) · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen · <kbd>W</kbd> Whitelist · <kbd>F</kbd> Fußnoten beginnen hier',
-  fix: '<kbd>Enter</kbd> übernehmen, weiterlesen · <kbd>F7</kbd> Trennzeichen ¬ · <kbd>F8</kbd> Wort ist richtig (merken) · <kbd>Tab</kbd> nächstes rotes Wort · <kbd>F9</kbd> Serienkorrektur · <kbd>Esc</kbd> zurück zum Lesen',
-  free: '<kbd>Enter</kbd> übernehmen · <kbd>F7</kbd> Trennzeichen ¬ · <kbd>Esc</kbd> verwerfen'
-};
+const HELP = { read: t('help_read'), fix: t('help_fix'), free: t('help_free') };
 
 function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 function isJoin(f) { return f && f.word.indexOf('¬') >= 0; }
@@ -125,8 +131,8 @@ function part2len(f) { return f.word.length - f.len - 1; }
 function skippable(i) { const l = data.lines[i]; return l.trim() === '' || l === '---'; }
 
 async function loadOverview() {
-  const o = await (await fetch('/api/overview')).json(); ov = o.pages;
-  $('title').textContent = o.title; document.title = o.title + ' – Fraktur-Korrektor';
+  const o = await (await fetch(BASE + '/api/overview')).json(); ov = o.pages;
+  $('title').textContent = o.title; document.title = o.title + ' – Fraktur-Korrektor'; $('loading').style.display = 'none';
   const s = $('pagesel'); s.innerHTML = '';
   for (const p of ov) { const op = document.createElement('option'); op.value = p.page; op.textContent = p.page + ' (' + p.n + ')'; s.appendChild(op); }
   if (pg) s.value = pg;
@@ -135,10 +141,10 @@ function updateCount() {
   const o = ov.find(o => o.page == pg); if (!o) return; o.n = data.flags.length;
   const op = [...$('pagesel').options].find(x => x.value == pg); if (op) op.textContent = pg + ' (' + o.n + ')';
 }
-async function fetchPage(p) { try { const r = await fetch('/api/page/' + p); return r.ok ? await r.json() : null; } catch (e) { return null; } }
+async function fetchPage(p) { try { const r = await fetch(BASE + '/api/page/' + p); return r.ok ? await r.json() : null; } catch (e) { return null; } }
 async function loadPage(p, line, smooth) {
   const old = smooth && pg ? { p: pg, i: li } : null;
-  const r = await fetch('/api/page/' + p); if (!r.ok) return false;
+  const r = await fetch(BASE + '/api/page/' + p); if (!r.ok) return false;
   const d = await r.json();
   const idx = ov.findIndex(o => o.page == p);
   [prevD, nextD] = await Promise.all([idx > 0 ? fetchPage(ov[idx - 1].page) : null, idx >= 0 && idx < ov.length - 1 ? fetchPage(ov[idx + 1].page) : null]);
@@ -146,7 +152,7 @@ async function loadPage(p, line, smooth) {
   li = line == 'last' ? data.lines.length - 1 : Math.min(Math.max(0, line || 0), data.lines.length - 1);
   if (line == 'last') { while (li > 0 && skippable(li)) li--; }
   else { while (li < data.lines.length - 1 && (skippable(li) || (!line && data.lines[li].startsWith('#')))) li++; }
-  const im = $('img'); if (!im.src.endsWith(data.img)) { im.src = data.img; }
+  const im = $('img'); if (!data.img) im.removeAttribute('src'); else if (!im.src.endsWith(data.img)) { im.src = data.img; }
   updateCount(); renderText();
   // fließender Seitenwechsel: erst unsichtbar auf die alte Lesezeile (jetzt in der Nachbarseite) setzen, dann weich zur neuen
   const oe = old && nbEls[old.p] ? nbEls[old.p][old.i] : null;
@@ -174,7 +180,7 @@ function renderText() {
   const box = $('lines'); box.innerHTML = ''; lineEls = []; nbEls = {};
   for (const b of [prevD, data, nextD]) {
     if (!b) continue;
-    const ps = document.createElement('div'); ps.className = 'pgsep'; ps.textContent = '―――――――――――  Seite ' + b.page + '  ―――――――――――'; box.appendChild(ps);
+    const ps = document.createElement('div'); ps.className = 'pgsep'; ps.textContent = '―――――――――――  ' + t('page') + ' ' + b.page + '  ―――――――――――'; box.appendChild(ps);
     let fn = false; const els = [];
     b.lines.forEach((l, i) => {
       const d = document.createElement('div'); d.dataset.p = b.page; d.dataset.i = i;
@@ -190,17 +196,17 @@ function render() {
   lineEls.forEach((d, i) => { if (!d.classList.contains('sep')) { d.innerHTML = mark(i); d.classList.toggle('cur', i == li); } });
   layoutText(); layoutImage();
   // Kopf
-  const m = $('mode'); m.className = mode == 'read' ? '' : mode; m.textContent = mode == 'read' ? 'Lesen' : mode == 'fix' ? 'Korrektur' : 'Zeile bearbeiten';
+  const m = $('mode'); m.className = mode == 'read' ? '' : mode; m.textContent = t(mode == 'read' ? 'mode_read' : mode == 'fix' ? 'mode_fix' : 'mode_free');
   const total = ov.reduce((a, o) => a + o.n, 0);
-  $('pos').textContent = 'Zeile ' + (li + 1) + '/' + data.lines.length + ' · rot auf dieser Seite: ' + data.flags.length + ' · im Buch: ' + total + (data.geo ? '' : ' · (keine Bildzuordnung für diese Seite)');
+  $('pos').textContent = t('pos', { a: li + 1, b: data.lines.length, c: data.flags.length, d: total }) + (data.geo ? '' : t('nogeo'));
   // Korrekturfeld
   $('help').innerHTML = HELP[mode] || '';
-  $('shint').innerHTML = pending ? '„' + esc(pending.old) + '“ kommt noch <b>' + pending.n + '×</b> im Buch vor – <kbd>F9</kbd> zeigt alle Stellen zum Ersetzen durch „' + esc(pending.new) + '“' : esc(msg);
+  $('shint').innerHTML = pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
   const e1 = $('edit'), e2 = $('edit2');
   if (mode == 'read') {
     e1.style.display = 'none'; e2.style.display = 'none'; e1.blur(); e2.blur();
     const n = data.flags.filter(f => f.line == li).length;
-    $('word').innerHTML = n ? '<span style="color:#c00">' + n + ' fragliche Stelle' + (n > 1 ? 'n' : '') + ' in dieser Zeile</span>' : '<span style="color:#888">Lesemodus</span>';
+    $('word').innerHTML = n ? '<span style="color:#c00">' + t(n > 1 ? 'flags_n' : 'flags_1', { n }) + '</span>' : '<span style="color:#888">' + t('reading') + '</span>';
   }
   layoutText(); layoutImage();  // nochmal, falls das Korrekturfeld oben seine Höhe geändert hat
 }
@@ -215,7 +221,8 @@ function layoutText() {
   e2.style.top = (top + el.offsetHeight + 3) + 'px'; e2.style.height = ((nx ? nx.offsetHeight : el.offsetHeight) + 4) + 'px'; e2.style.fontSize = nx ? getComputedStyle(nx).fontSize : fs;
 }
 function layoutImage() {
-  const im = $('img'); if (!im.naturalWidth || !data) return;
+  const im = $('img');
+  if (!im.naturalWidth || !data || !data.img) { for (const id of ['hlLine', 'hlWord', 'hlWord2']) $(id).style.display = 'none'; return; }
   const pane = $('imgpane'), W = pane.clientWidth, H = pane.clientHeight;
   // Lesezeile im Bild auf dieselbe Bildschirmhöhe wie im Textfenster (das wegen des Korrekturfelds tiefer beginnt)
   const tr = $('text').getBoundingClientRect(), RY = tr.top + $('text').clientTop - (pane.getBoundingClientRect().top + pane.clientTop) + $('text').clientHeight * READ_POS;
@@ -244,7 +251,7 @@ function layoutImage() {
 
 function bookmark() {
   clearTimeout(bmTimer);
-  bmTimer = setTimeout(() => fetch('/api/bookmark', { method: 'POST', body: JSON.stringify({ page: pg, line: li }) }), 600);
+  bmTimer = setTimeout(() => fetch(BASE + '/api/bookmark', { method: 'POST', body: JSON.stringify({ page: pg, line: li }) }), 600);
 }
 function pageIdx() { return ov.findIndex(o => o.page == pg); }
 async function gotoPage(d) {
@@ -260,7 +267,7 @@ async function move(d) {
 
 function enterFix(f) {
   mode = 'fix'; cf = f; li = f.line;
-  $('word').innerHTML = (f.kind == 'auto' ? 'automatisch ersetzt: ' : 'unbekannt: ') + '<b>' + esc(f.word) + '</b>';
+  $('word').innerHTML = t(f.kind == 'auto' ? 'kind_auto' : 'kind_oov') + '<b>' + esc(f.word) + '</b>';
   const e1 = $('edit'), e2 = $('edit2');
   e1.style.display = ''; e1.value = data.lines[f.line];
   const j = isJoin(f); e2.style.display = j ? '' : 'none'; if (j) e2.value = data.lines[f.line + 1];
@@ -269,7 +276,7 @@ function enterFix(f) {
 function enterFree(sel) {
   if (skippable(li)) return;
   mode = 'free'; cf = null;
-  $('word').innerHTML = 'Zeile ' + (li + 1) + ' bearbeiten';
+  $('word').innerHTML = t('edit_line', { n: li + 1 });
   const e1 = $('edit'); e1.style.display = ''; e1.value = data.lines[li]; $('edit2').style.display = 'none';
   render(); e1.focus(); setTimeout(() => e1.setSelectionRange(sel ? sel[0] : 0, sel ? sel[1] : 0), 0);
 }
@@ -280,8 +287,8 @@ async function toFlag(from) {
   let n = data.flags.find(x => x.line > li || (x.line == li && (!p || x.start > p.start)));
   if (from) n = data.flags.find(x => x.line > from.line || (x.line == from.line && x.start > from.start));
   if (n) { enterFix(n); return; }
-  const r = await (await fetch('/api/nextflag?after=' + pg)).json();
-  if (!r.page) { alert('Keine weiteren fraglichen Stellen.'); return; }
+  const r = await (await fetch(BASE + '/api/nextflag?after=' + pg)).json();
+  if (!r.page) { alert(t('no_more')); return; }
   await loadPage(r.page, 0);
   if (data.flags.length) enterFix(data.flags[0]);
 }
@@ -300,13 +307,13 @@ async function commit() {
     newW = isJoin(f) && v.trimEnd().endsWith('¬') && v.trimEnd().length - 1 == f.start + a.length ? a + (($('edit2').value.match(WRE) || [''])[0]) : a;
   }
   if (edits.length) {
-    const r = await fetch('/api/edit/' + pg, { method: 'POST', body: JSON.stringify({ edits }) });
-    if (r.status == 409) { alert('Die Datei wurde inzwischen außerhalb geändert – Seite wird neu geladen, bitte Korrektur wiederholen.'); await loadPage(pg, line); return; }
+    const r = await fetch(BASE + '/api/edit/' + pg, { method: 'POST', body: JSON.stringify({ edits }) });
+    if (r.status == 409) { alert(t('conflict')); await loadPage(pg, line); return; }
     data = await r.json(); updateCount();
     if (data.lines.length != lineEls.length) renderText();
     pending = null; msg = '';
     if (oldW && newW && oldW != newW) {
-      const c = await (await fetch('/api/occurrences?count=1&word=' + encodeURIComponent(oldW))).json();
+      const c = await (await fetch(BASE + '/api/occurrences?count=1&word=' + encodeURIComponent(oldW))).json();
       if (c.n > 0) pending = { old: oldW, new: newW, n: c.n };
     }
   }
@@ -314,8 +321,8 @@ async function commit() {
 }
 async function whitelist() {
   const f = cf; if (!f) return;
-  await fetch('/api/whitelist', { method: 'POST', body: JSON.stringify({ word: f.word.replace('¬', '') }) });
-  data = await (await fetch('/api/page/' + pg)).json(); updateCount();
+  await fetch(BASE + '/api/whitelist', { method: 'POST', body: JSON.stringify({ word: f.word.replace('¬', '') }) });
+  data = await (await fetch(BASE + '/api/page/' + pg)).json(); updateCount();
   afterFix(f.line, f.start);
   loadOverview();  // das Wort kann auch auf anderen Seiten vorkommen
 }
@@ -327,7 +334,7 @@ async function openSeries(oldW, newW) {
 }
 async function loadOcc() {
   const w = $('sOld').value.trim();
-  const r = w ? await (await fetch('/api/occurrences?word=' + encodeURIComponent(w))).json() : { items: [], sizes: {} };
+  const r = w ? await (await fetch(BASE + '/api/occurrences?word=' + encodeURIComponent(w))).json() : { items: [], sizes: {} };
   ser.items = r.items.map(o => ({ ...o, on: true })); ser.sizes = r.sizes; ser.sel = 0; ser.word = w;
   renderSeries();
 }
@@ -347,9 +354,9 @@ function renderSeries() {
         '<i style="left:' + ((wx0 - left) * K - 4) + 'px;top:' + (pad * K - 2) + 'px;width:' + ((wx1 - wx0) * K + 8) + 'px;height:' + (lh * K + 4) + 'px"></i></div>';
     }
     const a = Math.max(0, o.start - 40), b = Math.min(o.text.length, o.start + o.len + 40);
-    let t = (a > 0 ? '…' : '') + esc(o.text.slice(a, o.start)) + '<span class="flag">' + esc(o.text.slice(o.start, o.start + o.len)) + '</span>' + esc(o.text.slice(o.start + o.len, b)) + (b < o.text.length ? '…' : '');
-    if (o.join) t += ' <span style="color:#999">⏎</span> <span class="flag">' + esc((o.text2.match(WRE) || [''])[0]) + '</span>' + esc(o.text2.slice((o.text2.match(WRE) || [''])[0].length, 30)) + '…';
-    row.innerHTML = '<span class="chk"></span><span class="pgno">S. ' + o.page + ' / ' + (o.line + 1) + '</span>' + crop + '<span class="stext">' + t + '</span>';
+    let tx = (a > 0 ? '…' : '') + esc(o.text.slice(a, o.start)) + '<span class="flag">' + esc(o.text.slice(o.start, o.start + o.len)) + '</span>' + esc(o.text.slice(o.start + o.len, b)) + (b < o.text.length ? '…' : '');
+    if (o.join) tx += ' <span style="color:#999">⏎</span> <span class="flag">' + esc((o.text2.match(WRE) || [''])[0]) + '</span>' + esc(o.text2.slice((o.text2.match(WRE) || [''])[0].length, 30)) + '…';
+    row.innerHTML = '<span class="chk"></span><span class="pgno">' + t('p_abbr') + ' ' + o.page + ' / ' + (o.line + 1) + '</span>' + crop + '<span class="stext">' + tx + '</span>';
     row.onclick = () => { ser.sel = n; o.on = !o.on; updateSeries(); };
     box.appendChild(row);
   });
@@ -360,7 +367,7 @@ function updateSeries() {
   ser.items.forEach((o, n) => { const r = rows[n]; r.classList.toggle('sel', n == ser.sel); r.classList.toggle('off', !o.on); r.firstChild.textContent = o.on ? '☑' : '☐'; });
   if (rows[ser.sel]) rows[ser.sel].scrollIntoView({ block: 'nearest' });
   const on = ser.items.filter(o => o.on).length;
-  $('sinfo').textContent = ser.word ? (ser.items.length ? on + ' von ' + ser.items.length + ' Stellen angehakt' : 'keine Fundstellen für „' + ser.word + '“') : 'Wort eingeben, Enter';
+  $('sinfo').textContent = ser.word ? (ser.items.length ? t('ser_checked', { on, n: ser.items.length }) : t('ser_none', { w: ser.word })) : t('ser_enter');
 }
 async function closeSeries(m) {
   $('serie').classList.remove('on'); ser = null; pending = null; msg = m || ''; mode = 'read';
@@ -372,14 +379,14 @@ async function applySeries() {
   if (!w || !nw || /\s/.test(nw) || nw == w) { $('sNew').focus(); return; }
   const items = ser.items.filter(o => o.on).map(o => ({ page: o.page, line: o.line, start: o.start, join: o.join, text: o.text, text2: o.text2 }));
   if (!items.length) return;
-  const r = await (await fetch('/api/series', { method: 'POST', body: JSON.stringify({ word: w, new: nw, items }) })).json();
-  await closeSeries('Serie „' + w + '“ → „' + nw + '“: ' + r.done + ' Stellen ersetzt' + (r.skipped ? ', ' + r.skipped + ' übersprungen' : '') + ' (U nimmt sie zurück)');
+  const r = await (await fetch(BASE + '/api/series', { method: 'POST', body: JSON.stringify({ word: w, new: nw, items }) })).json();
+  await closeSeries(t('ser_done', { w, nw, done: r.done }) + (r.skipped ? t('ser_skipped', { n: r.skipped }) : '') + t('ser_undo_hint'));
 }
 async function undoSeries() {
-  if (!confirm('Letzte Serienkorrektur zurücknehmen?')) return;
-  const r = await (await fetch('/api/series_undo', { method: 'POST', body: '{}' })).json();
+  if (!confirm(t('undo_confirm'))) return;
+  const r = await (await fetch(BASE + '/api/series_undo', { method: 'POST', body: '{}' })).json();
   await loadOverview(); await loadPage(pg, li);
-  msg = r.id ? 'Serie ' + r.id + ' zurückgenommen: ' + r.done + ' Zeilen' + (r.skipped ? ', ' + r.skipped + ' inzwischen geändert und belassen' : '') : 'Keine Serie zum Zurücknehmen.'; render();
+  msg = r.id ? t('undo_done', { id: r.id, done: r.done }) + (r.skipped ? t('undo_skipped', { n: r.skipped }) : '') : t('undo_none'); render();
 }
 async function serieKey(e) {
   const inp = e.target.tagName == 'INPUT', k = e.key;
@@ -399,7 +406,7 @@ async function serieKey(e) {
 }
 let wl = null;
 async function openWhitelist() {
-  const r = await (await fetch('/api/whitelist')).json();
+  const r = await (await fetch(BASE + '/api/whitelist')).json();
   wl = { all: r.words.slice().reverse().map(w => ({ w, gone: false })), sel: 0, changed: false };
   mode = 'wlist'; cf = null; $('wlist').classList.add('on'); $('wfilter').value = ''; document.activeElement.blur(); renderWl();
 }
@@ -412,7 +419,7 @@ function renderWl() {
     box.appendChild(d);
   });
   const g = wl.all.filter(o => o.gone).length;
-  $('winfo').textContent = wl.all.length + ' Wörter' + (g ? ' · ' + g + ' herausgenommen (werden wieder rot)' : '');
+  $('winfo').textContent = t('wl_count', { n: wl.all.length }) + (g ? t('wl_gone', { g }) : '');
   const el = box.children[wl.sel]; if (el) el.scrollIntoView({ block: 'nearest' });
 }
 async function toggleWl(o) {
@@ -445,26 +452,27 @@ async function whitelistRead() {
   // Lesemodus: erstes rotes Wort der Lesezeile bestätigen (nochmal F8 = nächstes)
   // von links nach rechts; ohne rotes Wort in der Lesezeile: das nächste weiter unten auf der Seite, diese Zeile wird Lesezeile
   const f = data.flags.find(x => isJoin(x) && x.line + 1 == li) || data.flags.find(x => x.line == li) || data.flags.find(x => x.line > li);
-  if (!f) { msg = 'Kein rotes Wort mehr auf dieser Seite.'; render(); return; }
+  if (!f) { msg = t('no_red'); render(); return; }
   if (f.line > li) { li = f.line; bookmark(); }
   const w = f.word.replace('¬', '');
-  await fetch('/api/whitelist', { method: 'POST', body: JSON.stringify({ word: w }) });
-  data = await (await fetch('/api/page/' + pg)).json(); updateCount();
-  pending = null; msg = '„' + w + '“ als richtig gemerkt.'; render();
+  await fetch(BASE + '/api/whitelist', { method: 'POST', body: JSON.stringify({ word: w }) });
+  data = await (await fetch(BASE + '/api/page/' + pg)).json(); updateCount();
+  pending = null; msg = t('remembered', { w }); render();
   loadOverview();
 }
 async function footnoteSep() {
   // F: Fußnoten beginnen mit der Lesezeile (Trenner --- davor setzen/verschieben; steht er schon dort: entfernen)
   if (skippable(li) || (li == 0 && data.lines[0].startsWith('#'))) return;
-  const r = await fetch('/api/fnsep/' + pg, { method: 'POST', body: JSON.stringify({ line: li, old: data.lines[li] }) });
-  if (r.status == 409) { await loadPage(pg, li); msg = 'Seite wurde außerhalb geändert – neu geladen.'; render(); return; }
+  const r = await fetch(BASE + '/api/fnsep/' + pg, { method: 'POST', body: JSON.stringify({ line: li, old: data.lines[li] }) });
+  if (r.status == 409) { await loadPage(pg, li); msg = t('changed_outside'); render(); return; }
   const x = await r.json(); data = x.data; li = x.line; pending = null;
-  msg = x.action == 'gesetzt' ? 'Fußnoten beginnen jetzt mit dieser Zeile (nochmal F nimmt den Trenner wieder weg).' : 'Fußnotentrenner entfernt.';
+  msg = t(x.action == 'gesetzt' ? 'fn_set' : 'fn_removed');
   updateCount(); renderText(); render(); bookmark();
 }
 function setZoom(z) { zoom = Math.min(4, Math.max(0.4, z)); try { localStorage.setItem('zoom', zoom); } catch (e) {} layoutImage(); }
 
 async function onKey(e) {
+  if (e.key == 'F1') { e.preventDefault(); window.open($('helplink').href, '_blank'); return; }
   if (e.ctrlKey || e.altKey || e.metaKey || !data) return;
   if (mode == 'serie') return serieKey(e);
   if (mode == 'wlist') return wlKey(e);
@@ -492,7 +500,7 @@ async function onKey(e) {
     else if (k == 'w' || k == 'W') await openWhitelist();
     else if (k == 'f' || k == 'F') await footnoteSep();
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
-    else if (k == 'g' || k == 'G') { const p = prompt('Gehe zu Seite (PDF-Seite):'); if (p) await loadPage(String(parseInt(p, 10)).padStart(3, '0'), 0); }
+    else if (k == 'g' || k == 'G') { const p = prompt(t('goto')); if (p) await loadPage(String(parseInt(p, 10)).padStart(3, '0'), 0); }
     else return;
     e.preventDefault();
   } else {
@@ -505,7 +513,7 @@ async function onKey(e) {
 // F7: Trennzeichen ¬ an der Schreibmarke einfügen (in jedem Eingabefeld)
 document.addEventListener('keydown', e => {
   if (e.key != 'F7' || e.target.tagName != 'INPUT') return;
-  e.preventDefault(); const t = e.target; t.setRangeText('¬', t.selectionStart, t.selectionEnd, 'end'); t.dispatchEvent(new Event('input'));
+  e.preventDefault(); const el = e.target; el.setRangeText('¬', el.selectionStart, el.selectionEnd, 'end'); el.dispatchEvent(new Event('input'));
 }, true);
 document.addEventListener('keydown', async e => { if (busy) { e.preventDefault(); return; } busy = true; try { await onKey(e); } finally { busy = false; } });
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
@@ -554,7 +562,7 @@ $('text').addEventListener('wheel', onWheel, { passive: false }); $('imgpane').a
 
 (async () => {
   await loadOverview();
-  let bm = {}; try { bm = await (await fetch('/api/bookmark')).json(); } catch (e) {}
+  let bm = {}; try { bm = await (await fetch(BASE + '/api/bookmark')).json(); } catch (e) {}
   if (!(bm.page && await loadPage(bm.page, bm.line))) { const first = ov.find(o => o.n > 0) || ov[0]; await loadPage(first.page, 0); }
   // Selbsttest: ?keys=Space,Tab,Escape,ArrowDown spielt Tasten ab; "=text" setzt das Eingabefeld
   const ks = new URLSearchParams(location.search).get('keys');

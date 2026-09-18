@@ -19,7 +19,7 @@ def test_bildzuordnung(app):
     assert len(d['geo']) == len(d['lines'])
     assert d['geo'][5] is None                      # Fußnotentrenner hat keine Bildzeile
     assert d['geo'][1] == dict(x0=50, x1=450, y0=80, y1=100)   # Maßstab 0.5
-    assert app.raw('/img/001.png')[1][:4] == b'\x89PNG'
+    assert d['img'] == app.book + '/img/001.png' and app.raw(d['img'])[1][:4] == b'\x89PNG'
 
 
 def test_korrektur_schreibt_datei_und_protokoll(app):

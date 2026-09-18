@@ -50,8 +50,10 @@ def make_book(folder):
 
 
 class Client:
+    """get/post sprechen das Buch an (/buch/<id>/api/…), lget/lpost die Bibliothek (/api/…)."""
+
     def __init__(self, port, folder):
-        self.base, self.folder = 'http://127.0.0.1:%d' % port, folder
+        self.base, self.folder, self.book = 'http://127.0.0.1:%d' % port, folder, ''
 
     def _req(self, path, body=None):
         data = None if body is None else json.dumps(body).encode('utf-8')
@@ -62,10 +64,16 @@ class Client:
             return e.code, e.read()
 
     def get(self, path):
+        return self.lget(self.book + path)
+
+    def post(self, path, body):
+        return self.lpost(self.book + path, body)
+
+    def lget(self, path):
         code, b = self._req(path)
         return code, json.loads(b)
 
-    def post(self, path, body):
+    def lpost(self, path, body):
         code, b = self._req(path, body)
         return code, json.loads(b)
 
@@ -80,28 +88,49 @@ class Client:
         return [l.rstrip('\n').split('\t') for l in open(p, encoding='utf-8')] if os.path.exists(p) else []
 
 
+def start(tmp_path, folder=None):
+    """Startet einen Server auf freiem Port; mit folder wie bisher von der Kommandozeile, sonst mit leerer Bibliothek."""
+    with socket.socket() as so:
+        so.bind(('127.0.0.1', 0))
+        port = so.getsockname()[1]
+    home = str(tmp_path / 'home')  # eigene Bibliothek je Test
+    env = dict(os.environ, PYTHONIOENCODING='utf-8', FRAKTUR_HOME=home)
+    p = subprocess.Popen([sys.executable, os.path.join(ROOT, 'server.py')] + ([folder] if folder else []) + ['--port', str(port), '--no-browser'],
+                         env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    c = Client(port, folder)
+    for _ in range(600):
+        if p.poll() is not None:
+            raise RuntimeError('Server beendet: ' + p.stdout.read().decode('utf-8', 'replace'))
+        try:
+            books = c.lget('/api/library')[1]['books']
+            break
+        except OSError:
+            time.sleep(0.1)
+    else:
+        p.kill()
+        raise RuntimeError('Server startet nicht')
+    if folder:
+        c.book = '/buch/' + books[0]['id']
+    return p, c
+
+
 @pytest.fixture
 def app(tmp_path):
     folder = str(tmp_path / 'buch')
     make_book(folder)
-    with socket.socket() as s:
-        s.bind(('127.0.0.1', 0))
-        port = s.getsockname()[1]
-    env = dict(os.environ, PYTHONIOENCODING='utf-8')
-    p = subprocess.Popen([sys.executable, os.path.join(ROOT, 'server.py'), folder, '--port', str(port), '--no-browser'],
-                         env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    c = Client(port, folder)
+    p, c = start(tmp_path, folder)
     try:
-        for _ in range(600):
-            if p.poll() is not None:
-                raise RuntimeError('Server beendet: ' + p.stdout.read().decode('utf-8', 'replace'))
-            try:
-                c.raw('/api/bookmark')
-                break
-            except OSError:
-                time.sleep(0.1)
-        else:
-            raise RuntimeError('Server startet nicht')
+        yield c
+    finally:
+        p.kill()
+        p.wait()
+
+
+@pytest.fixture
+def lib(tmp_path):
+    """Server ohne Buchordner: Bibliothek."""
+    p, c = start(tmp_path)
+    try:
         yield c
     finally:
         p.kill()
