@@ -1,0 +1,4 @@
+# Zusätzlich gültige Wörter: Abkürzungen (ohne Punkt), die im Hunspell-Wörterbuch fehlen.
+# Nur Eindeutiges aufnehmen – "bes" z. B. nicht, das ist meist ein verlesenes "des".
+Abb Anm Aufl Bd Bde Dr Fa Hrsg Ing Jg Jh Nr Okt Pf Phil Prof St Tl Vgl Zus
+bzw ca ff geb gest hrsg phil usw vgl

@@ -1,5 +1,5 @@
 """Fraktur-Korrektor: Lesen und Korrigieren von OCR-Text neben dem Seitenbild.
-py -3.14 server.py <buchordner> [--port 8765] [--dic <hunspell-pfad>] [--no-browser] [--lan]
+py server.py <buchordner> [--port 8765] [--dic <hunspell-pfad>] [--no-browser] [--lan]
 
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png,
 optional autokorr.log, whitelist.txt; lesezeichen.json wird angelegt."""
@@ -416,9 +416,16 @@ class H(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
+    # unter Windows ließe SO_REUSEADDR mehrere Server auf demselben Port zu
+    ThreadingHTTPServer.allow_reuse_address = os.name != 'nt'
+    try:
+        httpd = ThreadingHTTPServer(('0.0.0.0' if A.lan else '127.0.0.1', A.port), H)
+    except OSError:
+        sys.exit('Port %d ist belegt – läuft der Fraktur-Korrektor schon? Sonst mit --port <nummer> einen anderen Port wählen.' % A.port)
     print('Lade Wörterbuch und Seiten …')
     overview()
-    url = 'http://localhost:%d' % A.port
+    korrlib.save_cache()
+    url ='http://localhost:%d' % A.port
     print('Fraktur-Korrektor: %s  (Strg+C beendet)' % url)
     if A.lan:
         import socket
@@ -430,4 +437,4 @@ if __name__ == '__main__':
         print('Achtung: ohne Passwort - jeder im selben Netz kann lesen und korrigieren. Nur im eigenen Heimnetz verwenden.')
     if not A.no_browser:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
-    ThreadingHTTPServer(('0.0.0.0' if A.lan else '127.0.0.1', A.port), H).serve_forever()
+    httpd.serve_forever()

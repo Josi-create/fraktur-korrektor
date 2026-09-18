@@ -1,0 +1,3 @@
+# Wörter, die es gibt, die in OCR-Text aber fast immer Lesefehler sind – sie werden immer rot markiert.
+# baß (veraltet "sehr") ist in Fraktur praktisch immer ein verlesenes "daß".
+baß

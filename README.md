@@ -68,8 +68,10 @@ Die Serienkorrektur zeigt alle Fundstellen eines Wortes auf einmal und ersetzt s
 Mit `--lan` ist die App auch von anderen Rechnern im lokalen Netz erreichbar (die Adresse wird beim Start angezeigt;
 Windows fragt beim ersten Mal nach der Firewall-Freigabe für „Private Netzwerke“). Es gibt keinen Passwortschutz – nur im eigenen Heimnetz verwenden.
 
-Wörterbuch: ein Hunspell-Wörterbuch (`.dic`/`.aff`), für alte Drucke am besten deutsche Rechtschreibung
-von 1901. Pfad per `--dic` oder Umgebungsvariable `FRAKTUR_DIC`.
+Wörterbuch: mitgeliefert wird ein freies Hunspell-Wörterbuch für die deutsche Rechtschreibung von 1901
+(siehe [dict/](dict/README.md)). Ein anderes lässt sich per `--dic`, Umgebungsvariable `FRAKTUR_DIC` oder
+`"dic"` in `~/.fraktur-korrektor/config.json` wählen. Der erste Start mit einem neuen Buch dauert etwas länger,
+danach sind die Prüfergebnisse zwischengespeichert.
 
 ## Buchordner
 
@@ -92,6 +94,17 @@ Buchdaten gehören **nicht** in dieses Repository.
 
 ## Geplant
 
-- Dateimanager / Bibliothek für mehrere Bücher
-- Zeilen teilen/verbinden mit Erhalt der Bildzuordnung
-- Epub-Export (Kapitel, Fußnoten)
+Siehe [ROADMAP.md](ROADMAP.md): Bibliothek für mehrere Bücher, PDF-Import mit Tesseract, Installer für Windows
+und Mac, zweisprachige Dokumentation; später Zeilen teilen/verbinden und Epub-Export.
+
+## Entwicklung
+
+    pip install -e .[dev]
+    pytest
+
+Die Tests starten eigene Serverinstanzen auf freien Ports mit einem Wegwerf-Buch im Temp-Ordner.
+
+## Lizenz
+
+[GPL-3.0-or-later](LICENSE). Das mitgelieferte Wörterbuch hat eigene Lizenzangaben, siehe [dict/](dict/README.md).
+Mitarbeit ist willkommen.
