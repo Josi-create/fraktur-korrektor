@@ -8,8 +8,8 @@ erweitern ihn:
 | **Tesseract** | Texterkennung: [PDF oder Bilder einlesen](pdf-import.md) | nur, wenn Sie nicht mit Transkribus arbeiten |
 | **ScanTailor Advanced** | schlechte Scans aufbereiten (Doppelseiten trennen, geraderichten, entzerren) | nur bei schwierigen Vorlagen |
 
-Der Fraktur-Korrektor findet beide Programme von selbst, wenn sie am üblichen Ort installiert sind. Im Fenster
-*PDF oder Bilder einlesen* sehen Sie oben, was gefunden wurde.
+Der Fraktur-Korrektor findet beide Programme von selbst, wenn sie am üblichen Ort installiert sind. Beim Öffnen
+eines PDF zeigt das Fenster, was gefunden wurde.
 
 ## Tesseract
 
@@ -42,7 +42,7 @@ installiert (`deu_latf`, `deu_frak`, `frk`, `Fraktur`), benutzt er diese.
    deren Name auf `x64.zip` endet (neuere Versionen ohne ZIP-Datei sind nur für Linux).
 2. Die ZIP-Datei entpacken (Rechtsklick → *Alle extrahieren*), zum Beispiel nach `Dokumente\ScanTailor`.
    Eine Installation ist nicht nötig; das Programm heißt `scantailor.exe`.
-3. Im Fraktur-Korrektor im Fenster *PDF oder Bilder einlesen* auf **Programm zeigen …** klicken und diese
+3. Im Fraktur-Korrektor ein PDF öffnen; im Fenster erscheint dann **Programm zeigen …** – darauf klicken und diese
    `scantailor.exe` auswählen. Das merkt sich der Fraktur-Korrektor.
 
 **Mac:** im Terminal `brew install yb85/homebrew-tap/scantailor-advanced`
@@ -52,7 +52,8 @@ installiert (`deu_latf`, `deu_frak`, `frk`, `Fraktur`), benutzt er diese.
 
 ## Wenn ein Programm nicht gefunden wird
 
-Klicken Sie im Fenster *PDF oder Bilder einlesen* neben der Meldung auf **Programm zeigen …** und wählen Sie
+Beim Öffnen eines PDF oder Bilderordners zeigt das Fenster, welche Programme gefunden wurden. Klicken Sie neben der
+Meldung auf **Programm zeigen …** und wählen Sie
 die Programmdatei (`tesseract.exe` bzw. `scantailor.exe`). Von Hand geht es auch: Der Pfad steht in der Datei
 `~/.fraktur-korrektor/config.json` (unter Windows: `C:\Users\<Name>\.fraktur-korrektor\config.json`):
 

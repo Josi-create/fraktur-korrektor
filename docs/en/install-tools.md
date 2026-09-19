@@ -7,8 +7,8 @@ For reading and correcting, Fraktur-Korrektor needs nothing else. Two free addit
 | **Tesseract** | text recognition: [Reading in a PDF or images](pdf-import.md) | only if you do not work with Transkribus |
 | **ScanTailor Advanced** | cleaning up poor scans (splitting double pages, deskewing, dewarping) | only for difficult scans |
 
-Fraktur-Korrektor finds both programs by itself if they are installed in the usual place. The window
-*Read in PDF or images* shows at the top what was found.
+Fraktur-Korrektor finds both programs by itself if they are installed in the usual place. When you open a PDF,
+the window shows what was found.
 
 ## Tesseract
 
@@ -42,7 +42,7 @@ already installed (`deu_latf`, `deu_frak`, `frk`, `Fraktur`), it uses those.
    name ends in `x64.zip` (newer versions without a ZIP file are for Linux only).
 2. Unpack the ZIP file (right-click → *Extract All*), for example to `Documents\ScanTailor`. No installation
    is needed; the program is called `scantailor.exe`.
-3. In Fraktur-Korrektor, in the window *Read in PDF or images*, click **Show me the program …** and select
+3. In Fraktur-Korrektor, open a PDF; the window then offers **Show me the program …** – click it and select
    this `scantailor.exe`. Fraktur-Korrektor remembers it.
 
 **Mac:** in Terminal `brew install yb85/homebrew-tap/scantailor-advanced`
@@ -52,7 +52,8 @@ already installed (`deu_latf`, `deu_frak`, `frk`, `Fraktur`), it uses those.
 
 ## If a program is not found
 
-In the window *Read in PDF or images*, click **Show me the program …** next to the message and select the
+When you open a PDF or an image folder, the window shows which programs were found. Click **Show me the program …**
+next to the message and select the
 program file (`tesseract.exe` or `scantailor.exe`). You can also do it by hand: the path is stored in the file
 `~/.fraktur-korrektor/config.json` (on Windows: `C:\Users\<name>\.fraktur-korrektor\config.json`):
 

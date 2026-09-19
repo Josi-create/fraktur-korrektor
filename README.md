@@ -11,9 +11,9 @@ Ziel ist ein sauberer Text als Grundlage für ein Epub.
 
 Alles geht mit der Tastatur; die wichtigsten Tasten stehen im Programm immer oben rechts, `F1` öffnet die Hilfe.
 
-- [Hilfe: Überblick](docs/de/index.md) · [Ein Buch hinzufügen](docs/de/add-book.md) · [PDF oder Bilder einlesen](docs/de/pdf-import.md) ·
+- [Hilfe: Überblick](docs/de/index.md) · [Ein Buch öffnen](docs/de/add-book.md) · [PDF oder Bilder einlesen](docs/de/pdf-import.md) ·
   [Mit Transkribus arbeiten](docs/de/transkribus.md) · [Bedienung und alle Tasten](docs/de/usage.md) · [Werkzeuge installieren](docs/de/install-tools.md)
-- English: [Help](docs/en/index.md) · [Adding a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
+- English: [Help](docs/en/index.md) · [Opening a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
   [Working with Transkribus](docs/en/transkribus.md) · [Usage](docs/en/usage.md) · [Installing the tools](docs/en/install-tools.md)
 
 Jede Korrektur wird sofort in die Textdatei geschrieben und in `korrekturen.log` protokolliert; die Leseposition steht in
@@ -23,7 +23,7 @@ Jede Korrektur wird sofort in die Textdatei geschrieben und in `korrekturen.log`
 ## Start
 
     pip install spylls markdown pymupdf
-    py server.py                  Bibliothek: Bücher öffnen, Transkribus-Export importieren, PDF/Bilder mit Tesseract einlesen
+    py server.py                  Bibliothek; »Öffnen …« erkennt selbst: Buchordner, PDF, EPUB (+ gleichnamiges PDF), Bilder, Transkribus-Export
     py server.py <buchordner>     direkt ein Buch öffnen
 
 Optionen: `--port 8765`, `--dic <hunspell-pfad-ohne-endung>`, `--title "…"`, `--no-browser`, `--lan`.
@@ -52,7 +52,8 @@ Buchdaten gehören **nicht** in dieses Repository.
 
 ## Werkzeuge (tools/)
 
-Die Importwege stecken in `pagexml.py` (Transkribus) und `ocr.py` (PDF/Bilder → Tesseract; auch als
+Was geöffnet wird, erkennt `finder.py`. Die Importwege stecken in `pagexml.py` (Transkribus), `epub.py` (EPUB, auch auf die Zeilen
+eines PDF gelegt) und `ocr.py` (PDF/Bilder → Tesseract bzw. vorhandene Textebene; auch als
 `py ocr.py <pdf-oder-bilderordner> <buchordner>` aufrufbar).
 
 - `page2txt.py` – Text aus Transkribus-PAGE-XML

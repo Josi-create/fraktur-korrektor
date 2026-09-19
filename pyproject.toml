@@ -1,6 +1,6 @@
 [project]
 name = "fraktur-korrektor"
-version = "0.7.0"
+version = "0.8.0"
 description = "Lesen und Korrekturlesen in einem: OCR-Text (Fraktur) neben dem Seitenbild, tastaturgesteuert"
 readme = "README.md"
 license = "GPL-3.0-or-later"

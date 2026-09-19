@@ -28,8 +28,8 @@ recognition in historical documents. For Fraktur prints it usually gives much be
 5. **Export:** select the document → *Export*. The important format is **PAGE XML** (under “Transkribus
    Document”). Also tick the export of **images**, then Fraktur-Korrektor gets the page images right away.
    You receive a link to a **ZIP file**.
-6. In Fraktur-Korrektor: library → **Import Transkribus export …** → choose the ZIP file → **Import**.
-   Details: [Adding a book](add-book.md).
+6. In Fraktur-Korrektor: library → **Open …** → **Choose file …** → the ZIP file. There is no need to unpack it;
+   the program recognises the export. Details: [Opening a book](add-book.md).
 
 ## Afterwards
 

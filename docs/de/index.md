@@ -15,8 +15,8 @@ lediglich als Fenster.
      alles bleibt auf Ihrem Rechner. Eine Ampel zeigt danach, wie gut das Ergebnis ist.
    - *für schwierige Vorlagen:* [Transkribus](transkribus.md), ein Internetdienst mit meist besserer
      Fraktur-Erkennung.
-2. **Buch hinzufügen** – Beim Einlesen geschieht das von selbst; einen Export aus Transkribus holen Sie mit
-   zwei Klicks in die Bibliothek: [Ein Buch hinzufügen](add-book.md).
+2. **Öffnen** – Ein einziger Knopf: Sie zeigen dem Programm eine Datei oder einen Ordner, es erkennt selbst, ob es
+   ein PDF, ein EPUB, Seitenbilder, ein Transkribus-Export oder ein schon bearbeitetes Buch ist: [Ein Buch öffnen](add-book.md).
 3. **Lesen und korrigieren** – [Bedienung](usage.md). Alles geht mit der Tastatur; die wichtigsten Tasten
    stehen immer oben rechts im Fenster.
 

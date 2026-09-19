@@ -6,7 +6,7 @@ Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
 import sys, os, json, re, glob, time, uuid, hashlib, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-import korrlib, pagexml, ocr
+import korrlib, pagexml, ocr, epub, finder
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -444,7 +444,7 @@ def books_dir():
 def new_folder(title, source, target=None):
     """(name, ordner) für ein neues Buch; vorhandene Bücher nie überschreiben."""
     name = re.sub(r'[\\/:*?"<>|]+', ' ', title or os.path.splitext(os.path.basename(source.rstrip('/\\')))[0]).strip() or 'Buch'
-    base = target or os.path.join(books_dir(), name)
+    base = target or os.path.join(books_dir(), name[:60].rstrip(' .'))  # kurze Ordnernamen: Windows-Pfade sind auf 260 Zeichen begrenzt
     out, n = base, 1
     while page_files(out):
         n += 1
@@ -481,6 +481,42 @@ def import_ocr(source, title, target, script, textlayer, progress, cancelled):
         raise
     e = lib_touch(out, title or name)
     return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], quality=r['quality'])
+
+
+def import_epub(source, pdf, title, target, script, textlayer, progress, cancelled):
+    """EPUB einlesen. Mit gleichlautendem PDF: Seitenbilder und Zeilen aus dem PDF, Wortlaut aus dem EPUB; sonst Textbuch."""
+    if not source or not os.path.isfile(source):
+        raise ValueError('quelle_fehlt')
+    try:
+        etitle = epub.read(source)[0]
+    except Exception:
+        raise ValueError('kein_epub')
+    name, out = new_folder(title or etitle, source, target)
+    try:
+        if pdf and os.path.isfile(pdf):
+            r = ocr.build(pdf, out, progress, cancelled, 'antiqua' if script == 'antiqua' else 'fraktur', bool(textlayer))
+            m = epub.transplant(source, out, progress)
+            r = dict(pages=r['pages'], quality=r['quality'], matched=m['matched'])
+        else:
+            r = epub.text_book(source, out)
+    except ValueError:
+        raise
+    except Exception:
+        ocr.cleanup(out)
+        raise
+    e = lib_touch(out, title or etitle or name)
+    return dict(id=book_id(out), folder=out, title=e['title'], **{k: r.get(k) for k in ('pages', 'quality', 'matched')})
+
+
+def scan(path):
+    """finder.scan, ergänzt um das, was nur der Server weiß: Steht der Fund schon in der Bibliothek?"""
+    r = finder.scan(path)
+    known = {book_id(x['folder']) for x in lib_load()}
+    for f in r['found']:
+        if f['kind'] == 'book':
+            f['id'] = book_id(f['path'])
+            f['known'] = f['id'] in known
+    return r
 
 
 def scantailor(source, title, progress, cancelled):
@@ -533,7 +569,8 @@ def dialog(kind):
     root.withdraw()
     root.attributes('-topmost', True)
     p = filedialog.askdirectory(parent=root) if kind == 'folder' else \
-        filedialog.askopenfilename(parent=root, filetypes=dict(pdf=[('PDF', '*.pdf')], exe=[('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
+        filedialog.askopenfilename(parent=root, filetypes=dict(pdf=[('PDF', '*.pdf')], exe=[('*', '*.*')], any=[
+            ('PDF, EPUB, ZIP, Bilder, Buchseiten', '*.pdf *.epub *.zip *.xml *.txt *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
     sys.stdout.buffer.write((p or '').encode('utf-8'))
 
 
@@ -703,16 +740,24 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
-                return self.sendjson(dict(path=choose(body.get('kind') if body.get('kind') in ('folder', 'pdf', 'exe') else 'zip')))
+                return self.sendjson(dict(path=choose(body.get('kind') if body.get('kind') in ('folder', 'pdf', 'exe', 'any') else 'zip')))
             if u.path == '/api/set_tool':
                 if body.get('tool') not in ('tesseract', 'scantailor') or not os.path.isfile(body.get('path') or ''):
                     return self.sendjson(dict(error='quelle_fehlt'), 400)
                 korrlib.set_config(body['tool'], body['path'])
                 return self.sendjson(ocr.tools())
+            if u.path == '/api/scan':
+                try:
+                    return self.sendjson(scan(body.get('path') or ''))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
+            if u.path == '/api/import_epub':
+                return self.sendjson(dict(job=start_job(import_epub, body.get('source'), body.get('pdf'), body.get('title'), body.get('target'),
+                                                        body.get('script'), body.get('textlayer'))))
             if u.path == '/api/pdf_info':
                 src = body.get('source') or ''
                 try:
@@ -733,6 +778,9 @@ class H(BaseHTTPRequestHandler):
                     return self.sendjson(dict(error='kein_buch'), 400)
                 lib_touch(f)
                 return self.sendjson(dict(id=book_id(f)))
+            if body.get('job'):
+                return self.sendjson(dict(job=start_job(lambda progress, cancelled: import_transkribus(
+                    body.get('source'), body.get('title'), body.get('images'), body.get('target')))))
             try:
                 return self.sendjson(import_transkribus(body.get('source'), body.get('title'), body.get('images'), body.get('target')))
             except ValueError as e:

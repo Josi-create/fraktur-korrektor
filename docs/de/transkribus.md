@@ -28,8 +28,8 @@ Tesseract – vor allem bei mäßigen Vorlagen. Der Fraktur-Korrektor ist für g
 5. **Exportieren:** Dokument wählen → *Export*. Wichtig ist das Format **PAGE XML** (unter „Transkribus
    Document“). Haken Sie auch den Export der **Bilder** an, dann hat der Fraktur-Korrektor gleich die
    Seitenbilder. Sie erhalten einen Link zu einer **ZIP-Datei**.
-6. Im Fraktur-Korrektor: Bibliothek → **Transkribus-Export importieren …** → die ZIP-Datei wählen →
-   **Importieren**. Einzelheiten: [Ein Buch hinzufügen](add-book.md).
+6. Im Fraktur-Korrektor: Bibliothek → **Öffnen …** → **Datei wählen …** → die ZIP-Datei. Entpacken müssen Sie sie
+   nicht; das Programm erkennt den Export. Einzelheiten: [Ein Buch öffnen](add-book.md).
 
 ## Danach
 

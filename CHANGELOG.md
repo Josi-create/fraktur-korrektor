@@ -5,6 +5,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Ein Knopf »Öffnen …«** statt dreier: Das Programm untersucht die gezeigte Datei bzw. den Ordner und erkennt Buchordner,
+  PDF, EPUB, Seitenbilder und Transkribus-Exporte; bei mehreren Funden Empfehlung mit Seitenzahl und Datum – ein Buch mit
+  Korrekturen steht immer vorn, neuere Funde sind markiert; passende Bilderordner zu Exporten ohne Bilder werden vorgeschlagen.
+- **EPUB öffnen.** Mit gleichnamigem PDF daneben: links der Scan, rechts der Wortlaut des EPUB, Zeile für Zeile auf die
+  Zeilen des PDF gelegt (Trennungen bleiben, Kopfzeilen/Fußnoten behalten den PDF-Text). Ohne PDF: Textbuch ohne Bilder.
 - Durchsuchbare PDFs: vorhandenen Text übernehmen statt neu erkennen (570 Seiten in wenigen Sekunden); Zeilen werden
   anhand der Grundlinie geordnet, Randzeichen vom mitgescannten Seitenrand entfernt.
 - Seitenbilder werden unverändert aus dem PDF entnommen, wenn die Seite aus einem einzigen Bild besteht (schneller,

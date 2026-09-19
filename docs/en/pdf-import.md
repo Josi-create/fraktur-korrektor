@@ -6,12 +6,12 @@ internet. Tesseract has to be installed once: [Installing the tools](install-too
 
 ## How to do it
 
-1. In the library, click **Read in PDF or images (text recognition) …**
-2. The top of the window shows whether Tesseract and the Fraktur model are available. The program downloads
+1. In the library, click **Open …** and show the PDF (**Choose file …**) or the folder with the page images
+   (**Choose folder …**). The program works out by itself what it is – see [Opening a book](add-book.md).
+2. The window shows whether Tesseract and the Fraktur model are available. The program downloads
    the model (5 MB, from Mannheim University Library) by itself the first time.
-3. **Choose PDF …** or – for single images (JPG, PNG, TIF) – **Choose folder …**
-4. Enter a title and choose the **typeface**: Fraktur (blackletter) or Antiqua (roman type).
-5. **Start text recognition.** A bar shows the progress; expect a few seconds per page. *Stop* cancels at
+3. Enter a title and choose the **typeface**: Fraktur (blackletter) or Antiqua (roman type).
+4. **Start text recognition.** A bar shows the progress; expect a few seconds per page. *Stop* cancels at
    any time.
 
 ## Searchable PDFs: using the existing text
@@ -54,7 +54,7 @@ worse than the rest**, the page curves towards the gutter.
 The free program **ScanTailor Advanced** fixes all of this: it splits double pages, straightens them,
 flattens curvature and crops margins. ([Installation](install-tools.md))
 
-1. In the window *Read in PDF or images*, choose the PDF and click **Prepare with ScanTailor first …**
+1. Choose the PDF via **Open …** and click **Prepare with ScanTailor first …** in the window.
    The program saves every PDF page as an image (ScanTailor cannot open PDFs) and starts ScanTailor.
 2. In ScanTailor: **New Project**. As input directory choose the folder that Fraktur-Korrektor displays (it
    ends in `scantailor`). Keep the suggested output directory `out`.
@@ -62,8 +62,8 @@ flattens curvature and crops margins. ([Installation](install-tools.md))
    at the bottom of each stage (“process all pages”) and to leaf through the result:
    *Fix Orientation* → *Split Pages* → *Deskew* → *Select Content* → *Margins* → *Output*. In the *Output*
    stage, for Fraktur: 600 dpi, mode *Black and White*; for curved pages switch on *Dewarping* there.
-4. Back in Fraktur-Korrektor, the folder `…/scantailor/out` is already entered as the source. Click
-   **Start text recognition**.
+4. Back in Fraktur-Korrektor, click **Back** and **Examine** – the folder `…/scantailor/out` is already entered –
+   and then **Start text recognition**.
 
 ## Limitations
 

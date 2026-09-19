@@ -7,12 +7,12 @@ nichts ins Internet übertragen. Tesseract muss einmal installiert werden:
 
 ## So geht es
 
-1. In der Bibliothek auf **PDF oder Bilder einlesen (Texterkennung) …** klicken.
-2. Oben zeigt das Fenster, ob Tesseract und das Fraktur-Modell vorhanden sind. Das Modell (5 MB, von der
+1. In der Bibliothek auf **Öffnen …** klicken und das PDF (**Datei wählen …**) oder den Ordner mit den Seitenbildern
+   (**Ordner wählen …**) zeigen. Das Programm erkennt selbst, was es vor sich hat – siehe [Ein Buch öffnen](add-book.md).
+2. Das Fenster zeigt, ob Tesseract und das Fraktur-Modell vorhanden sind. Das Modell (5 MB, von der
    Universitätsbibliothek Mannheim) lädt das Programm beim ersten Mal selbst herunter.
-3. **PDF wählen …** oder – bei Einzelbildern (JPG, PNG, TIF) – **Ordner wählen …**
-4. Titel eintragen und die **Schrift** wählen: Fraktur oder Antiqua (lateinische Schrift).
-5. **Texterkennung starten.** Ein Balken zeigt den Fortschritt; rechnen Sie mit wenigen Sekunden je Seite.
+3. Titel eintragen und die **Schrift** wählen: Fraktur oder Antiqua (lateinische Schrift).
+4. **Texterkennung starten.** Ein Balken zeigt den Fortschritt; rechnen Sie mit wenigen Sekunden je Seite.
    Mit *Abbrechen* lässt sich der Vorgang jederzeit stoppen.
 
 ## Durchsuchbare PDFs: Text übernehmen
@@ -54,7 +54,7 @@ schlechter sind als der Rest**, ist die Seite zum Bund hin gewölbt.
 Das freie Programm **ScanTailor Advanced** behebt all das: Es trennt Doppelseiten, richtet sie gerade,
 entzerrt Wölbungen und schneidet Ränder ab. ([Installation](install-tools.md))
 
-1. Im Fenster *PDF oder Bilder einlesen* das PDF wählen und auf **Erst mit ScanTailor aufbereiten …** klicken.
+1. Über **Öffnen …** das PDF wählen und im Fenster auf **Erst mit ScanTailor aufbereiten …** klicken.
    Das Programm speichert jede PDF-Seite als Bild (ScanTailor kann keine PDFs öffnen) und startet ScanTailor.
 2. In ScanTailor: **Neues Projekt**. Als Eingabeordner den Ordner wählen, den der Fraktur-Korrektor anzeigt
    (er endet auf `scantailor`). Den vorgeschlagenen Ausgabeordner `out` beibehalten.
@@ -63,8 +63,8 @@ entzerrt Wölbungen und schneidet Ränder ab. ([Installation](install-tools.md))
    *Ausrichtung korrigieren* → *Seiten aufteilen* → *Schräglage korrigieren* → *Inhalt auswählen* → *Ränder* →
    *Ausgabe*. Im Schritt *Ausgabe* für Fraktur: 600 dpi, Modus *Schwarz-Weiß*; bei gewölbten Seiten dort
    *Entzerren* einschalten.
-4. Zurück im Fraktur-Korrektor steht der Ordner `…/scantailor/out` schon im Eingabefeld. Auf
-   **Texterkennung starten** klicken.
+4. Zurück im Fraktur-Korrektor auf **Zurück** und **Untersuchen** klicken – der Ordner `…/scantailor/out` ist schon
+   eingetragen – und dann auf **Texterkennung starten**.
 
 ## Grenzen
 
