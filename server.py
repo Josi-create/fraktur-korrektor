@@ -508,6 +508,22 @@ def import_epub(source, pdf, title, target, script, textlayer, progress, cancell
     return dict(id=book_id(out), folder=out, title=e['title'], **{k: r.get(k) for k in ('pages', 'quality', 'matched')})
 
 
+def discard(bid):
+    """Ein eben eingelesenes Buch wieder entfernen (der Nutzer lässt den Text neu erkennen). Nur Bücher, die das Programm
+    selbst eingelesen hat (qualitaet.json) und in denen noch keine Arbeit steckt – sonst bleibt alles, wie es ist."""
+    e = next((x for x in lib_load() if book_id(x['folder']) == bid), None)
+    if not e:
+        raise ValueError('quelle_fehlt')
+    f = e['folder']
+    if not os.path.exists(os.path.join(f, 'qualitaet.json')) or any(os.path.exists(os.path.join(f, n)) for n in ('korrekturen.log', 'whitelist.txt')):
+        raise ValueError('hat_arbeit')
+    lib_forget(bid)
+    for n in ('lesezeichen.json',):
+        try: os.remove(os.path.join(f, n))
+        except OSError: pass
+    ocr.cleanup(f)
+
+
 def scan(path):
     """finder.scan, ergänzt um das, was nur der Server weiß: Steht der Fund schon in der Bibliothek?"""
     r = finder.scan(path)
@@ -740,7 +756,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -750,6 +766,12 @@ class H(BaseHTTPRequestHandler):
                     return self.sendjson(dict(error='quelle_fehlt'), 400)
                 korrlib.set_config(body['tool'], body['path'])
                 return self.sendjson(ocr.tools())
+            if u.path == '/api/discard':
+                try:
+                    discard(body.get('id'))
+                    return self.sendjson({})
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
             if u.path == '/api/scan':
                 try:
                     return self.sendjson(scan(body.get('path') or ''))

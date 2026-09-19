@@ -50,7 +50,11 @@ button:disabled{opacity:.5;cursor:default}
 #ptext{font-size:13.5px;color:#555}
 .amp{display:inline-block;width:13px;height:13px;border-radius:50%;margin-right:7px;vertical-align:-1px}
 .amp.gruen{background:#3a6} .amp.gelb{background:#e6a700} .amp.rot{background:#c33}
-#result{line-height:1.55;margin-top:12px} #result small{color:#666} code{background:#eee;border-radius:3px;padding:0 4px;word-break:break-all}
+#result{line-height:1.55;margin-top:12px} #result small{color:#666}
+#done h3{margin:0 0 10px;font:19px Georgia,serif;color:#285} #done .verdict{font-size:16.5px;margin-bottom:2px} #done small{color:#666}
+#done .rec{margin:14px 0 4px;padding:10px 14px;border-left:5px solid #3a6;background:#eef7f1;border-radius:0 4px 4px 0;line-height:1.55}
+#done .rec.gelb{border-color:#e6a700;background:#fdf6e0} #done .rec.rot{border-color:#c33;background:#fdeaea} #done .rec b{display:block;margin-bottom:2px}
+#done .more{margin-top:10px;font-size:14px;color:#555;line-height:1.55} code{background:#eee;border-radius:3px;padding:0 4px;word-break:break-all}
 </style>
 <script src="/i18n.js"></script>
 </head>
@@ -95,9 +99,11 @@ button:disabled{opacity:.5;cursor:default}
  <div id="prog"><div id="bar"><i></i></div><span id="ptext"></span></div>
  <div class="msg" id="omsg"></div>
  <div id="result"></div>
+ <div id="done" style="display:none"></div>
  <div class="btns"><button type="button" id="bBack" data-t="back" style="display:none"></button><span class="sp"></span>
   <button type="button" id="oST" data-t="st_button" style="display:none"></button>
-  <button type="button" id="oCancel" data-t="cancel"></button><button type="submit" id="oGo" class="main" style="display:none"></button></div>
+  <button type="button" id="bRedo" style="display:none"></button>
+  <button type="button" id="oCancel" data-t="cancel"></button><button type="submit" id="oGo" class="main" style="display:none"></button><button type="button" id="bBook" style="display:none"></button></div>
 </form></div>
 <script>
 const $ = id => document.getElementById(id);
@@ -134,6 +140,7 @@ async function load() {
 
 // ---- Öffnen: Der Nutzer zeigt eine Datei oder einen Ordner, das Programm findet heraus, was es ist
 let job = null, tools = null, found = [], sel = null;
+const AUTO = location.hash.startsWith('#auto=');
 const ICON = { book: '📖', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️' };
 const usesPdf = f => f && (f.kind == 'pdf' || (f.kind == 'epub' && f.pdf));
 const pdfHasText = f => f && (f.kind == 'pdf' ? f.text : f.pdf_text);
@@ -141,10 +148,12 @@ const pdfHasText = f => f && (f.kind == 'pdf' ? f.text : f.pdf_text);
 const useText = () => usesPdf(sel) && pdfHasText(sel) && (sel.kind == 'epub' || document.querySelector('input[name=tl]:checked').value == '1');
 const needsOcr = () => sel && (sel.kind == 'images' || (usesPdf(sel) && !useText()));
 
-function step(n) {
-  $('s1').style.display = n == 1 ? '' : 'none'; $('s2').style.display = n == 2 ? '' : 'none';
+function step(n) {  // 1 zeigen · 2 Funde und Optionen · 3 fertig
+  $('s1').style.display = n == 1 ? '' : 'none'; $('s2').style.display = n == 2 ? '' : 'none'; $('done').style.display = n == 3 ? '' : 'none';
   $('bBack').style.display = n == 2 ? '' : 'none'; $('oGo').style.display = n == 2 ? '' : 'none';
-  if (n == 1) { $('oST').style.display = 'none'; $('result').innerHTML = ''; }
+  $('bBook').style.display = $('bRedo').style.display = 'none';
+  if (n != 2) { $('oST').style.display = 'none'; $('result').innerHTML = ''; }
+  $('oCancel').textContent = t(n == 3 ? 'close' : 'cancel'); $('omsg').style.display = n == 3 ? 'none' : '';
   $('omsg').textContent = '';
 }
 function openDialog(path) {
@@ -187,7 +196,7 @@ function showFound() {
   $('rest').style.display = 'none'; $('more').style.display = found.length > top ? '' : 'none';
   $('moreLink').textContent = t('more_found', { n: found.length - top });
   for (const el of document.querySelectorAll('input[name=cand]')) el.onchange = () => choose(+el.value);
-  choose(0);
+  choose(0).then(() => { if (AUTO) $('form').requestSubmit(); });
 }
 async function choose(n) {
   sel = found[n];
@@ -229,14 +238,14 @@ async function openBook(f) {
 }
 function busyUi(on) {
   $('prog').style.display = on ? 'block' : 'none'; $('oGo').disabled = $('oST').disabled = $('bBack').disabled = on;
-  $('oCancel').textContent = t(on ? 'stop' : 'cancel'); if (on) { $('bar').firstChild.style.width = '0'; $('ptext').textContent = ''; $('omsg').textContent = ''; $('result').innerHTML = ''; }
+  $('oCancel').textContent = t(on ? 'stop' : $('done').style.display == 'none' ? 'cancel' : 'close'); if (on) { $('bar').firstChild.style.width = '0'; $('ptext').textContent = ''; $('omsg').textContent = ''; $('result').innerHTML = ''; }
 }
 async function runJob(path, body) {
   busyUi(true);
   try {
     job = (await post(path, body)).job;
     while (true) {
-      await new Promise(r => setTimeout(r, 500));
+      if (!AUTO) await new Promise(r => setTimeout(r, 500));  // Selbsttest: ohne Pause, damit die künstliche Uhr des Headless-Browsers auf den Auftrag wartet
       const j = await (await fetch('/api/job/' + job)).json();
       if (j.total) $('bar').firstChild.style.width = (100 * j.done / j.total) + '%';
       $('ptext').textContent = j.msg ? t('prog_' + j.msg, { d: j.done, t: j.total }) : '';
@@ -245,21 +254,30 @@ async function runJob(path, body) {
     }
   } finally { job = null; busyUi(false); await update(); }
 }
-function resultHtml(r) {
-  const link = '<br><br><a href="/buch/' + r.id + '"><b>' + t('open_now') + ' →</b></a>';
-  let h = '';
-  if (r.warnings) h = esc(t('imp_done', { n: r.pages, i: r.images })) + r.warnings.map(w => '<br>' + esc(t('warn_' + w))).join('');
-  if (r.matched != null) h += t('epub_done', { m: Math.round(r.matched * 100) }) + '<br>';
-  const q = r.quality;
-  if (!q) return (h || esc(t('det_pages', { n: r.pages }))) + link;
-  const fromPdf = q.conf == null;  // Text aus dem PDF übernommen: keine Erkennungssicherheit bekannt
-  h += '<b><span class="amp ' + q.level + '"></span>' + t('q_' + q.level) + '</b><br><small>' + t(fromPdf ? 'q_values_text' : 'q_values', { n: r.pages, c: q.conf, d: Math.round(q.dict * 100) }) + '</small>';
-  if (r.matched == null) {
-    if (q.level != 'gruen') h += '<br>' + (fromPdf ? t('q_advice_text') + ' ' : '') + t('q_advice') + ' ' + help('transkribus', t('q_advice_link'));
-    if (q.ends.length * 4 >= r.pages) h += '<br>' + t('q_ends', { n: q.ends.length }) + ' ' + help('pdf-import', t('q_ends_link'));
-    else if (q.weak.length) h += '<br><small>' + t('q_weak', { p: q.weak.slice(0, 25).join(', ') + (q.weak.length > 25 ? ' …' : '') }) + '</small>';
+// Nach dem Einlesen: sagen, wie gut es geworden ist, EINE Empfehlung geben und den passenden Knopf hervorheben
+let last = null;
+function showDone(r) {
+  last = r; step(3);
+  const q = r.quality, fromPdf = q && q.conf == null, level = q ? q.level : 'gruen';
+  // neu erkennen geht nur, wenn der Text aus der Textebene eines PDF stammt und Tesseract da ist
+  const canRedo = fromPdf && r.matched == null && sel && sel.kind == 'pdf' && tools && tools.tesseract;
+  let h = '<h3>✔ ' + t('done_title', { n: r.pages }) + '</h3>';
+  if (r.warnings && r.warnings.length) h += r.warnings.map(w => '<div class="more">' + esc(t('warn_' + w)) + '</div>').join('');
+  if (r.matched != null) h += '<div class="verdict">' + t('epub_done', { m: Math.round(r.matched * 100) }) + '</div>';
+  if (q) h += '<div class="verdict"><span class="amp ' + level + '"></span><b>' + t('q_' + level) + '</b></div><small>' +
+    t(fromPdf ? 'q_values_text' : 'q_values', { n: r.pages, c: q.conf, d: Math.round(q.dict * 100) }) + '</small>';
+  const rec = r.matched != null || !q ? 'rec_gruen' : 'rec_' + level + (level == 'gruen' ? '' : canRedo ? '_redo' : fromPdf ? '_pdf' : '_ocr');
+  h += '<div class="rec ' + (rec == 'rec_gruen' ? '' : level) + '"><b>' + t('rec') + '</b>' + t(rec) +
+    (rec != 'rec_gruen' && !canRedo ? ' ' + help('transkribus', t('q_advice_link')) : '') + '</div>';
+  if (q && r.matched == null) {
+    if (q.ends.length * 4 >= r.pages) h += '<div class="more">' + t('q_ends', { n: q.ends.length }) + ' ' + help('pdf-import', t('q_ends_link')) + '</div>';
+    else if (q.weak.length && level != 'gruen') h += '<div class="more">' + t('q_weak', { p: q.weak.slice(0, 25).join(', ') + (q.weak.length > 25 ? ' …' : '') }) + '</div>';
   }
-  return h + link;
+  $('done').innerHTML = h;
+  // Hervorgehoben ist, was die Empfehlung sagt: bei schlechtem PDF-Text das Neuerkennen, sonst das Öffnen
+  const redoFirst = canRedo && level == 'rot';
+  $('bBook').style.display = ''; $('bBook').className = redoFirst ? '' : 'main'; $('bBook').textContent = t(level == 'rot' ? 'btn_open_anyway' : 'btn_open_book');
+  $('bRedo').style.display = canRedo && level != 'gruen' ? '' : 'none'; $('bRedo').className = redoFirst ? 'main' : ''; $('bRedo').textContent = t('btn_redo');
 }
 $('bOpen').onclick = () => openDialog('');
 $('cFile').onclick = () => pickAndScan('any');
@@ -268,6 +286,16 @@ $('bScan').onclick = doScan;
 $('iPath').addEventListener('keydown', e => { if (e.key == 'Enter') { e.preventDefault(); doScan(); } });
 $('cImg').onclick = async () => { const p = (await post('/api/choose', { kind: 'folder' })).path; if (p) $('oImages').value = p; };
 $('bBack').onclick = () => step(1);
+$('bBook').onclick = () => { if (last) location.href = '/buch/' + last.id; };
+$('bRedo').onclick = async () => {  // das eben Eingelesene verwerfen (es enthält noch keine Arbeit) und mit Tesseract neu erkennen
+  const old = last; step(2); document.querySelector('input[name=tl][value=""]').checked = true; await update();
+  try {
+    await post('/api/discard', { id: old.id });
+    const r = await runJob('/api/import_ocr', { source: sel.path, title: old.title, script: document.querySelector('input[name=script]:checked').value, textlayer: false });
+    showDone(r);
+  } catch (err) { $('omsg').textContent = err.message; }
+  load();
+};
 $('moreLink').onclick = e => { e.preventDefault(); $('rest').style.display = ''; $('more').style.display = 'none'; };
 for (const el of document.querySelectorAll('input[name=tl]')) el.onchange = update;
 $('oCancel').onclick = () => { if (job) post('/api/job/' + job + '/cancel', {}); else $('dlg').classList.remove('on'); };
@@ -279,7 +307,7 @@ $('form').onsubmit = async e => {
     const r = sel.kind == 'transkribus' ? await runJob('/api/import_transkribus', { job: true, source: sel.path, title, images: $('oImages').value.trim() })
       : sel.kind == 'epub' ? await runJob('/api/import_epub', { source: sel.path, pdf: sel.pdf, title, script, textlayer: useText() })
       : await runJob('/api/import_ocr', { source: sel.path, title, script, textlayer: useText() });
-    $('result').innerHTML = resultHtml(r); load();
+    showDone(r); load();
   } catch (err) { $('omsg').textContent = err.message; }
 };
 $('oST').onclick = async () => {
@@ -291,7 +319,8 @@ $('oST').onclick = async () => {
 };
 document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) $('dlg').classList.remove('on'); if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
 load();
-if (location.hash.startsWith('#open')) openDialog(location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');  // Einstieg aus der Hilfe
+// Einstieg aus der Hilfe: #open bzw. #open=<pfad>; #auto=<pfad> liest die Empfehlung gleich ein (Selbsttest, wie ?keys im Reader)
+if (location.hash.startsWith('#open') || AUTO) openDialog(location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');
 </script>
 </body>
 </html>

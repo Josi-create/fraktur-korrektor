@@ -138,3 +138,20 @@ def test_epub_und_pdf_ueber_die_schnittstelle(lib, tmp_path):
     j = wait(lib, lib.lpost('/api/import_epub', dict(source=str(tmp_path / 'kaputt.epub')))[1]['job'])
     assert (j['state'], j['error']) == ('error', 'kein_epub')
     assert lib.lpost('/api/scan', dict(path=str(tmp_path / 'fehlt')))[0] == 400
+
+
+def test_eben_eingelesenes_verwerfen(lib, tmp_path):
+    """»Text neu erkennen lassen« ersetzt das eben Eingelesene – aber nie ein Buch, in dem schon Arbeit steckt."""
+    fitz = pytest.importorskip('fitz')
+    make_searchable_pdf(str(tmp_path / 'p.pdf'), fitz)
+    r = wait(lib, lib.lpost('/api/import_ocr', dict(source=str(tmp_path / 'p.pdf'), textlayer=True, target=str(tmp_path / 'ziel')))[1]['job'])['result']
+    lib.lpost('/buch/%s/api/bookmark' % r['id'], dict(page='002', line=1))       # nur geöffnet und geblättert: darf weg
+    assert lib.lpost('/api/discard', dict(id=r['id']))[0] == 200
+    assert lib.lget('/api/library')[1]['books'] == [] and not os.path.exists(tmp_path / 'ziel')
+    r = wait(lib, lib.lpost('/api/import_ocr', dict(source=str(tmp_path / 'p.pdf'), textlayer=True, target=str(tmp_path / 'ziel')))[1]['job'])['result']
+    lib.lpost('/buch/%s/api/whitelist' % r['id'], dict(word='Kolonisten'))        # hier steckt Arbeit: bleibt
+    assert lib.lpost('/api/discard', dict(id=r['id'])) == (400, dict(error='hat_arbeit'))
+    assert os.path.exists(tmp_path / 'ziel' / '001.txt')
+    make_book(str(tmp_path / 'fremd'))                                           # nicht vom Programm eingelesen: bleibt
+    bid = lib.lpost('/api/open', dict(folder=str(tmp_path / 'fremd')))[1]['id']
+    assert lib.lpost('/api/discard', dict(id=bid))[0] == 400 and os.path.exists(tmp_path / 'fremd' / '001.txt')
