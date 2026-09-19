@@ -79,7 +79,13 @@ oder fehlen sie, hilft meist ein besseres Bild (ScanTailor) mehr als eine andere
 3. Transkribus zeigt an, **wie viele Credits** der Auftrag kostet und wie viele Sie noch haben. Erst dann
 4. auf **„Start recognition"**.
 
-Den Fortschritt sehen Sie unter **„AI Lab"**; je nach Andrang dauert es Minuten bis Stunden.
+**Danach dürfen Sie den Rechner ausschalten.** Die Erkennung läuft auf den Servern von READ-COOP in
+Innsbruck, nicht bei Ihnen; Ihr Computer wird dafür nicht gebraucht. Nur beim Hochladen (Schritt 3) muss er
+an bleiben, bis der Balken durchgelaufen ist.
+
+Je nach Andrang dauert die Erkennung Minuten bis Stunden. Für ein ganzes Buch geben Sie den Auftrag am besten
+abends und sehen am nächsten Morgen nach: Den Stand finden Sie unter **„AI Lab"**, das fertige Ergebnis
+außerdem im Dokument selbst.
 
 <!-- Platz für ein Bildschirmfoto der Modellauswahl -->
 

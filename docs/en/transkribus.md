@@ -79,7 +79,13 @@ missing, a better image (ScanTailor) usually helps more than a different setting
 3. Transkribus shows **how many credits** the job costs and how many you have left. Only then
 4. click **“Start recognition”**.
 
-You can follow the progress under **“AI Lab”**; depending on the queue it takes minutes to hours.
+**After that you may switch your computer off.** Recognition runs on READ-COOP's servers in Innsbruck, not
+on your machine; your computer is not needed for it. Only during the upload (step 3) does it have to stay on
+until the bar has finished.
+
+Depending on the queue, recognition takes minutes to hours. For a whole book, start the job in the evening
+and look again the next morning: you find the status under **“AI Lab”**, and the finished result in the
+document itself.
 
 <!-- room for a screenshot of the model list -->
 
