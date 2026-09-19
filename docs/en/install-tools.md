@@ -50,8 +50,20 @@ and stores it in `~/.fraktur-korrektor/tessdata`. If Fraktur models are already 
 3. In Fraktur-Korrektor, open a PDF; the window then offers **Show me the program …** – click it and select
    this `scantailor.exe`. Fraktur-Korrektor remembers it.
 
-**Mac:** in Terminal `brew install yb85/homebrew-tap/scantailor-advanced`
-(project: <https://github.com/yb85/scantailor-advanced-osx>; for Homebrew see Tesseract above).
+**Mac:** This is where it gets awkward – there is no ready-made ScanTailor for the Mac (as of September 2026
+the project publishes files for Windows and Linux only).
+
+- The Homebrew route (`brew install yb85/homebrew-tap/scantailor-advanced`) does not download a finished
+  program, it **builds one on your machine**, including the Qt library and its 38 parts. That takes hours. On
+  Intel Macs running macOS 26 this applies to every Homebrew package, because ready-made ones are no longer
+  provided for them.
+- As a stopgap there is an old ready-made program, *ScanTailor Universal 0.2.12* from 2021:
+  <https://github.com/trufanov-nok/scantailor-universal/releases/tag/0.2.12> (file `ScanTailorUniversal-0.2.12.dmg`).
+  It is not notarised by Apple, so it has to be opened with a right-click, and there is no guarantee that it
+  runs on current versions of macOS.
+
+**For a single book the effort rarely pays off.** If your scans are so poor that ScanTailor would be needed,
+[Transkribus](transkribus.md) usually gets you there faster.
 
 **Linux:** `.deb` package or AppImage from the page mentioned above, or your distribution's package.
 

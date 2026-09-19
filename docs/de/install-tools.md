@@ -49,8 +49,20 @@ Quelltext lädt der Fraktur-Korrektor es beim ersten Einlesen selbst herunter un
 3. Im Fraktur-Korrektor ein PDF öffnen; im Fenster erscheint dann **Programm zeigen …** – darauf klicken und diese
    `scantailor.exe` auswählen. Das merkt sich der Fraktur-Korrektor.
 
-**Mac:** im Terminal `brew install yb85/homebrew-tap/scantailor-advanced`
-(Projekt: <https://github.com/yb85/scantailor-advanced-osx>; Homebrew siehe oben bei Tesseract).
+**Mac:** Hier wird es unbequem – ein fertiges ScanTailor für den Mac gibt es nicht (Stand September 2026
+veröffentlicht das Projekt nur Dateien für Windows und Linux).
+
+- Der Weg über Homebrew (`brew install yb85/homebrew-tap/scantailor-advanced`) lädt kein fertiges Programm,
+  sondern **baut es auf Ihrem Rechner** – mitsamt der Programmbibliothek Qt und deren 38 Bestandteilen. Das
+  dauert Stunden. Auf Intel-Macs mit macOS 26 gilt das für jedes Homebrew-Paket, weil es dafür keine fertigen
+  Pakete mehr gibt.
+- Als Notlösung gibt es ein altes fertiges Programm, *ScanTailor Universal 0.2.12* von 2021:
+  <https://github.com/trufanov-nok/scantailor-universal/releases/tag/0.2.12> (Datei `ScanTailorUniversal-0.2.12.dmg`).
+  Es ist nicht von Apple beglaubigt, muss also mit der rechten Maustaste geöffnet werden, und ob es auf neuen
+  macOS-Fassungen läuft, ist nicht zugesichert.
+
+**Für ein einzelnes Buch lohnt der Aufwand selten.** Ist die Vorlage so schlecht, dass ScanTailor nötig wäre,
+kommen Sie mit [Transkribus](transkribus.md) meist schneller ans Ziel.
 
 **Linux:** `.deb`-Paket oder AppImage von der oben genannten Seite, oder das Paket Ihrer Distribution.
 
