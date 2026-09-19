@@ -4,12 +4,12 @@ py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"
 Ohne Buchordner erscheint die Bibliothek (Bücher öffnen, Transkribus-Export importieren).
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png|jpg,
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
-import sys, os, json, re, glob, time, uuid, hashlib, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
+import sys, os, json, re, glob, time, uuid, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import korrlib, pagexml, ocr, epub, finder
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))  # gepackt liegen dict/, docs/ und die HTML-Dateien im Bundle
 DONATE_URL = 'https://buymeacoffee.com/josicreate'  # leer = kein Spenden-Link
 LIBFILE = os.path.join(korrlib.HOME, 'bibliothek.json')
 LIBLOCK = threading.RLock()
@@ -720,8 +720,34 @@ def start_job(fn, *args):
     return jid
 
 
-def dialog(kind):
-    """Auswahldialog des Betriebssystems (läuft als eigener Prozess, weil tkinter den Hauptthread braucht)."""
+# Dateitypen des Mac-Dialogs als UTI; "any" muss alles zeigen, was finder.py erkennt.
+UTI = dict(pdf=['com.adobe.pdf'], zip=['public.zip-archive'],
+           any=['com.adobe.pdf', 'org.idpf.epub-container', 'public.zip-archive', 'public.xml', 'public.plain-text',
+                'public.jpeg', 'public.png', 'public.tiff'])
+PROMPT = dict(folder='Ordner wählen', pdf='PDF wählen', exe='Programm wählen', zip='Transkribus-Export (ZIP) wählen')
+
+
+def mac_dialog(kind):
+    """Auswahldialog über osascript: eine Mac-App bringt kein Tk mit, und dies ist der gewohnte Finder-Dialog."""
+    what = dict(folder='choose folder', exe='choose application as alias').get(kind, 'choose file')
+    types = '' if kind in ('folder', 'exe') else ' of type {%s}' % ', '.join('"%s"' % t for t in UTI.get(kind, UTI['any']))
+    prompt = ' with prompt "%s"' % PROMPT.get(kind, 'Datei oder Ordner wählen')
+    for script in (what + prompt + types, what + prompt):  # ohne Typfilter noch einmal, falls eine UTI unbekannt ist
+        r = subprocess.run(['osascript', '-e', 'POSIX path of (%s)' % script], capture_output=True, timeout=900)
+        if r.returncode == 0:
+            p = r.stdout.decode('utf-8').strip()
+            if kind == 'exe' and p.rstrip('/').endswith('.app'):
+                hits = sorted(glob.glob(os.path.join(p, 'Contents', 'MacOS', '*')))  # gebraucht wird die Datei im Bündel
+                return hits[0] if hits else p
+            return p
+        if b'-128' in r.stderr:  # abgebrochen
+            return ''
+    return ''
+
+
+def dialog(kind, out=None):
+    """Auswahldialog mit tkinter (Windows, Linux); läuft als eigener Prozess, weil tkinter den Hauptthread braucht.
+    Das Ergebnis geht in eine Datei, denn die gepackte App hat keine Standardausgabe."""
     import tkinter
     from tkinter import filedialog
     root = tkinter.Tk()
@@ -730,15 +756,32 @@ def dialog(kind):
     p = filedialog.askdirectory(parent=root) if kind == 'folder' else \
         filedialog.askopenfilename(parent=root, filetypes=dict(pdf=[('PDF', '*.pdf')], exe=[('*', '*.*')], any=[
             ('PDF, EPUB, ZIP, Bilder, Buchseiten', '*.pdf *.epub *.zip *.xml *.txt *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
-    sys.stdout.buffer.write((p or '').encode('utf-8'))
+    if out:
+        with open(out, 'w', encoding='utf-8') as f:
+            f.write(p or '')
+    else:
+        sys.stdout.buffer.write((p or '').encode('utf-8'))
 
 
 def choose(kind):
-    cmd = [sys.executable] + ([] if getattr(sys, 'frozen', False) else [os.path.abspath(__file__)]) + ['--dialog', kind]
+    if sys.platform == 'darwin':
+        try:
+            return mac_dialog(kind)
+        except (OSError, subprocess.TimeoutExpired):
+            return ''
+    out = os.path.join(tempfile.gettempdir(), 'fraktur-dialog-%s.txt' % uuid.uuid4().hex[:8])
+    cmd = [sys.executable] + ([] if getattr(sys, 'frozen', False) else [os.path.abspath(__file__)]) + ['--dialog', kind, out]
     try:
-        return subprocess.run(cmd, capture_output=True, timeout=900).stdout.decode('utf-8').strip()
+        subprocess.run(cmd, capture_output=True, timeout=900)
+        with open(out, encoding='utf-8') as f:
+            return f.read().strip()
     except (OSError, subprocess.TimeoutExpired):
         return ''
+    finally:
+        try:
+            os.remove(out)
+        except OSError:
+            pass
 
 
 # ---- Hilfe: docs/<sprache>/*.md als HTML
@@ -830,6 +873,8 @@ class H(BaseHTTPRequestHandler):
             return self.sendfile('bibliothek.html')
         if u.path == '/i18n.js':
             return self.sendfile('i18n.js', 'text/javascript')
+        if u.path == '/api/ping':
+            return self.sendjson(dict(app='fraktur-korrektor', version=version()))  # daran erkennt der Starter eine laufende Instanz
         if u.path == '/api/tools':
             return self.sendjson(ocr.tools())
         m = re.fullmatch(r'/api/job/([0-9a-f]{8})', u.path)
@@ -1021,8 +1066,7 @@ class Server(ThreadingHTTPServer):
         self.server_name, self.server_port = self.server_address[:2]
 
 
-def main():
-    global DEFAULT
+def parse_args(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('folder', nargs='?', help='Buchordner; ohne Angabe erscheint die Bibliothek')
     ap.add_argument('--port', type=int, default=8765)
@@ -1030,13 +1074,16 @@ def main():
     ap.add_argument('--title')
     ap.add_argument('--no-browser', action='store_true')
     ap.add_argument('--lan', action='store_true', help='auch für andere Rechner im lokalen Netz erreichbar (kein Passwortschutz!)')
-    A = ap.parse_args()
+    return ap.parse_args(argv)
+
+
+def setup(A):
+    """Wörterbuch wählen, Port belegen, ein Buch von der Kommandozeile laden; liefert (Server, Adresse).
+    Ist der Port belegt, kommt OSError durch – der Starter der gepackten App öffnet dann die laufende Instanz."""
+    global DEFAULT
     if A.dic:
         korrlib.set_dic(A.dic)
-    try:
-        httpd = Server(('0.0.0.0' if A.lan else '127.0.0.1', A.port), H)
-    except OSError:
-        sys.exit('Port %d ist belegt – läuft der Fraktur-Korrektor schon? Sonst mit --port <nummer> einen anderen Port wählen.' % A.port)
+    httpd = Server(('0.0.0.0' if A.lan else '127.0.0.1', A.port), H)
     if A.folder:
         f = find_book_folder(A.folder)
         if not f:
@@ -1046,7 +1093,15 @@ def main():
         print('Lade Wörterbuch und Seiten …')
         get_book(DEFAULT).overview()
         korrlib.save_cache()
-    url = 'http://localhost:%d' % A.port
+    return httpd, 'http://localhost:%d' % A.port
+
+
+def main(argv=None):
+    A = parse_args(argv)
+    try:
+        httpd, url = setup(A)
+    except OSError:
+        sys.exit('Port %d ist belegt – läuft der Fraktur-Korrektor schon? Sonst mit --port <nummer> einen anderen Port wählen.' % A.port)
     print('Fraktur-Korrektor: %s  (Strg+C beendet)' % url)
     if A.lan:
         import socket
@@ -1065,7 +1120,7 @@ def main():
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 3 and sys.argv[1] == '--dialog':
-        dialog(sys.argv[2])
+    if len(sys.argv) >= 3 and sys.argv[1] == '--dialog':
+        dialog(*sys.argv[2:4])
     else:
         main()

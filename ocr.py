@@ -9,16 +9,25 @@ FRAKTUR = ['frak2021', 'deu_latf', 'deu_frak', 'frk', 'Fraktur']  # Modelle in d
 MODELS = dict(fraktur=FRAKTUR, antiqua=['deu'] + FRAKTUR)  # frak2021 ist auch an Antiqua trainiert – Ersatz, wenn deu fehlt
 MODEL_URL = 'https://ub-backup.bib.uni-mannheim.de/~stweil/tesstrain/frak2021/tessdata_fast/frak2021_0.905.traineddata'
 TESSDATA = os.path.join(korrlib.HOME, 'tessdata')  # eigene Modelle; der Tesseract-Ordner ist oft nicht beschreibbar
+BUNDLE = getattr(sys, '_MEIPASS', None)  # in der gepackten App liegen Tesseract und die Modelle bei
+
+
+def bundled(*parts):
+    """Pfad in der gepackten App – None, wenn ungepackt oder nicht vorhanden."""
+    p = os.path.join(BUNDLE, *parts) if BUNDLE else None
+    return p if p and os.path.exists(p) else None
 SRCEXT = ('.png', '.jpg', '.jpeg', '.tif', '.tiff')
 NOWIN = dict(creationflags=subprocess.CREATE_NO_WINDOW) if os.name == 'nt' else {}
 DPI = 300
 NOISE = re.compile(r"[|\\/_{}\[\]~^·.,;:'`´-]{1,3}")  # allein stehende Zeichen, wie sie die OCR aus Rändern und Flecken liest
 
 
-def _find(conf_key, names, places):
+def _find(conf_key, names, places, first=None):
     c = korrlib.config().get(conf_key)
     if c and os.path.exists(c):
         return c
+    if first:  # mitgeliefert: geht vor allem, was auf dem Rechner sonst herumliegt (nur die Wahl von Hand zählt mehr)
+        return first
     for n in names:
         w = shutil.which(n)
         if w:
@@ -33,7 +42,8 @@ def _find(conf_key, names, places):
 def find_tesseract():
     return _find('tesseract', ['tesseract'], [
         r'%ProgramFiles%\Tesseract-OCR\tesseract.exe', r'%ProgramFiles(x86)%\Tesseract-OCR\tesseract.exe',
-        r'%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe', '/opt/homebrew/bin/tesseract', '/usr/local/bin/tesseract'])
+        r'%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe', '/opt/homebrew/bin/tesseract', '/usr/local/bin/tesseract'],
+        bundled('tesseract', 'tesseract.exe' if os.name == 'nt' else 'tesseract'))
 
 
 def find_scantailor():
@@ -54,7 +64,7 @@ def _langs(tess, tessdata=None):
 
 def pick_model(tess, script='fraktur'):
     """(modell, tessdata-ordner oder None) für fraktur | antiqua; bei gleichem Rang gehen die eigenen Modelle vor."""
-    dirs = ([TESSDATA] if os.path.isdir(TESSDATA) else []) + [None]
+    dirs = [d for d in (TESSDATA, bundled('tesseract', 'tessdata')) if d and os.path.isdir(d)] + [None]
     have = [(d, _langs(tess, d)) for d in dirs]
     for m in MODELS.get(script, FRAKTUR):
         for d, langs in have:

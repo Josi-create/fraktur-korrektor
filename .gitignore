@@ -1,8 +1,19 @@
 __pycache__/
 *.pyc
+.venv/
 # Buchdaten gehören nicht ins Repository (Urheberrecht!)
 buecher/
 *.pdf
 *.png
 *.tif
 *.zip
+# Das Programmsymbol und die Bildschirmfotos der Anleitungen gehören aber dazu
+!icon.png
+!docs/*/img/*.png
+# Bauen: PyInstaller, mitgeliefertes Tesseract, aus icon.png erzeugtes Mac-Symbol
+build/
+dist/
+vendor/
+icon.icns
+icon.iconset/
+*.egg-info/

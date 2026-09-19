@@ -6,9 +6,9 @@ Welche Rechtschreibung gilt, ist je Buch wählbar (DICS):
   neu      neue Rechtschreibung ab 1996 (dass, Schifffahrt) – mitgeliefert: dict/de_DE_frami
   vor1901  kein Wörterbuch, sondern Regeln: Thür, seyn, Noth, civilisiren gelten, wenn die heutige Form bekannt ist
 dict/zusatz.txt: zusätzlich gültige Wörter (Abkürzungen); dict/fallen.txt: nie gültig, weil fast immer OCR-Fehler (baß)."""
-import os, re, glob, json, atexit, hashlib, collections, functools, itertools
+import os, re, sys, glob, json, atexit, hashlib, collections, functools, itertools
 from spylls.hunspell import Dictionary
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))  # gepackt liegt dict/ im Bundle
 HOME = os.environ.get('FRAKTUR_HOME') or os.path.join(os.path.expanduser('~'), '.fraktur-korrektor')
 WORD = re.compile(r"[A-Za-zÄÖÜäöüß]+")
 DICS = ('1901', 'neu', 'vor1901')
