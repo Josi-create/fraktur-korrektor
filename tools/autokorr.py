@@ -47,10 +47,11 @@ for pg, lines in pages.items():
         if b and len(b) == len(w1 + w2):
             nb1, nb2 = b[:len(w1)], b[len(w1):]
             new[i] = new[i][:s1] + nb1 + new[i][s1+len(w1):]
-            new[j] = nb2 + new[j][len(w2):]
+            s2 = toks[j][0][0]  # hinter etwaiger Auszeichnung (<td>)
+            new[j] = new[j][:s2] + nb2 + new[j][s2+len(w2):]
             log.append(f'{pg}	{i+1}	{w1}¬{w2}	{nb1}¬{nb2}	' + sicher(b)); n += 1
             toks[i] = toks[i][:-1]; toks[j] = toks[j][1:]
-    frag = {(i, s1) for i, s1, w1, j, w2 in joined} | {(j, 0) for i, s1, w1, j, w2 in joined}
+    frag = {(i, s1) for i, s1, w1, j, w2 in joined} | {(j, toks[j][0][0]) for i, s1, w1, j, w2 in joined}
     for i, tl in enumerate(toks):
         for s, w in reversed(tl):
             if (i, s) in frag: continue

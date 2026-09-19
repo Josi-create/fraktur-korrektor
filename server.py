@@ -185,10 +185,10 @@ class Book:
         out = []
         toks, joined = joined_tokens(lines)
         jstart = {(i, s1) for i, s1, w1, j, w2 in joined}
-        jend = {(j, 0) for i, s1, w1, j, w2 in joined}
+        jend = {(j, toks[j][0][0]) for i, s1, w1, j, w2 in joined}  # der zweite Teil beginnt hinter etwaiger Auszeichnung (<td>)
         for i, s1, w1, j, w2 in joined:
             if not (known(w1 + w2, freq, dics) or (w1 + w2) in wl):
-                out.append(dict(line=i, start=s1, len=len(w1), word=w1 + '¬' + w2, kind='oov'))
+                out.append(dict(line=i, start=s1, len=len(w1), word=w1 + '¬' + w2, kind='oov', start2=toks[j][0][0]))
         for i, tl in enumerate(toks):
             if lines[i].startswith('#'):
                 continue
@@ -276,7 +276,7 @@ class Book:
             self.refresh()
             for pg, lines in self.pages.items():
                 toks, joined = joined_tokens(lines)
-                frag = {(i, s1) for i, s1, w1, j, w2 in joined} | {(j, 0) for i, s1, w1, j, w2 in joined}
+                frag = {(i, s1) for i, s1, w1, j, w2 in joined} | {(j, toks[j][0][0]) for i, s1, w1, j, w2 in joined}
                 hits = [(i, s1, len(w1), True) for i, s1, w1, j, w2 in joined if w1 + w2 == word]
                 hits += [(i, s, len(w), False) for i, tl in enumerate(toks) if not lines[i].startswith('#')
                          for s, w in tl if w == word and (i, s) not in frag]
@@ -320,7 +320,8 @@ class Book:
                         w1, w2 = m[0]
                         n1 = len(w1) if len(new) == len(word) else min(max(1, round(len(new) * len(w1) / len(word))), len(new) - 1)
                         lines[i] = lines[i][:st] + new[:n1] + lines[i][st + len(w1):]
-                        lines[i + 1] = new[n1:] + lines[i + 1][len(w2):]
+                        s2 = toks[i + 1][0][0]
+                        lines[i + 1] = lines[i + 1][:s2] + new[n1:] + lines[i + 1][s2 + len(w2):]
                     elif lines[i][st:st + len(word)] == word:
                         lines[i] = lines[i][:st] + new + lines[i][st + len(word):]
                     else:
@@ -404,6 +405,37 @@ class Book:
             for e in edits:
                 self.klog('edit', pg, e['line'], e['old'], e['new'])
             return self.page_data(pg)
+
+    def markup(self, pg, body):
+        """Tabelle setzen/entfernen bzw. Überschrift: baut die Änderungen und schickt sie durch edit() – mit derselben Prüfung
+        (die Zeilen müssen noch so aussehen wie im Browser) und demselben Protokoll. Liefert (seitendaten, fehler)."""
+        with self.lock:
+            self.refresh()
+            lines = self.pages[pg]
+            a, b = body.get('start', body.get('line', 0)), body.get('end', body.get('line', 0))
+            if not (0 <= a <= b < len(lines)):
+                return None, 409
+            if body.get('kind') == 'untable':
+                blk = korrlib.table_block(lines, a)
+                if not blk:
+                    return None, 400
+                a, b = blk
+                new = [korrlib.TABLETAG.sub('', l) for l in lines[a:b + 1]]
+            elif body.get('kind') == 'table':
+                if lines[a:b + 1] != body.get('old') or any(l == '---' or (k == 0 and l.startswith('#')) for k, l in enumerate(lines[a:b + 1], a)):
+                    return None, 409
+                new = korrlib.make_table(lines[a:b + 1], body.get('cols', 2), bool(body.get('head')))
+            elif body.get('kind') == 'heading':
+                if lines[a] != body.get('old') or lines[a] == '---' or (a == 0 and lines[a].startswith('#')):
+                    return None, 409
+                if korrlib.table_block(lines, a):  # <h2><td>…</td></h2> wäre falsch verschachtelt
+                    return None, 400
+                new = [korrlib.heading(lines[a], int(body.get('level') or 0))]
+                b = a
+            else:
+                return None, 400
+            edits = [dict(line=a + k, old=lines[a + k], new=n) for k, n in enumerate(new) if n != lines[a + k]]
+            return (self.edit(pg, edits) if edits else self.page_data(pg)), None
 
     def whitelist(self):
         with self.lock:
@@ -855,6 +887,13 @@ class H(BaseHTTPRequestHandler):
         if m:
             r = book.edit(m.group(1), body['edits'])
             return self.sendjson(r) if r else self.send(409, '{}')
+        m = re.fullmatch(r'/api/markup/(\d{3})', rest)
+        if m:
+            try:
+                r, err = book.markup(m.group(1), body)
+            except KeyError:
+                return self.send(404, '{}')
+            return self.sendjson(r) if r else self.send(err or 409, '{}')
         m = re.fullmatch(r'/api/fnsep/(\d{3})', rest)
         if m:
             r = book.fnsep(m.group(1), body['line'], body['old'])

@@ -40,7 +40,8 @@ danach sind die Prüfergebnisse zwischengespeichert.
 
 ## Buchordner
 
-    NNN.txt        eine Datei je Seite: optional "# Kopfzeile", Haupttext, "---", Fußnoten
+    NNN.txt        eine Datei je Seite: optional "# Kopfzeile", Haupttext, "---", Fußnoten; Auszeichnung als XHTML wie im
+                   EPUB (<table><tr><td>, <h2>, <em> …) – jede Zeile bleibt eine Zeile
     lines.json     Zeilengeometrie je Seite (aus PAGE-XML, siehe tools/build_text.py)
     img/NNN.png    Seitenbilder (PNG oder JPG)
     autokorr.log   optional: Protokoll der automatischen Ersetzungen (unsichere werden orange markiert)

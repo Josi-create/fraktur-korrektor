@@ -5,6 +5,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Auszeichnung beim Lesen** (#38): `T` macht aus getrennten Zeilen eine Tabelle (Bereich wählen, Spaltenzahl, Vorschau,
+  Spaltenköpfe; `T` auf der Tabelle löst sie wieder auf), `H` zeichnet Überschriften aus (Ebene 1–3). Geschrieben wird XHTML
+  wie im EPUB (`<table><tr><td>`, `<h2>`), kein eigenes Format; jede Zeile bleibt eine Zeile, damit die Bildzuordnung hält.
+  Die Wortprüfung, Serienkorrektur und die Lage im Bild übergehen die Auszeichnung; getrennte Wörter werden auch hinter
+  Auszeichnung zusammengefügt.
 - **Wörterbuch je Buch** (Taste `D`): Rechtschreibung 1901–1996, neue Rechtschreibung (mitgeliefert: `dict/de_DE_frami`, GPL)
   und »Schreibungen vor 1901 gelten lassen« (Thür, seyn, giebt – über Regeln); das Programm schätzt das Erscheinungsjahr und
   schlägt die Einstellung vor; das Fenster zeigt die Zahl der roten Wörter vorher/nachher. Gespeichert in `buch.json`.

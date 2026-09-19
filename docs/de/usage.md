@@ -28,6 +28,8 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen / Korrektur | `F9` | Serienkorrektur (siehe unten) |
 | Lesen | `U` | letzte Serienkorrektur zurücknehmen |
 | Lesen | `F` | Fußnoten beginnen mit der Lesezeile (siehe unten) |
+| Lesen | `T` | Tabelle: aus getrennten Zeilen eine Tabelle machen bzw. wieder auflösen (siehe unten) |
+| Lesen | `H` | Überschrift: Ebene 1 → 2 → 3 → keine (siehe unten) |
 | Lesen | `W` | Whitelist anzeigen |
 | Lesen | `D` | Wörterbuch: welche Rechtschreibung gilt in diesem Buch (siehe unten) |
 | überall | `F1` | diese Hilfe |
@@ -69,6 +71,45 @@ dabei unangetastet.
 Fußnoten stehen in der Textdatei unter einer Zeile `---` und laufen immer bis zum Seitenende. `F` setzt
 oder verschiebt diesen Trenner vor die Lesezeile. Steht die Lesezeile auf der ersten Fußnotenzeile, nimmt
 `F` den Trenner wieder weg.
+
+## Tabellen (T)
+
+Eine Texterkennung zerreißt Tabellen meist in einzelne Zeilen – aus einer Aufstellung wird
+
+    im Jahre 1811
+    16 842 Eimer,
+    1812-
+    12 409
+
+Stellen Sie die Lesezeile auf die erste Zeile und drücken Sie `T`. Mit `↓` ziehen Sie den Bereich bis zur letzten Zeile
+der Tabelle, mit `2` … `9` wählen Sie die Zahl der Spalten; die Vorschau oben zeigt sofort, wie sich die Zeilen auf Reihen
+und Spalten verteilen (der Reihe nach, von links nach rechts). `H` macht die erste Reihe zu Spaltenköpfen, `Enter`
+übernimmt, `Esc` bricht ab. `T` auf einer vorhandenen Tabelle nimmt die Auszeichnung wieder weg – der Text bleibt.
+
+Das Programm erfindet dafür kein eigenes Format, sondern schreibt dieselbe Auszeichnung in den Text, die auch ein EPUB
+benutzt (XHTML):
+
+    <table><tr><td>im Jahre 1811</td>
+    <td>16 842 Eimer,</td></tr>
+    <tr><td>1812-</td>
+    <td>12 409</td></tr></table>
+
+Jede Zeile bleibt dabei eine Zeile – eine Zelle je Zeile –, damit die Zuordnung zum Seitenbild erhalten bleibt. Die
+Auszeichnung erscheint im Text klein und blass, die Tabelle mit blauem Rand; die Wortprüfung übergeht sie. Den Inhalt der
+Zellen korrigieren Sie wie jeden anderen Text (überflüssige Striche wie in `1812-` mit `F2` löschen).
+
+Grenzen: Die Zellen müssen in Lesereihenfolge stehen (Reihe für Reihe). Hat die Texterkennung eine Tabelle spaltenweise
+gelesen oder zwei Zellen in eine Zeile gesetzt, hilft `F2`: Dort lässt sich die Auszeichnung von Hand ergänzen, zum Beispiel
+`</td><td>` zwischen zwei Zellen derselben Zeile.
+
+## Überschriften (H)
+
+`H` zeichnet die Lesezeile als Überschrift aus: beim ersten Mal Ebene 1 (`<h1>…</h1>`), bei jedem weiteren Druck die
+nächste Ebene, nach Ebene 3 wieder gewöhnlicher Text. Überschriften erscheinen größer und fett. Ein späterer EPUB-Export
+kann daraus Kapitel und Inhaltsverzeichnis bilden.
+
+Wer mag, kann mit `F2` auch weitere Auszeichnung von Hand eintragen; das Programm kennt `<em>`, `<strong>`, `<i>`, `<b>`,
+`<sup>`, `<sub>`, `<p>`, `<blockquote>` und `<br/>` und behandelt sie nicht als Wörter.
 
 ## Whitelist (W)
 

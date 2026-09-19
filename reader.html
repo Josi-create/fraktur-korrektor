@@ -45,6 +45,13 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .flag{background:#f99;border-radius:2px}
 .auto{background:#fc8;border-radius:2px}
 .curflag{outline:2px solid #c00}
+/* Auszeichnung im Text (XHTML wie im EPUB): klein und blass, damit der Text lesbar bleibt */
+.xt{color:#9aa7b4;font:12px Consolas,monospace}
+#lines div.intable{box-shadow:inset 3px 0 #69c;background:#f3f8fc}
+#lines div.intable.cur{background:#fff3b8}
+#lines div.tsel{background:#d6eaff !important;color:#000}
+#lines div.hd1{font-size:27px;font-weight:bold;color:#222} #lines div.hd2{font-size:23px;font-weight:bold;color:#222} #lines div.hd3{font-size:20px;font-weight:bold;color:#222}
+#tprev{border-collapse:collapse;font:14px Georgia,serif;margin-top:6px;color:#222} #tprev td,#tprev th{border:1px solid #9bc;padding:1px 9px} #tprev th{background:#e3eefa}
 #centerline{position:absolute;left:0;width:5px;top:25%;height:30px;margin-top:-15px;background:#c90;border-radius:0 3px 3px 0}
 #shint{margin-top:6px;font-size:14.5px;color:#a40}
 #serie{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
@@ -144,9 +151,15 @@ const WRE = /^[A-Za-zÄÖÜäöüß]+/;
 const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
-const HELP = { read: t('help_read'), fix: t('help_fix'), free: t('help_free') };
+const HELP = { read: t('help_read'), fix: t('help_fix'), free: t('help_free'), table: t('help_table') };
 
 function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+// Auszeichnung: dieselben Elemente wie der Server (korrlib.MARKUP)
+const TAGS = 'table|tr|td|th|h[1-6]|em|strong|i|b|sup|sub|p|blockquote|br';
+const TAGRE = new RegExp('</?(?:' + TAGS + ')\\s*/?>', 'g'), TAGESC = new RegExp('&lt;(/?(?:' + TAGS + ')\\s*/?)>', 'g');
+function strip(s) { return s.replace(TAGRE, ''); }
+function vis(l, pos) { return strip(l.slice(0, pos)).length; }  // Zeichenposition ohne die Auszeichnung davor – für die Lage im Bild
+function fmt(s) { return esc(s).replace(TAGESC, '<span class="xt">&lt;$1&gt;</span>'); }
 function isJoin(f) { return f && f.word.indexOf('¬') >= 0; }
 function part2len(f) { return f.word.length - f.len - 1; }
 function skippable(i) { const l = data.lines[i]; return l.trim() === '' || l === '---'; }
@@ -186,16 +199,28 @@ function mark(i, b) {
   b = b || data;
   const l = b.lines[i];
   const fs = b.flags.filter(f => f.line == i).map(f => ({ s: f.start, n: f.len, k: f.kind, c: f === cf }));
-  for (const f of b.flags) if (isJoin(f) && f.line + 1 == i) fs.push({ s: 0, n: part2len(f), k: f.kind, c: f === cf });
+  for (const f of b.flags) if (isJoin(f) && f.line + 1 == i) fs.push({ s: f.start2 || 0, n: part2len(f), k: f.kind, c: f === cf });
   fs.sort((a, b) => b.s - a.s);
   let parts = [], last = l.length;
   for (const f of fs) {
-    parts.unshift(esc(l.slice(f.s + f.n, last)));
+    parts.unshift(fmt(l.slice(f.s + f.n, last)));
     parts.unshift('<span class="' + (f.k == 'auto' ? 'auto' : 'flag') + (f.c ? ' curflag' : '') + '">' + esc(l.slice(f.s, f.s + f.n)) + '</span>');
     last = f.s;
   }
-  parts.unshift(esc(l.slice(0, last)));
+  parts.unshift(fmt(l.slice(0, last)));
   return parts.join('') || ' ';
+}
+function decorate(els, b) {
+  // Tabellenzeilen und Überschriften kenntlich machen
+  let inT = false;
+  b.lines.forEach((l, i) => {
+    const d = els[i]; if (!d) return;
+    if (l.includes('<table>')) inT = true;
+    d.classList.toggle('intable', inT);
+    if (l.includes('</table>')) inT = false;
+    const m = l.match(/^<h([1-6])>/);
+    for (const n of [1, 2, 3]) d.classList.toggle('hd' + n, !!m && Math.min(3, +m[1]) == n);
+  });
 }
 function renderText() {
   const box = $('lines'); box.innerHTML = ''; lineEls = []; nbEls = {};
@@ -210,19 +235,23 @@ function renderText() {
       box.appendChild(d); els.push(d);
     });
     nbEls[b.page] = els; if (b === data) lineEls = els;
+    decorate(els, b);
   }
 }
 function render() {
   // Textspalte
-  lineEls.forEach((d, i) => { if (!d.classList.contains('sep')) { d.innerHTML = mark(i); d.classList.toggle('cur', i == li); } });
+  lineEls.forEach((d, i) => { if (!d.classList.contains('sep')) { d.innerHTML = mark(i); d.classList.toggle('cur', i == li); d.classList.toggle('tsel', !!tb && i >= tb.a && i <= tb.b); } });
+  decorate(lineEls, data);
   layoutText(); layoutImage();
   // Kopf
-  const m = $('mode'); m.className = mode == 'read' ? '' : mode; m.textContent = t(mode == 'read' ? 'mode_read' : mode == 'fix' ? 'mode_fix' : 'mode_free');
+  const m = $('mode'); m.className = mode == 'read' ? '' : mode == 'table' ? 'free' : mode;
+  m.textContent = t(mode == 'read' ? 'mode_read' : mode == 'fix' ? 'mode_fix' : mode == 'table' ? 'mode_table' : 'mode_free');
   const total = ov.reduce((a, o) => a + o.n, 0);
   $('pos').textContent = t('pos', { a: li + 1, b: data.lines.length, c: data.flags.length, d: total }) + (data.geo ? '' : t('nogeo'));
   // Korrekturfeld
   $('help').innerHTML = HELP[mode] || '';
-  $('shint').innerHTML = pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
+  $('shint').innerHTML = mode == 'table' ? tbPreview() : pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
+  if (mode == 'table') { const c = tbCells().length; $('word').innerHTML = t('tbl_word', { n: c, r: Math.ceil(c / tb.cols), c: tb.cols }); }
   const e1 = $('edit'), e2 = $('edit2');
   if (mode == 'read') {
     e1.style.display = 'none'; e2.style.display = 'none'; e1.blur(); e2.blur();
@@ -262,11 +291,11 @@ function layoutImage() {
   const lh = g.y1 - g.y0;
   box(hl, g.x0 - 6, g.y0 - 2, g.x1 - g.x0 + 12, lh + 4); hl.style.borderWidth = '0';
   if (mode == 'fix' && cf) {
-    const L = data.lines[cf.line].length || 1;
-    const wx0 = g.x0 + (g.x1 - g.x0) * cf.start / L, wx1 = g.x0 + (g.x1 - g.x0) * (cf.start + cf.len) / L;
+    const ln = data.lines[cf.line], L = strip(ln).length || 1, v0 = vis(ln, cf.start);  // Auszeichnung nimmt im Bild keinen Platz ein
+    const wx0 = g.x0 + (g.x1 - g.x0) * v0 / L, wx1 = g.x0 + (g.x1 - g.x0) * (v0 + cf.len) / L;
     box(hw, wx0 - 5, g.y0 - 3, wx1 - wx0 + 10, lh + 6);
     const g2 = isJoin(cf) ? data.geo[cf.line + 1] : null;
-    if (g2) { const L2 = data.lines[cf.line + 1].length || 1; box(hw2, g2.x0 - 5, g2.y0 - 3, (g2.x1 - g2.x0) * part2len(cf) / L2 + 10, g2.y1 - g2.y0 + 6); }
+    if (g2) { const L2 = strip(data.lines[cf.line + 1]).length || 1; box(hw2, g2.x0 - 5, g2.y0 - 3, (g2.x1 - g2.x0) * part2len(cf) / L2 + 10, g2.y1 - g2.y0 + 6); }
   }
 }
 
@@ -367,8 +396,8 @@ function renderSeries() {
     let crop = '<div class="crop" style="width:' + CW + 'px;height:36px"></div>';
     const sz = ser.sizes[o.page];
     if (o.geo && sz) {
-      const g = o.geo, L = o.text.length || 1, lh = g.y1 - g.y0, pad = lh * 0.35;
-      const wx0 = g.x0 + (g.x1 - g.x0) * o.start / L, wx1 = g.x0 + (g.x1 - g.x0) * (o.start + o.len) / L;
+      const g = o.geo, L = strip(o.text).length || 1, v0 = vis(o.text, o.start), lh = g.y1 - g.y0, pad = lh * 0.35;
+      const wx0 = g.x0 + (g.x1 - g.x0) * v0 / L, wx1 = g.x0 + (g.x1 - g.x0) * (v0 + o.len) / L;
       let left = (wx0 + wx1) / 2 - CW / K / 2; left = Math.max(0, Math.min(left, sz[0] - CW / K));
       const top = g.y0 - pad, h = (lh + 2 * pad) * K;
       crop = '<div class="crop" style="width:' + CW + 'px;height:' + h + 'px;background-image:url(' + o.img + ');background-size:' + (sz[0] * K) + 'px ' + (sz[1] * K) + 'px;background-position:' + (-left * K) + 'px ' + (-top * K) + 'px">' +
@@ -424,6 +453,52 @@ async function serieKey(e) {
   else if (k == 'Enter') { e.preventDefault(); await applySeries(); return; }
   else return;
   e.preventDefault(); updateSeries();
+}
+// ---- Auszeichnung beim Lesen: T macht aus getrennten Zeilen eine Tabelle, H eine Überschrift. Geschrieben wird XHTML wie im
+// EPUB; jede Zeile bleibt eine Zeile (eine Zelle), damit die Bildzuordnung hält.
+let tb = null;
+const plainLine = i => !skippable(i) && !(i == 0 && data.lines[0].startsWith('#'));
+async function markup(body) {
+  const r = await fetch(BASE + '/api/markup/' + pg, { method: 'POST', body: JSON.stringify(body) });
+  if (!r.ok) { await loadPage(pg, li); msg = t('changed_outside'); return false; }
+  data = await r.json(); updateCount(); renderText(); pending = null; return true;
+}
+function tbCells() { const c = []; for (let i = tb.a; i <= tb.b; i++) if (data.lines[i].trim()) c.push(strip(data.lines[i])); return c; }
+function tbPreview() {
+  const c = tbCells(), rows = [];
+  for (let k = 0; k < c.length; k += tb.cols) rows.push(c.slice(k, k + tb.cols));
+  return '<table id="tprev">' + rows.slice(0, 7).map((r, n) => '<tr>' + r.map(x => (tb.head && n == 0 ? '<th>' : '<td>') + esc(x) + (tb.head && n == 0 ? '</th>' : '</td>')).join('') + '</tr>').join('') +
+    (rows.length > 7 ? '<tr><td colspan="' + tb.cols + '">…</td></tr>' : '') + '</table>';
+}
+async function tableKey() {
+  if (!plainLine(li)) return;
+  if (lineEls[li].classList.contains('intable')) {  // schon eine Tabelle: wieder auflösen
+    if (confirm(t('tbl_remove')) && await markup({ kind: 'untable', line: li })) msg = t('tbl_removed');
+    render(); return;
+  }
+  tb = { a: li, b: li, cols: 2, head: false }; mode = 'table'; msg = ''; pending = null; render();
+}
+async function tbKey(e) {
+  const k = e.key;
+  if (k == 'Escape') { li = tb.a; tb = null; mode = 'read'; }
+  else if (k == 'ArrowDown' || k == 'j') { if (tb.b + 1 < data.lines.length && data.lines[tb.b + 1] != '---') li = ++tb.b; }
+  else if (k == 'ArrowUp' || k == 'k') { if (tb.b > tb.a) li = --tb.b; }
+  else if (/^[1-9]$/.test(k)) tb.cols = +k;
+  else if (k == 'h' || k == 'H') tb.head = !tb.head;
+  else if (k == 'Enter') {
+    const x = tb, n = tbCells().length; tb = null; mode = 'read'; li = x.a;
+    if (await markup({ kind: 'table', start: x.a, end: x.b, cols: x.cols, head: x.head, old: data.lines.slice(x.a, x.b + 1) }))
+      msg = t('tbl_done', { r: Math.ceil(n / x.cols), c: x.cols });
+    bookmark();
+  } else return;
+  e.preventDefault(); render();
+}
+async function headingKey() {
+  if (!plainLine(li)) return;
+  if (lineEls[li].classList.contains('intable')) { msg = t('hd_in_table'); render(); return; }
+  const m = data.lines[li].match(/^<h([1-6])>/), level = m ? (+m[1] >= 3 ? 0 : +m[1] + 1) : 1;  // H wiederholt: 1 → 2 → 3 → keine
+  if (await markup({ kind: 'heading', line: li, level, old: data.lines[li] })) msg = level ? t('hd_set', { n: level }) : t('hd_removed');
+  render();
 }
 // ---- Wörterbuch: welche Rechtschreibung gilt für dieses Buch (buch.json)
 let dicsChanged = false;
@@ -525,6 +600,7 @@ async function onKey(e) {
   if (e.key == 'F1') { e.preventDefault(); window.open($('helplink').href, '_blank'); return; }
   if (e.ctrlKey || e.altKey || e.metaKey || !data) return;
   if (mode == 'serie') return serieKey(e);
+  if (mode == 'table') return tbKey(e);
   if (mode == 'wlist') return wlKey(e);
   if (mode == 'dics') return dicsKey(e);
   if (e.key == 'F9') { e.preventDefault(); await startSeries(); return; }
@@ -551,6 +627,8 @@ async function onKey(e) {
     else if (k == 'w' || k == 'W') await openWhitelist();
     else if (k == 'd' || k == 'D') await openDics();
     else if (k == 'f' || k == 'F') await footnoteSep();
+    else if (k == 't' || k == 'T') await tableKey();
+    else if (k == 'h' || k == 'H') await headingKey();
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
     else if (k == 'g' || k == 'G') { const p = prompt(t('goto')); if (p) await loadPage(String(parseInt(p, 10)).padStart(3, '0'), 0); }
     else return;
@@ -589,7 +667,7 @@ $('lines').addEventListener('dblclick', async e => {
   for (let n = 0; n < 80 && busy; n++) await new Promise(r => setTimeout(r, 25));
   if (mode != 'read' || busy || pg != c.p || c.i >= data.lines.length) return;
   li = c.i; const l = data.lines[li];
-  const f = data.flags.find(x => x.line == li && c.off >= x.start && c.off <= x.start + x.len) || data.flags.find(x => isJoin(x) && x.line + 1 == li && c.off <= part2len(x));
+  const f = data.flags.find(x => x.line == li && c.off >= x.start && c.off <= x.start + x.len) || data.flags.find(x => isJoin(x) && x.line + 1 == li && c.off >= (x.start2 || 0) && c.off <= (x.start2 || 0) + part2len(x));
   if (f) { enterFix(f); return; }
   let a = c.off, b = c.off; const W = /[A-Za-zÄÖÜäöüß]/;
   if (a > 0 && !W.test(l[a] || '') && W.test(l[a - 1])) { a--; b--; }

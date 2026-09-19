@@ -122,20 +122,57 @@ def read_page(path):
 def read_pages(folder):
     """{ 'NNN': [zeilen] } aus NNN.txt"""
     return {os.path.basename(f)[:3]: read_page(f) for f in sorted(glob.glob(os.path.join(folder, '[0-9][0-9][0-9].txt')))}
+# ---- Auszeichnung im Text: dieselben Elemente wie im EPUB (XHTML), nichts Eigenes. Die Zeilenzahl einer Seite bleibt dabei
+# gleich (sonst ginge die Bildzuordnung verloren): Jede Zeile bleibt eine Zeile, eine Tabellenzelle ist eine Zeile.
+MARKUP = 'table|tr|td|th|h[1-6]|em|strong|i|b|sup|sub|p|blockquote|br'
+TAG = re.compile(r'</?(?:%s)\s*/?>' % MARKUP)
+TABLETAG = re.compile(r'</?(?:table|tr|td|th)>')
+HEADTAG = re.compile(r'</?h[1-6]>')
+def mask(l):
+    """Auszeichnung durch Leerzeichen ersetzen – die Zeichenpositionen bleiben, die Wortprüfung sieht kein 'td'."""
+    return TAG.sub(lambda m: ' ' * len(m.group()), l)
+def make_table(lines, cols, head=False):
+    """Aus aufeinanderfolgenden Zeilen eine Tabelle: Die Zeilen füllen die Zellen der Reihe nach, von links nach rechts.
+    Leere Zeilen bleiben leer. head: die erste Reihe sind Spaltenköpfe (<th>). Liefert die neuen Zeilen (gleich viele)."""
+    cols = max(1, int(cols))
+    out = [TABLETAG.sub('', l) for l in lines]
+    cells = [i for i, l in enumerate(out) if l.strip()]
+    for k, i in enumerate(cells):
+        c, last, tag = k % cols, k == len(cells) - 1, 'th' if head and k < cols else 'td'
+        pre = ('<table>' if k == 0 else '') + ('<tr>' if c == 0 else '') + '<%s>' % tag
+        post = '</%s>' % tag
+        if last:
+            post += '<td></td>' * (cols - 1 - c) + '</tr></table>'  # unvollständige letzte Reihe auffüllen
+        elif c == cols - 1:
+            post += '</tr>'
+        out[i] = pre + out[i] + post
+    return out
+def table_block(lines, i):
+    """(erste, letzte Zeile) der Tabelle, in der Zeile i liegt, sonst None."""
+    a = next((k for k in range(i, -1, -1) if '<table>' in lines[k]), None)
+    if a is None or any('</table>' in lines[k] for k in range(a, i)):
+        return None
+    b = next((k for k in range(a, len(lines)) if '</table>' in lines[k]), None)
+    return (a, b) if b is not None and b >= i else None
+def heading(line, level):
+    """Zeile als Überschrift der Ebene 1–6 auszeichnen; level 0 nimmt die Auszeichnung weg."""
+    t = HEADTAG.sub('', line)
+    return '<h%d>%s</h%d>' % (level, t, level) if level and t.strip() else t
 def corpus_freq(pages):
     c = collections.Counter()
     for lines in pages.values():
-        for l in lines: c.update(WORD.findall(l))
+        for l in lines: c.update(WORD.findall(mask(l)))
     return c
 def joined_tokens(lines):
     """Liefert je Zeile Liste (start, wort) und behandelt '¬'-Trennung: das getrennte Wort wird
     als (zeile_i, start_i, teil1, zeile_j, teil2) zusätzlich in joined zurückgegeben."""
+    lines = [mask(l) for l in lines]
     toks = [[(m.start(), m.group()) for m in WORD.finditer(l)] for l in lines]
     joined = []
     for i, l in enumerate(lines):
         if l.rstrip().endswith('¬') and i + 1 < len(lines) and toks[i] and toks[i+1]:
             s1, w1 = toks[i][-1]; s2, w2 = toks[i+1][0]
-            if s1 + len(w1) == len(l.rstrip()) - 1 and s2 == 0:
+            if s1 + len(w1) == len(l.rstrip()) - 1 and not lines[i + 1][:s2].strip():  # vor dem zweiten Teil steht höchstens Auszeichnung
                 joined.append((i, s1, w1, i + 1, w2))
     return toks, joined
 def known(w, freq, minfreq=3):

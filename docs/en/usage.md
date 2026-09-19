@@ -28,6 +28,8 @@ is being changed – and **Edit line** (orange).
 | Reading / Correction | `F9` | batch correction (see below) |
 | Reading | `U` | undo the last batch correction |
 | Reading | `F` | footnotes start at the reading line (see below) |
+| Reading | `T` | table: turn separate lines into a table, or dissolve it again (see below) |
+| Reading | `H` | heading: level 1 → 2 → 3 → none (see below) |
 | Reading | `W` | show the whitelist |
 | Reading | `D` | dictionary: which spelling applies to this book (see below) |
 | anywhere | `F1` | this help |
@@ -67,6 +69,45 @@ ticked to begin with; words split across line ends are found as well.
 In the text file, footnotes follow a line `---` and always run to the end of the page. `F` sets or moves
 this separator to just before the reading line. If the reading line is the first footnote line, `F` removes
 the separator again.
+
+## Tables (T)
+
+Text recognition usually tears tables apart into single lines – a listing turns into
+
+    im Jahre 1811
+    16 842 Eimer,
+    1812-
+    12 409
+
+Put the reading line on the first line and press `T`. Use `↓` to extend the range to the last line of the table and
+`2` … `9` to choose the number of columns; the preview at the top shows at once how the lines are distributed over rows and
+columns (in order, from left to right). `H` turns the first row into column headers, `Enter` applies, `Esc` cancels. `T` on
+an existing table removes the markup again – the text stays.
+
+The program does not invent a format of its own for this; it writes the same markup into the text that an EPUB uses
+(XHTML):
+
+    <table><tr><td>im Jahre 1811</td>
+    <td>16 842 Eimer,</td></tr>
+    <tr><td>1812-</td>
+    <td>12 409</td></tr></table>
+
+Every line stays a line – one cell per line – so that the alignment with the page image is kept. The markup is shown small
+and pale in the text, the table with a blue edge; the word check skips it. You correct the content of the cells like any
+other text (delete superfluous dashes as in `1812-` with `F2`).
+
+Limitations: the cells have to be in reading order (row by row). If text recognition read a table column by column, or put
+two cells into one line, `F2` helps: there you can add markup by hand, for example `</td><td>` between two cells of the
+same line.
+
+## Headings (H)
+
+`H` marks the reading line as a heading: level 1 the first time (`<h1>…</h1>`), the next level with each further press,
+ordinary text again after level 3. Headings are shown larger and bold. A later EPUB export can build chapters and the table
+of contents from them.
+
+If you like, you can also enter further markup by hand with `F2`; the program knows `<em>`, `<strong>`, `<i>`, `<b>`,
+`<sup>`, `<sub>`, `<p>`, `<blockquote>` and `<br/>` and does not treat them as words.
 
 ## Whitelist (W)
 
