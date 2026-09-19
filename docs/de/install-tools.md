@@ -56,13 +56,15 @@ veröffentlicht das Projekt nur Dateien für Windows und Linux).
   sondern **baut es auf Ihrem Rechner** – mitsamt der Programmbibliothek Qt und deren 38 Bestandteilen. Das
   dauert Stunden. Auf Intel-Macs mit macOS 26 gilt das für jedes Homebrew-Paket, weil es dafür keine fertigen
   Pakete mehr gibt.
-- Als Notlösung gibt es ein älteres fertiges Programm: *ScanTailor Advanced 1.0.18* von 2022, gebaut von
-  yb85, <https://github.com/yb85/scantailor-advanced-osx/releases/tag/1.0.18> (Datei
-  `Scantailor-Advanced-v1.0.18-20220508-macos12.dmg`, 29 MB, für Intel-Macs). Es startete im Test auch auf
-  macOS 26, ist aber nicht mehr gepflegt und **gar nicht signiert**. macOS verweigert darum beim ersten Mal
-  den Start; erlauben lässt es sich so: Programm doppelklicken, Meldung wegklicken, dann *Apfelmenü →
-  Systemeinstellungen → Datenschutz & Sicherheit*, unten bei *Sicherheit* auf **Dennoch öffnen**. Der Knopf
-  erscheint nur in der Stunde nach dem Startversuch.
+- **Empfohlen:** ein älteres, aber fertiges Programm – *ScanTailor Advanced 1.0.18* von 2022, gebaut von yb85:
+  [Scantailor-Advanced-v1.0.18-20220508-macos12.dmg](https://github.com/yb85/scantailor-advanced-osx/releases/download/1.0.18/Scantailor-Advanced-v1.0.18-20220508-macos12.dmg)
+  (29 MB, [Übersicht](https://github.com/yb85/scantailor-advanced-osx/releases/tag/1.0.18)). Es hat im Test auf
+  macOS 26 einwandfrei gearbeitet. Zwei Dinge sind zu beachten:
+    - Es ist für **Intel-Macs** gebaut. Auf Macs mit Apple-Chip läuft es nur über *Rosetta*, das macOS beim
+      ersten Start selbst anbietet.
+    - Es ist **nicht signiert**, darum verweigert macOS zunächst den Start. So erlauben Sie ihn: Programm
+      doppelklicken, Meldung wegklicken, dann *Apfelmenü → Systemeinstellungen → Datenschutz & Sicherheit*,
+      unten bei *Sicherheit* auf **Dennoch öffnen**. Der Knopf erscheint nur in der Stunde nach dem Versuch.
 
   (Älter und für den Notfall ebenfalls zu haben: *ScanTailor Universal 0.2.12* von 2021,
   <https://github.com/trufanov-nok/scantailor-universal/releases/tag/0.2.12>.)

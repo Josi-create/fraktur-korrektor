@@ -17,25 +17,90 @@ Tesseract – vor allem bei mäßigen Vorlagen. Der Fraktur-Korrektor ist für g
 
 ## Schritt für Schritt
 
-1. **Konto anlegen** auf [transkribus.org](https://www.transkribus.org/) und anmelden.
-2. **Sammlung anlegen** (Collection) und darin das **Dokument hochladen**. Hochgeladen werden Seitenbilder
-   oder ein PDF – welche Dateien das bei Ihnen sind:
-   - Haben Sie das Buch **schon im Fraktur-Korrektor eingelesen** – etwa nach der Aufbereitung mit ScanTailor –,
-     nehmen Sie die Bilder aus dem Ordner **`img`** in Ihrem Buchordner. Das sind genau die aufbereiteten Seiten.
-     Nach dem Einlesen nennt das Programm diesen Ordner; **Ordner zeigen …** öffnet ihn und legt den Pfad in die
-     Zwischenablage. In Transkribus dann alle Bilder darin auswählen und hochladen.
-   - Sonst genügt das **PDF** Ihres Scans; Transkribus zerlegt es selbst in Seiten.
+Die Oberfläche von Transkribus ist englisch; die Knöpfe stehen hier darum so, wie sie dort heißen
+(Stand: September 2026). Rechnen Sie fürs erste Mal mit einer halben Stunde.
 
-   Tipp: Schlechte Scans vorher mit ScanTailor aufbereiten – siehe [PDF oder Bilder einlesen](pdf-import.md).
-3. **Texterkennung starten.** Wählen Sie ein Modell für gedruckte Texte. Für deutsche Fraktur hat sich das
-   öffentliche Modell **„Transkribus Print M1“** bewährt; es erkennt Fraktur und Antiqua. Die Layout-Erkennung
-   (Zeilen finden) läuft dabei automatisch mit.
-4. Warten, bis der Auftrag fertig ist (je nach Andrang Minuten bis Stunden; Sie bekommen eine Nachricht).
-5. **Exportieren:** Dokument wählen → *Export*. Wichtig ist das Format **PAGE XML** (unter „Transkribus
-   Document“). Haken Sie auch den Export der **Bilder** an, dann hat der Fraktur-Korrektor gleich die
-   Seitenbilder. Sie erhalten einen Link zu einer **ZIP-Datei**.
-6. Im Fraktur-Korrektor: Bibliothek → **Öffnen …** → **Datei wählen …** → die ZIP-Datei. Entpacken müssen Sie sie
-   nicht; das Programm erkennt den Export. Einzelheiten: [Ein Buch öffnen](add-book.md).
+### 1. Konto anlegen und anmelden
+
+Auf [transkribus.org](https://www.transkribus.org/) rechts oben auf **„Sign up"**, E-Mail-Adresse bestätigen,
+dann **„Log in"**. Sie landen in der Web-Anwendung; alles Weitere geschieht dort.
+
+<!-- Platz für ein Bildschirmfoto der Startseite -->
+
+### 2. Eine Sammlung anlegen
+
+Eine *Collection* ist eine Schublade für Ihre Bücher; ohne sie geht es nicht.
+
+1. Links im Menü auf **„Collections"**.
+2. Rechts auf **„+ New Collection"**.
+3. Einen Namen eintippen, etwa den Buchtitel, und auf **„+ Create"**.
+
+### 3. Die Seitenbilder hochladen
+
+1. Die eben angelegte Sammlung anklicken, sodass sie geöffnet ist.
+2. Oben rechts auf **„Upload"**.
+3. Die Dateien hineinziehen oder über **„Browse"** auswählen. **Welche Dateien?**
+   - Haben Sie das Buch schon im Fraktur-Korrektor eingelesen (etwa nach ScanTailor), nehmen Sie **alle Bilder
+     aus dem Ordner `img`** Ihres Buchordners. Das Programm zeigt Ihnen den Ordner nach dem Einlesen mit
+     **Ordner zeigen …** und legt den Pfad in die Zwischenablage.
+   - Sonst genügt das **PDF** des Scans, Transkribus zerlegt es selbst in Seiten.
+4. Bei **„Title"** einen Namen für das Dokument eintragen.
+5. Auf **„Submit"**. Ein Balken zeigt den Fortschritt; bei vielen Seiten dauert es.
+
+Erlaubt sind JPG, PNG und TIFF (je bis 20 MB, bis 3000 Dateien) sowie PDF (bis 512 MB). Empfohlen sind
+etwa 300 dpi – genau das liefert der Fraktur-Korrektor.
+
+<!-- Platz für ein Bildschirmfoto des Upload-Fensters -->
+
+### 4. Die Zeilen finden lassen (Layout)
+
+Dieser Schritt wird gern übersehen, ist aber wichtig: Er zeichnet die Grundlinien, an denen entlang später
+gelesen wird. Bei der Texterkennung läuft er nicht zuverlässig mit.
+
+1. Im Dokument oben links das Kästchen anklicken, das **alle Seiten auswählt**.
+2. Auf **„Process with AI"**.
+3. Oben **„Layout Recognition"** wählen und den Auftrag starten.
+
+Blättern Sie danach eine Seite durch: Über jeder Textzeile sollte eine Linie liegen. Sitzen die Linien schief
+oder fehlen sie, hilft meist ein besseres Bild (ScanTailor) mehr als eine andere Einstellung.
+
+### 5. Den Text erkennen lassen
+
+1. Wieder **alle Seiten auswählen** und auf **„Process with AI"**.
+2. Der Bereich **„Text Recognition"** ist schon offen. Im Suchfeld ein Modell suchen:
+
+   | Modell | wofür |
+   |---|---|
+   | **Transkribus Print M1** | alle Drucke, Fraktur und Antiqua – die sichere Wahl |
+   | **ONB_Newseye_GT_M1+** | deutsche Fraktur, spätes 18. bis Mitte 20. Jahrhundert |
+   | **NZZ Gold Standard M1+** | deutsche Fraktur, 18. bis 20. Jahrhundert |
+
+   Im Zweifel *Transkribus Print M1*. Für ein Buch von 1850 bis 1940 lohnt ein Vergleich an zwei, drei Seiten.
+3. Transkribus zeigt an, **wie viele Credits** der Auftrag kostet und wie viele Sie noch haben. Erst dann
+4. auf **„Start recognition"**.
+
+Den Fortschritt sehen Sie unter **„AI Lab"**; je nach Andrang dauert es Minuten bis Stunden.
+
+<!-- Platz für ein Bildschirmfoto der Modellauswahl -->
+
+### 6. Das Ergebnis herunterladen
+
+1. In der Sammlung das Dokument (oder alle Seiten) auswählen.
+2. Oben auf den Knopf **„Action"** und darin auf **„Export"**.
+3. Als Format **„Page XML"** wählen – nicht PDF, nicht Word. Darin stecken die Zeilen samt ihrer Lage im Bild,
+   und genau das braucht der Fraktur-Korrektor.
+4. Auf **„Start export"**.
+5. Sie bekommen eine E-Mail mit einem Link (zwei Wochen gültig). Ohne E-Mail: links unter
+   **„Uploads & downloads"** beim fertigen Export auf die drei Punkte und **„Download"**.
+
+Sie erhalten eine **ZIP-Datei**. Die Bilder brauchen Sie nicht mitzuexportieren, wenn das Buch schon im
+Fraktur-Korrektor liegt – beim Öffnen schlägt das Programm Ihren vorhandenen Bilderordner vor.
+
+### 7. Zurück in den Fraktur-Korrektor
+
+Bibliothek → **Öffnen …** → **Datei wählen …** → die ZIP-Datei. Entpacken müssen Sie sie nicht; das Programm
+erkennt den Export und fragt gegebenenfalls nach den passenden Seitenbildern.
+Einzelheiten: [Ein Buch öffnen](add-book.md).
 
 ## Danach
 
