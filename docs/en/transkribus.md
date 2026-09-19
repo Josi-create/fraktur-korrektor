@@ -18,8 +18,14 @@ recognition in historical documents. For Fraktur prints it usually gives much be
 ## Step by step
 
 1. **Create an account** at [transkribus.org](https://www.transkribus.org/) and sign in.
-2. **Create a collection** and **upload the document** into it: the PDF of your scan is easiest.
-   Transkribus splits it into pages.
+2. **Create a collection** and **upload the document** into it. What gets uploaded are page images or a PDF –
+   which files that means for you:
+   - If you have **already read the book into Fraktur-Korrektor** – after cleaning it up with ScanTailor, say –
+     take the images from the **`img`** folder inside your book folder. Those are exactly the prepared pages.
+     After reading in, the program names that folder; **Show folder …** opens it and puts the path on the
+     clipboard. In Transkribus, select all the images in it and upload them.
+   - Otherwise the **PDF** of your scan is enough; Transkribus splits it into pages itself.
+
    Tip: clean up poor scans with ScanTailor first – see [Reading in a PDF or images](pdf-import.md).
 3. **Start text recognition.** Choose a model for printed text. For German Fraktur the public model
    **“Transkribus Print M1”** has proved itself; it reads Fraktur and Antiqua. Layout recognition (finding

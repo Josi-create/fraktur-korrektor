@@ -274,7 +274,19 @@ function showDone(r) {
     if (q.ends.length * 4 >= r.pages) h += '<div class="more">' + t('q_ends', { n: q.ends.length }) + ' ' + help('pdf-import', t('q_ends_link')) + '</div>';
     else if (q.weak.length && level != 'gruen') h += '<div class="more">' + t('q_weak', { p: q.weak.slice(0, 25).join(', ') + (q.weak.length > 25 ? ' …' : '') }) + '</div>';
   }
+  // Die Empfehlung »nimm Transkribus« endete bisher im Nichts: dort werden Seitenbilder hochgeladen, und
+  // welche das sind, wusste niemand. Also den Ordner nennen und auf Klick zeigen.
+  if (rec != 'rec_gruen' && !canRedo && r.images)
+    h += '<div class="more">' + t('q_upload', { folder: esc(r.images) }) +
+      ' <a href="#" id="showImg">' + t('btn_show_folder') + '</a> <span id="shownMsg"></span></div>';
   $('done').innerHTML = h;
+  if ($('showImg')) $('showImg').onclick = async e => {
+    e.preventDefault();
+    try {
+      await post('/api/reveal', { path: r.images });
+      $('shownMsg').textContent = t('shown_clip');
+    } catch (err) { $('shownMsg').textContent = err.message; }
+  };
   // Hervorgehoben ist, was die Empfehlung sagt: bei schlechtem PDF-Text das Neuerkennen, sonst das Öffnen
   const redoFirst = canRedo && level == 'rot';
   $('bBook').style.display = ''; $('bBook').className = redoFirst ? '' : 'main'; $('bBook').textContent = t(level == 'rot' ? 'btn_open_anyway' : 'btn_open_book');

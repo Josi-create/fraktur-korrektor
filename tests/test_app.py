@@ -202,6 +202,21 @@ def test_scantailor_macht_den_ordner_greifbar(monkeypatch, tmp_path):
     assert getan[0][1] == r['folder'] and getan[1][1] == r['folder']
 
 
+def test_zwischenablage_und_ordner_zeigen(monkeypatch):
+    aufrufe = []
+    monkeypatch.setattr(ocr.sys, 'platform', 'darwin')
+    monkeypatch.setattr(ocr.subprocess, 'run', lambda cmd, **kw: aufrufe.append(cmd) or types.SimpleNamespace(returncode=0))
+    monkeypatch.setattr(ocr.subprocess, 'Popen', lambda cmd, **kw: aufrufe.append(cmd))
+    assert ocr.to_clipboard('/pfad/zum/ordner') is True
+    assert ocr.reveal('/pfad/zum/ordner') is True
+    assert aufrufe == [['pbcopy'], ['open', '/pfad/zum/ordner']]
+
+
+def test_reveal_nur_fuer_vorhandene_ordner(lib, tmp_path):
+    """Der Knopf »Ordner zeigen« darf nichts öffnen, was es nicht gibt."""
+    assert lib.lpost('/api/reveal', dict(path=str(tmp_path / 'gibtsnicht'))) == (400, dict(error='quelle_fehlt'))
+
+
 # ---- mitgeliefertes Tesseract
 
 def test_gebuendeltes_tesseract_geht_vor(monkeypatch, tmp_path):

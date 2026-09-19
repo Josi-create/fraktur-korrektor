@@ -622,7 +622,9 @@ def import_ocr(source, title, target, script, textlayer, progress, cancelled):
         raise
     e = lib_touch(out, title or name)
     st = propose_settings(out)
-    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], quality=r['quality'], **st)
+    # images: für den Weg zu Transkribus – dort werden die aufbereiteten Seitenbilder hochgeladen
+    return dict(id=book_id(out), folder=out, images=os.path.join(out, 'img'), title=e['title'],
+                pages=r['pages'], quality=r['quality'], **st)
 
 
 def import_epub(source, pdf, title, target, script, textlayer, progress, cancelled):
@@ -948,11 +950,17 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
                 return self.sendjson(dict(path=choose(body.get('kind') if body.get('kind') in ('folder', 'pdf', 'exe', 'any') else 'zip')))
+            if u.path == '/api/reveal':
+                # Ordner im Dateifenster zeigen und den Pfad in die Zwischenablage – zum Hochladen bei Transkribus
+                p = body.get('path') or ''
+                if not os.path.isdir(p):
+                    return self.sendjson(dict(error='quelle_fehlt'), 400)
+                return self.sendjson(dict(clipboard=ocr.to_clipboard(p), shown=ocr.reveal(p)))
             if u.path == '/api/set_tool':
                 if body.get('tool') not in ('tesseract', 'scantailor') or not os.path.isfile(body.get('path') or ''):
                     return self.sendjson(dict(error='quelle_fehlt'), 400)

@@ -18,8 +18,14 @@ Tesseract – vor allem bei mäßigen Vorlagen. Der Fraktur-Korrektor ist für g
 ## Schritt für Schritt
 
 1. **Konto anlegen** auf [transkribus.org](https://www.transkribus.org/) und anmelden.
-2. **Sammlung anlegen** (Collection) und darin das **Dokument hochladen**: am einfachsten das PDF Ihres
-   Scans. Transkribus zerlegt es in Seiten.
+2. **Sammlung anlegen** (Collection) und darin das **Dokument hochladen**. Hochgeladen werden Seitenbilder
+   oder ein PDF – welche Dateien das bei Ihnen sind:
+   - Haben Sie das Buch **schon im Fraktur-Korrektor eingelesen** – etwa nach der Aufbereitung mit ScanTailor –,
+     nehmen Sie die Bilder aus dem Ordner **`img`** in Ihrem Buchordner. Das sind genau die aufbereiteten Seiten.
+     Nach dem Einlesen nennt das Programm diesen Ordner; **Ordner zeigen …** öffnet ihn und legt den Pfad in die
+     Zwischenablage. In Transkribus dann alle Bilder darin auswählen und hochladen.
+   - Sonst genügt das **PDF** Ihres Scans; Transkribus zerlegt es selbst in Seiten.
+
    Tipp: Schlechte Scans vorher mit ScanTailor aufbereiten – siehe [PDF oder Bilder einlesen](pdf-import.md).
 3. **Texterkennung starten.** Wählen Sie ein Modell für gedruckte Texte. Für deutsche Fraktur hat sich das
    öffentliche Modell **„Transkribus Print M1“** bewährt; es erkennt Fraktur und Antiqua. Die Layout-Erkennung
