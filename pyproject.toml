@@ -20,6 +20,11 @@ build = [
     "pefile>=2023.2.7; sys_platform == 'win32'",
 ]
 
+# Flaches Projekt aus einzelnen Modulen, kein Paket: ohne diese Liste hielte setuptools
+# Ordner wie dict/ oder packaging/ für Pakete und bräche die Installation ab.
+[tool.setuptools]
+py-modules = ["server", "starter", "korrlib", "ocr", "epub", "finder", "pagexml"]
+
 [project.urls]
 Homepage = "https://github.com/Josi-create/fraktur-korrektor"
 
