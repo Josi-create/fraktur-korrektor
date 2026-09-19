@@ -22,7 +22,7 @@ def test_zweiter_start_oeffnet_nur_den_browser(lib, monkeypatch):
     """Ein zweiter Doppelklick darf keinen zweiten Server starten – er zeigt nur wieder das Fenster."""
     port = int(lib.base.rsplit(':', 1)[1])
     geoeffnet = []
-    monkeypatch.setattr(starter.webbrowser, 'open', geoeffnet.append)
+    monkeypatch.setattr(starter, 'show', geoeffnet.append)
     monkeypatch.setattr(starter.server, 'setup', lambda A: pytest.fail('es wurde ein zweiter Server gestartet'))
     assert starter.main(['--port', str(port)]) == 0
     assert geoeffnet == ['http://localhost:%d' % port]
@@ -53,8 +53,31 @@ def test_starter_meldet_belegten_port(monkeypatch):
 def test_prozessnummer_des_finders_stoert_nicht(monkeypatch):
     """Der Finder hängt beim Start manchmal -psn_0_… an; argparse würde daran scheitern."""
     monkeypatch.setattr(starter, 'answering', lambda port: True)
-    monkeypatch.setattr(starter.webbrowser, 'open', lambda url: None)
+    monkeypatch.setattr(starter, 'show', lambda url: None)
     assert starter.main(['-psn_0_123456', '--port', '8765']) == 0
+
+
+def test_fenster_zeigen_statt_neuem_tab(monkeypatch):
+    """»Im Browser öffnen« soll das schon geöffnete Fenster zeigen; erst wenn es keins gibt, einen neuen Tab."""
+    monkeypatch.setattr(starter.sys, 'platform', 'darwin')
+    monkeypatch.setattr(starter, 'running_apps', lambda: {'Google Chrome', 'Mail'})
+    gefragt, neu = [], []
+    monkeypatch.setattr(starter.webbrowser, 'open', neu.append)
+
+    def run(cmd, **kw):
+        gefragt.append(cmd[-1])
+        return types.SimpleNamespace(returncode=0, stdout=b'ok\n', stderr=b'')
+    monkeypatch.setattr(starter.subprocess, 'run', run)
+    starter.show('http://localhost:8765')
+    assert len(gefragt) == 1 and 'Google Chrome' in gefragt[0] and 'localhost:8765' in gefragt[0]
+    assert 'Safari' not in ''.join(gefragt)  # Safari läuft nicht: nicht starten, nur fragen kostet Zeit
+    assert neu == []
+
+    # kein passender Tab (oder keine Erlaubnis): dann wie bisher einen neuen öffnen
+    monkeypatch.setattr(starter.subprocess, 'run',
+                        lambda cmd, **kw: types.SimpleNamespace(returncode=1, stdout=b'', stderr=b'nicht erlaubt (-1743)'))
+    starter.show('http://localhost:8765')
+    assert neu == ['http://localhost:8765']
 
 
 # ---- Auswahldialoge

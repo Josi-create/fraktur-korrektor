@@ -29,6 +29,73 @@ def alert(text):
         ctypes.windll.user32.MessageBoxW(None, text, APP, 0x10)
 
 
+# Den schon offenen Tab wiederfinden: »Im Browser öffnen« soll das Fenster zeigen und nicht ein weiteres
+# aufmachen. AppleScript ist dafür der einzige Weg; Safari und die Chromium-Browser sprechen es verschieden.
+TABS_SAFARI = """tell application "%(app)s"
+    repeat with w in windows
+        repeat with t in tabs of w
+            if URL of t contains "%(mark)s" then
+                set current tab of w to t
+                set index of w to 1
+                activate
+                return "ok"
+            end if
+        end repeat
+    end repeat
+end tell"""
+
+TABS_CHROMIUM = """tell application "%(app)s"
+    repeat with w in windows
+        set n to 0
+        repeat with t in tabs of w
+            set n to n + 1
+            if URL of t contains "%(mark)s" then
+                set active tab index of w to n
+                set index of w to 1
+                activate
+                return "ok"
+            end if
+        end repeat
+    end repeat
+end tell"""
+
+BROWSERS = [('Safari', TABS_SAFARI)] + [(name, TABS_CHROMIUM) for name in (
+    'Google Chrome', 'Google Chrome Canary', 'Microsoft Edge', 'Brave Browser', 'Vivaldi', 'Chromium', 'Opera')]
+
+
+def running_apps():
+    """Was gerade läuft – über NSWorkspace, denn eine Abfrage per AppleScript fragte unnötig nach Erlaubnis."""
+    try:
+        from AppKit import NSWorkspace
+        return {a.localizedName() for a in NSWorkspace.sharedWorkspace().runningApplications()}
+    except ImportError:
+        return set()
+
+
+def focus_tab(url):
+    """Holt den Tab mit dieser Adresse nach vorn; False, wenn es keinen gibt oder der Browser nicht mitspielt
+    (Firefox kann das nicht, und beim ersten Mal fragt macOS, ob wir den Browser steuern dürfen)."""
+    mark = url.split('//', 1)[-1]
+    apps = running_apps()
+    for name, script in BROWSERS:
+        if name not in apps:
+            continue
+        try:
+            r = subprocess.run(['osascript', '-e', script % dict(app=name, mark=mark)], capture_output=True, timeout=20)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if r.returncode == 0 and b'ok' in r.stdout:
+            return True
+    return False
+
+
+def show(url):
+    """Das Fenster des Programms zeigen: erst den offenen Tab suchen, sonst einen neuen öffnen."""
+    if sys.platform == 'darwin' and focus_tab(url):
+        return
+    webbrowser.open(url)
+
+
 def answering(port):
     """Antwortet auf dem Port schon ein Fraktur-Korrektor? Dann kein zweites Programm starten."""
     try:
@@ -50,7 +117,7 @@ def mac_ui(url, on_quit):
 
     class Delegate(AppKit.NSObject):
         def applicationShouldHandleReopen_hasVisibleWindows_(self, app, visible):
-            webbrowser.open(url)  # zweiter Doppelklick auf die App im Finder oder Dock
+            show(url)  # zweiter Doppelklick auf die App im Finder oder Dock
             return True
 
         def applicationDockMenu_(self, sender):
@@ -59,7 +126,7 @@ def mac_ui(url, on_quit):
             return m
 
         def openBrowser_(self, sender):
-            webbrowser.open(url)
+            show(url)
 
         def applicationWillTerminate_(self, note):
             on_quit()
@@ -103,7 +170,7 @@ def win_ui(url, on_quit):
     from PIL import Image
 
     icon = pystray.Icon('fraktur-korrektor', Image.open(os.path.join(server.HERE, 'icon.png')), APP,
-                        pystray.Menu(pystray.MenuItem('Im Browser öffnen', lambda i, e: webbrowser.open(url), default=True),
+                        pystray.Menu(pystray.MenuItem('Im Browser öffnen', lambda i, e: show(url), default=True),
                                      pystray.MenuItem(APP + ' beenden', lambda i, e: i.stop())))
     icon.run()
     on_quit()
@@ -143,7 +210,7 @@ def main(argv=None):
 
     if answering(A.port):
         if not A.no_browser:
-            webbrowser.open(url)  # das Programm läuft schon: nur das Fenster wieder zeigen
+            show(url)  # das Programm läuft schon: nur das Fenster wieder zeigen
         print('%s läuft schon: %s' % (APP, url))
         return 0
     try:
@@ -155,7 +222,7 @@ def main(argv=None):
 
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     if not A.no_browser:
-        webbrowser.open(url)
+        show(url)
 
     def on_quit():
         httpd.shutdown()

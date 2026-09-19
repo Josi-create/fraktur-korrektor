@@ -14,5 +14,9 @@
     <true/>
     <key>com.apple.security.cs.disable-library-validation</key>
     <true/>
+    <!-- Damit der Menuepunkt "Im Browser oeffnen" das schon geoeffnete Fenster
+         nach vorn holen kann (AppleScript an Safari bzw. Chrome). -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
 </dict>
 </plist>

@@ -95,6 +95,9 @@ if IS_MAC:
             "CFBundleDisplayName": NAME,
             "CFBundleShortVersionString": VERSION,
             "NSHighResolutionCapable": True,
+            # Text im Fenster "... moechte ... steuern", wenn das Programm den offenen Tab sucht
+            "NSAppleEventsUsageDescription":
+                "Der Fraktur-Korrektor holt damit das schon geöffnete Fenster im Browser nach vorn.",
             "LSApplicationCategoryType": "public.app-category.productivity",
         },
     )
