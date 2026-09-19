@@ -59,6 +59,20 @@ def test_ordner_untersuchen(tmp_path):
     assert t['images_dir'] == str(root / 'bilder')
 
 
+def test_nach_scantailor_zaehlt_nur_das_ergebnis(tmp_path):
+    """ScanTailor legt in out/cache Miniaturbilder ab – das sind keine Buchseiten. Und liegt das Ergebnis vor,
+    ist der Eingabeordner mit den unbearbeiteten Seiten keine Wahl mehr."""
+    st = tmp_path / 'Buch' / 'scantailor'
+    (st / 'out' / 'cache' / 'thumbs').mkdir(parents=True)
+    for n in range(4):
+        (st / ('seite_%03d.png' % n)).write_bytes(png(10, 10))                      # Eingabe für ScanTailor
+    for n in range(8):
+        (st / 'out' / ('seite_%03d.png' % n)).write_bytes(png(10, 10))              # aufbereitetes Ergebnis
+        (st / 'out' / 'cache' / 'thumbs' / ('t%d.png' % n)).write_bytes(png(6, 6))  # Zwischenkram
+    found = finder.scan(str(tmp_path))['found']
+    assert [(f['kind'], f['pages'], f.get('scantailor')) for f in found] == [('images', 8, True)]
+
+
 def test_datei_untersuchen(tmp_path):
     fitz = pytest.importorskip('fitz')
     make_book(str(tmp_path / 'b'))

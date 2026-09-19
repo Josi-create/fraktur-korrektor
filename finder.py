@@ -12,7 +12,8 @@ import os, re, glob, time, zipfile
 import xml.etree.ElementTree as ET
 
 IMG = ('.png', '.jpg', '.jpeg', '.tif', '.tiff')
-PRUNE = {'venv', '.venv', 'node_modules', '__pycache__', 'build', 'dist', 'site-packages', '$recycle.bin', 'system volume information'}
+PRUNE = {'venv', '.venv', 'node_modules', '__pycache__', 'build', 'dist', 'site-packages', '$recycle.bin', 'system volume information',
+         'cache'}  # ScanTailor legt in out/cache Miniaturbilder und Zwischenschritte ab – die sind keine Buchseiten
 RANK = dict(book=0, transkribus=1, epub=2, pdf=3, images=4)
 MAXDEPTH, MAXFILES, MAXTIME = 4, 40000, 6.0
 
@@ -219,6 +220,9 @@ def scan_dir(root):
     # Seitenbilder, die zu einem Transkribus-Export gehören (liegen im Exportordner), sind kein eigener Fund
     troots = [f['path'] for f in found if f['kind'] == 'transkribus' and f['images']]
     found = [f for f in found if not (f['kind'] == 'images' and f['path'] in troots)]
+    # Liegt das Ergebnis von ScanTailor vor, ist sein Eingabeordner (die unbearbeiteten Seiten) keine Wahl mehr
+    outs = [f['path'] for f in found if f.get('scantailor')]
+    found = [f for f in found if not (f['kind'] == 'images' and any(o.startswith(f['path'] + os.sep) for o in outs))]
     _pair(found)
     _images_for(found)
     return found
