@@ -68,7 +68,15 @@ flattens curvature and crops margins. ([Installation](install-tools.md))
    *Fix Orientation* → *Split Pages* → *Deskew* → *Select Content* → *Margins* → *Output*. In the *Output*
    stage, for Fraktur: 600 dpi, mode *Black and White*; for curved pages switch on *Dewarping* there.
 4. Back in Fraktur-Korrektor, click **Back** and **Examine** – the folder `…/scantailor/out` is already entered –
-   and then **Start text recognition**.
+   and then **Start text recognition**. If you closed the window in between, find the folder through
+   **Open …** → **Choose folder …**; it is called `out` and sits inside the book folder under `scantailor`.
+   The program labels it *output of ScanTailor*.
+
+   Important: only if you read in **this** result do you carry on with the separated pages. Read the PDF in
+   again and all the effort was for nothing.
+
+   If you would rather have [Transkribus](transkribus.md) read the text, upload the files from
+   `…/scantailor/out` there – Transkribus does not split double pages.
 
 ## Limitations
 

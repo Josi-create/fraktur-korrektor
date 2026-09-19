@@ -69,7 +69,15 @@ entzerrt Wölbungen und schneidet Ränder ab. ([Installation](install-tools.md))
    *Ausgabe*. Im Schritt *Ausgabe* für Fraktur: 600 dpi, Modus *Schwarz-Weiß*; bei gewölbten Seiten dort
    *Entzerren* einschalten.
 4. Zurück im Fraktur-Korrektor auf **Zurück** und **Untersuchen** klicken – der Ordner `…/scantailor/out` ist schon
-   eingetragen – und dann auf **Texterkennung starten**.
+   eingetragen – und dann auf **Texterkennung starten**. Haben Sie das Fenster zwischendurch geschlossen, finden
+   Sie den Ordner über **Öffnen …** → **Ordner wählen …**; er heißt `out` und liegt im Buchordner unter
+   `scantailor`. Das Programm weist ihn als *Ergebnis von ScanTailor* aus.
+
+   Wichtig: Nur wenn Sie **dieses** Ergebnis einlesen, arbeiten Sie mit den getrennten Seiten weiter. Lesen Sie
+   erneut das PDF ein, war die ganze Mühe umsonst.
+
+   Wollen Sie den Text lieber von [Transkribus](transkribus.md) lesen lassen, laden Sie dort die Dateien aus
+   `…/scantailor/out` hoch – Transkribus trennt Doppelseiten nämlich nicht.
 
 ## Grenzen
 

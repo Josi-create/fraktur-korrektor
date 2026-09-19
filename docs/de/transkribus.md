@@ -39,11 +39,18 @@ Eine *Collection* ist eine Schublade für Ihre Bücher; ohne sie geht es nicht.
 
 1. Die eben angelegte Sammlung anklicken, sodass sie geöffnet ist.
 2. Oben rechts auf **„Upload"**.
-3. Die Dateien hineinziehen oder über **„Browse"** auswählen. **Welche Dateien?**
-   - Haben Sie das Buch schon im Fraktur-Korrektor eingelesen (etwa nach ScanTailor), nehmen Sie **alle Bilder
-     aus dem Ordner `img`** Ihres Buchordners. Das Programm zeigt Ihnen den Ordner nach dem Einlesen mit
-     **Ordner zeigen …** und legt den Pfad in die Zwischenablage.
-   - Sonst genügt das **PDF** des Scans, Transkribus zerlegt es selbst in Seiten.
+3. Die Dateien hineinziehen oder über **„Browse"** auswählen. **Welche Dateien?** Laden Sie immer die
+   Bilder hoch, die Sie am Ende lesen wollen – Transkribus trennt keine Doppelseiten und richtet nichts gerade.
+   - Haben Sie den Scan mit **ScanTailor** aufbereitet: die Dateien aus dessen Ausgabeordner
+     **`…/scantailor/out`**. Das sind die getrennten, geraden Einzelseiten (TIFF nimmt Transkribus an).
+   - Haben Sie dieses Ergebnis schon im Fraktur-Korrektor **eingelesen**: die Bilder aus dem Ordner **`img`**
+     dieses Buchs – inhaltlich dasselbe, nur durchnummeriert. Das Programm zeigt den Ordner nach dem Einlesen
+     mit **Ordner zeigen …** und legt den Pfad in die Zwischenablage.
+   - War der Scan schon in Ordnung: die Bilder aus `img` Ihres Buchordners oder gleich das **PDF**,
+     Transkribus zerlegt es selbst in Seiten.
+
+   Nachsehen lohnt sich: Sind es so viele Dateien, wie das Buch Seiten hat? Bei getrennten Doppelseiten müssen
+   es doppelt so viele sein wie Blätter im Scan.
 4. Bei **„Title"** einen Namen für das Dokument eintragen.
 5. Auf **„Submit"**. Ein Balken zeigt den Fortschritt; bei vielen Seiten dauert es.
 
