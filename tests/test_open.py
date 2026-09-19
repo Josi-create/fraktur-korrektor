@@ -170,3 +170,21 @@ def test_vorschlag_nach_erscheinungsjahr(lib, tmp_path):
     assert lib.lget('/buch/%s/api/settings' % r['id'])[1] == dict(year=2010, dics=['1901', 'neu'])
     assert lib.lget('/buch/%s/api/page/002' % r['id'])[1]['flags'] == []   # dass, Fluss, Schifffahrt: nichts rot
     assert r['quality']['level'] == 'gruen'                               # die Ampel hängt nicht an der Rechtschreibung
+
+
+def test_vorschlag_wird_fuer_aeltere_importe_nachgeholt(tmp_path):
+    """Bücher im Bücherordner des Programms, die noch keine buch.json haben (z. B. EPUB-Textbücher von früher)."""
+    import json, server
+    home = tmp_path / 'buecher'
+    book = home / 'Neues Buch'; book.mkdir(parents=True)
+    (book / '001.txt').write_text('# \nNeue Wege\n© 2010 Verlag am Fluss\n', encoding='utf-8')
+    fremd = tmp_path / 'fremd'; fremd.mkdir()
+    (fremd / '001.txt').write_text('# \n© 2010 Verlag am Fluss\n', encoding='utf-8')
+    old = server.books_dir
+    server.books_dir = lambda: str(home)
+    try:
+        assert server.Book(str(book)).settings == dict(year=2010, dics=['1901', 'neu'])
+        assert json.load(open(book / 'buch.json', encoding='utf-8'))['year'] == 2010
+        assert server.Book(str(fremd)).settings == dict(year=None, dics=['1901']) and not (fremd / 'buch.json').exists()  # von Hand angelegt: bleibt
+    finally:
+        server.books_dir = old

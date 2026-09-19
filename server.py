@@ -120,8 +120,9 @@ class Book:
             st = json.load(open(self.stpath, encoding='utf-8'))
         except (OSError, ValueError):
             st = {}
-            if os.path.exists(os.path.join(self.folder, 'qualitaet.json')):  # vom Programm eingelesen, aber vor dieser Funktion:
-                st = propose_settings(self.folder)                           # Vorschlag nachholen
+            own = os.path.normcase(os.path.abspath(books_dir())) + os.sep
+            if os.path.exists(os.path.join(self.folder, 'qualitaet.json')) or os.path.normcase(self.folder).startswith(own):
+                st = propose_settings(self.folder)  # vom Programm eingelesen (auch EPUB-Textbücher), aber vor dieser Funktion: Vorschlag nachholen
         dics = [d for d in st.get('dics') or korrlib.DEFAULT if d in korrlib.DICS]
         return dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT))
 
