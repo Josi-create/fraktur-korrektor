@@ -2,15 +2,18 @@
 
 Haben Sie ein Buch als gescanntes PDF oder als Ordner mit Seitenfotos, kann der Fraktur-Korrektor den Text
 selbst erkennen. Er benutzt dafür das freie Programm **Tesseract**, das auf Ihrem Rechner läuft – es wird
-nichts ins Internet übertragen. Tesseract muss einmal installiert werden:
-[Werkzeuge installieren](install-tools.md).
+nichts ins Internet übertragen. Tesseract ist im fertigen Programm enthalten; nur wer aus dem Quelltext
+startet, installiert es selbst: [Werkzeuge installieren](install-tools.md).
+
+**Zum Ausprobieren** eignet sich eine gemeinfreie Ausgabe von Goethes *Faust* (Fraktur, 470 Seiten, 17 MB):
+<https://archive.org/download/fausteinetragd00goetuoft/fausteinetragd00goetuoft.pdf>. Sie bringt schon eine Textebene mit – gut, um beide Wege zu vergleichen (siehe unten).
 
 ## So geht es
 
 1. In der Bibliothek auf **Öffnen …** klicken und das PDF (**Datei wählen …**) oder den Ordner mit den Seitenbildern
    (**Ordner wählen …**) zeigen. Das Programm erkennt selbst, was es vor sich hat – siehe [Ein Buch öffnen](add-book.md).
-2. Das Fenster zeigt, ob Tesseract und das Fraktur-Modell vorhanden sind. Das Modell (5 MB, von der
-   Universitätsbibliothek Mannheim) lädt das Programm beim ersten Mal selbst herunter.
+2. Das Fenster zeigt, ob Tesseract und das Fraktur-Modell vorhanden sind. Beides ist im fertigen Programm
+   enthalten; das Modell stammt von der Universitätsbibliothek Mannheim.
 3. Titel eintragen und die **Schrift** wählen: Fraktur oder Antiqua (lateinische Schrift).
 4. **Texterkennung starten.** Ein Balken zeigt den Fortschritt; rechnen Sie mit wenigen Sekunden je Seite.
    Mit *Abbrechen* lässt sich der Vorgang jederzeit stoppen.

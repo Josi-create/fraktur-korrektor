@@ -2,14 +2,18 @@
 
 If you have a book as a scanned PDF or as a folder of page photos, Fraktur-Korrektor can recognise the text
 itself. It uses the free program **Tesseract**, which runs on your own computer – nothing is sent to the
-internet. Tesseract has to be installed once: [Installing the tools](install-tools.md).
+internet. Tesseract comes with the finished program; only if you start from the source code do you install it
+yourself: [Installing the tools](install-tools.md).
+
+**To try it out**, take a public-domain edition of Goethe's *Faust* (Fraktur, 470 pages, 17 MB):
+<https://archive.org/download/fausteinetragd00goetuoft/fausteinetragd00goetuoft.pdf>. It already carries a text layer, which makes it a good way to compare both routes (see below).
 
 ## How to do it
 
 1. In the library, click **Open …** and show the PDF (**Choose file …**) or the folder with the page images
    (**Choose folder …**). The program works out by itself what it is – see [Opening a book](add-book.md).
-2. The window shows whether Tesseract and the Fraktur model are available. The program downloads
-   the model (5 MB, from Mannheim University Library) by itself the first time.
+2. The window shows whether Tesseract and the Fraktur model are available. Both come with the finished
+   program; the model is provided by Mannheim University Library.
 3. Enter a title and choose the **typeface**: Fraktur (blackletter) or Antiqua (roman type).
 4. **Start text recognition.** A bar shows the progress; expect a few seconds per page. *Stop* cancels at
    any time.
