@@ -692,8 +692,13 @@ def scantailor(source, title, progress, cancelled):
             ocr.export_pages(source, folder, progress, cancelled)
         except ImportError:
             raise ValueError('kein_pymupdf')
+    # Der Hinweis im Browser verschwindet hinter ScanTailor, darum den Ordner greifbar machen:
+    # in die Zwischenablage und im Dateimanager geöffnet, von wo er sich hineinziehen lässt.
+    clip = bool(folder) and ocr.to_clipboard(folder)
+    if folder:
+        ocr.reveal(folder)
     ocr.launch(exe)
-    return dict(folder=folder, out=os.path.join(folder, 'out') if folder else None)
+    return dict(folder=folder, out=os.path.join(folder, 'out') if folder else None, clipboard=clip)
 
 
 # ---- Aufträge: lange Arbeiten im Hintergrund, der Browser fragt den Fortschritt ab

@@ -426,5 +426,25 @@ def launch(exe):
     subprocess.Popen([exe], close_fds=True, **(dict(creationflags=subprocess.DETACHED_PROCESS) if os.name == 'nt' else dict(start_new_session=True)))
 
 
+def to_clipboard(text):
+    """Pfad in die Zwischenablage. Im Dateidialog eines anderen Programms ließe er sich sonst nur abtippen –
+    und der Hinweis im Browser ist verdeckt, sobald das andere Programm im Vordergrund ist."""
+    cmd = dict(darwin=['pbcopy'], win32=['clip']).get(sys.platform) or ['xclip', '-selection', 'clipboard']
+    try:
+        return subprocess.run(cmd, input=text.encode('utf-8'), timeout=15, **NOWIN).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+def reveal(folder):
+    """Ordner im Dateimanager zeigen – von dort lässt er sich in das andere Programm ziehen."""
+    cmd = dict(darwin=['open', folder], win32=['explorer', folder]).get(sys.platform) or ['xdg-open', folder]
+    try:
+        subprocess.Popen(cmd, **NOWIN)
+        return True
+    except OSError:
+        return False
+
+
 if __name__ == '__main__':  # py ocr.py <pdf-oder-bilderordner> <buchordner>
     print(build(sys.argv[1], sys.argv[2], progress=lambda d, t, m: print('\r%s %d/%d' % (m, d, t), end='', flush=True)))

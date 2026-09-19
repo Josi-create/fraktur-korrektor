@@ -59,8 +59,10 @@ entzerrt Wölbungen und schneidet Ränder ab. ([Installation](install-tools.md))
 
 1. Über **Öffnen …** das PDF wählen und im Fenster auf **Erst mit ScanTailor aufbereiten …** klicken.
    Das Programm speichert jede PDF-Seite als Bild (ScanTailor kann keine PDFs öffnen) und startet ScanTailor.
-2. In ScanTailor: **Neues Projekt**. Als Eingabeordner den Ordner wählen, den der Fraktur-Korrektor anzeigt
-   (er endet auf `scantailor`). Den vorgeschlagenen Ausgabeordner `out` beibehalten.
+2. In ScanTailor: **Neues Projekt**. Als Eingabeordner den Ordner angeben, der auf `scantailor` endet.
+   Abtippen müssen Sie ihn nicht: Der Fraktur-Korrektor legt den Pfad in die Zwischenablage (in das Feld
+   klicken und einfügen) und öffnet den Ordner zusätzlich im Dateifenster, von wo Sie ihn hineinziehen können.
+   Den vorgeschlagenen Ausgabeordner `out` beibehalten.
 3. Die sechs Schritte links von oben nach unten durchgehen. Meist genügt es, in jedem Schritt unten auf den
    Pfeil ▶ zu klicken (»alle Seiten bearbeiten«) und das Ergebnis durchzublättern:
    *Ausrichtung korrigieren* → *Seiten aufteilen* → *Schräglage korrigieren* → *Inhalt auswählen* → *Ränder* →

@@ -314,7 +314,8 @@ $('form').onsubmit = async e => {
 $('oST').onclick = async () => {
   try {
     const r = await runJob('/api/scantailor', { source: sel.path, title: $('oTitle').value.trim() });
-    $('result').innerHTML = r.folder ? t('st_done', { folder: esc(r.folder), out: esc(r.out) }) + ' ' + help('pdf-import', t('q_ends_link')) : t('st_started');
+    const clip = r.clipboard ? '<p>' + t('st_clip', { keys: t(/Mac/i.test(navigator.platform) ? 'paste_mac' : 'paste') }) + '</p>' : '';
+    $('result').innerHTML = r.folder ? t('st_done', { folder: esc(r.folder), out: esc(r.out) }) + clip + ' ' + help('pdf-import', t('q_ends_link')) : t('st_started');
     if (r.out) $('iPath').value = r.out;
   } catch (err) { $('omsg').textContent = err.message; }
 };

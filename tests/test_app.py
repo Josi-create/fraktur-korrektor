@@ -184,6 +184,24 @@ def test_dialog_schreibt_in_die_datei(tmp_path):
     assert out.read_text(encoding='utf-8') == str(tmp_path / 'Buch')
 
 
+def test_scantailor_macht_den_ordner_greifbar(monkeypatch, tmp_path):
+    """Der Hinweis im Browser ist verdeckt, sobald ScanTailor davor liegt – darum Zwischenablage und Dateifenster."""
+    getan = []
+    monkeypatch.setattr(server.ocr, 'find_scantailor', lambda: str(tmp_path / 'scantailor-programm'))
+    monkeypatch.setattr(server, 'new_folder', lambda title, source: ('Probe', str(tmp_path / 'Probe')))
+    monkeypatch.setattr(server.ocr, 'export_pages', lambda src, ordner, fortschritt, abbruch: os.makedirs(ordner, exist_ok=True))
+    monkeypatch.setattr(server.ocr, 'to_clipboard', lambda text: bool(getan.append(('zwischenablage', text))) or True)
+    monkeypatch.setattr(server.ocr, 'reveal', lambda f: getan.append(('zeigen', f)))
+    monkeypatch.setattr(server.ocr, 'launch', lambda exe: getan.append(('starten', exe)))
+    pdf = tmp_path / 'buch.pdf'
+    pdf.write_bytes(b'%PDF-1.4')
+
+    r = server.scantailor(str(pdf), 'Probe', lambda *a: None, lambda: False)
+    assert r['folder'] == str(tmp_path / 'Probe' / 'scantailor') and r['out'].endswith('out') and r['clipboard']
+    assert [was for was, _ in getan] == ['zwischenablage', 'zeigen', 'starten']  # ScanTailor zuletzt: es soll vorn liegen
+    assert getan[0][1] == r['folder'] and getan[1][1] == r['folder']
+
+
 # ---- mitgeliefertes Tesseract
 
 def test_gebuendeltes_tesseract_geht_vor(monkeypatch, tmp_path):

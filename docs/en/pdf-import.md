@@ -60,8 +60,9 @@ flattens curvature and crops margins. ([Installation](install-tools.md))
 
 1. Choose the PDF via **Open …** and click **Prepare with ScanTailor first …** in the window.
    The program saves every PDF page as an image (ScanTailor cannot open PDFs) and starts ScanTailor.
-2. In ScanTailor: **New Project**. As input directory choose the folder that Fraktur-Korrektor displays (it
-   ends in `scantailor`). Keep the suggested output directory `out`.
+2. In ScanTailor: **New Project**. As input directory, give the folder ending in `scantailor`. You do not
+   have to type it: Fraktur-Korrektor puts the path on the clipboard (click the field and paste) and also
+   opens the folder in a file window, from where you can drag it in. Keep the suggested output directory `out`.
 3. Work through the six stages on the left from top to bottom. Usually it is enough to click the arrow ▶
    at the bottom of each stage (“process all pages”) and to leaf through the result:
    *Fix Orientation* → *Split Pages* → *Deskew* → *Select Content* → *Margins* → *Output*. In the *Output*
