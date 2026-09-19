@@ -114,13 +114,34 @@ def test_mac_dialog_abbruch_und_rueckfall(monkeypatch):
     assert 'of type' in versuche[0] and 'of type' not in versuche[1]
 
 
+def buendel(tmp_path, name='ScanTailor (Advanced).app', exe='ScanTailor'):
+    """Ein Mac-Programmbündel wie das von ScanTailor: neben der Programmdatei liegt ein Ordner »config«."""
+    import plistlib
+    app = tmp_path / name
+    (app / 'Contents' / 'MacOS' / 'config').mkdir(parents=True)
+    (app / 'Contents' / 'MacOS' / exe).write_text('x')
+    with open(app / 'Contents' / 'Info.plist', 'wb') as f:
+        plistlib.dump(dict(CFBundleExecutable=exe), f)
+    return app
+
+
 def test_mac_dialog_loest_programmbuendel_auf(monkeypatch, tmp_path):
     """Für ScanTailor wird die Datei im Bündel gebraucht, nicht der Ordner ScanTailor.app."""
-    app = tmp_path / 'ScanTailor.app'
-    (app / 'Contents' / 'MacOS').mkdir(parents=True)
-    (app / 'Contents' / 'MacOS' / 'scantailor').write_text('x')
+    app = buendel(tmp_path)
     monkeypatch.setattr(server.subprocess, 'run', lambda cmd, **kw: lauf(str(app) + '/\n'))
-    assert server.mac_dialog('exe') == str(app / 'Contents' / 'MacOS' / 'scantailor')
+    assert server.mac_dialog('exe') == str(app / 'Contents' / 'MacOS' / 'ScanTailor')
+
+
+def test_programmbuendel_die_richtige_datei(monkeypatch, tmp_path):
+    """Gesucht wird, was die Info.plist nennt – alphabetisch käme der Ordner »config« zuletzt und wäre kein Programm."""
+    app = buendel(tmp_path)
+    monkeypatch.setattr(ocr.korrlib, 'config', dict)
+    assert ocr._find('scantailor', [], [str(tmp_path / '*.app')]) == str(app / 'Contents' / 'MacOS' / 'ScanTailor')
+    ohne = tmp_path / 'Ohne Plist.app'
+    (ohne / 'Contents' / 'MacOS').mkdir(parents=True)
+    (ohne / 'Contents' / 'MacOS' / 'programm').write_text('x')
+    assert ocr.app_binary(str(ohne)) == str(ohne / 'Contents' / 'MacOS' / 'programm')
+    assert ocr.app_binary('/usr/local/bin/scantailor') == '/usr/local/bin/scantailor'
 
 
 def test_choose_nimmt_auf_dem_mac_osascript(monkeypatch):

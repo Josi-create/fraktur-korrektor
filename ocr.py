@@ -22,6 +22,24 @@ DPI = 300
 NOISE = re.compile(r"[|\\/_{}\[\]~^·.,;:'`´-]{1,3}")  # allein stehende Zeichen, wie sie die OCR aus Rändern und Flecken liest
 
 
+def app_binary(path):
+    """Aus einem Mac-Programmbündel die Datei, die wirklich startet. In Contents/MacOS liegen oft mehrere
+    Einträge (ScanTailor bringt dort einen Ordner »config« mit), darum entscheidet die Info.plist."""
+    p = path.rstrip('/')
+    if not p.endswith('.app'):
+        return path
+    try:
+        import plistlib
+        with open(os.path.join(p, 'Contents', 'Info.plist'), 'rb') as f:
+            name = plistlib.load(f).get('CFBundleExecutable')
+        if name and os.path.isfile(os.path.join(p, 'Contents', 'MacOS', name)):
+            return os.path.join(p, 'Contents', 'MacOS', name)
+    except (OSError, ValueError):
+        pass
+    hits = [h for h in sorted(glob.glob(os.path.join(p, 'Contents', 'MacOS', '*'))) if os.path.isfile(h)]
+    return hits[0] if hits else path
+
+
 def _find(conf_key, names, places, first=None):
     c = korrlib.config().get(conf_key)
     if c and os.path.exists(c):
@@ -35,7 +53,7 @@ def _find(conf_key, names, places, first=None):
     for pat in places:
         hits = sorted(glob.glob(os.path.expandvars(os.path.expanduser(pat))))
         if hits:
-            return hits[-1]
+            return app_binary(hits[-1])
     return None
 
 
@@ -50,7 +68,7 @@ def find_scantailor():
     return _find('scantailor', ['scantailor', 'scantailor-advanced', 'ScanTailor'], [
         r'%LOCALAPPDATA%\Programs\ScanTailor*\scantailor*.exe', r'%ProgramFiles%\ScanTailor*\scantailor*.exe',
         r'%ProgramFiles%\Scan Tailor*\scantailor*.exe', r'%ProgramFiles(x86)%\Scan Tailor*\scantailor*.exe',
-        '/Applications/ScanTailor*.app/Contents/MacOS/*', '/Applications/Scan Tailor*.app/Contents/MacOS/*',
+        '/Applications/ScanTailor*.app', '/Applications/Scan Tailor*.app',
         '/opt/homebrew/bin/scantailor', '/usr/local/bin/scantailor'])  # eine Mac-App sieht den PATH des Terminals nicht
 
 

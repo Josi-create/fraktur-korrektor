@@ -736,10 +736,7 @@ def mac_dialog(kind):
         r = subprocess.run(['osascript', '-e', 'POSIX path of (%s)' % script], capture_output=True, timeout=900)
         if r.returncode == 0:
             p = r.stdout.decode('utf-8').strip()
-            if kind == 'exe' and p.rstrip('/').endswith('.app'):
-                hits = sorted(glob.glob(os.path.join(p, 'Contents', 'MacOS', '*')))  # gebraucht wird die Datei im Bündel
-                return hits[0] if hits else p
-            return p
+            return ocr.app_binary(p) if kind == 'exe' else p  # gewählt wird ein Bündel, gebraucht die Datei darin
         if b'-128' in r.stderr:  # abgebrochen
             return ''
     return ''
