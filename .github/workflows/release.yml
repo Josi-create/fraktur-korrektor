@@ -1,0 +1,144 @@
+name: Installer bauen
+
+# Baut die fertigen Programme: Windows-Installer, portables ZIP und je ein DMG
+# für Apple Silicon und Intel. Bei einem Versions-Tag (v*) hängt der letzte
+# Auftrag sie an ein Draft-Release; »Run workflow« (workflow_dispatch) baut sie
+# nur zum Prüfen.
+#
+# Ohne Secrets entsteht ein unsignierter Mac-Build (Gatekeeper warnt dann beim
+# ersten Start). Für signierte und notarisierte Builds werden gebraucht:
+#   MACOS_CERTIFICATE_P12        das »Developer ID Application«-Zertifikat als .p12, base64-kodiert
+#   MACOS_CERTIFICATE_PASSWORD   das Passwort dieser .p12-Datei
+#   MACOS_CODESIGN_IDENTITY      z. B. "Developer ID Application: Vorname Name (TEAMID)"
+#   APPLE_ID, APPLE_TEAM_ID, APPLE_APP_SPECIFIC_PASSWORD   für die Notarisierung
+# Siehe docs/de/signatur.md.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Tesseract und Inno Setup installieren
+        # Tesseract wird mitgeliefert (nur die .exe und ihre DLLs); die Modelle
+        # frak2021 und deu lädt scripts/models.py.
+        run: |
+          choco install tesseract --no-progress -y
+          choco install innosetup --no-progress -y
+
+      - name: Abhängigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[build]"
+
+      - name: Tesseract-Laufzeit bündeln
+        run: python scripts\prepare_tesseract.py
+
+      - name: PyInstaller
+        run: pyinstaller fraktur_korrektor.spec --clean --noconfirm
+
+      - name: Rauchtest der gepackten App
+        run: python scripts\smoke_test.py "dist\Fraktur-Korrektor\Fraktur-Korrektor.exe"
+
+      - name: Installer bauen (Inno Setup)
+        run: python scripts\build_installer.py
+
+      - name: Portables ZIP erstellen
+        run: |
+          $version = (Select-String -Path pyproject.toml -Pattern '^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          Copy-Item LICENSE dist\Fraktur-Korrektor\LICENSE.txt
+          Compress-Archive -Path dist\Fraktur-Korrektor -DestinationPath "dist\installer\Fraktur-Korrektor-v$version-win64.zip"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: |
+            dist/installer/Fraktur-Korrektor_Setup.exe
+            dist/installer/Fraktur-Korrektor-v*-win64.zip
+          if-no-files-found: error
+
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest      # Apple Silicon
+            arch: arm64
+          - os: macos-15-intel    # Intel-Macs
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
+    env:
+      MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Tesseract installieren
+        # Nur als Quelle für das Bündeln; die Modelle kommen aus scripts/models.py,
+        # darum ohne das große Paket tesseract-lang.
+        run: brew install tesseract
+
+      - name: Abhängigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[build]"
+
+      - name: Signatur-Zertifikat in einen Wegwerf-Schlüsselbund laden
+        if: env.MACOS_CERTIFICATE_P12 != ''
+        env:
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$MACOS_CERTIFICATE_P12" | base64 --decode > cert.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 3600 build.keychain
+          security import cert.p12 -k build.keychain \
+            -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S "apple-tool:,apple:" \
+            -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          rm cert.p12
+
+      - name: Bauen (App und DMG, mit Secrets signiert und notarisiert)
+        env:
+          MACOS_CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: ./build.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-${{ matrix.arch }}
+          path: dist/installer/Fraktur-Korrektor-macos-${{ matrix.arch }}.dmg
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: assets
+
+      - name: Draft-Release mit den Installern
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          files: assets/**/*
