@@ -57,10 +57,16 @@ the project publishes files for Windows and Linux only).
   program, it **builds one on your machine**, including the Qt library and its 38 parts. That takes hours. On
   Intel Macs running macOS 26 this applies to every Homebrew package, because ready-made ones are no longer
   provided for them.
-- As a stopgap there is an old ready-made program, *ScanTailor Universal 0.2.12* from 2021:
-  <https://github.com/trufanov-nok/scantailor-universal/releases/tag/0.2.12> (file `ScanTailorUniversal-0.2.12.dmg`).
-  It is not notarised by Apple, so it has to be opened with a right-click, and there is no guarantee that it
-  runs on current versions of macOS.
+- As a stopgap there is an older ready-made program: *ScanTailor Advanced 1.0.18* from 2022, built by yb85,
+  <https://github.com/yb85/scantailor-advanced-osx/releases/tag/1.0.18> (file
+  `Scantailor-Advanced-v1.0.18-20220508-macos12.dmg`, 29 MB, for Intel Macs). In a test it still started on
+  macOS 26, but it is unmaintained and **not signed at all**. macOS therefore refuses to open it the first
+  time. To allow it: double-click the program, dismiss the message, then go to *Apple menu → System Settings
+  → Privacy & Security* and click **Open Anyway** under *Security*. That button only appears during the hour
+  after the attempt.
+
+  (Older, and also available if needed: *ScanTailor Universal 0.2.12* from 2021,
+  <https://github.com/trufanov-nok/scantailor-universal/releases/tag/0.2.12>.)
 
 **For a single book the effort rarely pays off.** If your scans are so poor that ScanTailor would be needed,
 [Transkribus](transkribus.md) usually gets you there faster.

@@ -8,9 +8,10 @@ Gebaut wird von GitHub Actions: [.github/workflows/release.yml](.github/workflow
 ein Entwurfs-Release. **Run workflow** auf der Actions-Seite baut dieselben Dateien nur zum Prüfen.
 
 Ohne die unten beschriebenen Secrets entsteht ein **unsignierter** Mac-Build: Er funktioniert, aber macOS
-verweigert beim Doppelklick zunächst den Start („kann nicht geöffnet werden, da der Entwickler nicht verifiziert
-werden kann“), bis man die App einmal mit der rechten Maustaste öffnet. Für die Zielgruppe ist das zu viel
-verlangt – darum die Signatur.
+verweigert beim Doppelklick den Start („kann nicht geöffnet werden, da der Entwickler nicht verifiziert werden
+kann“). Erlauben lässt er sich nur über *Systemeinstellungen → Datenschutz & Sicherheit → Dennoch öffnen*; den
+früher üblichen Weg über die rechte Maustaste hat Apple abgeschafft, und der Knopf erscheint nur in der Stunde
+nach dem Startversuch. Für die Zielgruppe ist das zu viel verlangt – darum die Signatur.
 
 ## Einmalig: Apple-Signatur einrichten
 

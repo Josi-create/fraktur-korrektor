@@ -56,10 +56,16 @@ veröffentlicht das Projekt nur Dateien für Windows und Linux).
   sondern **baut es auf Ihrem Rechner** – mitsamt der Programmbibliothek Qt und deren 38 Bestandteilen. Das
   dauert Stunden. Auf Intel-Macs mit macOS 26 gilt das für jedes Homebrew-Paket, weil es dafür keine fertigen
   Pakete mehr gibt.
-- Als Notlösung gibt es ein altes fertiges Programm, *ScanTailor Universal 0.2.12* von 2021:
-  <https://github.com/trufanov-nok/scantailor-universal/releases/tag/0.2.12> (Datei `ScanTailorUniversal-0.2.12.dmg`).
-  Es ist nicht von Apple beglaubigt, muss also mit der rechten Maustaste geöffnet werden, und ob es auf neuen
-  macOS-Fassungen läuft, ist nicht zugesichert.
+- Als Notlösung gibt es ein älteres fertiges Programm: *ScanTailor Advanced 1.0.18* von 2022, gebaut von
+  yb85, <https://github.com/yb85/scantailor-advanced-osx/releases/tag/1.0.18> (Datei
+  `Scantailor-Advanced-v1.0.18-20220508-macos12.dmg`, 29 MB, für Intel-Macs). Es startete im Test auch auf
+  macOS 26, ist aber nicht mehr gepflegt und **gar nicht signiert**. macOS verweigert darum beim ersten Mal
+  den Start; erlauben lässt es sich so: Programm doppelklicken, Meldung wegklicken, dann *Apfelmenü →
+  Systemeinstellungen → Datenschutz & Sicherheit*, unten bei *Sicherheit* auf **Dennoch öffnen**. Der Knopf
+  erscheint nur in der Stunde nach dem Startversuch.
+
+  (Älter und für den Notfall ebenfalls zu haben: *ScanTailor Universal 0.2.12* von 2021,
+  <https://github.com/trufanov-nok/scantailor-universal/releases/tag/0.2.12>.)
 
 **Für ein einzelnes Buch lohnt der Aufwand selten.** Ist die Vorlage so schlecht, dass ScanTailor nötig wäre,
 kommen Sie mit [Transkribus](transkribus.md) meist schneller ans Ziel.
