@@ -68,5 +68,3 @@ flattens curvature and crops margins. ([Installation](install-tools.md))
 ## Limitations
 
 - Multi-column layouts (newspapers, encyclopaedias) are not read column by column.
-- The bundled dictionary covers German spelling from 1901 to 1996. For newer books (“dass”) and for prints
-  before 1901 (“Thür”, “giebt”) the dictionary rate is therefore lower than the recognition deserves.

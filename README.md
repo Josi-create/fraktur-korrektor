@@ -32,8 +32,9 @@ Die Oberfläche gibt es auf Deutsch und Englisch (Umschalter oben rechts).
 Mit `--lan` ist die App auch von anderen Rechnern im lokalen Netz erreichbar (die Adresse wird beim Start angezeigt;
 Windows fragt beim ersten Mal nach der Firewall-Freigabe für „Private Netzwerke“). Es gibt keinen Passwortschutz – nur im eigenen Heimnetz verwenden.
 
-Wörterbuch: mitgeliefert wird ein freies Hunspell-Wörterbuch für die deutsche Rechtschreibung von 1901
-(siehe [dict/](dict/README.md)). Ein anderes lässt sich per `--dic`, Umgebungsvariable `FRAKTUR_DIC` oder
+Wörterbücher: mitgeliefert werden freie Hunspell-Wörterbücher für die deutsche Rechtschreibung von 1901 und für die neue
+(siehe [dict/](dict/README.md)); welche Rechtschreibung gilt, wird je Buch gewählt (Taste `D`, Vorschlag nach Erscheinungsjahr).
+Ein anderes Wörterbuch für die Rechtschreibung von 1901 lässt sich per `--dic`, Umgebungsvariable `FRAKTUR_DIC` oder
 `"dic"` in `~/.fraktur-korrektor/config.json` wählen. Der erste Start mit einem neuen Buch dauert etwas länger,
 danach sind die Prüfergebnisse zwischengespeichert.
 
@@ -46,6 +47,7 @@ danach sind die Prüfergebnisse zwischengespeichert.
     whitelist.txt  bestätigte Wörter
     lesezeichen.json
     korrekturen.log  Protokoll aller Korrekturen (Zeit, Art, Seite, Zeile, alt, neu)
+    buch.json        Erscheinungsjahr (geschätzt) und geltende Rechtschreibung
     qualitaet.json   nur nach dem Einlesen mit Tesseract: Konfidenz und Wörterbuchquote je Seite, Ampel
 
 Buchdaten gehören **nicht** in dieses Repository.

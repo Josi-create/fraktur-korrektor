@@ -25,9 +25,19 @@ def version():
         return ''
 
 
-def known(w, freq):
-    """Wörterbuch, oder häufig im Buch (Namen) – kurze Wörter schützt die Häufigkeit nicht (ber, bie, baß …)."""
-    return in_dict(w) or (len(w) > 4 and freq.get(w, 0) >= 3)
+def known(w, freq, dics=korrlib.DEFAULT):
+    """Wörterbuch, oder häufig im Buch (Namen) – kurze Wörter schützt die Häufigkeit nicht (ber, bie, baß …).
+    Siglen in Großbuchstaben (GHB, BWKG, LKA) gelten, wenn sie mehrfach vorkommen: Lesefehler sehen nicht so aus."""
+    n = freq.get(w, 0)
+    return in_dict(w, dics) or (len(w) > 4 and n >= 3) or (n >= 2 and 2 <= len(w) <= 6 and w.isupper())
+
+
+def propose_settings(folder, year=None):
+    """Nach dem Einlesen: Erscheinungsjahr raten und die passende Rechtschreibung vorschlagen (buch.json)."""
+    year = year or korrlib.guess_year(korrlib.read_pages(folder))
+    st = dict(year=year, dics=korrlib.dics_for_year(year))
+    write_atomic(os.path.join(folder, 'buch.json'), json.dumps(st, ensure_ascii=False, indent=1))
+    return st
 
 
 def write_atomic(path, text):
@@ -93,13 +103,36 @@ class Book:
         self.wlpath = os.path.join(self.folder, 'whitelist.txt')
         self.bmpath = os.path.join(self.folder, 'lesezeichen.json')
         self.klogpath = os.path.join(self.folder, 'korrekturen.log')
+        self.stpath = os.path.join(self.folder, 'buch.json')
         self.lock = threading.RLock()
         try:
             self.geo = json.load(open(os.path.join(self.folder, 'lines.json'), encoding='utf-8'))
         except OSError:
             self.geo = {}
         self.unsicher = self.autokorr_unsicher()
+        self.settings = self.load_settings()
         self.pages, self.mt, self.freq, self.wl, self.wlmt, self.fcache, self.size = {}, {}, {}, set(), None, {}, {}
+
+    def load_settings(self):
+        """buch.json: year (Erscheinungsjahr, geraten oder None), dics (welche Rechtschreibung gilt). Fehlt die Datei – Bücher
+        von früher –, gilt wie bisher nur 1901."""
+        try:
+            st = json.load(open(self.stpath, encoding='utf-8'))
+        except (OSError, ValueError):
+            st = {}
+            if os.path.exists(os.path.join(self.folder, 'qualitaet.json')):  # vom Programm eingelesen, aber vor dieser Funktion:
+                st = propose_settings(self.folder)                           # Vorschlag nachholen
+        dics = [d for d in st.get('dics') or korrlib.DEFAULT if d in korrlib.DICS]
+        return dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT))
+
+    def set_dics(self, dics):
+        with self.lock:
+            if not any(d in dics for d in ('1901', 'neu')):  # 'vor1901' sind nur Regeln – ein Wörterbuch muss gelten
+                dics = list(dics) + ['1901']
+            self.settings['dics'] = [d for d in korrlib.DICS if d in dics]
+            write_atomic(self.stpath, json.dumps(self.settings, ensure_ascii=False, indent=1))
+            self.fcache.clear()
+        return self.settings
 
     def autokorr_unsicher(self):
         out = {}
@@ -143,7 +176,8 @@ class Book:
             self.fcache.clear()
 
     def flags(self, pg):
-        key = (self.mt[pg], self.wlmt)
+        dics = tuple(self.settings['dics'])
+        key = (self.mt[pg], self.wlmt, dics)
         c = self.fcache.get(pg)
         if c and c[0] == key:
             return c[1]
@@ -153,7 +187,7 @@ class Book:
         jstart = {(i, s1) for i, s1, w1, j, w2 in joined}
         jend = {(j, 0) for i, s1, w1, j, w2 in joined}
         for i, s1, w1, j, w2 in joined:
-            if not (known(w1 + w2, freq) or (w1 + w2) in wl):
+            if not (known(w1 + w2, freq, dics) or (w1 + w2) in wl):
                 out.append(dict(line=i, start=s1, len=len(w1), word=w1 + '¬' + w2, kind='oov'))
         for i, tl in enumerate(toks):
             if lines[i].startswith('#'):
@@ -161,7 +195,7 @@ class Book:
             for s, w in tl:
                 if (i, s) in jstart or (i, s) in jend or len(w) < 2:
                     continue
-                if not (known(w, freq) or w in wl):
+                if not (known(w, freq, dics) or w in wl):
                     out.append(dict(line=i, start=s, len=len(w), word=w, kind='oov'))
         have = {(f['line'], f['start']) for f in out}
         for i, cand in self.unsicher.get(pg, []):
@@ -461,7 +495,8 @@ def import_transkribus(source, title=None, images=None, target=None):
     except ValueError:
         raise ValueError('keine_xml')
     e = lib_touch(out, title or r.get('title') or name)
-    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], warnings=r['warnings'])
+    st = propose_settings(out)
+    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], warnings=r['warnings'], **st)
 
 
 def import_ocr(source, title, target, script, textlayer, progress, cancelled):
@@ -480,7 +515,8 @@ def import_ocr(source, title, target, script, textlayer, progress, cancelled):
         ocr.cleanup(out)
         raise
     e = lib_touch(out, title or name)
-    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], quality=r['quality'])
+    st = propose_settings(out)
+    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], quality=r['quality'], **st)
 
 
 def import_epub(source, pdf, title, target, script, textlayer, progress, cancelled):
@@ -505,7 +541,8 @@ def import_epub(source, pdf, title, target, script, textlayer, progress, cancell
         ocr.cleanup(out)
         raise
     e = lib_touch(out, title or etitle or name)
-    return dict(id=book_id(out), folder=out, title=e['title'], **{k: r.get(k) for k in ('pages', 'quality', 'matched')})
+    st = propose_settings(out)
+    return dict(id=book_id(out), folder=out, title=e['title'], **{k: r.get(k) for k in ('pages', 'quality', 'matched')}, **st)
 
 
 def discard(bid):
@@ -518,7 +555,7 @@ def discard(bid):
     if not os.path.exists(os.path.join(f, 'qualitaet.json')) or any(os.path.exists(os.path.join(f, n)) for n in ('korrekturen.log', 'whitelist.txt')):
         raise ValueError('hat_arbeit')
     lib_forget(bid)
-    for n in ('lesezeichen.json',):
+    for n in ('lesezeichen.json', 'buch.json'):
         try: os.remove(os.path.join(f, n))
         except OSError: pass
     ocr.cleanup(f)
@@ -725,6 +762,8 @@ class H(BaseHTTPRequestHandler):
             r = dict(title=book.title, pages=book.overview())
             korrlib.save_cache()
             return self.sendjson(r)
+        if rest == '/api/settings':
+            return self.sendjson(book.settings)
         if rest == '/api/whitelist':
             return self.sendjson(dict(words=list(dict.fromkeys(book.whitelist()))))
         if rest == '/api/bookmark':
@@ -824,6 +863,11 @@ class H(BaseHTTPRequestHandler):
             if not body.get('word') or not body.get('new') or re.search(r'\s', body['new']):
                 return self.send(400, '{}')
             return self.sendjson(book.series_replace(body['word'], body['new'], body.get('items', [])))
+        if rest == '/api/settings':
+            st = book.set_dics(body.get('dics') or [])
+            total = sum(o['n'] for o in book.overview())
+            korrlib.save_cache()
+            return self.sendjson(dict(st, total=total))
         if rest == '/api/series_undo':
             return self.sendjson(book.series_undo())
         if rest == '/api/whitelist_remove':

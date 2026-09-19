@@ -28,5 +28,6 @@ as its window.
 - **Backup:** copy the whole book folder from time to time – it contains all your work.
 - **The first time** a book is opened, every word is checked against the dictionary. This can take up to a
   minute; afterwards it is fast.
-- The bundled dictionary covers German spelling from 1901 to 1996 (“daß”, “Schiffahrt”). Older spellings
-  such as “Thür” or “giebt” show up red; `F8` makes the program remember a word as correct.
+- **The dictionary adapts to the book:** the program estimates the year of publication and accordingly accepts the
+  spelling of 1901–1996 (“daß”), the reformed one (“dass”) or spellings from before 1901 (“Thür”, “giebt”). The `D` key
+  changes this per book – see [Usage](usage.md). `F8` makes the program remember a single word as correct.

@@ -30,8 +30,29 @@ def test_zusatz_und_fallen():
 def test_cache_wird_gespeichert():
     korrlib.in_dict('Zwischenspeicherprobe')
     korrlib.save_cache()
-    assert os.path.exists(korrlib._cache_path)
-    assert korrlib._cache_path.startswith(os.environ['FRAKTUR_HOME'])
+    c = korrlib.checker('1901')
+    assert os.path.exists(c.cache_path) and c.cache_path.startswith(os.environ['FRAKTUR_HOME'])
+
+
+def test_rechtschreibung_je_epoche():
+    alt, neu, alle = ('1901',), ('1901', 'neu'), ('1901', 'neu', 'vor1901')
+    assert korrlib.in_dict('daß', alt) and korrlib.in_dict('Schiffahrt', alt)
+    assert not korrlib.in_dict('dass', alt) and korrlib.in_dict('dass', neu) and korrlib.in_dict('Schifffahrt', neu)
+    for w in ('Thür', 'seyn', 'Noth', 'Brod', 'Freyheit', 'Vermuthungen', 'civilisiren', 'giebt', 'Waare'):
+        assert not korrlib.in_dict(w, neu) and korrlib.in_dict(w, alle), w
+    for w in ('ber', 'bie', 'Bolk', 'unb', 'baß'):  # Lesefehler bleiben in jeder Epoche Fehler
+        assert not korrlib.in_dict(w, alle), w
+    assert korrlib.in_dict('Ebd') and korrlib.in_dict('Hg') and korrlib.in_dict('Offb')  # Apparat und Bibelstellen
+
+
+def test_erscheinungsjahr_und_vorschlag():
+    g = korrlib.guess_year
+    assert g({'001': ['Sehnsucht nach Jerusalem'], '002': ['Die Auswanderung 1817', '© 2002 Tübinger Vereinigung', 'ISBN 3-932512-17-0']}) == 2002
+    assert g({'001': ['Stuttgart 1928', 'Ausland und Heimat'], '002': ['12.345 Einwohner, 1.817 Eimer, S. 1928-1930 nicht']}) == 1928
+    assert g({'001': ['ohne Jahr']}) is None
+    assert g({'%03d' % n: ['im Jahre 1999'] if n == 50 else ['Text 1818'] for n in range(1, 100)}) == 1818  # nur Titelei und Schluss zählen
+    d = korrlib.dics_for_year
+    assert (d(1818), d(1928), d(2002), d(None)) == (['1901', 'vor1901'], ['1901'], ['1901', 'neu'], ['1901'])
 
 
 def test_kein_woerterbuch_verstaendliche_meldung(monkeypatch, tmp_path):

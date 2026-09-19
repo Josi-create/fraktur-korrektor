@@ -1,4 +1,11 @@
-# Zusätzlich gültige Wörter: Abkürzungen (ohne Punkt), die im Hunspell-Wörterbuch fehlen.
+# Zusätzlich gültige Wörter: Abkürzungen (ohne Punkt), die in den Hunspell-Wörterbüchern fehlen.
 # Nur Eindeutiges aufnehmen – "bes" z. B. nicht, das ist meist ein verlesenes "des".
+# allgemein
 Abb Anm Aufl Bd Bde Dr Fa Hrsg Ing Jg Jh Nr Okt Pf Phil Prof St Tl Vgl Zus
-bzw ca ff geb gest hrsg phil usw vgl
+bzw ca ff geb gest hrsg phil usw vgl etc sic
+# wissenschaftlicher Apparat
+Ebd ebd Hg hg Hgg Ders Dies ders dies Diss Lfg Sp Zit zit Verf Hs Hss Bll Taf Kap Art Abt Abschn Jhs Nachdr Neudr Reg Beih Erg
+Aufl aaO vgl
+# Bücher der Bibel – ohne die zweibuchstabigen Ex, Ri, Ez, Mi, Am: die könnten auch Lesefehler sein
+Gen Lev Num Dtn Jos Rut Sam Kön Chr Esr Neh Tob Jdt Est Makk Ijob Ps Spr Koh Hld Weish Sir Jes Jer Klgl Bar Dan Hos Obd Nah Hab Zef
+Hag Sach Mal Mt Mk Lk Joh Apg Röm Kor Gal Eph Kol Thess Tim Tit Phlm Hebr Jak Petr Jud Offb Off Apk Mose Jesu Christi

@@ -63,6 +63,13 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .stext{font-family:Georgia,serif;font-size:16px;white-space:pre-wrap}
 #wlist{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
 #wlist.on{display:flex}
+#dics{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
+#dics.on{display:flex}
+#dhead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
+#dbody{padding:18px 22px;max-width:760px;font-size:16px;line-height:1.5}
+#dbody label{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid #ccc;border-radius:5px;margin-bottom:8px;cursor:pointer}
+#dbody label:hover{background:#faf8f2} #dbody input{margin-top:6px;transform:scale(1.3)} #dbody small{display:block;color:#666;font-size:14px}
+#dyear{color:#555;margin-bottom:12px} #dinfo{margin-top:14px;color:#a40;min-height:24px}
 #whead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
 #whead input{font-family:Consolas,monospace;font-size:17px;padding:4px 6px;width:220px}
 #wgrid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,230px);grid-auto-rows:30px;gap:2px 8px;padding:10px 14px;align-content:start}
@@ -80,6 +87,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <label><span data-t="page"></span> <select id="pagesel"></select></label>
  <span id="mode"></span>
  <span id="pos"></span>
+ <a href="#" id="diclink" data-t="dic_link"></a>
  <a id="helplink" data-help="usage" target="_blank" data-t="help_f1"></a>
  <span class="langsw"></span>
 </div>
@@ -97,6 +105,17 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
   <div class="pane" id="text"><div id="centerline"></div><div id="lines"></div>
    <input id="edit" type="text" spellcheck="false" style="display:none">
    <input id="edit2" type="text" spellcheck="false" style="display:none" data-t-title="edit2_title">
+  </div>
+ </div>
+ <div id="dics">
+  <div id="dhead"><span data-t="dic_head"></span>
+   <div style="color:#666;font-size:13.5px;margin-top:6px" data-t="dic_help"></div></div>
+  <div id="dbody">
+   <div id="dyear"></div>
+   <label><input type="checkbox" value="vor1901"><span><b data-t="dic_vor1901"></b><small data-t="dic_vor1901_ex"></small></span></label>
+   <label><input type="checkbox" value="1901"><span><b data-t="dic_1901"></b><small data-t="dic_1901_ex"></small></span></label>
+   <label><input type="checkbox" value="neu"><span><b data-t="dic_neu"></b><small data-t="dic_neu_ex"></small></span></label>
+   <div id="dinfo"></div>
   </div>
  </div>
  <div id="wlist">
@@ -406,6 +425,35 @@ async function serieKey(e) {
   else return;
   e.preventDefault(); updateSeries();
 }
+// ---- Wörterbuch: welche Rechtschreibung gilt für dieses Buch (buch.json)
+let dicsChanged = false;
+const dicBoxes = () => [...document.querySelectorAll('#dbody input')];
+async function openDics() {
+  const st = await (await fetch(BASE + '/api/settings')).json();
+  for (const b of dicBoxes()) b.checked = st.dics.includes(b.value);
+  $('dyear').textContent = st.year ? t('dic_year', { y: st.year }) : '';
+  $('dinfo').textContent = t('dic_total', { n: ov.reduce((a, o) => a + o.n, 0) });
+  mode = 'dics'; cf = null; dicsChanged = false; $('dics').classList.add('on'); document.activeElement.blur();
+}
+async function saveDics() {
+  const before = ov.reduce((a, o) => a + o.n, 0);
+  let dics = dicBoxes().filter(b => b.checked).map(b => b.value);
+  if (!dics.some(d => d != 'vor1901')) { dics.push('1901'); dicBoxes().find(b => b.value == '1901').checked = true; }  // ein Wörterbuch muss gelten
+  $('dinfo').textContent = t('dic_wait');
+  const r = await (await fetch(BASE + '/api/settings', { method: 'POST', body: JSON.stringify({ dics }) })).json();
+  await loadOverview(); dicsChanged = true;
+  $('dinfo').textContent = t('dic_changed', { a: before, b: r.total });
+}
+async function closeDics() {
+  $('dics').classList.remove('on'); mode = 'read';
+  if (dicsChanged) await loadPage(pg, li); else render();
+}
+async function dicsKey(e) {
+  const k = e.key;
+  if (k == 'Escape' || k == 'Enter' || k == 'd' || k == 'D') { e.preventDefault(); await closeDics(); return; }
+  const b = dicBoxes()[{ '1': 0, '2': 1, '3': 2 }[k]];
+  if (b) { e.preventDefault(); b.checked = !b.checked; await saveDics(); }
+}
 let wl = null;
 async function openWhitelist() {
   const r = await (await fetch(BASE + '/api/whitelist')).json();
@@ -478,6 +526,7 @@ async function onKey(e) {
   if (e.ctrlKey || e.altKey || e.metaKey || !data) return;
   if (mode == 'serie') return serieKey(e);
   if (mode == 'wlist') return wlKey(e);
+  if (mode == 'dics') return dicsKey(e);
   if (e.key == 'F9') { e.preventDefault(); await startSeries(); return; }
   if (mode == 'read') {
     if (e.target.tagName == 'SELECT') return;
@@ -500,6 +549,7 @@ async function onKey(e) {
     else if (k == 'F8') await whitelistRead();
     else if (k == 'u' || k == 'U') await undoSeries();
     else if (k == 'w' || k == 'W') await openWhitelist();
+    else if (k == 'd' || k == 'D') await openDics();
     else if (k == 'f' || k == 'F') await footnoteSep();
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
     else if (k == 'g' || k == 'G') { const p = prompt(t('goto')); if (p) await loadPage(String(parseInt(p, 10)).padStart(3, '0'), 0); }
@@ -518,6 +568,8 @@ document.addEventListener('keydown', e => {
   e.preventDefault(); const el = e.target; el.setRangeText('¬', el.selectionStart, el.selectionEnd, 'end'); el.dispatchEvent(new Event('input'));
 }, true);
 document.addEventListener('keydown', async e => { if (busy) { e.preventDefault(); return; } busy = true; try { await onKey(e); } finally { busy = false; } });
+for (const b of dicBoxes()) b.onchange = async () => { if (!busy) { busy = true; try { await saveDics(); } finally { busy = false; } } };
+$('diclink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !busy) { busy = true; try { await openDics(); } finally { busy = false; } } };
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
 $('img').onload = layoutImage;
 $('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });

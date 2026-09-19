@@ -266,6 +266,7 @@ function showDone(r) {
   if (r.matched != null) h += '<div class="verdict">' + t('epub_done', { m: Math.round(r.matched * 100) }) + '</div>';
   if (q) h += '<div class="verdict"><span class="amp ' + level + '"></span><b>' + t('q_' + level) + '</b></div><small>' +
     t(fromPdf ? 'q_values_text' : 'q_values', { n: r.pages, c: q.conf, d: Math.round(q.dict * 100) }) + '</small>';
+  if (r.dics) h += '<div class="more">' + t(r.year ? 'done_dics_year' : 'done_dics', { y: r.year, d: r.dics.map(d => t('dic_name_' + d)).join(' + ') }) + '</div>';
   const rec = r.matched != null || !q ? 'rec_gruen' : 'rec_' + level + (level == 'gruen' ? '' : canRedo ? '_redo' : fromPdf ? '_pdf' : '_ocr');
   h += '<div class="rec ' + (rec == 'rec_gruen' ? '' : level) + '"><b>' + t('rec') + '</b>' + t(rec) +
     (rec != 'rec_gruen' && !canRedo ? ' ' + help('transkribus', t('q_advice_link')) : '') + '</div>';

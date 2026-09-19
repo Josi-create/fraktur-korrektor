@@ -28,6 +28,7 @@ lediglich als Fenster.
 - **Sicherung:** Kopieren Sie ab und zu den ganzen Buchordner – darin steckt Ihre gesamte Arbeit.
 - **Beim ersten Öffnen** eines Buchs prüft das Programm jedes Wort gegen das Wörterbuch. Das kann bis zu
   einer Minute dauern, danach geht es schnell.
-- Das mitgelieferte Wörterbuch kennt die deutsche Rechtschreibung von 1901 bis 1996 („daß“, „Schiffahrt“).
-  Ältere Schreibungen wie „Thür“ oder „giebt“ erscheinen rot; mit `F8` merkt sich das Programm ein Wort
-  als richtig.
+- **Das Wörterbuch passt sich dem Buch an:** Das Programm schätzt das Erscheinungsjahr und lässt danach die
+  Rechtschreibung von 1901–1996 („daß“), die neue („dass“) oder auch Schreibungen vor 1901 („Thür“, „giebt“) gelten.
+  Mit der Taste `D` ändern Sie das je Buch – siehe [Bedienung](usage.md). Ein einzelnes Wort merkt sich das Programm
+  mit `F8` als richtig.

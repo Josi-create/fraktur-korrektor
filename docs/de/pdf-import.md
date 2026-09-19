@@ -69,6 +69,3 @@ entzerrt Wölbungen und schneidet Ränder ab. ([Installation](install-tools.md))
 ## Grenzen
 
 - Mehrspaltiger Satz (Zeitungen, Lexika) wird nicht spaltenweise gelesen.
-- Das mitgelieferte Wörterbuch kennt die Rechtschreibung von 1901 bis 1996. Bei neueren Büchern („dass“)
-  und bei Drucken vor 1901 („Thür“, „giebt“) fällt die Wörterbuchquote deshalb niedriger aus, als die
-  Erkennung verdient.

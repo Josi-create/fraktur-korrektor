@@ -29,6 +29,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `U` | letzte Serienkorrektur zurücknehmen |
 | Lesen | `F` | Fußnoten beginnen mit der Lesezeile (siehe unten) |
 | Lesen | `W` | Whitelist anzeigen |
+| Lesen | `D` | Wörterbuch: welche Rechtschreibung gilt in diesem Buch (siehe unten) |
 | überall | `F1` | diese Hilfe |
 
 ## Getrennte Wörter
@@ -74,6 +75,26 @@ oder verschiebt diesen Trenner vor die Lesezeile. Steht die Lesezeile auf der er
 Die Whitelist enthält die Wörter, die Sie mit `F8` bestätigt haben (Namen, Orte, alte Schreibungen). `W`
 zeigt sie, die neuesten zuerst, mit Filter. `Entf`, `Leertaste` oder ein Klick nimmt ein Wort heraus bzw.
 wieder auf – es wird dann im Buch wieder rot.
+
+## Wörterbuch (D)
+
+Rot wird, was das Wörterbuch nicht kennt – deshalb muss das Wörterbuch zum Buch passen. `D` (oder „Wörterbuch“ in der
+Kopfleiste) zeigt drei Häkchen; die Wahl gilt nur für dieses Buch und wird gespeichert:
+
+| Häkchen | Beispiele | Wofür |
+|---|---|---|
+| Schreibungen vor 1901 gelten lassen | Thür, Noth, seyn, giebt, civilisiren | Drucke des 19. Jahrhunderts – und neuere Arbeiten, die alte Quellen wörtlich zitieren |
+| Rechtschreibung 1901 bis 1996 | daß, Schiffahrt, rauh | die meisten Frakturdrucke, alles bis zur Rechtschreibreform |
+| Neue Rechtschreibung (ab 1996) | dass, Schifffahrt, rau | neuere Bücher, Skripte, Aufsätze |
+
+Beim Einlesen schätzt das Programm das **Erscheinungsjahr** aus Titelei und Impressum und setzt die Häkchen passend:
+vor 1902 die ersten beiden, bis 1997 das mittlere, ab 1998 die unteren beiden (die Umstellung zog sich hin, und neuere
+Arbeiten zitieren ältere Texte). Das Fenster zeigt nach jeder Änderung, wie viele rote Wörter es vorher und nachher im Buch
+gibt – so sehen Sie sofort, was passt. Echte Lesefehler (`ber`, `bie`, `Bolk`) bleiben in jeder Einstellung rot.
+
+Unabhängig davon gelten immer: gängige Abkürzungen (Vgl, Bd, Ebd, Hg, Bibelstellen wie Offb, Joh), Siglen in
+Großbuchstaben, die mehrfach vorkommen (BWKG, LKA), und längere Wörter, die im Buch mindestens dreimal stehen (meist
+Namen). Einen Namen, der trotzdem rot ist, bestätigen Sie einmal mit `F8` – das gilt dann für alle Fundstellen.
 
 ## Über das Heimnetz mitlesen
 

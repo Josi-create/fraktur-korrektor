@@ -129,12 +129,13 @@ def page_quality(words):
     """Mittlere Wortkonfidenz (nach Wortlänge gewichtet), Anteil der Wörter, die das Wörterbuch kennt, und
     ends: um wie viel die Konfidenz der Wörter am Zeilenende unter der der übrigen liegt (am Bund gestauchte Zeilen)."""
     toks = [w for c, t, e in words for w in korrlib.WORD.findall(t) if len(w) > 1]
+    ok = lambda w: korrlib.in_dict(w, korrlib.DICS)  # die Ampel misst die Texterkennung, nicht die Rechtschreibung: jede Epoche gilt
     if words and words[0][0] is None:  # Text aus dem PDF übernommen: keine Konfidenz bekannt
-        return dict(conf=None, words=len(toks), dict=round(sum(korrlib.in_dict(w) for w in toks) / len(toks), 3) if toks else 0.0, ends=0.0)
+        return dict(conf=None, words=len(toks), dict=round(sum(ok(w) for w in toks) / len(toks), 3) if toks else 0.0, ends=0.0)
     n = sum(len(t) for c, t, e in words)
     end, mid = [c for c, t, e in words if e], [c for c, t, e in words if not e]
     return dict(conf=round(sum(c * len(t) for c, t, e in words) / n, 1) if n else 0.0, words=len(toks),
-                dict=round(sum(korrlib.in_dict(w) for w in toks) / len(toks), 3) if toks else 0.0,
+                dict=round(sum(ok(w) for w in toks) / len(toks), 3) if toks else 0.0,
                 ends=round(sum(mid) / len(mid) - sum(end) / len(end), 1) if end and mid else 0.0)
 
 

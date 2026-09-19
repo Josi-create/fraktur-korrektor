@@ -100,3 +100,17 @@ def test_zweiter_start_auf_gleichem_port_scheitert_verstaendlich(app):
     r = subprocess.run([sys.executable, os.path.join(ROOT, 'server.py'), app.folder, '--port', port, '--no-browser'],
                        capture_output=True, timeout=60, env=dict(os.environ, PYTHONIOENCODING='utf-8'))
     assert r.returncode != 0 and 'ist belegt' in r.stderr.decode('utf-8')
+
+
+def test_rechtschreibung_je_buch(app):
+    import os, json
+    old = app.text('002')[1]
+    app.post('/api/edit/002', dict(edits=[dict(line=1, old=old, new='Der Vater sagte, dass die Thür offen sey. BWKG und BWKG.')]))
+    assert app.get('/api/settings')[1] == dict(year=None, dics=['1901'])              # Bücher von früher: wie bisher
+    assert words(app.get('/api/page/002')[1]) == ['dass', 'Thür', 'sey']              # die Sigle BWKG (zweimal, Großbuchstaben) gilt
+    code, r = app.post('/api/settings', dict(dics=['neu', '1901']))
+    assert code == 200 and r['dics'] == ['1901', 'neu'] and words(app.get('/api/page/002')[1]) == ['Thür', 'sey']
+    r = app.post('/api/settings', dict(dics=['vor1901']))[1]                          # ein Wörterbuch muss gelten
+    assert r['dics'] == ['1901', 'vor1901'] and words(app.get('/api/page/002')[1]) == ['dass']
+    assert r['total'] == sum(p['n'] for p in app.get('/api/overview')[1]['pages'])
+    assert json.load(open(os.path.join(app.folder, 'buch.json'), encoding='utf-8'))['dics'] == ['1901', 'vor1901']  # bleibt gespeichert

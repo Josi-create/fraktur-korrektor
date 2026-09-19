@@ -29,6 +29,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `U` | undo the last batch correction |
 | Reading | `F` | footnotes start at the reading line (see below) |
 | Reading | `W` | show the whitelist |
+| Reading | `D` | dictionary: which spelling applies to this book (see below) |
 | anywhere | `F1` | this help |
 
 ## Hyphenated words
@@ -72,6 +73,27 @@ the separator again.
 The whitelist holds the words you confirmed with `F8` (names, places, old spellings). `W` shows it, newest
 first, with a filter. `Del`, `Space` or a click removes a word or restores it – it then turns red again in
 the book.
+
+## Dictionary (D)
+
+Whatever the dictionary does not know turns red – so the dictionary has to suit the book. `D` (or “Dictionary” in the top
+bar) shows three tick boxes; the choice applies to this book only and is saved:
+
+| Tick box | Examples | What for |
+|---|---|---|
+| Accept spellings from before 1901 | Thür, Noth, seyn, giebt, civilisiren | 19th-century prints – and newer works that quote old sources verbatim |
+| German spelling 1901 to 1996 | daß, Schiffahrt, rauh | most Fraktur prints, everything up to the spelling reform |
+| Reformed spelling (from 1996) | dass, Schifffahrt, rau | newer books, scripts, papers |
+
+When a book is read in, the program estimates the **year of publication** from the title pages and imprint and ticks the
+boxes accordingly: before 1902 the first two, up to 1997 the middle one, from 1998 the lower two (the changeover took
+years, and newer works quote older texts). After every change the window shows how many red words the book had before and
+has now – so you see at once what fits. Genuine misreadings (`ber`, `bie`, `Bolk`) stay red in every setting.
+
+Independently of this, the following always count as correct: common abbreviations (Vgl, Bd, Ebd, Hg, Bible references
+such as Offb, Joh), sigla in capitals that occur more than once (BWKG, LKA), and longer words that occur at least three
+times in the book (mostly names). A name that is still red is confirmed once with `F8` – this then applies to every
+occurrence.
 
 ## Reading along on the home network
 

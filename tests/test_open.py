@@ -155,3 +155,18 @@ def test_eben_eingelesenes_verwerfen(lib, tmp_path):
     make_book(str(tmp_path / 'fremd'))                                           # nicht vom Programm eingelesen: bleibt
     bid = lib.lpost('/api/open', dict(folder=str(tmp_path / 'fremd')))[1]['id']
     assert lib.lpost('/api/discard', dict(id=bid))[0] == 400 and os.path.exists(tmp_path / 'fremd' / '001.txt')
+
+
+def test_vorschlag_nach_erscheinungsjahr(lib, tmp_path):
+    fitz = pytest.importorskip('fitz')
+    d = fitz.open()
+    for n, lines in enumerate([['Neue Wege', '© 2010 Verlag am Fluss'], ['Er sagte, dass der Fluss breit sei, und dass die Schifffahrt ruhe.'] * 3]):
+        pg = d.new_page(width=420, height=595)
+        for k, l in enumerate(lines):
+            pg.insert_text((40, 80 + 22 * k), l, fontsize=11, fontname='tiro')
+    d.save(str(tmp_path / 'neu.pdf')); d.close()
+    r = wait(lib, lib.lpost('/api/import_ocr', dict(source=str(tmp_path / 'neu.pdf'), textlayer=True, target=str(tmp_path / 'ziel')))[1]['job'])['result']
+    assert (r['year'], r['dics']) == (2010, ['1901', 'neu'])
+    assert lib.lget('/buch/%s/api/settings' % r['id'])[1] == dict(year=2010, dics=['1901', 'neu'])
+    assert lib.lget('/buch/%s/api/page/002' % r['id'])[1]['flags'] == []   # dass, Fluss, Schifffahrt: nichts rot
+    assert r['quality']['level'] == 'gruen'                               # die Ampel hängt nicht an der Rechtschreibung

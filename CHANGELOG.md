@@ -5,6 +5,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Wörterbuch je Buch** (Taste `D`): Rechtschreibung 1901–1996, neue Rechtschreibung (mitgeliefert: `dict/de_DE_frami`, GPL)
+  und »Schreibungen vor 1901 gelten lassen« (Thür, seyn, giebt – über Regeln); das Programm schätzt das Erscheinungsjahr und
+  schlägt die Einstellung vor; das Fenster zeigt die Zahl der roten Wörter vorher/nachher. Gespeichert in `buch.json`.
+- Mehr Abkürzungen (wissenschaftlicher Apparat, Bibelstellen); Siglen in Großbuchstaben gelten, wenn sie mehrfach vorkommen.
+- Die Ampel misst die Texterkennung unabhängig von der Rechtschreibung des Buchs.
 - **Ein Knopf »Öffnen …«** statt dreier: Das Programm untersucht die gezeigte Datei bzw. den Ordner und erkennt Buchordner,
   PDF, EPUB, Seitenbilder und Transkribus-Exporte; bei mehreren Funden Empfehlung mit Seitenzahl und Datum – ein Buch mit
   Korrekturen steht immer vorn, neuere Funde sind markiert; passende Bilderordner zu Exporten ohne Bilder werden vorgeschlagen.
