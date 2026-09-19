@@ -73,6 +73,27 @@ def test_nach_scantailor_zaehlt_nur_das_ergebnis(tmp_path):
     assert [(f['kind'], f['pages'], f.get('scantailor')) for f in found] == [('images', 8, True)]
 
 
+def test_nach_scantailor_ist_das_ergebnis_die_empfehlung(tmp_path):
+    """Ein eben aufbereiteter Scan geht dem Buch vor, das noch aus den ungetrennten Seiten stammt –
+    aber nur, solange darin keine Arbeit steckt."""
+    buch = tmp_path / 'Stumpp 1922'
+    make_book(str(buch))
+    (buch / 'scantailor' / 'out').mkdir(parents=True)
+    for n in range(8):
+        (buch / 'scantailor' / 'out' / ('seite_%03d.png' % n)).write_bytes(png(10, 10))
+    alt = time.time() - 3600
+    for p in list(buch.glob('*.txt')) + [buch]:
+        os.utime(p, (alt, alt))
+
+    found = finder.scan(str(tmp_path))['found']
+    assert [(f['kind'], f.get('scantailor', False)) for f in found] == [('images', True), ('book', False)]
+
+    # sobald im Buch korrigiert wurde, bleibt es vorn: sonst verlöre man die Arbeit aus den Augen
+    (buch / 'korrekturen.log').write_text('a\tedit\t001\t2\talt\tneu\n', encoding='utf-8')
+    found = finder.scan(str(tmp_path))['found']
+    assert [f['kind'] for f in found] == ['book', 'images']
+
+
 def test_datei_untersuchen(tmp_path):
     fitz = pytest.importorskip('fitz')
     make_book(str(tmp_path / 'b'))

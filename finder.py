@@ -237,6 +237,12 @@ def scan(path):
     # Empfehlung: Bücher mit Korrekturen zuerst (dort steckt Arbeit), dann nach Art, innerhalb der Art das Jüngste
     found.sort(key=lambda f: f['mtime'], reverse=True)
     found.sort(key=lambda f: (0 if f.get('corrections') else 1, RANK[f['kind']], 0 if f.get('pdf') or f.get('text') else 1))
+    # Wer eben ScanTailor hat laufen lassen, will dessen Ergebnis einlesen – die aufbereiteten Seiten sind der
+    # ganze Zweck der Übung. Ein schon vorhandenes Buch geht nur dann vor, wenn darin Arbeit steckt.
+    st = next((f for f in found if f.get('scantailor')), None)
+    if st and found[0] is not st and not found[0].get('corrections') and st['mtime'] > found[0]['mtime']:
+        found.remove(st)
+        found.insert(0, st)
     for f in found[1:]:
         f['newer'] = bool(found[0]['mtime']) and f['mtime'] > found[0]['mtime']
     return dict(path=path, found=found[:40])
