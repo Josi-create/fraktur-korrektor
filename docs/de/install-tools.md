@@ -1,17 +1,20 @@
 # Werkzeuge installieren
 
-Für das Lesen und Korrigieren braucht der Fraktur-Korrektor nichts weiter. Zwei freie Zusatzprogramme
-erweitern ihn:
+**Haben Sie den Fraktur-Korrektor [installiert](install.md), ist alles Nötige schon dabei:** die Texterkennung
+Tesseract mit den Modellen für Fraktur und Antiqua wird mitgeliefert. Diese Seite brauchen Sie nur, wenn
+
+- Sie schwierige Scans mit **ScanTailor** aufbereiten möchten – das ist ein eigenes Programm, oder
+- Sie den Fraktur-Korrektor aus dem Quelltext starten (`python server.py`); dann fehlt Tesseract.
 
 | Programm | Wozu | Nötig? |
 |---|---|---|
-| **Tesseract** | Texterkennung: [PDF oder Bilder einlesen](pdf-import.md) | nur, wenn Sie nicht mit Transkribus arbeiten |
+| **Tesseract** | Texterkennung: [PDF oder Bilder einlesen](pdf-import.md) | im fertigen Programm enthalten |
 | **ScanTailor Advanced** | schlechte Scans aufbereiten (Doppelseiten trennen, geraderichten, entzerren) | nur bei schwierigen Vorlagen |
 
 Der Fraktur-Korrektor findet beide Programme von selbst, wenn sie am üblichen Ort installiert sind. Beim Öffnen
 eines PDF zeigt das Fenster, was gefunden wurde.
 
-## Tesseract
+## Tesseract – nur beim Start aus dem Quelltext
 
 **Windows**
 
@@ -30,9 +33,10 @@ eines PDF zeigt das Fenster, was gefunden wurde.
 
 **Linux:** `sudo apt install tesseract-ocr tesseract-ocr-deu` (Debian/Ubuntu) bzw. das Paket Ihrer Distribution.
 
-Das **Fraktur-Modell** (`frak2021` der UB Mannheim, 5 MB) lädt der Fraktur-Korrektor beim ersten Einlesen
-selbst herunter und legt es unter `~/.fraktur-korrektor/tessdata` ab. Sind bereits Fraktur-Modelle
-installiert (`deu_latf`, `deu_frak`, `frk`, `Fraktur`), benutzt er diese.
+Das **Fraktur-Modell** `frak2021` der UB Mannheim (5 MB) ist im fertigen Programm enthalten. Beim Start aus dem
+Quelltext lädt der Fraktur-Korrektor es beim ersten Einlesen selbst herunter und legt es unter
+`~/.fraktur-korrektor/tessdata` ab. Sind bereits Fraktur-Modelle installiert (`deu_latf`, `deu_frak`, `frk`,
+`Fraktur`), benutzt er diese.
 
 ## ScanTailor Advanced
 

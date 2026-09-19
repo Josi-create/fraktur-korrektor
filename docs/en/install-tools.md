@@ -1,16 +1,20 @@
 # Installing the tools
 
-For reading and correcting, Fraktur-Korrektor needs nothing else. Two free additional programs extend it:
+**If you have [installed](install.md) Fraktur-Korrektor, everything you need is already there:** text
+recognition with Tesseract and the models for Fraktur and Antiqua come with it. You only need this page if
+
+- you want to clean up difficult scans with **ScanTailor** – that is a separate program, or
+- you start Fraktur-Korrektor from the source code (`python server.py`); then Tesseract is missing.
 
 | Program | What for | Needed? |
 |---|---|---|
-| **Tesseract** | text recognition: [Reading in a PDF or images](pdf-import.md) | only if you do not work with Transkribus |
+| **Tesseract** | text recognition: [Reading in a PDF or images](pdf-import.md) | included in the finished program |
 | **ScanTailor Advanced** | cleaning up poor scans (splitting double pages, deskewing, dewarping) | only for difficult scans |
 
 Fraktur-Korrektor finds both programs by itself if they are installed in the usual place. When you open a PDF,
 the window shows what was found.
 
-## Tesseract
+## Tesseract – only when starting from the source code
 
 **Windows**
 
@@ -30,9 +34,10 @@ the window shows what was found.
 
 **Linux:** `sudo apt install tesseract-ocr tesseract-ocr-deu` (Debian/Ubuntu) or your distribution's package.
 
-Fraktur-Korrektor downloads the **Fraktur model** (`frak2021` by Mannheim University Library, 5 MB) by itself
-the first time you read in a book and stores it in `~/.fraktur-korrektor/tessdata`. If Fraktur models are
-already installed (`deu_latf`, `deu_frak`, `frk`, `Fraktur`), it uses those.
+The **Fraktur model** `frak2021` by Mannheim University Library (5 MB) is included in the finished program.
+When starting from the source code, Fraktur-Korrektor downloads it by itself the first time you read in a book
+and stores it in `~/.fraktur-korrektor/tessdata`. If Fraktur models are already installed (`deu_latf`,
+`deu_frak`, `frk`, `Fraktur`), it uses those.
 
 ## ScanTailor Advanced
 

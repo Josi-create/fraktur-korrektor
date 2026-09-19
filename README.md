@@ -12,15 +12,31 @@ Ziel ist ein sauberer Text als Grundlage für ein Epub.
 Alles geht mit der Tastatur; die wichtigsten Tasten stehen im Programm immer oben rechts, `F1` öffnet die Hilfe.
 
 - [Hilfe: Überblick](docs/de/index.md) · [Ein Buch öffnen](docs/de/add-book.md) · [PDF oder Bilder einlesen](docs/de/pdf-import.md) ·
-  [Mit Transkribus arbeiten](docs/de/transkribus.md) · [Bedienung und alle Tasten](docs/de/usage.md) · [Werkzeuge installieren](docs/de/install-tools.md)
+  [Mit Transkribus arbeiten](docs/de/transkribus.md) · [Bedienung und alle Tasten](docs/de/usage.md) ·
+  [Programm installieren](docs/de/install.md) · [Werkzeuge installieren](docs/de/install-tools.md)
 - English: [Help](docs/en/index.md) · [Opening a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
-  [Working with Transkribus](docs/en/transkribus.md) · [Usage](docs/en/usage.md) · [Installing the tools](docs/en/install-tools.md)
+  [Working with Transkribus](docs/en/transkribus.md) · [Usage](docs/en/usage.md) ·
+  [Installing the program](docs/en/install.md) · [Installing the tools](docs/en/install-tools.md)
 
 Jede Korrektur wird sofort in die Textdatei geschrieben und in `korrekturen.log` protokolliert; die Leseposition steht in
 `lesezeichen.json`. Die Dateien dürfen parallel in einem Editor bearbeitet werden (die Zeilenzahl einer Seite dabei nicht
 ändern, sonst fehlt die Bildzuordnung).
 
-## Start
+## Installieren
+
+Fertige Programme, in denen alles steckt – auch die Texterkennung, es muss nichts nachinstalliert werden:
+
+| | |
+|---|---|
+| Windows | [Fraktur-Korrektor_Setup.exe](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor_Setup.exe) |
+| Mac, Apple Silicon | [Fraktur-Korrektor-macos-arm64.dmg](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-arm64.dmg) |
+| Mac, Intel | [Fraktur-Korrektor-macos-x86_64.dmg](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-x86_64.dmg) |
+
+Schritt für Schritt, auch zum Beenden und Aktualisieren: [Programm installieren](docs/de/install.md) ·
+[Installing the program](docs/en/install.md). Alle Fassungen samt portablem ZIP stehen auf der
+[Seite der Veröffentlichungen](https://github.com/Josi-create/fraktur-korrektor/releases/latest).
+
+## Start aus dem Quelltext
 
     pip install spylls markdown pymupdf
     py server.py                  Bibliothek; »Öffnen …« erkennt selbst: Buchordner, PDF, EPUB (+ gleichnamiges PDF), Bilder, Transkribus-Export
