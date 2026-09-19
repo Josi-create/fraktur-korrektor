@@ -228,12 +228,11 @@ class Book:
             self.size[pg] = image_size(p) if p else None
         return self.size[pg]
 
-    def geo_lines(self, pg, lines):
-        """Ordnet den Textzeilen die XML-Zeilen zu; None wenn die Anzahl nicht passt.
-        Transkribus legt die Seite höhenfüllend und horizontal zentriert auf sein Format (g['w'] x g['h'])."""
+    def geo_seq(self, pg, lines):
+        """Ordnet den Textzeilen die Zeilen aus lines.json zu (dieselben dict-Objekte, None für Trenner); None wenn die Anzahl
+        nicht passt."""
         g = self.geo.get(pg)
-        sz = self.img_size(pg)
-        if not g or not sz or not g['lines']:
+        if not g or not g['lines']:
             return None
         L = g['lines']
         head = [l for l in L if l['kind'] == 'head']
@@ -252,6 +251,14 @@ class Book:
             else:
                 return None
         if any(x['text'].strip() for x in geoms[k:]):  # nur leere Zeilen dürfen am Ende im Text fehlen
+            return None
+        return seq
+
+    def geo_lines(self, pg, lines):
+        """Zeilenrahmen in Bildpixeln je Textzeile; None ohne Zuordnung oder ohne Bild.
+        Transkribus legt die Seite höhenfüllend und horizontal zentriert auf sein Format (g['w'] x g['h'])."""
+        seq, sz, g = self.geo_seq(pg, lines), self.img_size(pg), self.geo.get(pg)
+        if seq is None or not sz:
             return None
         w, h = sz
         s = h / g['h']
@@ -405,6 +412,72 @@ class Book:
             for e in edits:
                 self.klog('edit', pg, e['line'], e['old'], e['new'])
             return self.page_data(pg)
+
+    def save_geo(self):
+        write_atomic(os.path.join(self.folder, 'lines.json'), json.dumps(self.geo, ensure_ascii=False))
+
+    def retable(self, lines, n):
+        """Liegt Zeile n in einer Tabelle, die Tabelle neu durchzählen: Nach dem Teilen oder Verbinden stimmen die Spalten wieder."""
+        blk = korrlib.table_block(lines, n)
+        if not blk:  # beim Teilen kann </table> in die neue Zeile gerutscht sein
+            blk = korrlib.table_block(lines, n - 1) if n > 0 else None
+        if blk:
+            a, b = blk
+            cols, head = korrlib.table_shape(lines[a:b + 1])
+            lines[a:b + 1] = korrlib.make_table(lines[a:b + 1], cols, head)
+
+    def split_line(self, pg, n, old, text, pos):
+        """Zeile n an der Stelle pos teilen (text = Inhalt des Eingabefelds, darf gegenüber old schon geändert sein). Der
+        Bildausschnitt der Zeile wird anteilig mitgeteilt, damit jede Textzeile weiter ihre Bildzeile hat."""
+        with self.lock:
+            self.refresh()
+            lines = list(self.pages[pg])
+            if not (0 <= n < len(lines)) or lines[n] != old or lines[n] == '---' or (n == 0 and lines[n].startswith('#')) or '\n' in text:
+                return None, 409
+            if any(m.start() < pos < m.end() for m in korrlib.TAG.finditer(text)):
+                return None, 400  # mitten in einer Auszeichnung
+            left, right = text[:pos].rstrip(), text[pos:].lstrip()
+            if not korrlib.TAG.sub('', left).strip() or not korrlib.TAG.sub('', right).strip():  # am sichtbaren Text gemessen
+                return None, 400
+            seq = self.geo_seq(pg, lines)
+            e = seq[n] if seq else None
+            if e:
+                vl, vr = len(korrlib.TAG.sub('', left)), len(korrlib.TAG.sub('', right))
+                xs = round(e['x0'] + (e['x1'] - e['x0']) * vl / max(1, vl + vr))
+                G = self.geo[pg]['lines']
+                k = next(i for i, x in enumerate(G) if x is e)
+                G.insert(k + 1, dict(e, x0=xs, text=right))
+                e.update(x1=xs, text=left)
+                self.save_geo()
+            lines[n:n + 1] = [left, right]
+            self.retable(lines, n)
+            self.write_page(pg, lines)
+            self.klog('teilen', pg, n, old, left + ' ⏎ ' + right)
+            return self.page_data(pg), None
+
+    def join_lines(self, pg, n, old):
+        """Zeile n mit der folgenden verbinden; die Bildausschnitte werden vereinigt. Ein Trennzeichen ¬ fällt dabei weg."""
+        with self.lock:
+            self.refresh()
+            lines = list(self.pages[pg])
+            if not (0 <= n < len(lines) - 1) or lines[n:n + 2] != old or '---' in lines[n:n + 2] or (n == 0 and lines[n].startswith('#')):
+                return None, 409
+            a, b = lines[n].rstrip(), lines[n + 1].lstrip()
+            seq = self.geo_seq(pg, lines)
+            if seq and seq[n] and seq[n + 1]:
+                e, f = seq[n], seq[n + 1]
+                e.update(x0=min(e['x0'], f['x0']), x1=max(e['x1'], f['x1']), y0=min(e['y0'], f['y0']), y1=max(e['y1'], f['y1']),
+                         text=(e.get('text') or '') + ' ' + (f.get('text') or ''))
+                G = self.geo[pg]['lines']
+                del G[next(i for i, x in enumerate(G) if x is f)]
+                self.save_geo()
+            m = re.search(r'¬((?:</?\w+>)*)$', a)  # Zu¬ + kunft -> Zukunft (Auszeichnung hinter dem ¬ bleibt)
+            joined = a[:m.start()] + m.group(1) + b if m and re.match(r'(?:</?\w+>)*[a-zäöüß]', b) else a + ' ' + b
+            lines[n:n + 2] = [joined]
+            self.retable(lines, n)
+            self.write_page(pg, lines)
+            self.klog('verbinden', pg, n, old[0] + ' ⏎ ' + old[1], joined)
+            return self.page_data(pg), None
 
     def markup(self, pg, body):
         """Tabelle setzen/entfernen bzw. Überschrift: baut die Änderungen und schickt sie durch edit() – mit derselben Prüfung
@@ -887,6 +960,16 @@ class H(BaseHTTPRequestHandler):
         if m:
             r = book.edit(m.group(1), body['edits'])
             return self.sendjson(r) if r else self.send(409, '{}')
+        m = re.fullmatch(r'/api/lines/(\d{3})', rest)
+        if m:
+            try:
+                if body.get('kind') == 'split':
+                    r, err = book.split_line(m.group(1), body.get('line', -1), body.get('old'), body.get('text') or '', int(body.get('pos') or 0))
+                else:
+                    r, err = book.join_lines(m.group(1), body.get('line', -1), body.get('old'))
+            except KeyError:
+                return self.send(404, '{}')
+            return self.sendjson(r) if r else self.send(err or 409, '{}')
         m = re.fullmatch(r'/api/markup/(\d{3})', rest)
         if m:
             try:

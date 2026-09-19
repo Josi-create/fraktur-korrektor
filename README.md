@@ -67,7 +67,7 @@ eines PDF gelegt) und `ocr.py` (PDF/Bilder → Tesseract bzw. vorhandene Textebe
 ## Geplant
 
 Siehe [ROADMAP.md](ROADMAP.md): Installer für Windows
-und Mac, zweisprachige Dokumentation; später Zeilen teilen/verbinden und Epub-Export.
+und Mac, zweisprachige Dokumentation; später Epub-Export.
 
 ## Entwicklung
 

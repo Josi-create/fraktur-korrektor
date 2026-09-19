@@ -22,6 +22,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `R` | reload the page (after changes in another editor) |
 | Correction | `Enter` | apply and read on (if the same line has another red word, that comes first) |
 | Correction / Edit line | `F7` | insert the hyphenation mark `¬` at the cursor |
+| Correction / Edit line | `Shift`+`Enter` | split the line at the cursor (see below) |
 | Correction | `F8` | word is correct → whitelist |
 | Correction | `Tab` | next red word without changing anything |
 | Correction | `Esc` | back to reading without changing anything |
@@ -30,6 +31,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `F` | footnotes start at the reading line (see below) |
 | Reading | `T` | table: turn separate lines into a table, or dissolve it again (see below) |
 | Reading | `H` | heading: level 1 → 2 → 3 → none (see below) |
+| Reading | `V` | join the reading line with the next line |
 | Reading | `W` | show the whitelist |
 | Reading | `D` | dictionary: which spelling applies to this book (see below) |
 | anywhere | `F1` | this help |
@@ -70,6 +72,19 @@ In the text file, footnotes follow a line `---` and always run to the end of the
 this separator to just before the reading line. If the reading line is the first footnote line, `F` removes
 the separator again.
 
+## Splitting and joining lines
+
+Sometimes text recognition misses a line break – two lines (or two table cells) end up in one – or it makes one too many.
+
+- **Split:** edit the line (`F2` or `Enter`), put the cursor at the place and press `Shift`+`Enter`. Whatever you have
+  already changed in the field is applied along with it.
+- **Join:** in reading mode press `V` – the reading line is joined with the next one. If it ends with the hyphenation mark
+  `¬`, the split word is pulled together (`Zu¬` + `kunft` → `Zukunft`).
+
+The program also splits or merges the **image area** of the line (when splitting, proportionally at the split point). This
+way every line of text keeps its place in the page image – unlike changing the number of lines in another editor. Inside a
+table, the table is renumbered afterwards: shifted columns fall back into place.
+
 ## Tables (T)
 
 Text recognition usually tears tables apart into single lines – a listing turns into
@@ -92,22 +107,28 @@ The program does not invent a format of its own for this; it writes the same mar
     <tr><td>1812-</td>
     <td>12 409</td></tr></table>
 
-Every line stays a line – one cell per line – so that the alignment with the page image is kept. The markup is shown small
-and pale in the text, the table with a blue edge; the word check skips it. You correct the content of the cells like any
+Every line stays a line – one cell per line – so that the alignment with the page image is kept. You never get to see these
+control characters in the program: on the right the finished **table appears as a table**, with borders and columns, and the
+input field, too, shows only the content of the cell. The reading cursor moves cell by cell, and the matching place in the
+page image is highlighted on the left. The word check skips the markup. You correct the content of the cells like any
 other text (delete superfluous dashes as in `1812-` with `F2`).
 
-Limitations: the cells have to be in reading order (row by row). If text recognition read a table column by column, or put
-two cells into one line, `F2` helps: there you can add markup by hand, for example `</td><td>` between two cells of the
-same line.
+**Shifted columns:** if two cells are in one line (`1812- 12 409`) because text recognition missed the line break, all
+columns from there on shift by one. Split the line at that place (`F2`, position the cursor, `Shift`+`Enter`) – before or
+after creating the table; an existing table is renumbered by the program afterwards.
+
+Limitation: the cells have to be in reading order (row by row). If text recognition read a table column by column, it cannot
+be marked up this way.
 
 ## Headings (H)
 
 `H` marks the reading line as a heading: level 1 the first time (`<h1>…</h1>`), the next level with each further press,
-ordinary text again after level 3. Headings are shown larger and bold. A later EPUB export can build chapters and the table
+ordinary text again after level 3. Headings are shown larger and bold, without visible control characters. A later EPUB export can build chapters and the table
 of contents from them.
 
 If you like, you can also enter further markup by hand with `F2`; the program knows `<em>`, `<strong>`, `<i>`, `<b>`,
-`<sup>`, `<sub>`, `<p>`, `<blockquote>` and `<br/>` and does not treat them as words.
+`<sup>`, `<sub>`, `<p>`, `<blockquote>` and `<br/>`, does not treat them as words, and shows font markup (italic, bold,
+superscript, subscript) as such.
 
 ## Whitelist (W)
 

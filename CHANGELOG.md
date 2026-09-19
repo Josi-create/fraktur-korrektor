@@ -5,9 +5,14 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Zeilen teilen und verbinden** mit Erhalt der Bildzuordnung: `Umschalt`+`Enter` im Eingabefeld teilt die Zeile an der
+  Schreibmarke, `V` verbindet die Lesezeile mit der nächsten (ein `¬` fällt dabei weg). Der Bildausschnitt in `lines.json`
+  wird mitgeteilt bzw. vereinigt; eine Tabelle wird danach neu durchgezählt – verrutschte Spalten stehen wieder richtig.
 - **Auszeichnung beim Lesen** (#38): `T` macht aus getrennten Zeilen eine Tabelle (Bereich wählen, Spaltenzahl, Vorschau,
   Spaltenköpfe; `T` auf der Tabelle löst sie wieder auf), `H` zeichnet Überschriften aus (Ebene 1–3). Geschrieben wird XHTML
   wie im EPUB (`<table><tr><td>`, `<h2>`), kein eigenes Format; jede Zeile bleibt eine Zeile, damit die Bildzuordnung hält.
+  Dargestellt wird WYSIWYG: Tabellen als Tabelle (jede Zelle bleibt eine Zeile mit Lesecursor und Bildzuordnung),
+  Überschriften groß, Schrift-Auszeichnung als Schrift – Steuerzeichen sind weder im Text noch im Eingabefeld zu sehen.
   Die Wortprüfung, Serienkorrektur und die Lage im Bild übergehen die Auszeichnung; getrennte Wörter werden auch hinter
   Auszeichnung zusammengefügt.
 - **Wörterbuch je Buch** (Taste `D`): Rechtschreibung 1901–1996, neue Rechtschreibung (mitgeliefert: `dict/de_DE_frami`, GPL)

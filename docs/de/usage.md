@@ -22,6 +22,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `R` | Seite neu laden (nach Änderungen in einem anderen Editor) |
 | Korrektur | `Enter` | übernehmen und weiterlesen (steht in derselben Zeile noch ein rotes Wort, kommt dieses zuerst) |
 | Korrektur / Zeile bearbeiten | `F7` | Trennzeichen `¬` an der Schreibmarke einfügen |
+| Korrektur / Zeile bearbeiten | `Umschalt`+`Enter` | Zeile an der Schreibmarke teilen (siehe unten) |
 | Korrektur | `F8` | Wort ist richtig → Whitelist |
 | Korrektur | `Tab` | nächstes rotes Wort, ohne zu ändern |
 | Korrektur | `Esc` | zurück zum Lesen, ohne zu ändern |
@@ -30,6 +31,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `F` | Fußnoten beginnen mit der Lesezeile (siehe unten) |
 | Lesen | `T` | Tabelle: aus getrennten Zeilen eine Tabelle machen bzw. wieder auflösen (siehe unten) |
 | Lesen | `H` | Überschrift: Ebene 1 → 2 → 3 → keine (siehe unten) |
+| Lesen | `V` | Lesezeile mit der nächsten Zeile verbinden |
 | Lesen | `W` | Whitelist anzeigen |
 | Lesen | `D` | Wörterbuch: welche Rechtschreibung gilt in diesem Buch (siehe unten) |
 | überall | `F1` | diese Hilfe |
@@ -72,6 +74,20 @@ Fußnoten stehen in der Textdatei unter einer Zeile `---` und laufen immer bis z
 oder verschiebt diesen Trenner vor die Lesezeile. Steht die Lesezeile auf der ersten Fußnotenzeile, nimmt
 `F` den Trenner wieder weg.
 
+## Zeilen teilen und verbinden
+
+Manchmal übersieht die Texterkennung einen Zeilenwechsel – zwei Zeilen (oder zwei Tabellenzellen) stehen in einer – oder
+sie macht einen zu viel.
+
+- **Teilen:** Zeile bearbeiten (`F2` oder `Enter`), die Schreibmarke an die Stelle setzen und `Umschalt`+`Enter` drücken.
+  Was Sie im Feld schon geändert haben, wird dabei mit übernommen.
+- **Verbinden:** Im Lesemodus `V` – die Lesezeile wird mit der nächsten verbunden. Endet sie mit dem Trennzeichen `¬`,
+  wird das getrennte Wort dabei zusammengezogen (`Zu¬` + `kunft` → `Zukunft`).
+
+Das Programm teilt bzw. vereinigt dabei auch den **Bildausschnitt** der Zeile (beim Teilen anteilig an der Trennstelle).
+So behält jede Textzeile ihre Stelle im Seitenbild – anders als beim Ändern der Zeilenzahl in einem fremden Editor.
+Innerhalb einer Tabelle wird die Tabelle danach neu durchgezählt: Verrutschte Spalten stehen wieder richtig.
+
 ## Tabellen (T)
 
 Eine Texterkennung zerreißt Tabellen meist in einzelne Zeilen – aus einer Aufstellung wird
@@ -94,22 +110,28 @@ benutzt (XHTML):
     <tr><td>1812-</td>
     <td>12 409</td></tr></table>
 
-Jede Zeile bleibt dabei eine Zeile – eine Zelle je Zeile –, damit die Zuordnung zum Seitenbild erhalten bleibt. Die
-Auszeichnung erscheint im Text klein und blass, die Tabelle mit blauem Rand; die Wortprüfung übergeht sie. Den Inhalt der
-Zellen korrigieren Sie wie jeden anderen Text (überflüssige Striche wie in `1812-` mit `F2` löschen).
+Jede Zeile bleibt dabei eine Zeile – eine Zelle je Zeile –, damit die Zuordnung zum Seitenbild erhalten bleibt. Diese
+Steuerzeichen bekommen Sie im Programm nicht zu sehen: Rechts erscheint die fertige **Tabelle als Tabelle**, mit Rahmen und
+Spalten, und auch im Eingabefeld steht nur der Inhalt der Zelle. Der Lesecursor wandert Zelle für Zelle, links ist die
+zugehörige Stelle im Seitenbild markiert. Die Wortprüfung übergeht die Auszeichnung. Den Inhalt der Zellen korrigieren Sie
+wie jeden anderen Text (überflüssige Striche wie in `1812-` mit `F2` löschen).
 
-Grenzen: Die Zellen müssen in Lesereihenfolge stehen (Reihe für Reihe). Hat die Texterkennung eine Tabelle spaltenweise
-gelesen oder zwei Zellen in eine Zeile gesetzt, hilft `F2`: Dort lässt sich die Auszeichnung von Hand ergänzen, zum Beispiel
-`</td><td>` zwischen zwei Zellen derselben Zeile.
+**Verrutschte Spalten:** Stehen zwei Zellen in einer Zeile (`1812- 12 409`), weil die Texterkennung den Zeilenwechsel
+übersehen hat, rutschen ab dort alle Spalten um eins weiter. Teilen Sie die Zeile an der Stelle (`F2`, Schreibmarke setzen,
+`Umschalt`+`Enter`) – vor oder nach dem Anlegen der Tabelle; eine vorhandene Tabelle zählt das Programm danach neu durch.
+
+Grenze: Die Zellen müssen in Lesereihenfolge stehen (Reihe für Reihe). Hat die Texterkennung eine Tabelle spaltenweise
+gelesen, lässt sie sich so nicht auszeichnen.
 
 ## Überschriften (H)
 
 `H` zeichnet die Lesezeile als Überschrift aus: beim ersten Mal Ebene 1 (`<h1>…</h1>`), bei jedem weiteren Druck die
-nächste Ebene, nach Ebene 3 wieder gewöhnlicher Text. Überschriften erscheinen größer und fett. Ein späterer EPUB-Export
+nächste Ebene, nach Ebene 3 wieder gewöhnlicher Text. Überschriften erscheinen größer und fett, ohne sichtbare Steuerzeichen. Ein späterer EPUB-Export
 kann daraus Kapitel und Inhaltsverzeichnis bilden.
 
 Wer mag, kann mit `F2` auch weitere Auszeichnung von Hand eintragen; das Programm kennt `<em>`, `<strong>`, `<i>`, `<b>`,
-`<sup>`, `<sub>`, `<p>`, `<blockquote>` und `<br/>` und behandelt sie nicht als Wörter.
+`<sup>`, `<sub>`, `<p>`, `<blockquote>` und `<br/>`, behandelt sie nicht als Wörter und stellt Schrift-Auszeichnung
+(kursiv, fett, hoch- und tiefgestellt) auch so dar.
 
 ## Whitelist (W)
 

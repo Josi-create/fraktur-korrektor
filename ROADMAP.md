@@ -64,7 +64,6 @@ Transkribus- und Tesseract-Foren, CompGen/Ahnenforschung.net, Wikisource-Skripto
 
 ## Später
 
-- Zeilen teilen/verbinden mit Erhalt der Bildzuordnung
 - Epub-Export (Kapitel, Fußnoten)
 - Zugriffsschutz für `--lan`
 - `pipx install fraktur-korrektor` (PyPI)

@@ -61,3 +61,50 @@ def test_tabelle_und_ueberschrift_ueber_die_schnittstelle(app):
     assert d['lines'][1] == '<h2>%s</h2>' % old
     assert app.post('/api/markup/002', dict(kind='heading', line=1, level=0, old='veraltet'))[0] == 409   # extern geändert
     assert app.post('/api/markup/001', dict(kind='table', start=4, end=6, cols=2, old=app.text('001')[4:7]))[0] == 409  # über den Fußnotentrenner hinweg
+
+
+def test_zeile_teilen_und_verbinden_mit_bildzuordnung(app):
+    import json, os
+    t = app.text('001')
+    old = t[1]                                                     # 'Die Kolonisten zogen nach Rußland und'
+    g0 = app.get('/api/page/001')[1]['geo'][1]
+    pos = old.index(' nach')
+    code, d = app.post('/api/lines/001', dict(kind='split', line=1, old=old, text=old.replace('zogen', 'gingen'), pos=pos + 1))
+    assert code == 200 and d['lines'][1:3] == ['Die Kolonisten gingen', 'nach Rußland und'] and len(d['lines']) == len(t) + 1
+    a, b = d['geo'][1], d['geo'][2]                                # der Bildausschnitt ist mitgeteilt: gleiche Höhe, nebeneinander
+    assert None not in d['geo'][1:6] and (a['y0'], a['y1']) == (b['y0'], b['y1']) == (g0['y0'], g0['y1'])
+    assert a['x0'] == g0['x0'] and a['x1'] == b['x0'] and b['x1'] == g0['x1'] and g0['x0'] < a['x1'] < g0['x1']
+    assert d['geo'][3]['y0'] > a['y0']                             # die folgenden Zeilen behalten ihre Bildzeile
+    assert app.log()[-1][1] == 'teilen'
+    assert len(json.load(open(os.path.join(app.folder, 'lines.json'), encoding='utf-8'))['001']['lines']) == 7  # vorher 6
+    # wieder verbinden: alles wie vorher (bis auf die Korrektur)
+    code, d = app.post('/api/lines/001', dict(kind='join', line=1, old=d['lines'][1:3]))
+    assert code == 200 and d['lines'] == [t[0], 'Die Kolonisten gingen nach Rußland und'] + t[2:] and d['geo'][1] == g0
+    # getrenntes Wort: beim Verbinden fällt das ¬ weg
+    d = app.post('/api/lines/001', dict(kind='join', line=2, old=app.text('001')[2:4]))[1]
+    assert d['lines'][2] == 'ber Weg war weit. Die Zukunft lag vor ihnen, baß sie' and None not in d['geo'][1:4]
+    # Schutz: extern geändert, Kopfzeile, Fußnotentrenner, Teilen am Rand
+    cur = app.text('001')
+    assert app.post('/api/lines/001', dict(kind='split', line=1, old='veraltet', text='x y', pos=1))[0] == 409
+    assert app.post('/api/lines/001', dict(kind='split', line=0, old=cur[0], text=cur[0], pos=1))[0] == 409
+    assert app.post('/api/lines/001', dict(kind='join', line=3, old=cur[3:5]))[0] == 409            # Zeile 4 ist '---'
+    assert app.post('/api/lines/001', dict(kind='split', line=1, old=cur[1], text=cur[1], pos=0))[0] == 400
+
+
+def test_teilen_in_einer_tabelle_rueckt_die_spalten_zurecht(app):
+    """Der Anlass: Die Texterkennung hat einen Zeilenwechsel nicht erkannt, zwei Zellen stehen in einer Zeile – ab dort
+    verrutschen die Spalten. Teilen zählt die Tabelle neu durch."""
+    import os
+    rows = ['# 9', 'im Jahre 1811', '16 842 Eimer,', '1812- 12 409', '1813-', '5400', 'Text danach']
+    with open(os.path.join(app.folder, '002.txt'), 'w', encoding='utf-8') as f:
+        f.write('\n'.join(rows) + '\n')
+    d = app.post('/api/markup/002', dict(kind='table', start=1, end=5, cols=2, old=rows[1:6]))[1]
+    assert d['lines'][3:6] == ['<tr><td>1812- 12 409</td>', '<td>1813-</td></tr>', '<tr><td>5400</td><td></td></tr></table>']  # verrutscht
+    line = d['lines'][3]
+    code, d = app.post('/api/lines/002', dict(kind='split', line=3, old=line, text=line, pos=line.index(' 12 409') + 1))
+    assert code == 200 and d['lines'][1:] == ['<table><tr><td>im Jahre 1811</td>', '<td>16 842 Eimer,</td></tr>', '<tr><td>1812-</td>', '<td>12 409</td></tr>',
+                                              '<tr><td>1813-</td>', '<td>5400</td></tr></table>', 'Text danach']
+    assert app.post('/api/lines/002', dict(kind='split', line=3, old=d['lines'][3], text=d['lines'][3], pos=2))[0] == 400  # mitten in <tr>
+    assert app.post('/api/lines/002', dict(kind='split', line=3, old=d['lines'][3], text=d['lines'][3], pos=len('<tr><td>')))[0] == 400  # keine leere Zelle
+    d = app.post('/api/lines/002', dict(kind='join', line=3, old=d['lines'][3:5]))[1]                                      # und zurück
+    assert d['lines'][3:6] == ['<tr><td>1812- 12 409</td>', '<td>1813-</td></tr>', '<tr><td>5400</td><td></td></tr></table>']

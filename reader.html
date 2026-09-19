@@ -45,10 +45,13 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .flag{background:#f99;border-radius:2px}
 .auto{background:#fc8;border-radius:2px}
 .curflag{outline:2px solid #c00}
-/* Auszeichnung im Text (XHTML wie im EPUB): klein und blass, damit der Text lesbar bleibt */
-.xt{color:#9aa7b4;font:12px Consolas,monospace}
-#lines div.intable{box-shadow:inset 3px 0 #69c;background:#f3f8fc}
-#lines div.intable.cur{background:#fff3b8}
+/* Auszeichnung im Text (XHTML wie im EPUB) wird nicht gezeigt, sondern dargestellt: Tabellen als Gitter – jede Zelle ist
+   weiterhin eine Zeile (Lesecursor, Klick, Eingabefeld) –, Überschriften groß, <em>/<sup> … als Schrift */
+#lines .tblgrid{display:grid;width:max-content;max-width:100%;margin:8px 0 8px 6px;padding:0;border-radius:0;border-top:1px solid #8ab;border-left:1px solid #8ab;white-space:normal}
+#lines .tblgrid > div{border-right:1px solid #8ab;border-bottom:1px solid #8ab;border-radius:0;padding:1px 12px;color:#333;white-space:pre-wrap}
+#lines .tblgrid > div.thcell{font-weight:bold;background:#eaf2fb}
+#lines .tblgrid > div.cur{background:#fff3b8;color:#000}
+#lines .tblgrid > div.blank{display:none}
 #lines div.tsel{background:#d6eaff !important;color:#000}
 #lines div.hd1{font-size:27px;font-weight:bold;color:#222} #lines div.hd2{font-size:23px;font-weight:bold;color:#222} #lines div.hd3{font-size:20px;font-weight:bold;color:#222}
 #tprev{border-collapse:collapse;font:14px Georgia,serif;margin-top:6px;color:#222} #tprev td,#tprev th{border:1px solid #9bc;padding:1px 9px} #tprev th{background:#e3eefa}
@@ -159,7 +162,19 @@ const TAGS = 'table|tr|td|th|h[1-6]|em|strong|i|b|sup|sub|p|blockquote|br';
 const TAGRE = new RegExp('</?(?:' + TAGS + ')\\s*/?>', 'g'), TAGESC = new RegExp('&lt;(/?(?:' + TAGS + ')\\s*/?)>', 'g');
 function strip(s) { return s.replace(TAGRE, ''); }
 function vis(l, pos) { return strip(l.slice(0, pos)).length; }  // Zeichenposition ohne die Auszeichnung davor – für die Lage im Bild
-function fmt(s) { return esc(s).replace(TAGESC, '<span class="xt">&lt;$1&gt;</span>'); }
+// Anzeige ohne Steuerzeichen: Schrift-Auszeichnung wird echte Schrift, Struktur (Tabelle, Überschrift) macht die Gestaltung
+const INLINE = /^\/?(?:em|strong|i|b|sup|sub)$/;
+function fmt(s) { return esc(s).replace(TAGESC, (m, g) => INLINE.test(g.trim()) ? '<' + g.trim() + '>' : ''); }
+// Zeichenposition im angezeigten Text -> Position in der Zeile (mit Auszeichnung)
+function rawPos(l, v) {
+  let skipped = 0;
+  for (const m of l.matchAll(TAGRE)) { if (v < m.index - skipped) break; skipped += m[0].length; }
+  return v + skipped;
+}
+// Für das Eingabefeld: Struktur-Auszeichnung am Zeilenanfang und -ende bleibt unsichtbar und wird beim Speichern wieder angefügt
+const STRUCT = '(?:</?(?:table|tr|td|th|h[1-6]|p|blockquote)>)*';
+function parts(l) { const m = l.match(new RegExp('^(' + STRUCT + ')([\\s\\S]*?)(' + STRUCT + ')$')); return { pre: m[1], core: m[2], post: m[3] }; }
+let ed = { pre: '', post: '' }, ed2 = { pre: '', post: '' };
 function isJoin(f) { return f && f.word.indexOf('¬') >= 0; }
 function part2len(f) { return f.word.length - f.len - 1; }
 function skippable(i) { const l = data.lines[i]; return l.trim() === '' || l === '---'; }
@@ -216,7 +231,7 @@ function decorate(els, b) {
   b.lines.forEach((l, i) => {
     const d = els[i]; if (!d) return;
     if (l.includes('<table>')) inT = true;
-    d.classList.toggle('intable', inT);
+    d.classList.toggle('intable', inT); d.classList.toggle('thcell', inT && l.includes('<th>'));
     if (l.includes('</table>')) inT = false;
     const m = l.match(/^<h([1-6])>/);
     for (const n of [1, 2, 3]) d.classList.toggle('hd' + n, !!m && Math.min(3, +m[1]) == n);
@@ -227,12 +242,21 @@ function renderText() {
   for (const b of [prevD, data, nextD]) {
     if (!b) continue;
     const ps = document.createElement('div'); ps.className = 'pgsep'; ps.textContent = '―――――――――――  ' + t('page') + ' ' + b.page + '  ―――――――――――'; box.appendChild(ps);
-    let fn = false; const els = [];
+    let fn = false, grid = null; const els = [];
     b.lines.forEach((l, i) => {
       const d = document.createElement('div'); d.dataset.p = b.page; d.dataset.i = i;
-      if (l === '---') { d.className = 'sep'; fn = true; }
+      if (l === '---') { d.className = 'sep'; fn = true; grid = null; }
       else { d.innerHTML = mark(i, b); if (l.startsWith('#') && i == 0) d.className = 'head'; else if (fn) d.className = 'fn'; }
-      box.appendChild(d); els.push(d);
+      if (l.includes('<table>') && l !== '---') {  // Tabelle: die folgenden Zeilen sind Zellen eines Gitters
+        let first = ''; for (let k = i; k < b.lines.length && !first.includes('</tr>'); k++) first += b.lines[k];
+        grid = document.createElement('div'); grid.className = 'tblgrid';
+        grid.style.gridTemplateColumns = 'repeat(' + Math.max(1, (first.split('</tr>')[0].match(/<t[dh]>/g) || []).length) + ', auto)';
+        box.appendChild(grid);
+      }
+      (grid || box).appendChild(d); els.push(d);
+      if (grid && !l.trim()) d.classList.add('blank');
+      if (grid) for (const x of l.match(/<td><\/td>/g) || []) grid.appendChild(document.createElement('div'));  // aufgefüllte letzte Reihe
+      if (l.includes('</table>')) grid = null;
     });
     nbEls[b.page] = els; if (b === data) lineEls = els;
     decorate(els, b);
@@ -319,16 +343,17 @@ function enterFix(f) {
   mode = 'fix'; cf = f; li = f.line;
   $('word').innerHTML = t(f.kind == 'auto' ? 'kind_auto' : 'kind_oov') + '<b>' + esc(f.word) + '</b>';
   const e1 = $('edit'), e2 = $('edit2');
-  e1.style.display = ''; e1.value = data.lines[f.line];
-  const j = isJoin(f); e2.style.display = j ? '' : 'none'; if (j) e2.value = data.lines[f.line + 1];
-  render(); e1.focus(); setTimeout(() => e1.setSelectionRange(f.start, f.start + f.len), 0); bookmark();
+  ed = parts(data.lines[f.line]); e1.style.display = ''; e1.value = ed.core;
+  const j = isJoin(f); e2.style.display = j ? '' : 'none'; if (j) { ed2 = parts(data.lines[f.line + 1]); e2.value = ed2.core; }
+  render(); e1.focus(); setTimeout(() => e1.setSelectionRange(f.start - ed.pre.length, f.start - ed.pre.length + f.len), 0); bookmark();
 }
 function enterFree(sel) {
   if (skippable(li)) return;
   mode = 'free'; cf = null;
   $('word').innerHTML = t('edit_line', { n: li + 1 });
-  const e1 = $('edit'); e1.style.display = ''; e1.value = data.lines[li]; $('edit2').style.display = 'none';
-  render(); e1.focus(); setTimeout(() => e1.setSelectionRange(sel ? sel[0] : 0, sel ? sel[1] : 0), 0);
+  ed = parts(data.lines[li]); const e1 = $('edit'); e1.style.display = ''; e1.value = ed.core; $('edit2').style.display = 'none';
+  const o = ed.pre.length, n = ed.core.length, at = x => Math.max(0, Math.min(n, x - o));
+  render(); e1.focus(); setTimeout(() => e1.setSelectionRange(sel ? at(sel[0]) : 0, sel ? at(sel[1]) : 0), 0);
 }
 function toRead(line) { mode = 'read'; cf = null; li = line; render(); bookmark(); }
 async function toFlag(from) {
@@ -348,13 +373,13 @@ function afterFix(line, start) {
 }
 async function commit() {
   const line = mode == 'fix' ? cf.line : li, f = cf, edits = [];
-  const v = $('edit').value; if (v !== data.lines[line]) edits.push({ line, old: data.lines[line], new: v });
-  if (mode == 'fix' && isJoin(f)) { const v2 = $('edit2').value; if (v2 !== data.lines[line + 1]) edits.push({ line: line + 1, old: data.lines[line + 1], new: v2 }); }
+  const v = $('edit').value, full = ed.pre + v + ed.post; if (full !== data.lines[line]) edits.push({ line, old: data.lines[line], new: full });
+  if (mode == 'fix' && isJoin(f)) { const v2 = ed2.pre + $('edit2').value + ed2.post; if (v2 !== data.lines[line + 1]) edits.push({ line: line + 1, old: data.lines[line + 1], new: v2 }); }
   let oldW = '', newW = '';
   if (mode == 'fix') {
     oldW = f.word.replace('¬', '');
-    const a = (v.slice(f.start).match(WRE) || [''])[0];
-    newW = isJoin(f) && v.trimEnd().endsWith('¬') && v.trimEnd().length - 1 == f.start + a.length ? a + (($('edit2').value.match(WRE) || [''])[0]) : a;
+    const fs = f.start - ed.pre.length, a = (v.slice(fs).match(WRE) || [''])[0];
+    newW = isJoin(f) && v.trimEnd().endsWith('¬') && v.trimEnd().length - 1 == fs + a.length ? a + (($('edit2').value.match(WRE) || [''])[0]) : a;
   }
   if (edits.length) {
     const r = await fetch(BASE + '/api/edit/' + pg, { method: 'POST', body: JSON.stringify({ edits }) });
@@ -493,6 +518,21 @@ async function tbKey(e) {
   } else return;
   e.preventDefault(); render();
 }
+// ---- Zeile teilen / verbinden: Die Texterkennung übersieht manchmal einen Zeilenwechsel (dann verrutschen z. B. Tabellenspalten)
+// oder macht einen zu viel. Der Server teilt bzw. vereinigt den Bildausschnitt mit – die Bildzuordnung bleibt.
+async function splitLine() {
+  const line = mode == 'fix' ? cf.line : li, e1 = $('edit');
+  const r = await fetch(BASE + '/api/lines/' + pg, { method: 'POST', body: JSON.stringify({ kind: 'split', line, old: data.lines[line], text: ed.pre + e1.value + ed.post, pos: ed.pre.length + e1.selectionStart }) });
+  if (r.status == 400) { $('shint').textContent = t('split_where'); return; }  // am Rand oder mitten in der Auszeichnung: im Feld bleiben
+  if (!r.ok) { alert(t('conflict')); await loadPage(pg, line); return; }
+  data = await r.json(); updateCount(); renderText(); pending = null; msg = t('split_done'); toRead(line);
+}
+async function joinLine() {
+  if (!plainLine(li) || li + 1 >= data.lines.length || data.lines[li + 1] == '---') { msg = t('join_no'); render(); return; }
+  const r = await fetch(BASE + '/api/lines/' + pg, { method: 'POST', body: JSON.stringify({ kind: 'join', line: li, old: data.lines.slice(li, li + 2) }) });
+  if (!r.ok) { await loadPage(pg, li); msg = t('changed_outside'); render(); return; }
+  data = await r.json(); updateCount(); renderText(); pending = null; msg = t('join_done'); render(); bookmark();
+}
 async function headingKey() {
   if (!plainLine(li)) return;
   if (lineEls[li].classList.contains('intable')) { msg = t('hd_in_table'); render(); return; }
@@ -629,12 +669,14 @@ async function onKey(e) {
     else if (k == 'f' || k == 'F') await footnoteSep();
     else if (k == 't' || k == 'T') await tableKey();
     else if (k == 'h' || k == 'H') await headingKey();
+    else if (k == 'v' || k == 'V') await joinLine();
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
     else if (k == 'g' || k == 'G') { const p = prompt(t('goto')); if (p) await loadPage(String(parseInt(p, 10)).padStart(3, '0'), 0); }
     else return;
     e.preventDefault();
   } else {
-    if (e.key == 'Enter') { e.preventDefault(); await commit(); }
+    if (e.key == 'Enter' && e.shiftKey) { e.preventDefault(); await splitLine(); }
+    else if (e.key == 'Enter') { e.preventDefault(); await commit(); }
     else if (e.key == 'Escape') { e.preventDefault(); if (mode == 'fix') passed = { line: cf.line, start: cf.start }; toRead(mode == 'fix' ? cf.line : li); }
     else if (e.key == 'F8' && mode == 'fix') { e.preventDefault(); await whitelist(); }
     else if (e.key == 'Tab' && mode == 'fix') { e.preventDefault(); await toFlag({ line: cf.line, start: cf.start }); }
@@ -666,7 +708,7 @@ $('lines').addEventListener('dblclick', async e => {
   try { getSelection().removeAllRanges(); } catch (x) {}
   for (let n = 0; n < 80 && busy; n++) await new Promise(r => setTimeout(r, 25));
   if (mode != 'read' || busy || pg != c.p || c.i >= data.lines.length) return;
-  li = c.i; const l = data.lines[li];
+  li = c.i; const l = data.lines[li]; c.off = rawPos(l, c.off);
   const f = data.flags.find(x => x.line == li && c.off >= x.start && c.off <= x.start + x.len) || data.flags.find(x => isJoin(x) && x.line + 1 == li && c.off >= (x.start2 || 0) && c.off <= (x.start2 || 0) + part2len(x));
   if (f) { enterFix(f); return; }
   let a = c.off, b = c.off; const W = /[A-Za-zÄÖÜäöüß]/;
@@ -675,7 +717,7 @@ $('lines').addEventListener('dblclick', async e => {
   enterFree([a, b]);
 });
 $('lines').addEventListener('click', async e => {
-  if (mode != 'read' || busy) return; const d = e.target.closest('#lines > div'); if (!d || d.dataset.i == null) return;
+  if (mode != 'read' || busy) return; const d = e.target.closest('#lines div[data-i]'); if (!d) return;
   if (e.detail <= 1) lastClick = { p: d.dataset.p, i: +d.dataset.i, off: charOffset(d, e.clientX, e.clientY) };
   else return;  // zweiter Klick eines Doppelklicks: der Text ist schon gerollt, nicht nochmal springen
   const i = +d.dataset.i;
@@ -700,6 +742,8 @@ $('text').addEventListener('wheel', onWheel, { passive: false }); $('imgpane').a
   const ks = new URLSearchParams(location.search).get('keys');
   for (const k of ks ? ks.split(',') : []) {
     if (k.startsWith('=')) $('edit').value = k.slice(1);
+    else if (k.startsWith('caret=')) $('edit').setSelectionRange(+k.slice(6), +k.slice(6));
+    else if (k == 'Shift+Enter' || k == 'Shift Enter') (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
     else if (k.includes('=')) $(k.split('=')[0]).value = k.split('=')[1];
     else (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k == 'Space' ? ' ' : k, bubbles: true }));
     await new Promise(r => setTimeout(r, 400));

@@ -154,6 +154,10 @@ def table_block(lines, i):
         return None
     b = next((k for k in range(a, len(lines)) if '</table>' in lines[k]), None)
     return (a, b) if b is not None and b >= i else None
+def table_shape(lines):
+    """(spalten, kopfzeile) einer ausgezeichneten Tabelle: Zellen bis zum ersten </tr>."""
+    first = ''.join(lines).split('</tr>')[0]
+    return max(1, len(re.findall(r'<t[dh]>', first))), '<th>' in first
 def heading(line, level):
     """Zeile als Überschrift der Ebene 1–6 auszeichnen; level 0 nimmt die Auszeichnung weg."""
     t = HEADTAG.sub('', line)
