@@ -57,7 +57,7 @@ schlechter sind als der Rest**, ist die Seite zum Bund hin gewölbt.
 Das freie Programm **ScanTailor Advanced** behebt all das: Es trennt Doppelseiten, richtet sie gerade,
 entzerrt Wölbungen und schneidet Ränder ab. ([Installation](install-tools.md))
 
-Liegt das Buch **schon in Ihrer Bibliothek**, geht es kürzer: bei dem Buch auf die drei Punkte **⋯** und
+Liegt das Buch **schon in Ihrer Bibliothek**, geht es kürzer: dort steht beim Buch der Knopf
 **Für ScanTailor vorbereiten** – dann stehen Eingabe- und Ausgabeordner fest, und ScanTailor startet gleich mit.
 Für ein PDF, das noch nicht eingelesen ist:
 

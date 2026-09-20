@@ -1,7 +1,7 @@
 """Ein Buch weiterbearbeiten, statt jedes Mal ein neues anzulegen: Transkribus-Text nachlegen, Bilder ergänzen,
 die anderen Programme vorbereiten. Die Seitenzuordnung ist der heikle Teil – fehlt im Export eine Seite, darf
 nicht der halbe Text neben dem falschen Bild landen."""
-import os, json, glob, zipfile
+import os, json, glob, struct, zipfile
 import pytest
 import ocr, pagexml
 from conftest import png
@@ -25,9 +25,9 @@ def make_book(folder, pages=TEXTE, images=True):
             f.write('# \n' + '\n'.join(lines) + '\n')
         geo[pg] = dict(w=1000, h=1500, lines=[dict(text=l, x0=100, x1=900, y0=100 + 60 * n, y1=140 + 60 * n, kind='body')
                                               for n, l in enumerate(lines)])
-        if images:
+        if images:  # jede Seite ein anderes Bild, damit die Zuordnung prüfbar ist
             with open(os.path.join(folder, 'img', pg + '.png'), 'wb') as f:
-                f.write(png(500, 750))
+                f.write(png(500 + int(pg), 750))
     with open(os.path.join(folder, 'lines.json'), 'w', encoding='utf-8') as f:
         json.dump(geo, f, ensure_ascii=False)
     return folder
@@ -110,6 +110,35 @@ def test_seitenbilder_nachlegen(tmp_path):
     assert r['added'] == 4 and r['how'] == 'namen'
     assert sorted(os.path.basename(f) for f in glob.glob(os.path.join(folder, 'img', '*'))) == \
         ['001.png', '002.png', '003.png', '004.png']
+
+
+def breite(path):
+    """Breite eines PNG – so lässt sich prüfen, welches Bild wo gelandet ist."""
+    with open(path, 'rb') as f:
+        return struct.unpack('>I', f.read(24)[16:20])[0]
+
+
+def test_bilder_aus_einem_anderen_buch(tmp_path):
+    """Der natürliche Weg: ein Buch mit Bildern, daneben der Transkribus-Text als eigenes Buch – und die Bilder
+    sollen dazu. Dass im Bilderbuch eine Seite mehr liegt, darf nicht zur Absage führen."""
+    alt = make_book(str(tmp_path / 'mit Bildern'))
+    neu = make_book(str(tmp_path / 'aus Transkribus'), {'001': TEXTE['002'], '002': TEXTE['003'], '003': TEXTE['004']}, images=False)
+    r = ocr.add_images(neu, os.path.join(alt, 'img'))
+    assert r['added'] == 3 and r['how'] == 'text'
+    for neu_pg, alt_pg in (('001', '002'), ('002', '003'), ('003', '004')):
+        assert breite(os.path.join(neu, 'img', neu_pg + '.png')) == breite(os.path.join(alt, 'img', alt_pg + '.png'))
+
+
+def test_bilder_aus_einem_anderen_buch_ueber_die_namen(tmp_path):
+    """Kennen beide Bücher die ursprünglichen Namen ihrer Seitenbilder, braucht es keinen Textvergleich."""
+    alt = make_book(str(tmp_path / 'mit Bildern'))
+    pagexml.save_origin(alt, {pg: 'seite_%s.tif' % pg for pg in TEXTE})
+    neu = make_book(str(tmp_path / 'aus Transkribus'), {'001': ['Ganz anderer Text'], '002': ['Und noch einer']}, images=False)
+    pagexml.save_origin(neu, {'001': 'seite_003.tif', '002': 'seite_001.tif'})
+    r = ocr.add_images(neu, alt)  # auch der Buchordner selbst ist eine gültige Angabe
+    assert r['added'] == 2 and r['how'] == 'namen'
+    assert breite(os.path.join(neu, 'img', '001.png')) == breite(os.path.join(alt, 'img', '003.png'))
+    assert breite(os.path.join(neu, 'img', '002.png')) == breite(os.path.join(alt, 'img', '001.png'))
 
 
 def test_bilder_merken_sich_ihre_herkunft(tmp_path):

@@ -58,12 +58,12 @@ Nothing is ever overwritten: if the title already exists, a second folder with t
 A book is rarely finished in one go: first you read in a PDF, then you tidy up the pages with ScanTailor, then
 you have the text recognised by Transkribus. **You do not have to start over every time.**
 
-In the library, move to the book’s row and click the three dots **⋯** on the right. Four ways are open to you:
+In the library, every book has a row of buttons below it. Next to **Open book** there are four more ways:
 
 | | What for |
 |---|---|
 | **Take in the text from Transkribus** | The text from Transkribus takes the place of the present one. Your page images, your word list and your bookmark stay where they are. |
-| **Add page images** | For books that are text only – a Transkribus export without images, say. |
+| **Add page images** | For books that are text only – a Transkribus export without images, say. Point at a folder of images, at the PDF the pages come from, or at another book that already has them. |
 | **Prepare for Transkribus** | The program names the folder you upload, puts it on the clipboard and opens it in a file window. |
 | **Prepare for ScanTailor** | Starts ScanTailor and names the input and output folder. |
 
@@ -84,6 +84,18 @@ So the program tries, in this order:
 
 If none of these works out, the program stops and tells you, rather than putting text next to the wrong
 images. Then use **Open …** to create a separate book from the export.
+
+The same holds for **page images from another book**: point at the book that has the images, and the program
+compares the texts of both – it is the same work after all, just recognised differently. So the book with the
+images may well have more pages than the one that lacks them.
+
+### What the marks in the library tell you
+
+Behind the title there are small marks: **Tesseract**, **Transkribus**, **PDF text** – where the text comes
+from – and **ScanTailor** if the page images were tidied up with it. Next to them is the share of words the
+dictionary does not know (“20 % red words”). That is the same figure you see as red words while reading; old
+spellings and names are among them, so they are not all mistakes. The coloured dot before the title is the
+traffic light from reading the book in.
 
 ### If the book already contains corrections
 

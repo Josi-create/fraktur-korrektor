@@ -59,13 +59,13 @@ Nichts wird je überschrieben: Gibt es den Titel schon, entsteht ein zweiter Ord
 Ein Buch entsteht selten in einem Zug: Erst lesen Sie ein PDF ein, dann bereiten Sie die Seiten mit ScanTailor
 auf, dann lassen Sie den Text bei Transkribus erkennen. **Dafür müssen Sie nicht jedes Mal von vorn anfangen.**
 
-Fahren Sie in der Bibliothek über den Buchtitel und klicken Sie auf die drei Punkte **⋯** am rechten Rand. Dann
-stehen Ihnen vier Wege offen:
+In der Bibliothek steht unter jedem Buch eine Reihe von Knöpfen. Neben **Buch öffnen** stehen dort vier
+weitere Wege:
 
 | | Wozu |
 |---|---|
 | **Text aus Transkribus einlesen** | Der Text von Transkribus tritt an die Stelle des bisherigen. Ihre Seitenbilder, Ihre Wortliste und Ihr Lesezeichen bleiben, wo sie sind. |
-| **Seitenbilder hinzufügen** | Für Bücher, die nur aus Text bestehen – etwa ein Transkribus-Export ohne Bilder. |
+| **Seitenbilder hinzufügen** | Für Bücher, die nur aus Text bestehen – etwa ein Transkribus-Export ohne Bilder. Zeigen Sie auf einen Bilderordner, auf das PDF, aus dem die Seiten stammen, oder auf ein anderes Buch, das die Bilder schon hat. |
 | **Für Transkribus vorbereiten** | Das Programm nennt Ihnen den Ordner, den Sie hochladen, legt ihn in die Zwischenablage und öffnet ihn im Dateifenster. |
 | **Für ScanTailor vorbereiten** | Startet ScanTailor und nennt Ein- und Ausgabeordner. |
 
@@ -86,6 +86,18 @@ das Programm in dieser Reihenfolge vor:
 
 Geht keiner dieser Wege auf, bricht das Programm ab und sagt es Ihnen, statt den Text neben falsche Bilder zu
 legen. Dann legen Sie den Export mit **Öffnen …** als eigenes Buch an.
+
+Dasselbe gilt für **Seitenbilder aus einem anderen Buch**: Sie zeigen auf das Buch, das die Bilder hat, und das
+Programm vergleicht die Texte beider Bücher – es ist ja dasselbe Werk, nur anders erkannt. Darum darf das
+Bilderbuch ruhig mehr Seiten haben als das, dem die Bilder fehlen.
+
+### Woran Sie ein Buch in der Bibliothek erkennen
+
+Hinter dem Titel stehen kleine Kennzeichen: **Tesseract**, **Transkribus**, **PDF-Text** – woher der Text
+stammt – und **ScanTailor**, wenn die Seitenbilder damit aufbereitet wurden. Daneben steht, wie viele Wörter
+das Wörterbuch nicht kennt („20 % rote Wörter"). Das ist dieselbe Zahl, die Sie beim Lesen als rote Wörter
+sehen; alte Schreibweisen und Namen sind darunter, es sind also nicht lauter Fehler. Der farbige Punkt vor dem
+Titel ist die Ampel aus dem Einlesen.
 
 ### Wenn schon Korrekturen im Buch stecken
 

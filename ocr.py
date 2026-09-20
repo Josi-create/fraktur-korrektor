@@ -424,6 +424,43 @@ def cleanup(out):
     except OSError: pass
 
 
+def free_slot(folder, pg):
+    """Platz für das Seitenbild einer Seite schaffen: ein vorhandenes weicht dem neuen."""
+    for f in glob.glob(os.path.join(folder, 'img', pg + '.*')):
+        os.remove(f)
+    return os.path.join(folder, 'img', pg)
+
+
+def images_from_book(folder, other, progress=lambda done, total, msg: None):
+    """Die Seitenbilder eines anderen Buchs übernehmen. Welches Bild zu welcher Seite gehört, verrät der Text:
+    In beiden Büchern steht dasselbe Werk, nur anders erkannt. Darum wird hier jede Seite dieses Buchs einer
+    Seite des anderen zugeordnet – so darf das andere ruhig mehr Seiten haben (eine Deckelhälfte etwa, für die
+    im Transkribus-Export kein Text steht)."""
+    ziel = pagexml.book_pages(folder)
+    mein = pagexml.load_json(folder, 'quellen.json', {})
+
+    def text_of(pg):
+        try:
+            with open(os.path.join(folder, pg + '.txt'), encoding='utf-8') as f:
+                return f.read()
+        except OSError:
+            return ''
+
+    hit, how = pagexml.match_to_pages(other, ziel, lambda pg: (mein.get(pg, ''),), text_of=text_of)
+    fremd, n = pagexml.load_json(other, 'quellen.json', {}), 0
+    for k, pg in enumerate(ziel):
+        src = sorted(glob.glob(os.path.join(other, 'img', hit[pg] + '.*')))
+        if src:
+            copy_image(src[0], free_slot(folder, pg))
+            mein.setdefault(pg, fremd.get(hit[pg]) or os.path.basename(src[0]))
+            n += 1
+        progress(k + 1, len(ziel), 'bilder')
+    if not n:
+        raise ValueError('keine_seiten')
+    pagexml.save_origin(folder, mein)
+    return dict(added=n, pages=len(ziel), how=how)
+
+
 def add_images(folder, source, progress=lambda done, total, msg: None):
     """Seitenbilder zu einem Buch legen, das keine hat – etwa nach einem Transkribus-Export ohne Bilder. Quelle ist
     ein Bilderordner oder das PDF, aus dem die Seiten stammen. Zugeordnet wird über die Namen, nicht blind der
@@ -432,11 +469,13 @@ def add_images(folder, source, progress=lambda done, total, msg: None):
     if not pages:
         raise ValueError('quelle_fehlt')
     os.makedirs(os.path.join(folder, 'img'), exist_ok=True)
+    frei = lambda pg: free_slot(folder, pg)
 
-    def frei(pg):  # ein vorhandenes Bild dieser Seite weicht dem neuen
-        for f in glob.glob(os.path.join(folder, 'img', pg + '.*')):
-            os.remove(f)
-        return os.path.join(folder, 'img', pg)
+    # Seitenbilder liegen selten allein herum: Meist gehören sie zu einem anderen Buch dieses Programms – und
+    # das hat Text. Dann ist die Zuordnung eine Frage des Wortlauts, nicht der Dateinamen.
+    nachbar = os.path.dirname(source) if os.path.basename(source).lower() == 'img' else source
+    if os.path.isdir(nachbar) and os.path.abspath(nachbar) != os.path.abspath(folder) and pagexml.book_pages(nachbar):
+        return images_from_book(folder, nachbar, progress)
 
     if os.path.isfile(source) and source.lower().endswith('.pdf'):
         try:

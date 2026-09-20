@@ -559,7 +559,10 @@ def lib_list():
             bm = None
         qj = pagexml.load_json(e['folder'], 'qualitaet.json', {})
         q = (qj.get('rating') or {}).get('level')
-        quelle = qj.get('quelle') or ([qj['model']] if qj.get('model') else [])
+        quelle = qj.get('quelle')
+        if quelle is None:  # Bücher von früher kennen nur das Erkennungsmodell
+            m = qj.get('model')
+            quelle = [] if not m else [m] if m in ('textebene', 'transkribus') else ['tesseract']
         unbekannt = (qj.get('rating') or {}).get('dict')
         try:
             with open(os.path.join(e['folder'], 'korrekturen.log'), 'rb') as f:
