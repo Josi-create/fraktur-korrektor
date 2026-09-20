@@ -5,6 +5,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Suchen im ganzen Buch und Gehe zu Seite** (#56): `S` öffnet oben eine Eingabezeile; das Programm sucht im
+  ganzen Buch, ohne Rücksicht auf Groß-/Kleinschreibung und ſ/s, auch über die Zeilentrennung ¬ hinweg, und springt
+  zur ersten Fundstelle ab der Leseposition – blau im Text, eingerahmt im Seitenbild. Oben bleibt ein kleines Feld
+  mit Suchwort, Zählung („3 / 17“) und Knöpfen: `N` nächste, `Umschalt`+`N` vorige Fundstelle. `G` fragt auf
+  dieselbe Weise nach einer Seitenzahl statt über ein Browser-Fenster.
 - **Der erkannte Text einer Bibliothek (hOCR, ALTO) lässt sich über ein Buch legen.** Viele Bibliotheken geben
   ihre Digitalisate als PDF ohne Text heraus, obwohl sie den Text längst erkannt haben – er liegt nur getrennt,
   eine Datei je Seite (die Bayerische Staatsbibliothek etwa als hOCR über ihre Schnittstelle). Wer diese Dateien

@@ -114,3 +114,13 @@ def test_rechtschreibung_je_buch(app):
     assert r['dics'] == ['1901', 'vor1901'] and words(app.get('/api/page/002')[1]) == ['dass']
     assert r['total'] == sum(p['n'] for p in app.get('/api/overview')[1]['pages'])
     assert json.load(open(os.path.join(app.folder, 'buch.json'), encoding='utf-8'))['dics'] == ['1901', 'vor1901']  # bleibt gespeichert
+
+
+def test_suche_im_ganzen_buch(app):
+    """Suchen (S im Reader): ohne Rücksicht auf Groß-/Kleinschreibung, auch über die Zeilentrennung ¬ hinweg."""
+    r = app.get('/api/search?q=ber')[1]
+    assert r['n'] == 3 and [(o['page'], o['line'], o['start'], o['len']) for o in r['items']] == [('001', 2, 0, 3), ('001', 4, 0, 3), ('002', 1, 14, 3)]
+    assert [o['start'] for o in app.get('/api/search?q=RUSSLAND')[1]['items']] == [] and [o['start'] for o in app.get('/api/search?q=ru%C3%9Fland')[1]['items']] == [26]
+    j = app.get('/api/search?q=Zukunft')[1]['items']  # steht nirgends in einer Zeile, nur als Zu¬ / kunft
+    assert len(j) == 1 and j[0]['join'] and (j[0]['line'], j[0]['start'], j[0]['len'], j[0]['start2'], j[0]['len2']) == (2, 22, 2, 0, 5)
+    assert app.get('/api/search?q=')[1]['n'] == 0 and app.get('/api/search?q=gibtesnicht')[1]['n'] == 0

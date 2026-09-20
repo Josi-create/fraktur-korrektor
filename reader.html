@@ -16,6 +16,13 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #top>*{flex-shrink:0} #top>#pos,#top>#title{flex-shrink:1}
 #top a{color:#ddd}
 #top .langsw b{color:#fff}
+/* Suchen und Gehe-zu: Eingabezeile und Fundstellen-Widget in der Kopfleiste */
+#qbar{display:none;gap:6px;align-items:center} #qbar.on{display:flex}
+#qbar input{font-size:14px;padding:2px 6px;width:210px;border-radius:3px;border:1px solid #888}
+#find{display:none;gap:8px;align-items:center;background:#454545;border-radius:12px;padding:2px 6px 2px 10px} #find.on{display:flex}
+#find button{font:13px Segoe UI,Arial,sans-serif;padding:1px 9px;border:1px solid #888;border-radius:9px;background:#333;color:#eee;cursor:pointer}
+#find button:hover{background:#5a5a5a} #find b{color:#fff;min-width:44px;text-align:center}
+.found{background:#9fdcff;border-radius:2px;outline:2px solid #1780c0}
 #loading{position:absolute;inset:0;z-index:9;background:#e9e6df;display:flex;align-items:center;justify-content:center;padding:0 15%;text-align:center;font-size:18px;line-height:1.6;color:#555}
 #main{position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px;min-height:0}
 .pane{background:#fff;border:1px solid #bbb;border-radius:4px;position:relative;overflow:hidden;min-height:0}
@@ -101,6 +108,8 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <label><span data-t="page"></span> <select id="pagesel"></select></label>
  <span id="mode"></span>
  <span id="pos"></span>
+ <span id="qbar"><span id="qlabel"></span><input id="qinp" type="text" spellcheck="false"></span>
+ <span id="find"><span id="findq"></span><button type="button" id="fprev"></button><b id="findn"></b><button type="button" id="fnext"></button><button type="button" id="fclose" data-t-title="find_close">×</button></span>
  <a href="#" id="diclink" data-t="dic_link"></a>
  <a href="#" id="addTrans" data-t="act_trans" style="display:none"></a>
  <a href="#" id="addImg" data-t="act_images" style="display:none"></a>
@@ -157,6 +166,7 @@ let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catc
 let prevD = null, nextD = null, nbEls = {}, wheelAcc = 0;
 const NOTRANS = location.search.includes('notrans');
 let lineEls = [], bmTimer = null, pending = null, msg = '', ser = null;
+let hits = null, hi = -1, ask = null;  // Suche: Fundstellen im ganzen Buch, die aktuelle, offene Eingabezeile (find | goto)
 const WRE = /^[A-Za-zÄÖÜäöüß]+/;
 const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
@@ -231,11 +241,16 @@ function mark(i, b) {
   const l = b.lines[i];
   const fs = b.flags.filter(f => f.line == i).map(f => ({ s: f.start, n: f.len, k: f.kind, c: f === cf }));
   for (const f of b.flags) if (isJoin(f) && f.line + 1 == i) fs.push({ s: f.start2 || 0, n: part2len(f), k: f.kind, c: f === cf });
+  const h = curHit();
+  if (h && h.page == b.page && (h.line == i || (h.join && h.line + 1 == i))) {
+    const s = h.line == i ? h.start : h.start2, n = h.line == i ? h.len : h.len2;
+    if (!fs.some(f => s < f.s + f.n && f.s < s + n)) fs.push({ s, n, k: 'found' });
+  }
   fs.sort((a, b) => b.s - a.s);
   let parts = [], last = l.length;
   for (const f of fs) {
     parts.unshift(fmt(l.slice(f.s + f.n, last)));
-    parts.unshift('<span class="' + (f.k == 'auto' ? 'auto' : 'flag') + (f.c ? ' curflag' : '') + '">' + esc(l.slice(f.s, f.s + f.n)) + '</span>');
+    parts.unshift('<span class="' + (f.k == 'auto' ? 'auto' : f.k == 'found' ? 'found' : 'flag') + (f.c ? ' curflag' : '') + '">' + esc(l.slice(f.s, f.s + f.n)) + '</span>');
     last = f.s;
   }
   parts.unshift(fmt(l.slice(0, last)));
@@ -330,12 +345,16 @@ function layoutImage() {
   if (!g) return;
   const lh = g.y1 - g.y0;
   box(hl, g.x0 - 6, g.y0 - 2, g.x1 - g.x0 + 12, lh + 4); hl.style.borderWidth = '0';
-  if (mode == 'fix' && cf) {
-    const ln = data.lines[cf.line], L = strip(ln).length || 1, v0 = vis(ln, cf.start);  // Auszeichnung nimmt im Bild keinen Platz ein
-    const wx0 = g.x0 + (g.x1 - g.x0) * v0 / L, wx1 = g.x0 + (g.x1 - g.x0) * (v0 + cf.len) / L;
+  // Wortrahmen: in der Korrektur das rote Wort, beim Lesen die Fundstelle der Suche
+  const h = curHit();
+  const w = mode == 'fix' && cf ? { line: cf.line, start: cf.start, len: cf.len, len2: isJoin(cf) ? part2len(cf) : 0 }
+    : mode == 'read' && h && h.page == pg && h.line == li ? { line: h.line, start: h.start, len: h.len, len2: h.join ? h.len2 : 0 } : null;
+  if (w) {
+    const ln = data.lines[w.line], L = strip(ln).length || 1, v0 = vis(ln, w.start);  // Auszeichnung nimmt im Bild keinen Platz ein
+    const wx0 = g.x0 + (g.x1 - g.x0) * v0 / L, wx1 = g.x0 + (g.x1 - g.x0) * (v0 + w.len) / L;
     box(hw, wx0 - 5, g.y0 - 3, wx1 - wx0 + 10, lh + 6);
-    const g2 = isJoin(cf) ? data.geo[cf.line + 1] : null;
-    if (g2) { const L2 = strip(data.lines[cf.line + 1]).length || 1; box(hw2, g2.x0 - 5, g2.y0 - 3, (g2.x1 - g2.x0) * part2len(cf) / L2 + 10, g2.y1 - g2.y0 + 6); }
+    const g2 = w.len2 ? data.geo[w.line + 1] : null;
+    if (g2) { const L2 = strip(data.lines[w.line + 1]).length || 1; box(hw2, g2.x0 - 5, g2.y0 - 3, (g2.x1 - g2.x0) * w.len2 / L2 + 10, g2.y1 - g2.y0 + 6); }
   }
 }
 
@@ -354,6 +373,46 @@ async function move(d) {
   if (i < 0 || i >= data.lines.length) { await gotoPage(d); return; }
   li = i; msg = ''; render(); bookmark();
 }
+
+// ---- Suchen im ganzen Buch und Gehe zu Seite: eine Eingabezeile in der Kopfleiste statt eines Browser-Prompts. Die
+// Fundstellen bleiben als Widget oben stehen (vorige / nächste), bis die Suche geschlossen wird.
+function curHit() { return hits && hi >= 0 ? hits.items[hi] : null; }
+function askOpen(kind) {
+  ask = kind; mode = 'ask'; $('qlabel').textContent = t(kind == 'find' ? 'find_label' : 'goto');
+  $('qbar').classList.add('on'); const i = $('qinp'); i.value = kind == 'find' && hits ? hits.q : ''; i.focus(); i.select();
+}
+function askClose() { $('qbar').classList.remove('on'); $('qinp').blur(); ask = null; mode = 'read'; }
+async function askKey(e) {
+  if (e.key == 'Escape') { e.preventDefault(); askClose(); render(); return; }
+  if (e.key != 'Enter') return;
+  e.preventDefault(); const kind = ask, v = $('qinp').value.trim(); askClose();
+  if (!v) { render(); return; }
+  if (kind == 'goto') {
+    const p = String(parseInt(v, 10)).padStart(3, '0');
+    if (ov.some(o => o.page == p)) { await loadPage(p, 0); bookmark(); } else { msg = t('goto_none', { p: v }); render(); }
+  } else await runSearch(v);
+}
+async function runSearch(q) {
+  const r = await (await fetch(BASE + '/api/search?q=' + encodeURIComponent(q))).json();
+  hits = { q, items: r.items }; hi = -1;
+  if (!r.items.length) { msg = t('find_none', { q }); updateFind(); render(); return; }
+  const k = r.items.findIndex(o => o.page > pg || (o.page == pg && o.line >= li));  // die erste ab der Leseposition
+  await showHit(k < 0 ? 0 : k);
+}
+async function showHit(k) {
+  hi = (k + hits.items.length) % hits.items.length; const o = hits.items[hi];
+  if (o.page != pg) await loadPage(o.page, o.line); else li = o.line;
+  msg = ''; updateFind(); render(); bookmark();
+}
+async function nextHit(d) { if (!hits || !hits.items.length) { askOpen('find'); return; } await showHit(hi + d); }
+function updateFind() {
+  $('find').classList.toggle('on', !!hits); if (!hits) return;
+  $('findq').textContent = '„' + hits.q + '“'; $('findn').textContent = hits.items.length ? (hi + 1) + ' / ' + hits.items.length : '0';
+  $('fprev').textContent = t('find_prev'); $('fnext').textContent = t('find_next');
+}
+function closeFind() { hits = null; hi = -1; updateFind(); render(); }
+const guarded = fn => async () => { if (busy || mode != 'read') return; busy = true; try { await fn(); } finally { busy = false; } };
+$('fnext').onclick = guarded(() => nextHit(1)); $('fprev').onclick = guarded(() => nextHit(-1)); $('fclose').onclick = guarded(async () => closeFind());
 
 function enterFix(f) {
   mode = 'fix'; cf = f; li = f.line;
@@ -655,6 +714,7 @@ function setZoom(z) { zoom = Math.min(4, Math.max(0.4, z)); try { localStorage.s
 async function onKey(e) {
   if (e.key == 'F1') { e.preventDefault(); window.open($('helplink').href, '_blank'); return; }
   if (e.ctrlKey || e.altKey || e.metaKey || !data) return;
+  if (mode == 'ask') return askKey(e);
   if (mode == 'serie') return serieKey(e);
   if (mode == 'table') return tbKey(e);
   if (mode == 'wlist') return wlKey(e);
@@ -687,7 +747,9 @@ async function onKey(e) {
     else if (k == 'h' || k == 'H') await headingKey();
     else if (k == 'v' || k == 'V') await joinLine();
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
-    else if (k == 'g' || k == 'G') { const p = prompt(t('goto')); if (p) await loadPage(String(parseInt(p, 10)).padStart(3, '0'), 0); }
+    else if (k == 'g' || k == 'G') askOpen('goto');
+    else if (k == 's' || k == 'S' || k == '/') askOpen('find');
+    else if (k == 'n' || k == 'N' || k == 'F3') await nextHit(e.shiftKey ? -1 : 1);
     else return;
     e.preventDefault();
   } else {

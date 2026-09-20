@@ -277,6 +277,31 @@ class Book:
             self.refresh()
             return [dict(page=pg, n=len(self.flags(pg))) for pg in self.pages]
 
+    def search(self, q, limit=1000):
+        """Alle Stellen im Buch, an denen q vorkommt: ohne Rücksicht auf Groß- und Kleinschreibung und auf ſ/s,
+        auch über die Zeilentrennung ¬ hinweg. Liefert [dict(page, line, start, len[, join, start2, len2])]."""
+        norm = lambda s: s.lower().replace('ſ', 's')
+        qn, out = norm(q.strip()), []
+        if not qn:
+            return out
+        with self.lock:
+            self.refresh()
+            for pg, lines in self.pages.items():
+                for i, l in enumerate(lines):
+                    ln = norm(l)
+                    s = ln.find(qn)
+                    while s >= 0:
+                        out.append(dict(page=pg, line=i, start=s, len=len(qn)))
+                        s = ln.find(qn, s + 1)
+                toks, joined = joined_tokens(lines)
+                for i, s1, w1, j, w2 in joined:  # Zu¬ / kunft: das Wort gibt es nur zusammengesetzt
+                    if qn in norm(w1 + w2) and qn not in norm(w1) and qn not in norm(w2):
+                        out.append(dict(page=pg, line=i, start=s1, len=len(w1), join=True, start2=toks[j][0][0], len2=len(w2)))
+                if len(out) >= limit:
+                    break
+        out.sort(key=lambda o: (o['page'], o['line'], o['start']))
+        return out[:limit]
+
     def occurrences(self, word, limit=500):
         """Alle Vorkommen eines Wortes im Buch (auch über Zeilentrennung ¬ hinweg), mit Zeilengeometrie."""
         out = []
@@ -1073,6 +1098,10 @@ class H(BaseHTTPRequestHandler):
             if q.get('count'):
                 return self.sendjson(dict(n=len(occ)))
             return self.sendjson(dict(word=w, items=occ, sizes={o['page']: book.img_size(o['page']) for o in occ}))
+        if rest == '/api/search':
+            qs = q.get('q', [''])[0]
+            items = book.search(qs) if qs.strip() else []
+            return self.sendjson(dict(q=qs, n=len(items), items=items))
         if rest == '/api/nextflag':
             after = q.get('after', ['000'])[0]
             for o in book.overview():

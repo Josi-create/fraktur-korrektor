@@ -17,7 +17,9 @@ is being changed – and **Edit line** (orange).
 | Reading | `F8` | first red word of the reading line is correct → whitelist. `F8` again = the next one. With no red word in the reading line: the next one further down the page |
 | Reading | `Enter` | if the reading line has a red word: go there; otherwise like `F2` |
 | Reading | `F2` | edit the reading line freely (punctuation, footnote marks, anything the automatic check misses) |
-| Reading | `PgDn` `PgUp`, `Home` `End`, `G` | page forward/back, top/bottom of page, go to page |
+| Reading | `PgDn` `PgUp`, `Home` `End` | page forward/back, top/bottom of page |
+| Reading | `G` | go to page: an input line for the page number appears at the top |
+| Reading | `S` (or `/`) | search the whole book; `N` next, `Shift`+`N` previous match (see below) |
 | Reading | `+` `−` `0` | zoom the page image |
 | Reading | `R` | reload the page (after changes in another editor) |
 | Correction | `Enter` | apply and read on (if the same line has another red word, that comes first) |
@@ -35,6 +37,17 @@ is being changed – and **Edit line** (orange).
 | Reading | `W` | show the whitelist |
 | Reading | `D` | dictionary: which spelling applies to this book (see below) |
 | anywhere | `F1` | this help |
+
+## Search (S) and go to page (G)
+
+`S` opens an input line in the top bar. Whatever you type there is searched throughout the book – regardless of
+upper and lower case, ſ counts as s, and a word is found even when it is hyphenated at the end of a line. `Enter`
+jumps to the first match after the reading position; it is marked blue in the text and framed in the page image.
+A small panel stays at the top with the search term, the count (“3 / 17”) and two buttons: `N` goes to the next
+match, `Shift`+`N` to the previous one, the × closes the search. `Esc` discards the input.
+
+`G` asks for a page number in the same way. This means the page of the file (the number in the selector at the
+top), not the page number printed in the book.
 
 ## Hyphenated words
 

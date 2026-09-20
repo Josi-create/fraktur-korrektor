@@ -17,7 +17,9 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `F8` | erstes rotes Wort der Lesezeile ist richtig → Whitelist. Nochmal `F8` = nächstes. Ohne rotes Wort in der Lesezeile: das nächste weiter unten auf der Seite |
 | Lesen | `Enter` | steht in der Lesezeile ein rotes Wort: direkt dorthin; sonst wie `F2` |
 | Lesen | `F2` | die Lesezeile frei bearbeiten (Satzzeichen, Fußnotenzeichen, alles, was die Automatik nicht bemerkt) |
-| Lesen | `Bild↓` `Bild↑`, `Pos1` `Ende`, `G` | Seite vor/zurück, Seitenanfang/-ende, gehe zu Seite |
+| Lesen | `Bild↓` `Bild↑`, `Pos1` `Ende` | Seite vor/zurück, Seitenanfang/-ende |
+| Lesen | `G` | gehe zu Seite: oben erscheint eine Eingabezeile für die Seitenzahl |
+| Lesen | `S` (oder `/`) | im ganzen Buch suchen; `N` nächste, `Umschalt`+`N` vorige Fundstelle (siehe unten) |
 | Lesen | `+` `−` `0` | Zoom des Seitenbildes |
 | Lesen | `R` | Seite neu laden (nach Änderungen in einem anderen Editor) |
 | Korrektur | `Enter` | übernehmen und weiterlesen (steht in derselben Zeile noch ein rotes Wort, kommt dieses zuerst) |
@@ -35,6 +37,18 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `W` | Whitelist anzeigen |
 | Lesen | `D` | Wörterbuch: welche Rechtschreibung gilt in diesem Buch (siehe unten) |
 | überall | `F1` | diese Hilfe |
+
+## Suchen (S) und Gehe zu Seite (G)
+
+`S` öffnet oben in der Kopfleiste eine Eingabezeile. Was Sie dort eintippen, sucht das Programm im ganzen Buch –
+ohne Rücksicht auf Groß- und Kleinschreibung, ſ gilt als s, und ein Wort wird auch gefunden, wenn es am Zeilenende
+getrennt ist. `Enter` springt zur ersten Fundstelle ab der Leseposition; sie ist im Text blau markiert und im
+Seitenbild eingerahmt. Oben bleibt ein kleines Feld stehen mit dem Suchwort, der Zählung („3 / 17“) und zwei
+Knöpfen: `N` geht zur nächsten Fundstelle, `Umschalt`+`N` zur vorigen, das × schließt die Suche. `Esc` verwirft
+die Eingabe.
+
+`G` fragt auf dieselbe Weise nach einer Seitenzahl. Gemeint ist die Seite der Datei (die Zahl in der Auswahl
+oben), nicht die gedruckte Seitenzahl des Buchs.
 
 ## Getrennte Wörter
 
