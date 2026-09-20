@@ -179,6 +179,8 @@ async function load() {
       if (confirm(t('forget_confirm', { t: b.title }))) { await post('/api/forget', { id: b.id }); load(); }
     };
     box.appendChild(row);
+    // Die Wörterbuchquote eines älteren Buchs wird gerade gerechnet – gleich noch einmal nachsehen
+    if (b.pending) setTimeout(load, 4000);
     // #edit=<id>|<was> öffnet den Dialog gleich bei der gewünschten Möglichkeit – so verweist die Leseansicht
     // hierher. Ein dritter Teil |<pfad> lässt den Vorgang durchlaufen (Selbsttest). Nur beim ersten Laden:
     // nach dem Einlesen frischt load() die Liste auf und würde sonst von vorn beginnen.

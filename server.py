@@ -549,6 +549,44 @@ def lib_forget(bid):
         BOOKS.pop(bid, None)
 
 
+MARKS = {}  # Buchordner -> läuft die Nachberechnung noch? (je Programmlauf einmal)
+
+
+def guess_source(folder):
+    """Woher der Text eines Buchs stammt, das das noch nicht vermerkt hat: Transkribus nummeriert in lines.json
+    seine Zeilen (id), die eingebaute Erkennung merkt sich statt dessen, wie sicher sie war (conf)."""
+    for pg in pagexml.load_json(folder, 'lines.json', {}).values():
+        for l in pg.get('lines') or []:
+            return ['transkribus'] if l.get('id') else ['tesseract'] if l.get('conf') is not None else []
+    return []
+
+
+def ensure_marks(folder):
+    """Die Kennzeichen eines Buchs: woher sein Text stammt und wie viele Wörter das Wörterbuch nicht kennt.
+    Bücher von früher wissen das nicht – die Herkunft steht schnell fest, die Wörterbuchquote muss gerechnet
+    werden. Sie läuft darum nebenher: Die Bibliothek erscheint sofort und holt sich die Zahl nach."""
+    qj = pagexml.load_json(folder, 'qualitaet.json', {})
+    if qj.get('rating'):
+        if qj.get('quelle') is None:
+            m = qj.get('model')
+            qj['quelle'] = ([m] if m in ('textebene', 'transkribus') else ['tesseract']) if m else guess_source(folder)
+            write_atomic(os.path.join(folder, 'qualitaet.json'), json.dumps(qj, ensure_ascii=False, indent=1))
+        return qj
+    quelle = qj.get('quelle') or guess_source(folder)
+    if folder not in MARKS:
+        MARKS[folder] = True
+
+        def rechnen():
+            try:
+                ocr.rate_book(folder, quelle, quelle[0] if quelle else 'text')
+            except Exception:
+                pass
+            finally:
+                MARKS[folder] = False
+        threading.Thread(target=rechnen, daemon=True).start()
+    return dict(quelle=quelle, rating=None, pending=MARKS.get(folder, False))
+
+
 def lib_list():
     out = []
     for e in lib_load():
@@ -557,12 +595,9 @@ def lib_list():
             bm = json.load(open(os.path.join(e['folder'], 'lesezeichen.json'), encoding='utf-8')).get('page')
         except (OSError, ValueError):
             bm = None
-        qj = pagexml.load_json(e['folder'], 'qualitaet.json', {})
+        qj = ensure_marks(e['folder']) if n else {}
         q = (qj.get('rating') or {}).get('level')
-        quelle = qj.get('quelle')
-        if quelle is None:  # Bücher von früher kennen nur das Erkennungsmodell
-            m = qj.get('model')
-            quelle = [] if not m else [m] if m in ('textebene', 'transkribus') else ['tesseract']
+        quelle = qj.get('quelle') or []
         unbekannt = (qj.get('rating') or {}).get('dict')
         try:
             with open(os.path.join(e['folder'], 'korrekturen.log'), 'rb') as f:
@@ -571,6 +606,7 @@ def lib_list():
             corr = 0
         out.append(dict(id=book_id(e['folder']), title=e.get('title') or default_title(e['folder']), folder=e['folder'],
                         pages=n, bookmark=bm, last=e.get('last', ''), quality=q, corrections=corr, quelle=quelle,
+                        pending=bool(qj.get('pending')),
                         unknown=None if unbekannt is None else round(100 * (1 - unbekannt)),
                         images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*')))))
     out.sort(key=lambda b: b['last'], reverse=True)

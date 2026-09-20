@@ -155,6 +155,46 @@ def test_bilder_merken_sich_ihre_herkunft(tmp_path):
         {'001': 'seite_001_1L.png', '002': 'seite_002_1L.png'}
 
 
+def test_herkunft_aelterer_buecher(tmp_path):
+    """Bücher von früher vermerken nicht, woher ihr Text stammt – das steht aber in den Zeilen: Transkribus
+    nummeriert sie, die eingebaute Erkennung merkt sich statt dessen ihre Sicherheit."""
+    import server
+    folder = make_book(str(tmp_path / 'von frueher'))
+    geo = json.load(open(os.path.join(folder, 'lines.json'), encoding='utf-8'))
+    for pg in geo.values():
+        for n, l in enumerate(pg['lines']):
+            l['id'] = 'l%d' % n
+    json.dump(geo, open(os.path.join(folder, 'lines.json'), 'w', encoding='utf-8'))
+    assert server.guess_source(folder) == ['transkribus']
+    for pg in geo.values():
+        for l in pg['lines']:
+            del l['id']
+            l['conf'] = 88
+    json.dump(geo, open(os.path.join(folder, 'lines.json'), 'w', encoding='utf-8'))
+    assert server.guess_source(folder) == ['tesseract']
+
+
+def test_kennzeichen_werden_nachgetragen(tmp_path):
+    """Eine Bewertung von früher kennt nur das Modell – daraus wird die Herkunft, ohne neu zu rechnen."""
+    import server
+    folder = make_book(str(tmp_path / 'mit Ampel'))
+    json.dump(dict(model='frak2021', rating=dict(level='gelb', conf=76.0, dict=0.8, weak=[], ends=[]), pages={}),
+              open(os.path.join(folder, 'qualitaet.json'), 'w', encoding='utf-8'))
+    assert server.ensure_marks(folder)['quelle'] == ['tesseract']
+    assert json.load(open(os.path.join(folder, 'qualitaet.json'), encoding='utf-8'))['quelle'] == ['tesseract']
+
+
+def test_ampel_fuer_text_ohne_konfidenz(tmp_path):
+    """Transkribus sagt nicht, wie sicher es sich war – die Wörterbuchquote sagt es statt dessen."""
+    # Seiten unter 20 Wörtern zählen für die Ampel nicht – also genug Text je Seite
+    texte = {pg: TEXTE['002'] + TEXTE['003'] + TEXTE['004'] for pg in ('001', '002', '003')}
+    folder = make_book(str(tmp_path / 'aus Transkribus'), texte)
+    r = ocr.rate_book(folder, ['scantailor', 'transkribus'])
+    assert r['conf'] is None and 0 <= r['dict'] <= 1 and r['level'] in ('gruen', 'gelb', 'rot')
+    q = json.load(open(os.path.join(folder, 'qualitaet.json'), encoding='utf-8'))
+    assert q['quelle'] == ['scantailor', 'transkribus'] and q['model'] == 'transkribus'
+
+
 def test_ueber_den_server(lib, tmp_path):
     """Der Weg, den die Bibliothek geht: Buch eintragen, Text nachlegen, Ordner für Transkribus nennen."""
     folder = make_book(str(tmp_path / 'Mein Buch'))
