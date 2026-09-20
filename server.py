@@ -270,7 +270,8 @@ class Book:
         with self.lock:
             self.refresh()
             lines = self.pages[pg]
-            return dict(page=pg, lines=lines, geo=self.geo_lines(pg, lines), flags=self.flags(pg), img=self.img_url(pg))
+            # size: damit der Reader die Nachbarseiten schon richtig platziert, bevor ihre Bilder geladen sind
+            return dict(page=pg, lines=lines, geo=self.geo_lines(pg, lines), flags=self.flags(pg), img=self.img_url(pg), size=self.img_size(pg))
 
     def overview(self):
         with self.lock:

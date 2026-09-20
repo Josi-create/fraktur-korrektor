@@ -31,7 +31,7 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #noimg button{font:15px Segoe UI,Arial,sans-serif;padding:10px 20px;border:1px solid #285;border-radius:4px;background:#3a6;color:#fff;cursor:pointer}
 #noimg button:hover{background:#395}
 #imgwrap{position:absolute;left:0;top:0;transform-origin:0 0;transition:transform .18s ease-out}
-#imgwrap img{display:block}
+#imgwrap img{display:block;position:absolute}
 .hl{position:absolute;pointer-events:none;box-sizing:border-box}
 #hlLine{background:rgba(255,220,60,.28)}
 #hlWord,#hlWord2{border:solid red}
@@ -119,7 +119,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 <div id="main">
  <div id="loading" data-t="loading"></div>
  <div class="pane" id="imgpane">
-  <div id="imgwrap"><img id="img" alt=""><div class="hl" id="hlLine"></div><div class="hl" id="hlWord"></div><div class="hl" id="hlWord2"></div></div>
+  <div id="imgwrap"><div class="hl" id="hlLine"></div><div class="hl" id="hlWord"></div><div class="hl" id="hlWord2"></div></div>
   <div id="noimg" style="display:none"><p data-t="noimg_text"></p><button type="button" id="noimgBtn" data-t="noimg_btn"></button></div>
  </div>
  <div id="right">
@@ -164,6 +164,8 @@ applyI18n();
 let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null;
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
 let prevD = null, nextD = null, nbEls = {}, wheelAcc = 0;
+let imgEls = {}, imgState = null, imgKeep = null;  // Seitenbilder im Stapel, letzte Lage des Stapels, beim Seitenwechsel: das bisherige Bild festhalten
+const IMG_GAP = 60;  // Abstand zwischen den Seitenbildern, in Bildpixeln
 const NOTRANS = location.search.includes('notrans');
 let lineEls = [], bmTimer = null, pending = null, msg = '', ser = null;
 let hits = null, hi = -1, ask = null;  // Suche: Fundstellen im ganzen Buch, die aktuelle, offene Eingabezeile (find | goto)
@@ -227,11 +229,11 @@ async function loadPage(p, line, smooth) {
   li = line == 'last' ? data.lines.length - 1 : Math.min(Math.max(0, line || 0), data.lines.length - 1);
   if (line == 'last') { while (li > 0 && skippable(li)) li--; }
   else { while (li < data.lines.length - 1 && (skippable(li) || (!line && data.lines[li].startsWith('#')))) li++; }
-  const im = $('img'); if (!data.img) im.removeAttribute('src'); else if (!im.src.endsWith(data.img)) { im.src = data.img; }
   updateCount(); renderText();
   // fließender Seitenwechsel: erst unsichtbar auf die alte Lesezeile (jetzt in der Nachbarseite) setzen, dann weich zur neuen
   const oe = old && nbEls[old.p] ? nbEls[old.p][old.i] : null;
   if (oe) { const L = $('lines'); L.style.transition = 'none'; L.style.transform = 'translateY(' + ($('text').clientHeight * READ_POS - (oe.offsetTop + oe.offsetHeight / 2)) + 'px)'; L.offsetHeight; if (!NOTRANS) L.style.transition = ''; }
+  imgKeep = old ? { pg: old.p, state: imgState } : null;  // links dasselbe: das bisherige Bild bleibt erst stehen, dann rollt es weiter
   render();
   return true;
 }
@@ -325,21 +327,45 @@ function layoutText() {
   e1.style.top = (top - 2) + 'px'; e1.style.height = (el.offsetHeight + 4) + 'px'; e1.style.fontSize = fs;
   e2.style.top = (top + el.offsetHeight + 3) + 'px'; e2.style.height = ((nx ? nx.offsetHeight : el.offsetHeight) + 4) + 'px'; e2.style.fontSize = nx ? getComputedStyle(nx).fontSize : fs;
 }
+function stackImages() {
+  // Vorgänger, aktuelle Seite und Nachfolger untereinander – wie rechts im Textfenster, damit das Mausrad ohne Sprung über die
+  // Seitengrenze rollt. Die Maße kommen vom Server, so steht die Lage fest, bevor die Bilder geladen sind.
+  const wrap = $('imgwrap'), pages = data && data.img && data.size ? [prevD, data, nextD].filter(b => b && b.img && b.size) : [];
+  const cw = data && data.size ? data.size[0] : 0, place = {}; let y = 0;
+  for (const b of pages) { place[b.page] = { x: (cw - b.size[0]) / 2, y, w: b.size[0], h: b.size[1] }; y += b.size[1] + IMG_GAP; }
+  for (const p of Object.keys(imgEls)) if (!place[p]) { imgEls[p].remove(); delete imgEls[p]; }
+  for (const b of pages) {
+    let el = imgEls[b.page];
+    if (!el) { el = document.createElement('img'); el.alt = ''; el.src = b.img; wrap.insertBefore(el, $('hlLine')); imgEls[b.page] = el; }
+    const q = place[b.page]; el.style.left = q.x + 'px'; el.style.top = q.y + 'px'; el.style.width = q.w + 'px'; el.style.height = q.h + 'px';
+  }
+  return place;
+}
 function layoutImage() {
-  const im = $('img');
-  if (!im.naturalWidth || !data || !data.img) { for (const id of ['hlLine', 'hlWord', 'hlWord2']) $(id).style.display = 'none'; return; }
+  const place = stackImages(), q = data ? place[pg] : null;
+  if (!q) { for (const id of ['hlLine', 'hlWord', 'hlWord2']) $(id).style.display = 'none'; imgState = null; imgKeep = null; return; }
   const pane = $('imgpane'), W = pane.clientWidth, H = pane.clientHeight;
   // Lesezeile im Bild auf dieselbe Bildschirmhöhe wie im Textfenster (das wegen des Korrekturfelds tiefer beginnt)
   const tr = $('text').getBoundingClientRect(), RY = tr.top + $('text').clientTop - (pane.getBoundingClientRect().top + pane.clientTop) + $('text').clientHeight * READ_POS;
-  let x0 = 0, x1 = im.naturalWidth;
+  let x0 = 0, x1 = q.w;
   const gs = data.geo ? data.geo.filter(g => g) : [];
   if (gs.length) { x0 = Math.min(...gs.map(g => g.x0)); x1 = Math.max(...gs.map(g => g.x1)); }
   const k = W / ((x1 - x0) * 1.08) * zoom;
   const g = data.geo ? data.geo[li] : null;
   if (g) lastCy = (g.y0 + g.y1) / 2;
-  const cy = lastCy != null ? lastCy : RY / k;
-  $('imgwrap').style.transform = 'translate(' + (W / 2 - (x0 + x1) / 2 * k) + 'px,' + (RY - cy * k) + 'px) scale(' + k + ')';
-  const box = (el, x, y, w, h) => { el.style.display = ''; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px'; el.style.borderWidth = (2.5 / k) + 'px'; };
+  const cy = lastCy != null ? lastCy : RY / k;  // Zeilenmitte in Seitenpixeln; ohne Zeilenlage bleibt die Seite oben
+  const wrap = $('imgwrap'), tx = W / 2 - (q.x + (x0 + x1) / 2) * k, ty = RY - (q.y + cy) * k;
+  // Fließender Seitenwechsel: das bisherige Bild steht jetzt an anderer Stelle im Stapel – erst ohne Übergang dorthin, dann weich zur neuen Zeile
+  const keep = imgKeep; imgKeep = null;
+  if (keep && keep.state && place[keep.pg] && keep.state.place[keep.pg]) {
+    const o = keep.state, a = o.place[keep.pg], b = place[keep.pg];
+    wrap.style.transition = 'none';
+    wrap.style.transform = 'translate(' + (o.tx + (a.x - b.x) * o.k) + 'px,' + (o.ty + (a.y - b.y) * o.k) + 'px) scale(' + o.k + ')';
+    wrap.offsetHeight; if (!NOTRANS) wrap.style.transition = '';
+  }
+  wrap.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + k + ')';
+  imgState = { place, tx, ty, k };
+  const box = (el, x, y, w, h) => { el.style.display = ''; el.style.left = (q.x + x) + 'px'; el.style.top = (q.y + y) + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px'; el.style.borderWidth = (2.5 / k) + 'px'; };
   const hl = $('hlLine'), hw = $('hlWord'), hw2 = $('hlWord2');
   hl.style.display = hw.style.display = hw2.style.display = 'none';
   if (!g) return;
@@ -771,7 +797,6 @@ document.addEventListener('keydown', async e => { if (busy) { e.preventDefault()
 for (const b of dicBoxes()) b.onchange = async () => { if (!busy) { busy = true; try { await saveDics(); } finally { busy = false; } } };
 $('diclink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !busy) { busy = true; try { await openDics(); } finally { busy = false; } } };
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
-$('img').onload = layoutImage;
 $('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });
 window.addEventListener('resize', () => { layoutText(); layoutImage(); });
 let lastClick = null;

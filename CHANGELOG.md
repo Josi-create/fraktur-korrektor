@@ -5,6 +5,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Das Seitenbild rollt fließend über die Seitengrenze**, wie der Text rechts: Links stehen Vorgänger, Seite und
+  Nachfolger untereinander, das Mausrad läuft ohne Sprung von einer Seite in die nächste. Die Bildmaße kommen vom
+  Server mit, damit die Nachbarseiten schon richtig liegen, bevor ihre Bilder geladen sind.
 - **Suchen im ganzen Buch und Gehe zu Seite** (#56): `S` öffnet oben eine Eingabezeile; das Programm sucht im
   ganzen Buch, ohne Rücksicht auf Groß-/Kleinschreibung und ſ/s, auch über die Zeilentrennung ¬ hinweg, und springt
   zur ersten Fundstelle ab der Leseposition – blau im Text, eingerahmt im Seitenbild. Oben bleibt ein kleines Feld

@@ -19,6 +19,7 @@ def test_bildzuordnung(app):
     assert len(d['geo']) == len(d['lines'])
     assert d['geo'][5] is None                      # Fußnotentrenner hat keine Bildzeile
     assert d['geo'][1] == dict(x0=50, x1=450, y0=80, y1=100)   # Maßstab 0.5
+    assert d['size'] == [500, 750]                    # Bildmaße, damit der Reader die Nachbarseiten platzieren kann
     assert d['img'] == app.book + '/img/001.png' and app.raw(d['img'])[1][:4] == b'\x89PNG'
 
 
