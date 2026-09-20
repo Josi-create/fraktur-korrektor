@@ -30,6 +30,10 @@ den Text bereits erkannt und unsichtbar hinter das Seitenbild gelegt. Der Fraktu
 
 Im Zweifel erst übernehmen und die Ampel ansehen. Ist sie nicht grün, das Buch noch einmal einlesen und neu erkennen lassen.
 
+Stammt das PDF aus einer Bibliothek und enthält keinen Text, lohnt ein Blick auf deren Seiten: Oft liegt der
+erkannte Text dort getrennt vom PDF bereit (hOCR oder ALTO) und lässt sich nachträglich über das Buch legen –
+siehe [Text aus einer Bibliothek](add-book.md).
+
 ## Die Ampel
 
 Nach der Erkennung schätzt das Programm, wie gut das Ergebnis ist. Es benutzt dafür zwei Werte: wie sicher

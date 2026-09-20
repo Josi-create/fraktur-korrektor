@@ -64,7 +64,7 @@ weitere Wege:
 
 | | Wozu |
 |---|---|
-| **Transkribus-Text einlesen** | Der Text von Transkribus tritt an die Stelle des bisherigen. Ihre Seitenbilder, Ihre Wortliste und Ihr Lesezeichen bleiben, wo sie sind. Angeben können Sie die ZIP-Datei, den entpackten Ordner oder die Textdatei des Exports. |
+| **Erkannten Text einlesen** | Der Text von Transkribus – oder der, den eine Bibliothek zu ihrem Digitalisat herausgibt – tritt an die Stelle des bisherigen. Ihre Seitenbilder, Ihre Wortliste und Ihr Lesezeichen bleiben, wo sie sind. Angeben können Sie die ZIP-Datei, den entpackten Ordner oder die Textdatei des Exports, oder einen Ordner mit hOCR- oder ALTO-Dateien (siehe unten). |
 | **Seitenbilder hinzufügen** | Für Bücher, die nur aus Text bestehen – etwa ein Transkribus-Export ohne Bilder. Zeigen Sie auf einen Bilderordner, auf das PDF, aus dem die Seiten stammen, oder auf ein anderes Buch, das die Bilder schon hat. |
 | **Für Transkribus vorbereiten** | Das Programm nennt Ihnen den Ordner, den Sie hochladen, legt ihn in die Zwischenablage und öffnet ihn im Dateifenster. |
 | **Für ScanTailor vorbereiten** | Startet ScanTailor und nennt Ein- und Ausgabeordner. |
@@ -109,9 +109,34 @@ seiner Seite, lässt sich aber nicht mehr Zeile für Zeile neben dem Seitenbild 
 Erkennung teilt die Zeilen genau so auf wie die alte. Das Programm sagt Ihnen hinterher, für wie viele Seiten
 das zutraf. Wenn Sie die Zeilen im Bild brauchen, holen Sie den Export noch einmal als **PAGE XML**.
 
+### Text aus einer Bibliothek (hOCR, ALTO)
+
+Viele Bibliotheken haben ihre Digitalisate längst durch eine Texterkennung geschickt – nur steckt dieser Text
+selten im PDF, das man herunterladen kann. Das PDF enthält dann nichts als Bilder, und der Fraktur-Korrektor
+schlägt zu Recht vor, den Text neu zu erkennen. Der Text der Bibliothek ist aber oft gut und lohnt die Mühe,
+ihn zu holen. Er kommt in einem von zwei Formaten: **hOCR** (Dateien mit der Endung `.html` oder `.hocr`) oder
+**ALTO** (`.xml`), jeweils eine Datei je Seite, und beide bringen mit, wo jede Zeile im Bild steht.
+
+Wo man ihn findet, ist von Bibliothek zu Bibliothek verschieden: im Viewer unter „Volltext“ oder „OCR“, in
+einer Schnittstelle, oder auf Nachfrage bei der Bibliothek. Die Bayerische Staatsbibliothek etwa gibt ihn je
+Seite unter `https://api.digitale-sammlungen.de/ocr/<Kennung>/<Seite>` heraus; die Kennung (`bsb…`) steht auf dem
+Deckblatt des PDF (Stand September 2026). Das Programm lädt nichts aus dem Internet – die Dateien holen Sie
+selbst und legen sie in einen Ordner.
+
+Dann geht es so:
+
+1. Das PDF wie gewohnt einlesen (Tesseract oder, wenn das PDF Text enthält, den übernehmen). Dieser Text ist das
+   Gerüst, an dem die Seiten der Bibliothek wiedererkannt werden.
+2. In der Bibliothek beim Buch **Erkannten Text einlesen** wählen und auf den Ordner mit den hOCR- oder
+   ALTO-Dateien zeigen.
+
+Die Seiten finden sich am Wortlaut (siehe oben) – darum stört es nicht, dass das PDF vorn ein Deckblatt der
+Bibliothek trägt, das in ihren Textdateien nicht vorkommt. Sind die Bilder der Bibliothek dieselben wie im PDF,
+passen auch die Zeilenkästchen; das Buch trägt danach das Kennzeichen **Bibliothek**.
+
 ### Wenn schon Korrekturen im Buch stecken
 
-Dann warnt das Programm: Der neue Text aus Transkribus enthält Ihre Arbeit nicht. Sie haben die Wahl, ihn
+Dann warnt das Programm: Der neue Text enthält Ihre Arbeit nicht. Sie haben die Wahl, ihn
 trotzdem in dieses Buch zu übernehmen oder daneben ein neues anzulegen – die Seitenbilder kommen dabei mit.
 Die bisherige Fassung wird in jedem Fall zuerst gesichert: als `vorher-<Datum>.zip` im Buchordner. Über den
 Knopf **Frühere Fassung** holen Sie sie jederzeit zurück – und weil auch das Zurückholen vorher sichert, kommen

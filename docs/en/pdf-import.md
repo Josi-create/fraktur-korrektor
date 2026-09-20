@@ -31,6 +31,10 @@ the text and placed it invisibly behind the page image. Fraktur-Korrektor notice
 If in doubt, use the text first and look at the traffic light. If it is not green, read the book in again and have
 it recognised afresh.
 
+If the PDF comes from a library and contains no text, have a look at the library’s site: the recognised text
+is often available there separately from the PDF (hOCR or ALTO) and can be laid over the book afterwards –
+see [Text from a library](add-book.md).
+
 ## The traffic light
 
 After recognition the program estimates how good the result is. It uses two values: how confident Tesseract

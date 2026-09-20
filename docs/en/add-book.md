@@ -62,7 +62,7 @@ In the library, every book has a row of buttons below it. Next to **Open book** 
 
 | | What for |
 |---|---|
-| **Take in Transkribus text** | The text from Transkribus takes the place of the present one. Your page images, your word list and your bookmark stay where they are. You may point at the ZIP file, the unpacked folder or the text file of the export. |
+| **Take in recognised text** | The text from Transkribus – or the text a library publishes for its digitised copy – takes the place of the present one. Your page images, your word list and your bookmark stay where they are. You may point at the ZIP file, the unpacked folder or the text file of the export, or at a folder of hOCR or ALTO files (see below). |
 | **Add page images** | For books that are text only – a Transkribus export without images, say. Point at a folder of images, at the PDF the pages come from, or at another book that already has them. |
 | **Prepare for Transkribus** | The program names the folder you upload, puts it on the clipboard and opens it in a file window. |
 | **Prepare for ScanTailor** | Starts ScanTailor and names the input and output folder. |
@@ -107,9 +107,33 @@ page, but can no longer be followed line by line next to the page image – unle
 lines exactly as the old one did. The program tells you afterwards for how many pages that was the case. If you
 need the lines in the image, export again as **PAGE XML**.
 
+### Text from a library (hOCR, ALTO)
+
+Many libraries have long since run their digitised books through text recognition – but that text is rarely
+inside the PDF you can download. The PDF then holds nothing but images, and the Fraktur-Korrektor rightly
+suggests recognising the text anew. The library’s text, however, is often good and worth fetching. It comes in
+one of two formats: **hOCR** (files ending in `.html` or `.hocr`) or **ALTO** (`.xml`), one file per page, and
+both carry where each line sits in the image.
+
+Where to find it differs from library to library: in the viewer under “full text” or “OCR”, through an API, or
+by asking the library. The Bavarian State Library, for instance, serves it per page at
+`https://api.digitale-sammlungen.de/ocr/<identifier>/<page>`; the identifier (`bsb…`) is printed on the cover
+sheet of the PDF (as of September 2026). The program downloads nothing from the internet – you fetch the files
+yourself and put them in a folder.
+
+Then:
+
+1. Read the PDF in as usual (Tesseract, or take the text if the PDF has any). That text is the scaffold by which
+   the library’s pages are recognised.
+2. In the library, choose **Take in recognised text** for the book and point at the folder of hOCR or ALTO files.
+
+The pages find each other by wording (see above) – so it does not matter that the PDF starts with a library
+cover sheet that does not appear in its text files. If the library’s images are the same as those in the PDF,
+the line boxes fit as well; the book then carries the mark **Library**.
+
 ### If the book already contains corrections
 
-The program warns you: the new text from Transkribus does not contain your work. You may take it into this
+The program warns you: the new text does not contain your work. You may take it into this
 book anyway, or create a new one next to it – the page images come along. Either way the present version is
 backed up first, as `vorher-<date>.zip` in the book folder. The button **Earlier version** brings it back at any
 time – and since going back saves the present state too, you can go forward again. If an import turns out badly,

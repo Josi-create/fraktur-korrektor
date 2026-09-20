@@ -321,3 +321,98 @@ def test_fehlerhafte_anfragen(lib, tmp_path):
     folder = make_book(str(tmp_path / 'buch'), images=False)
     bid = lib.lpost('/api/open', dict(folder=folder))[1]['id']
     assert lib.lpost('/api/prepare', dict(id=bid, tool='transkribus')) == (400, dict(error='keine_bilder'))
+
+
+# ---- Der erkannte Text einer Bibliothek: hOCR (BSB) oder ALTO, eine Datei je Seite. Das PDF derselben Bibliothek
+# enthält davon nichts – also erst das PDF einlesen, dann den Text der Bibliothek darüberlegen. Vorn im PDF steckt
+# ein Deckblatt, das die Bibliothek nicht mitzählt: Der Wortlaut muss die Seiten finden, nicht die Nummer.
+HOCR = '''<html><head><meta name="ocr-system" content="probe"/></head><body>
+<div class="ocr_page" title="x_source probe_%(n)04d; bbox 0 0 1000 1500"><div class="ocrx_block" title="bbox 100 100 900 400">
+<p class="ocr_par">%(lines)s</p></div></div></body></html>'''
+HLINE = '<span class="ocr_line" title="bbox 120 %(y0)d 880 %(y1)d; baseline 0 -8">%(words)s</span><br>'
+HWORD = '<span class="ocrx_word" title="bbox %(x)d %(y0)d %(x1)d %(y1)d; x_wconf 91">%(w)s</span>'
+
+
+def make_hocr(folder, pages, punkt_getrennt=True):
+    """pages: [[zeilen]] – Satzzeichen stehen wie bei der BSB als eigene Wörter."""
+    os.makedirs(folder, exist_ok=True)
+    for n, zeilen in enumerate(pages, 1):
+        html = []
+        for k, z in enumerate(zeilen):
+            ws = z.replace(',', ' ,').replace('.', ' .').split() if punkt_getrennt else z.split()
+            y0, y1 = 100 + 60 * k, 140 + 60 * k
+            html.append(HLINE % dict(y0=y0, y1=y1, words=''.join(
+                HWORD % dict(x=120 + 40 * i, x1=150 + 40 * i, y0=y0, y1=y1, w=w) for i, w in enumerate(ws))))
+        with open(os.path.join(folder, '%04d.html' % n), 'w', encoding='utf-8') as f:
+            f.write(HOCR % dict(n=n, lines='\n'.join(html)))
+    return folder
+
+
+def test_hocr_einer_bibliothek(tmp_path):
+    folder = make_book(str(tmp_path / 'buch'))
+    src = make_hocr(str(tmp_path / 'hocr'), [TEXTE['002'], TEXTE['003'], TEXTE['004']])  # ohne das Deckblatt (001)
+    r = pagexml.import_into(src, folder)
+    assert r['how'] == 'text' and r['replaced'] == 3 and r['kept'] == ['001'] and r['extern'] and not r['nogeo']
+    neu = open(os.path.join(folder, '002.txt'), encoding='utf-8').read()
+    assert 'Rußland, denn' in neu and 'beschwerlich gewesen.' in neu  # Satzzeichen wieder am Wort
+    geo = json.load(open(os.path.join(folder, 'lines.json'), encoding='utf-8'))
+    l = geo['002']['lines'][0]
+    assert geo['002']['w'] == 1000 and l['x0'] == 120 and l['y1'] == 140 and l['bl'] == 132  # Lage aus dem hOCR, Grundlinie über dem Kästchen
+    assert 'Muenster' in open(os.path.join(folder, '001.txt'), encoding='utf-8').read()
+
+
+def test_hocr_trennstriche_und_kopfzeile(tmp_path):
+    """Wie bei der eigenen Erkennung: Trennstrich am Zeilenende wird »¬«, die Seitenzahl oben die Kopfzeile."""
+    folder = make_book(str(tmp_path / 'buch'))
+    src = make_hocr(str(tmp_path / 'hocr'), [['28', 'Die Kolonisten zogen nach Rußland, denn die Zu-', 'kunft lag vor ihnen und der Weg war weit'],
+                                              TEXTE['003'], TEXTE['004']], punkt_getrennt=False)
+    pagexml.import_into(src, folder)
+    zeilen = open(os.path.join(folder, '002.txt'), encoding='utf-8').read().splitlines()
+    assert zeilen[0] == '# 28' and zeilen[1].endswith('Zu¬') and zeilen[2].startswith('kunft')
+
+
+ALTO = '''<?xml version="1.0" encoding="UTF-8"?>
+<alto xmlns="http://www.loc.gov/standards/alto/ns-v3#"><Description><MeasurementUnit>pixel</MeasurementUnit>
+<sourceImageInformation><fileName>scan_%(n)04d.tif</fileName></sourceImageInformation></Description>
+<Layout><Page ID="p1" WIDTH="1000" HEIGHT="1500"><PrintSpace><TextBlock ID="b1">%(lines)s</TextBlock></PrintSpace></Page></Layout></alto>'''
+ALINE = '<TextLine HPOS="120" VPOS="%(y0)d" WIDTH="760" HEIGHT="40" BASELINE="%(bl)d">%(strings)s</TextLine>'
+
+
+def make_alto(folder, pages):
+    os.makedirs(folder, exist_ok=True)
+    for n, zeilen in enumerate(pages, 1):
+        xml = []
+        for k, z in enumerate(zeilen):
+            ws = z.split()
+            strings = '<SP/>'.join('<String CONTENT="%s" HPOS="%d" VPOS="%d" WIDTH="30" HEIGHT="40"/>' % (w.rstrip('-'), 120 + 40 * i, 100 + 60 * k) for i, w in enumerate(ws))
+            if z.endswith('-'):
+                strings += '<HYP CONTENT="-"/>'
+            xml.append(ALINE % dict(y0=100 + 60 * k, bl=132 + 60 * k, strings=strings))
+        with open(os.path.join(folder, 'alto_%04d.xml' % n), 'w', encoding='utf-8') as f:
+            f.write(ALTO % dict(n=n, lines='\n'.join(xml)))
+    return folder
+
+
+def test_alto_einer_bibliothek(tmp_path):
+    folder = make_book(str(tmp_path / 'buch'))
+    src = make_alto(str(tmp_path / 'alto'), [['Die Kolonisten zogen nach Rußland, denn die Zu-', 'kunft lag vor ihnen und der Weg war weit'],
+                                              TEXTE['003'], TEXTE['004']])
+    r = pagexml.import_into(src, folder)
+    assert r['how'] == 'text' and r['replaced'] == 3 and r['kept'] == ['001'] and r['extern']
+    zeilen = open(os.path.join(folder, '002.txt'), encoding='utf-8').read().splitlines()
+    assert zeilen[1].endswith('Zu¬') and zeilen[2].startswith('kunft')
+    geo = json.load(open(os.path.join(folder, 'lines.json'), encoding='utf-8'))
+    assert geo['003']['lines'][0]['bl'] == 132 and geo['003']['lines'][0]['x1'] == 880
+
+
+def test_bibliothekstext_ueber_den_server(lib, tmp_path):
+    """Das Kennzeichen am Buch sagt dann »Bibliothek«, nicht »Transkribus«."""
+    folder = make_book(str(tmp_path / 'Mein Buch'))
+    bid = lib.lpost('/api/open', dict(folder=folder))[1]['id']
+    src = make_hocr(str(tmp_path / 'hocr'), [TEXTE['002'], TEXTE['003'], TEXTE['004']])
+    r = wait(lib, lib.lpost('/api/add_transkribus', dict(id=bid, source=src))[1]['job'])['result']
+    assert r['replaced'] == 3 and r['extern']
+    q = json.load(open(os.path.join(folder, 'qualitaet.json'), encoding='utf-8'))
+    assert q['quelle'] == ['hocr'] and q['model'] == 'hocr'
+    b = lib.lget('/api/library')[1]['books'][0]
+    assert 'hocr' in b['quelle']

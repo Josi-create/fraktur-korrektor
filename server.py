@@ -569,7 +569,7 @@ def ensure_marks(folder):
     if qj.get('rating'):
         if qj.get('quelle') is None:
             m = qj.get('model')
-            qj['quelle'] = ([m] if m in ('textebene', 'transkribus') else ['tesseract']) if m else guess_source(folder)
+            qj['quelle'] = ([m] if m in ('textebene', 'transkribus', 'hocr') else ['tesseract']) if m else guess_source(folder)
             write_atomic(os.path.join(folder, 'qualitaet.json'), json.dumps(qj, ensure_ascii=False, indent=1))
         return qj
     quelle = qj.get('quelle') or guess_source(folder)
@@ -675,7 +675,8 @@ def copy_book(folder, title=None):
 
 
 def add_transkribus(bid, source, mode, progress, cancelled):
-    """Den Text eines Transkribus-Exports in ein Buch übernehmen, das es schon gibt. Wer sein Buch erst als PDF
+    """Den Text eines Transkribus-Exports – oder den erkannten Text einer Bibliothek (hOCR, ALTO) – in ein Buch
+    übernehmen, das es schon gibt. Wer sein Buch erst als PDF
     einliest, die Seiten aufbereitet und zu Transkribus schickt, soll danach nicht wieder von vorn anfangen und
     seine Seitenbilder suchen müssen – sie liegen ja längst hier.
 
@@ -685,7 +686,7 @@ def add_transkribus(bid, source, mode, progress, cancelled):
     if not source or not os.path.exists(source):
         raise ValueError('quelle_fehlt')
     e = next((x for x in lib_load() if book_id(x['folder']) == bid), None)
-    alt = [q for q in (pagexml.load_json(folder, 'qualitaet.json', {}).get('quelle') or []) if q != 'transkribus']
+    alt = [q for q in (pagexml.load_json(folder, 'qualitaet.json', {}).get('quelle') or []) if q not in ('transkribus', 'hocr')]
     ziel = copy_book(folder, e.get('title') if e else None) if mode == 'new' else folder
     try:
         r = pagexml.import_into(source, ziel, progress, save=ziel == folder)
@@ -696,7 +697,8 @@ def add_transkribus(bid, source, mode, progress, cancelled):
     with LIBLOCK:
         BOOKS.pop(book_id(ziel), None)  # der Text auf der Platte ist ein anderer geworden
     lib_touch(ziel, e.get('title') if e and ziel != folder else None)
-    return dict(id=book_id(ziel), folder=ziel, neu=ziel != folder, quality=ocr.rate_book(ziel, alt + ['transkribus']), **r)
+    art = 'hocr' if r.get('extern') else 'transkribus'  # hOCR/ALTO einer Bibliothek oder Transkribus
+    return dict(id=book_id(ziel), folder=ziel, neu=ziel != folder, quality=ocr.rate_book(ziel, alt + [art], art), **r)
 
 
 def add_images(bid, source, progress, cancelled):
@@ -899,7 +901,7 @@ def dialog(kind, out=None):
     p = filedialog.askdirectory(parent=root) if kind == 'folder' else \
         filedialog.askopenfilename(parent=root, filetypes=dict(pdf=[('PDF', '*.pdf')], exe=[('*', '*.*')], any=[
             ('PDF, EPUB, ZIP, Bilder, Buchseiten', '*.pdf *.epub *.zip *.xml *.txt *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')],
-            export=[('Transkribus-Export', '*.zip *.txt *.xml'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
+            export=[('Transkribus-Export, hOCR, ALTO', '*.zip *.txt *.xml *.html *.htm *.hocr *.alto'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
     if out:
         with open(out, 'w', encoding='utf-8') as f:
             f.write(p or '')

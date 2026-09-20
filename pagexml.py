@@ -2,6 +2,7 @@
 (je Seite Zeilen mit Bildkoordinaten in Transkribus-Pixeln, Bildgröße, Art) und – falls vorhanden – img/NNN.png|jpg."""
 import os, re, json, glob, time, shutil, zipfile, tempfile, statistics
 import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
 FN = re.compile(r'^\s*[\d*]{1,2}\)')          # Fußnotenbeginn: "1)" "12)" "*)"
 IMGEXT = ('.png', '.jpg', '.jpeg')
 
@@ -53,6 +54,156 @@ def parse_page(f):
                           bl=int(statistics.median(y for x, y in bpts))))
     classify(lines, H / 3508)
     return W, H, page.get('imageFilename') or '', lines
+
+
+# ---- Was Bibliotheken zu ihren Digitalisaten herausgeben: hOCR (Tesseract, BSB) oder ALTO (DFG-Viewer, Kitodo).
+# Beide bringen wie PAGE-XML die Lage der Zeilen im Bild mit – nur das PDF der Bibliothek hat davon meist nichts.
+HOCR_LINE = ('ocr_line', 'ocr_textfloat', 'ocr_header', 'ocr_caption')
+
+
+class _Hocr(HTMLParser):
+    """Sammelt aus einer hOCR-Datei die Seite (bbox, Bildname) und die Zeilen samt Wörtern und Kästchen."""
+    def __init__(self):
+        super().__init__()
+        self.page, self.img, self.lines, self.stack, self.cur, self.word = None, '', [], [], None, None
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        c, title = (a.get('class') or '').split(), a.get('title') or ''
+        kind = 'page' if 'ocr_page' in c else 'line' if any(k in c for k in HOCR_LINE) else 'word' if 'ocrx_word' in c else ''
+        self.stack.append((tag, kind))
+        if kind == 'page':
+            self.page = _bbox(title)
+            m = re.search(r'\bimage\s+"([^"]*)"|\bx_source\s+([^;]+)', title)
+            self.img = (m.group(1) or m.group(2)).strip() if m else ''
+        elif kind == 'line':
+            self.cur = dict(bbox=_bbox(title), base=_baseline(title), ws=[], raw='')
+        elif kind == 'word' and self.cur is not None:
+            self.word = ''
+
+    def handle_data(self, d):
+        if self.word is not None:
+            self.word += d
+        elif self.cur is not None:
+            self.cur['raw'] += d
+
+    def handle_endtag(self, tag):
+        if not any(t == tag for t, _ in self.stack):
+            return  # verirrtes Ende: nichts schließen
+        while self.stack:  # <br> ohne Ende bleibt sonst offen – bis zum passenden Tag aufräumen
+            t, kind = self.stack.pop()
+            if kind == 'word' and self.word is not None:
+                w = ' '.join(self.word.split())
+                if w and self.cur is not None:
+                    self.cur['ws'].append(w)
+                self.word = None
+            elif kind == 'line' and self.cur is not None:
+                self.lines.append(self.cur)
+                self.cur = None
+            if t == tag:
+                break
+
+
+def _bbox(title):
+    m = re.search(r'\bbbox\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)', title)
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def _baseline(title):
+    """hOCR: »baseline a b« – Gerade vom linken unteren Eck des Kästchens aus, b meist negativ (Unterlängen)."""
+    m = re.search(r'\bbaseline\s+(-?[\d.]+)\s+(-?[\d.]+)', title)
+    return (float(m.group(1)), float(m.group(2))) if m else None
+
+
+def _finish_lines(lines, W, H):
+    """Zeilen einordnen (Kopfzeile, Fußnoten) und Trennstriche wie bei der eigenen Erkennung zu »¬« machen."""
+    from ocr import hyphens  # hier, nicht oben: ocr braucht seinerseits pagexml
+    classify(lines, H / 3508 if H else 1)
+    for kind in ('body', 'fn'):
+        part = [d for d in lines if d['kind'] == kind]
+        for d, t in zip(part, hyphens([d['text'] for d in part])):
+            d['text'] = t
+    return lines
+
+
+def parse_hocr(f):
+    """Liefert (Breite, Höhe, Bildname, Zeilen) einer hOCR-Datei, wie parse_page für PAGE-XML."""
+    p = _Hocr()
+    with open(f, encoding='utf-8', errors='replace') as fh:
+        p.feed(fh.read())
+    lines = []
+    for l in p.lines:
+        text = ' '.join(l['ws']) if l['ws'] else ' '.join(l['raw'].split())
+        # Manche Bibliotheken (BSB) führen Satzzeichen als eigene Wörter: »Händen ,« – wieder anhängen
+        text = re.sub(r' (?=[,.;:!?)\]])', '', re.sub(r'(?<=[(\[]) ', '', text))
+        if not text or not l['bbox']:
+            continue
+        x0, y0, x1, y1 = l['bbox']
+        a, b = l['base'] or (0.0, 0.0)
+        lines.append(dict(text=text, x0=x0, x1=x1, y0=y0, y1=y1, bl=round(y1 + b + a * (x1 - x0) / 2)))
+    W, H = (p.page[2], p.page[3]) if p.page else (max((l['x1'] for l in lines), default=0), max((l['y1'] for l in lines), default=0))
+    return W, H, p.img, _finish_lines(lines, W, H)
+
+
+def parse_alto(f):
+    """Liefert (Breite, Höhe, Bildname, Zeilen) einer ALTO-Datei. Die Maßeinheit ist gleichgültig, solange Seite und
+    Zeilen dieselbe verwenden: Im Reader wird die Seite ohnehin höhenfüllend auf das Bild gelegt."""
+    root = ET.parse(f).getroot()
+    m = re.match(r'\{(.*)\}', root.tag)
+    ns = m.group(1) if m else ''
+    q = (lambda t: '{%s}%s' % (ns, t)) if ns else (lambda t: t)
+    page = root.find('.//' + q('Page'))
+    W, H = (int(float(page.get('WIDTH') or 0)), int(float(page.get('HEIGHT') or 0))) if page is not None else (0, 0)
+    img = (root.findtext('.//' + q('fileName')) or '').strip()
+    lines = []
+    for l in root.iter(q('TextLine')):
+        ws = []
+        for e in l:
+            if e.tag == q('String') and e.get('CONTENT'):
+                ws.append(e.get('CONTENT'))
+            elif e.tag == q('HYP'):  # Trennstrich am Zeilenende, damit hyphens() ihn zu »¬« macht
+                ws.append((ws.pop() if ws else '') + (e.get('CONTENT') or '-'))
+        text = ' '.join(ws).strip()
+        try:
+            x0, y0 = int(float(l.get('HPOS'))), int(float(l.get('VPOS')))
+            x1, y1 = x0 + int(float(l.get('WIDTH'))), y0 + int(float(l.get('HEIGHT')))
+        except (TypeError, ValueError):
+            continue
+        if not text:
+            continue
+        try:
+            bl = int(float(l.get('BASELINE')))  # ALTO 2/3: eine Zahl; ALTO 4 darf Punkte angeben
+        except (TypeError, ValueError):
+            bl = y1
+        lines.append(dict(text=text, x0=x0, x1=x1, y0=y0, y1=y1, bl=bl))
+    return W, H, img, _finish_lines(lines, W, H)
+
+
+def find_extern(src):
+    """hOCR- oder ALTO-Dateien: eine einzelne Datei oder alles in einem Ordner. Liefert [(datei, parser)]."""
+    files = [src] if os.path.isfile(src) else sorted(glob.glob(os.path.join(src, '**', '*'), recursive=True))
+    out = []
+    for f in files:
+        if os.path.splitext(f)[1].lower() not in ('.html', '.htm', '.hocr', '.xml', '.alto'):
+            continue
+        try:
+            with open(f, 'rb') as fh:
+                head = fh.read(4000)
+        except OSError:
+            continue
+        if b'ocr_page' in head or b'ocr-system' in head:
+            out.append((f, parse_hocr))
+        elif b'<alto' in head:
+            out.append((f, parse_alto))
+    return out
+
+
+def _is_page_xml(f):
+    try:
+        with open(f, 'rb') as fh:
+            return b'PcGts' in fh.read(600)
+    except OSError:
+        return False
 
 
 def page_text(lines):
@@ -150,8 +301,8 @@ def unpack(src):
     if os.path.isdir(src):
         return src, None
     if os.path.isfile(src) and not zipfile.is_zipfile(src):
-        if os.path.splitext(src)[1].lower() in ('.txt', '.xml'):
-            return src, None  # eine einzelne Datei: Textexport oder PAGE-XML
+        if os.path.splitext(src)[1].lower() in ('.txt', '.xml', '.html', '.htm', '.hocr', '.alto'):
+            return src, None  # eine einzelne Datei: Textexport, PAGE-XML, hOCR oder ALTO
         raise ValueError('weder Ordner noch ZIP-Datei')
     if not os.path.isfile(src):
         raise ValueError('weder Ordner noch ZIP-Datei')
@@ -390,16 +541,23 @@ def read_book_page(path):
 
 
 def read_export(src):
-    """Die Seiten einer Quelle, gleich welcher Art: {schlüssel: dict(w, h, img, lines)}. Bei PAGE-XML haben die
-    Zeilen ihre Lage im Bild, bei Text oder einem fremden Buchordner nicht (w = 0). Dazu der Titel, wenn er
-    dabeisteht."""
-    files, title = ([src], None) if os.path.isfile(src) and src.lower().endswith('.xml') else find_export(src)
+    """Die Seiten einer Quelle, gleich welcher Art: {schlüssel: dict(w, h, img, lines)}. Bei PAGE-XML, hOCR und
+    ALTO haben die Zeilen ihre Lage im Bild, bei Text oder einem fremden Buchordner nicht (w = 0). Dazu der
+    Titel, wenn er dabeisteht."""
+    files, title = ([src], None) if os.path.isfile(src) and _is_page_xml(src) else find_export(src)
     if files:
         out = {}
         for f in sorted(files):
             W, H, img, lines = parse_page(f)
             out[f] = dict(w=W, h=H, img=img, lines=lines)
         return out, title
+    extern = find_extern(src)
+    if extern:  # der erkannte Text einer Bibliothek: hOCR oder ALTO, eine Datei je Seite
+        out = {}
+        for f, parse in extern:
+            W, H, img, lines = parse(f)
+            out[f] = dict(w=W, h=H, img=img, lines=lines, extern=True)
+        return out, None
     if os.path.isdir(src) and book_pages(src):
         # Die Quelle ist selbst ein Buch des Programms. Seine Seitennummern sagen nichts darüber, wohin sein
         # Text hier gehört – »001« dort ist nicht »001« hier. Zugeordnet wird darum am Wortlaut.
@@ -409,8 +567,8 @@ def read_export(src):
 
 
 def import_into(src, folder, progress=lambda done, total, msg: None, save=True):
-    """Den Text eines Transkribus-Exports in ein Buch übernehmen, das es schon gibt: Seitenbilder, Lesezeichen,
-    Wortliste und Einstellungen bleiben, wo sie sind. Ersetzt werden nur die Seiten, für die der Export Text
+    """Den Text eines Transkribus-Exports – oder den einer Bibliothek (hOCR, ALTO) – in ein Buch übernehmen, das
+    es schon gibt: Seitenbilder, Lesezeichen, Wortliste und Einstellungen bleiben, wo sie sind. Ersetzt werden nur die Seiten, für die der Export Text
     liefert; wofür er keinen hat, bleibt stehen. Liefert dict(pages, replaced, kept, how, backup, title)."""
     src, tmp = unpack(src)
     try:
@@ -462,7 +620,7 @@ def import_into(src, folder, progress=lambda done, total, msg: None, save=True):
             pass
         kept = [pg for pg in book_pages(folder) if pg not in set(hit.values())]
         return dict(pages=len(book_pages(folder)), replaced=len(hit), kept=kept, how=how, backup=saved, title=title,
-                    nogeo=ohne_lage, unclear=len(offen))
+                    nogeo=ohne_lage, unclear=len(offen), extern=any(v.get('extern') for v in read.values()))
     finally:
         if tmp:
             shutil.rmtree(tmp, ignore_errors=True)
