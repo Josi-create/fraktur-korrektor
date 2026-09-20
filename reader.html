@@ -713,6 +713,8 @@ function setZoom(z) { zoom = Math.min(4, Math.max(0.4, z)); try { localStorage.s
 
 async function onKey(e) {
   if (e.key == 'F1') { e.preventDefault(); window.open($('helplink').href, '_blank'); return; }
+  // Strg+F (Mac: Cmd+F) ist die gewohnte Suche – beim Lesen unsere statt der des Browsers
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key == 'f' || e.key == 'F') && data && mode == 'read') { e.preventDefault(); askOpen('find'); return; }
   if (e.ctrlKey || e.altKey || e.metaKey || !data) return;
   if (mode == 'ask') return askKey(e);
   if (mode == 'serie') return serieKey(e);
@@ -822,6 +824,7 @@ $('text').addEventListener('wheel', onWheel, { passive: false }); $('imgpane').a
     if (k.startsWith('=')) $('edit').value = k.slice(1);
     else if (k.startsWith('caret=')) $('edit').setSelectionRange(+k.slice(6), +k.slice(6));
     else if (k == 'Shift+Enter' || k == 'Shift Enter') (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
+    else if (k.startsWith('Ctrl+') || k.startsWith('Ctrl ')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(5), ctrlKey: true, bubbles: true }));  // »+« wird in der Adresse zum Leerzeichen
     else if (k.includes('=')) $(k.split('=')[0]).value = k.split('=')[1];
     else (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k == 'Space' ? ' ' : k, bubbles: true }));
     await new Promise(r => setTimeout(r, 400));

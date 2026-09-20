@@ -19,7 +19,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `F2` | edit the reading line freely (punctuation, footnote marks, anything the automatic check misses) |
 | Reading | `PgDn` `PgUp`, `Home` `End` | page forward/back, top/bottom of page |
 | Reading | `G` | go to page: an input line for the page number appears at the top |
-| Reading | `S` (or `/`) | search the whole book; `N` next, `Shift`+`N` previous match (see below) |
+| Reading | `S` (or `/`, `Ctrl`+`F`, on a Mac also `Cmd`+`F`) | search the whole book; `N` next, `Shift`+`N` previous match (see below) |
 | Reading | `+` `−` `0` | zoom the page image |
 | Reading | `R` | reload the page (after changes in another editor) |
 | Correction | `Enter` | apply and read on (if the same line has another red word, that comes first) |
@@ -40,7 +40,7 @@ is being changed – and **Edit line** (orange).
 
 ## Search (S) and go to page (G)
 
-`S` opens an input line in the top bar. Whatever you type there is searched throughout the book – regardless of
+`S` – or the familiar `Ctrl`+`F` (on a Mac also `Cmd`+`F`) – opens an input line in the top bar. Whatever you type there is searched throughout the book – regardless of
 upper and lower case, ſ counts as s, and a word is found even when it is hyphenated at the end of a line. `Enter`
 jumps to the first match after the reading position; it is marked blue in the text and framed in the page image.
 A small panel stays at the top with the search term, the count (“3 / 17”) and two buttons: `N` goes to the next

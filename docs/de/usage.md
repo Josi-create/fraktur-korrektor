@@ -19,7 +19,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `F2` | die Lesezeile frei bearbeiten (Satzzeichen, Fußnotenzeichen, alles, was die Automatik nicht bemerkt) |
 | Lesen | `Bild↓` `Bild↑`, `Pos1` `Ende` | Seite vor/zurück, Seitenanfang/-ende |
 | Lesen | `G` | gehe zu Seite: oben erscheint eine Eingabezeile für die Seitenzahl |
-| Lesen | `S` (oder `/`) | im ganzen Buch suchen; `N` nächste, `Umschalt`+`N` vorige Fundstelle (siehe unten) |
+| Lesen | `S` (oder `/`, `Strg`+`F`, am Mac auch `Cmd`+`F`) | im ganzen Buch suchen; `N` nächste, `Umschalt`+`N` vorige Fundstelle (siehe unten) |
 | Lesen | `+` `−` `0` | Zoom des Seitenbildes |
 | Lesen | `R` | Seite neu laden (nach Änderungen in einem anderen Editor) |
 | Korrektur | `Enter` | übernehmen und weiterlesen (steht in derselben Zeile noch ein rotes Wort, kommt dieses zuerst) |
@@ -40,7 +40,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 
 ## Suchen (S) und Gehe zu Seite (G)
 
-`S` öffnet oben in der Kopfleiste eine Eingabezeile. Was Sie dort eintippen, sucht das Programm im ganzen Buch –
+`S` – oder die gewohnte Tastenkombination `Strg`+`F` (am Mac auch `Cmd`+`F`) – öffnet oben in der Kopfleiste eine Eingabezeile. Was Sie dort eintippen, sucht das Programm im ganzen Buch –
 ohne Rücksicht auf Groß- und Kleinschreibung, ſ gilt als s, und ein Wort wird auch gefunden, wenn es am Zeilenende
 getrennt ist. `Enter` springt zur ersten Fundstelle ab der Leseposition; sie ist im Text blau markiert und im
 Seitenbild eingerahmt. Oben bleibt ein kleines Feld stehen mit dem Suchwort, der Zählung („3 / 17“) und zwei
