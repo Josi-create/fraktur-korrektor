@@ -68,6 +68,7 @@ weitere Wege:
 | **Seitenbilder hinzufügen** | Für Bücher, die nur aus Text bestehen – etwa ein Transkribus-Export ohne Bilder. Zeigen Sie auf einen Bilderordner, auf das PDF, aus dem die Seiten stammen, oder auf ein anderes Buch, das die Bilder schon hat. |
 | **Für Transkribus vorbereiten** | Das Programm nennt Ihnen den Ordner, den Sie hochladen, legt ihn in die Zwischenablage und öffnet ihn im Dateifenster. |
 | **Für ScanTailor vorbereiten** | Startet ScanTailor und nennt Ein- und Ausgabeordner. |
+| **Frühere Fassung** | Holt einen Text zurück, den ein späterer Import ersetzt hat. Erscheint nur, wenn es etwas zurückzuholen gibt. |
 
 So müssen Sie sich nie merken, wo die Bilder zu einem Buch liegen – das weiß das Programm.
 
@@ -112,7 +113,10 @@ das zutraf. Wenn Sie die Zeilen im Bild brauchen, holen Sie den Export noch einm
 
 Dann warnt das Programm: Der neue Text aus Transkribus enthält Ihre Arbeit nicht. Sie haben die Wahl, ihn
 trotzdem in dieses Buch zu übernehmen oder daneben ein neues anzulegen – die Seitenbilder kommen dabei mit.
-Die bisherige Fassung wird in jedem Fall zuerst gesichert: als `vorher-<Datum>.zip` im Buchordner.
+Die bisherige Fassung wird in jedem Fall zuerst gesichert: als `vorher-<Datum>.zip` im Buchordner. Über den
+Knopf **Frühere Fassung** holen Sie sie jederzeit zurück – und weil auch das Zurückholen vorher sichert, kommen
+Sie ebenso wieder vorwärts. Gefällt Ihnen ein Import nicht, ist das der Weg zurück; Sie müssen nichts noch
+einmal einlesen oder erkennen lassen.
 
 ## Was in einem Buchordner liegt
 

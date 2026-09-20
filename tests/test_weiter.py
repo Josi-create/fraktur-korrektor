@@ -259,6 +259,36 @@ def test_ampel_fuer_text_ohne_konfidenz(tmp_path):
     assert q['quelle'] == ['scantailor', 'transkribus'] and q['model'] == 'transkribus'
 
 
+def test_fruehere_fassung_zurueckholen(tmp_path):
+    """Ein ersetzter Text muss zurückzuholen sein – und das Zurückholen selbst auch."""
+    folder = make_book(str(tmp_path / 'buch'))
+    src = make_export(tmp_path / 'export.zip', {'0001_a': ['Ganz neuer Text der ersten Seite und noch mehr Wörter'],
+                                                '0002_b': [z + ' (neu)' for z in TEXTE['002']],
+                                                '0003_c': [z + ' (neu)' for z in TEXTE['003']],
+                                                '0004_d': [z + ' (neu)' for z in TEXTE['004']]})
+    r = pagexml.import_into(src, folder)
+    assert r['backup'] and 'neu' in open(os.path.join(folder, '002.txt'), encoding='utf-8').read()
+
+    sicherungen = pagexml.backups(folder)
+    assert len(sicherungen) == 1 and sicherungen[0]['pages'] == 4 and sicherungen[0]['zeit'][:2] == '20'
+    zurueck = pagexml.restore(folder, sicherungen[0]['name'])
+    assert zurueck['back'] == 4 and zurueck['backup']
+    assert 'neu' not in open(os.path.join(folder, '002.txt'), encoding='utf-8').read()
+    assert TEXTE['002'][0] in open(os.path.join(folder, '002.txt'), encoding='utf-8').read()
+    # und wieder vorwärts: das Zurückholen hat seinerseits gesichert
+    assert len(pagexml.backups(folder)) == 2
+    wieder = pagexml.restore(folder, pagexml.backups(folder)[0]['name'])
+    assert 'neu' in open(os.path.join(folder, '002.txt'), encoding='utf-8').read()
+    assert wieder['back'] == 4
+
+
+def test_zurueckholen_nur_aus_dem_buchordner(tmp_path):
+    folder = make_book(str(tmp_path / 'buch'))
+    for name in ('', 'fremd.zip', '../vorher-x.zip'):
+        with pytest.raises(ValueError, match='quelle_fehlt'):
+            pagexml.restore(folder, name)
+
+
 def test_ueber_den_server(lib, tmp_path):
     """Der Weg, den die Bibliothek geht: Buch eintragen, Text nachlegen, Ordner für Transkribus nennen."""
     folder = make_book(str(tmp_path / 'Mein Buch'))

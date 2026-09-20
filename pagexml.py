@@ -278,11 +278,53 @@ def backup(folder, pages):
     have = [n for n in names if os.path.isfile(os.path.join(folder, n))]
     if not have:
         return None
-    name = 'vorher-%s.zip' % time.strftime('%Y-%m-%d-%H%M%S')
+    stamp, n = time.strftime('%Y-%m-%d-%H%M%S'), 1
+    name = 'vorher-%s.zip' % stamp
+    while os.path.exists(os.path.join(folder, name)):  # zwei Sicherungen in derselben Sekunde
+        n += 1
+        name = 'vorher-%s-%d.zip' % (stamp, n)
     with zipfile.ZipFile(os.path.join(folder, name), 'w', zipfile.ZIP_DEFLATED) as z:
         for n in have:
             z.write(os.path.join(folder, n), n)
     return name
+
+
+def backups(folder):
+    """Die gesicherten Fassungen eines Buchs, jüngste zuerst: dict(name, zeit, pages)."""
+    out = []
+    # nach Alter, nicht nach Namen: bei zwei Sicherungen derselben Sekunde täuscht der Name
+    for f in sorted(glob.glob(os.path.join(folder, 'vorher-*.zip')), key=os.path.getmtime, reverse=True):
+        name = os.path.basename(f)
+        m = re.fullmatch(r'vorher-(\d{4})-(\d\d)-(\d\d)-(\d\d)(\d\d)\d*(?:-\d+)?\.zip', name)
+        zeit = '%s-%s-%s %s:%s' % m.groups() if m else time.strftime('%Y-%m-%d %H:%M', time.localtime(os.path.getmtime(f)))
+        try:
+            with zipfile.ZipFile(f) as z:
+                n = sum(1 for x in z.namelist() if re.fullmatch(r'\d{3}\.txt', x))
+        except (OSError, zipfile.BadZipFile):
+            continue
+        out.append(dict(name=name, zeit=zeit, pages=n))
+    return out
+
+
+SICHERBAR = re.compile(r'\d{3}\.txt|lines\.json|quellen\.json|qualitaet\.json|korrekturen\.log')
+
+
+def restore(folder, name):
+    """Eine frühere Fassung zurückholen. Was jetzt dasteht, wird vorher gesichert – auch ein Zurückholen soll
+    sich zurückholen lassen. Seiten, die in der Sicherung fehlen, bleiben, wie sie sind: Sie waren damals nicht
+    betroffen und sind es jetzt auch nicht."""
+    p = os.path.join(folder, os.path.basename(name or ''))
+    if not (os.path.isfile(p) and os.path.basename(p).startswith('vorher-')):
+        raise ValueError('quelle_fehlt')
+    saved = backup(folder, book_pages(folder))
+    zurueck = 0
+    with zipfile.ZipFile(p) as z:
+        for n in z.namelist():
+            if SICHERBAR.fullmatch(n):
+                with open(os.path.join(folder, n), 'wb') as f:
+                    f.write(z.read(n))
+                zurueck += n.endswith('.txt')
+    return dict(restored=os.path.basename(p), backup=saved, pages=len(book_pages(folder)), back=zurueck)
 
 
 def load_json(folder, name, default):

@@ -606,7 +606,7 @@ def lib_list():
             corr = 0
         out.append(dict(id=book_id(e['folder']), title=e.get('title') or default_title(e['folder']), folder=e['folder'],
                         pages=n, bookmark=bm, last=e.get('last', ''), quality=q, corrections=corr, quelle=quelle,
-                        pending=bool(qj.get('pending')),
+                        pending=bool(qj.get('pending')), backups=pagexml.backups(e['folder']) if n else [],
                         unknown=None if unbekannt is None else round(100 * (1 - unbekannt)),
                         images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*')))))
     out.sort(key=lambda b: b['last'], reverse=True)
@@ -705,6 +705,16 @@ def add_images(bid, source, progress, cancelled):
     if not source or not os.path.exists(source):
         raise ValueError('quelle_fehlt')
     r = ocr.add_images(folder, source, progress)
+    with LIBLOCK:
+        BOOKS.pop(bid, None)
+    lib_touch(folder)
+    return dict(id=bid, folder=folder, **r)
+
+
+def restore(bid, name):
+    """Eine frühere Fassung eines Buchs zurückholen – das Gegenstück zum Ersetzen des Textes."""
+    folder = book_folder(bid)
+    r = pagexml.restore(folder, name)
     with LIBLOCK:
         BOOKS.pop(bid, None)
     lib_touch(folder)
@@ -1082,7 +1092,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -1123,6 +1133,11 @@ class H(BaseHTTPRequestHandler):
                 return self.sendjson(dict(job=start_job(add_transkribus, body.get('id'), body.get('source'), body.get('mode'))))
             if u.path == '/api/add_images':
                 return self.sendjson(dict(job=start_job(add_images, body.get('id'), body.get('source'))))
+            if u.path == '/api/restore':
+                try:
+                    return self.sendjson(restore(body.get('id'), body.get('name')))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
             if u.path == '/api/prepare':
                 try:
                     return self.sendjson(prepare(body.get('id'), body.get('tool')))

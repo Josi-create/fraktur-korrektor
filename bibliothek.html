@@ -145,7 +145,8 @@ async function post(path, body) {
 let booksdir = '', entered = false;
 // Was mit einem Buch möglich ist – in der Reihenfolge, in der es auf der Zeile steht
 const BOOKACTS = [['open', b => true], ['trans', b => true], ['images', b => b.images < b.pages],
-                  ['prep_trans', b => b.images > 0], ['prep_st', b => b.images > 0]];
+                  ['prep_trans', b => b.images > 0], ['prep_st', b => b.images > 0],
+                  ['restore', b => (b.backups || []).length]];
 async function load() {
   const lib = await (await fetch('/api/library')).json();
   $('ver').textContent = lib.version ? 'Version ' + lib.version : '';
@@ -399,7 +400,8 @@ $('oST').onclick = async () => {
 // Wer sein Buch schon einmal eingelesen hat, soll nicht wieder von vorn anfangen – und seine Seitenbilder nicht suchen müssen.
 let eb = null, eact = null, enext = null;
 const ACTS = { trans: ['🗂️', b => true], images: ['🖼️', b => b.images < b.pages],
-               prep_trans: ['⬆️', b => b.images > 0], prep_st: ['✂️', b => b.images > 0] };
+               prep_trans: ['⬆️', b => b.images > 0], prep_st: ['✂️', b => b.images > 0],
+               restore: ['⏪', b => (b.backups || []).length] };
 
 function openEdit(b, act) {
   eb = b; enext = null;
@@ -424,6 +426,7 @@ function editPick() {
 function editAct(a) {
   eact = a; $('emsg').textContent = ''; $('eBack').style.display = ''; $('ehead').innerHTML = '<b>' + t('act_' + a) + '</b>';
   if (a == 'prep_trans' || a == 'prep_st') return editPrepare(a);
+  if (a == 'restore') return editRestore();
   const img = a == 'images';
   $('ebody').innerHTML = '<label class="f">' + t(img ? 'ed_imgsource' : 'ed_source') + '</label>' +
     '<div class="row"><input type="text" id="eSrc" spellcheck="false">' +
@@ -436,6 +439,24 @@ function editAct(a) {
   $('eDir').onclick = () => editChoose('folder');
   $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t(img ? 'ed_take_imgs' : 'ed_take');
   $('eSrc').focus();
+}
+async function editRestore() {
+  // Jede ersetzte Fassung liegt als vorher-<Datum>.zip im Buchordner – von hier aus lässt sie sich zurückholen
+  $('eGo').style.display = 'none';
+  $('ebody').innerHTML = '<div>' + t('ed_restore_pick') + '</div>' + (eb.backups || []).map((b, n) =>
+    '<a href="#" class="act" data-b="' + n + '"><span class="ic">⏪</span><span><b>' + esc(b.zeit) + '</b><small>' +
+    t('ed_restore_item', { n: b.pages }) + ' · ' + esc(b.name) + '</small></span></a>').join('');
+  for (const el of $('ebody').querySelectorAll('a[data-b]')) el.onclick = async ev => {
+    ev.preventDefault();
+    const b = eb.backups[+el.dataset.b];
+    try {
+      const r = await post('/api/restore', { id: eb.id, name: b.name });
+      enext = eb.id;
+      editDone('<h3>✔ ' + t('ed_restore_done', { d: esc(b.zeit), n: r.back }) + '</h3>' +
+        (r.backup ? '<div class="hint">' + t('ed_backup', { f: esc(r.backup) }) + '</div>' : ''));
+      load();
+    } catch (err) { $('emsg').textContent = err.message; }
+  };
 }
 async function editChoose(kind) {
   try { const p = (await post('/api/choose', { kind })).path; if (p) $('eSrc').value = p; }

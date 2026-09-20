@@ -66,6 +66,7 @@ In the library, every book has a row of buttons below it. Next to **Open book** 
 | **Add page images** | For books that are text only – a Transkribus export without images, say. Point at a folder of images, at the PDF the pages come from, or at another book that already has them. |
 | **Prepare for Transkribus** | The program names the folder you upload, puts it on the clipboard and opens it in a file window. |
 | **Prepare for ScanTailor** | Starts ScanTailor and names the input and output folder. |
+| **Earlier version** | Brings back a text that a later import replaced. Only shown when there is something to bring back. |
 
 That way you never need to remember where a book’s images are – the program knows.
 
@@ -110,7 +111,9 @@ need the lines in the image, export again as **PAGE XML**.
 
 The program warns you: the new text from Transkribus does not contain your work. You may take it into this
 book anyway, or create a new one next to it – the page images come along. Either way the present version is
-backed up first, as `vorher-<date>.zip` in the book folder.
+backed up first, as `vorher-<date>.zip` in the book folder. The button **Earlier version** brings it back at any
+time – and since going back saves the present state too, you can go forward again. If an import turns out badly,
+that is the way back; nothing has to be read in or recognised again.
 
 ## What is inside a book folder
 
