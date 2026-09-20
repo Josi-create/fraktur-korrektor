@@ -432,7 +432,7 @@ function editAct(a) {
     (!img && eb.corrections ? '<div id="ewarn">' + t('ed_warn_corr', { n: eb.corrections }) +
       '<div class="radio"><label><input type="radio" name="emode" value="replace" checked> ' + t('ed_mode_replace') + '</label>' +
       '<label><input type="radio" name="emode" value="new"> ' + t('ed_mode_new') + '</label></div></div>' : '');
-  $('eFile').onclick = () => editChoose(img ? 'pdf' : 'zip');
+  $('eFile').onclick = () => editChoose(img ? 'pdf' : 'export');
   $('eDir').onclick = () => editChoose('folder');
   $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t(img ? 'ed_take_imgs' : 'ed_take');
   $('eSrc').focus();
@@ -488,6 +488,8 @@ $('eform').onsubmit = async ev => {
       let h = '<h3>✔ ' + t('ed_done_trans', { r: r.replaced, p: r.pages }) + '</h3>';
       if (r.neu) h += '<div class="hint">' + t('ed_new_book', { f: esc(r.folder) }) + '</div>';
       if (r.kept && r.kept.length) h += '<div class="hint">' + t('ed_kept', { p: r.kept.join(', ') }) + '</div>';
+      if (r.unclear) h += '<div class="hint">' + t('ed_unclear', { n: r.unclear }) + '</div>';
+      if (r.nogeo && r.nogeo.length) h += '<div class="hint">' + t('ed_nogeo', { n: r.nogeo.length }) + '</div>';
       h += '<div class="hint">' + t('ed_how_' + r.how) + '</div>';
       if (r.backup) h += '<div class="hint">' + t('ed_backup', { f: esc(r.backup) }) + '</div>';
       editDone(h);

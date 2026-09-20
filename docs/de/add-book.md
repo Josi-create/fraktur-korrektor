@@ -64,7 +64,7 @@ weitere Wege:
 
 | | Wozu |
 |---|---|
-| **Text aus Transkribus einlesen** | Der Text von Transkribus tritt an die Stelle des bisherigen. Ihre Seitenbilder, Ihre Wortliste und Ihr Lesezeichen bleiben, wo sie sind. |
+| **Transkribus-Text einlesen** | Der Text von Transkribus tritt an die Stelle des bisherigen. Ihre Seitenbilder, Ihre Wortliste und Ihr Lesezeichen bleiben, wo sie sind. Angeben können Sie die ZIP-Datei, den entpackten Ordner oder die Textdatei des Exports. |
 | **Seitenbilder hinzufügen** | Für Bücher, die nur aus Text bestehen – etwa ein Transkribus-Export ohne Bilder. Zeigen Sie auf einen Bilderordner, auf das PDF, aus dem die Seiten stammen, oder auf ein anderes Buch, das die Bilder schon hat. |
 | **Für Transkribus vorbereiten** | Das Programm nennt Ihnen den Ordner, den Sie hochladen, legt ihn in die Zwischenablage und öffnet ihn im Dateifenster. |
 | **Für ScanTailor vorbereiten** | Startet ScanTailor und nennt Ein- und Ausgabeordner. |
@@ -84,8 +84,9 @@ das Programm in dieser Reihenfolge vor:
    Seiten ohne Text (Bildtafeln) ergeben sich aus deren Abstand.
 3. **Der Reihe nach** – nur, wenn hier wie dort gleich viele Seiten vorliegen.
 
-Geht keiner dieser Wege auf, bricht das Programm ab und sagt es Ihnen, statt den Text neben falsche Bilder zu
-legen. Dann legen Sie den Export mit **Öffnen …** als eigenes Buch an.
+Bleiben dabei einzelne Seiten unklar – weil links und rechts von ihnen die Zählung nicht zusammenpasst –,
+lässt das Programm sie aus und sagt, wie viele es waren. Dort steht dann noch der alte Text. Geht gar nichts
+auf, bricht es ab, statt den Text neben falsche Bilder zu legen. Dann legen Sie den Export mit **Öffnen …** als eigenes Buch an.
 
 Dasselbe gilt für **Seitenbilder aus einem anderen Buch**: Sie zeigen auf das Buch, das die Bilder hat, und das
 Programm vergleicht die Texte beider Bücher – es ist ja dasselbe Werk, nur anders erkannt. Darum darf das
@@ -98,6 +99,14 @@ stammt – und **ScanTailor**, wenn die Seitenbilder damit aufbereitet wurden. D
 das Wörterbuch nicht kennt („20 % rote Wörter"). Das ist dieselbe Zahl, die Sie beim Lesen als rote Wörter
 sehen; alte Schreibweisen und Namen sind darunter, es sind also nicht lauter Fehler. Der farbige Punkt vor dem
 Titel ist die Ampel aus dem Einlesen.
+
+### Textexport statt PAGE XML
+
+Transkribus kann seinen Text auch als einfache Textdatei ausgeben; die liest das Programm ebenso. Sie verlieren
+dabei aber etwas: Eine Textdatei sagt nicht, wo die Zeilen im Bild stehen. Der Text steht dann zwar richtig auf
+seiner Seite, lässt sich aber nicht mehr Zeile für Zeile neben dem Seitenbild mitführen – es sei denn, die neue
+Erkennung teilt die Zeilen genau so auf wie die alte. Das Programm sagt Ihnen hinterher, für wie viele Seiten
+das zutraf. Wenn Sie die Zeilen im Bild brauchen, holen Sie den Export noch einmal als **PAGE XML**.
 
 ### Wenn schon Korrekturen im Buch stecken
 

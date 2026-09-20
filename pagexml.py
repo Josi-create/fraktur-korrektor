@@ -149,7 +149,11 @@ def unpack(src):
     """Export als ZIP in einen Temp-Ordner auspacken. Liefert (Ordner, aufzuräumender Temp-Ordner oder None)."""
     if os.path.isdir(src):
         return src, None
-    if not (os.path.isfile(src) and zipfile.is_zipfile(src)):
+    if os.path.isfile(src) and not zipfile.is_zipfile(src):
+        if os.path.splitext(src)[1].lower() in ('.txt', '.xml'):
+            return src, None  # eine einzelne Datei: Textexport oder PAGE-XML
+        raise ValueError('weder Ordner noch ZIP-Datei')
+    if not os.path.isfile(src):
         raise ValueError('weder Ordner noch ZIP-Datei')
     tmp = tempfile.mkdtemp(prefix='fraktur-import-')
     with zipfile.ZipFile(src) as z:
@@ -225,7 +229,9 @@ def match_by_text(folder, items, text_of):
         k = i + off.pop() if len(off) == 1 else -1
         if 0 <= k < len(pages):
             hit[it] = pages[k]
-    if len(hit) != len(items) or len(set(hit.values())) != len(items):
+    # Wo links und rechts verschiedene Versätze gelten, fehlt dazwischen etwas und niemand kann sagen, wo. Diese
+    # Seiten bleiben offen – lieber ein paar auslassen als das Ganze verwerfen oder danebenlegen.
+    if len(hit) < max(1, len(items) // 2) or len(set(hit.values())) != len(hit):
         raise ValueError('seiten_passen_nicht')
     return hit
 
@@ -288,33 +294,93 @@ def load_json(folder, name, default):
         return default
 
 
+def text_pages(src):
+    """Transkribus gibt auf Wunsch reinen Text statt PAGE-XML aus. Das ist eine Datei für das ganze Buch, in der
+    zwei Leerzeilen die Seiten trennen – oder, seltener, eine Datei je Seite. Liefert [(name, [zeilen])].
+    Ohne Zeilenlage im Bild, die steht nur im XML."""
+    if os.path.isfile(src):
+        files = [src]
+    else:
+        files = sorted(f for f in glob.glob(os.path.join(src, '**', '*.txt'), recursive=True)
+                       if os.path.basename(f).lower() not in ('log.txt', 'metadata.txt') and os.path.getsize(f) > 0)
+    if not files:
+        return []
+    if len(files) > 1:  # eine Datei je Seite
+        out = []
+        for f in files:
+            with open(f, encoding='utf-8', errors='replace') as fh:
+                zeilen = [l.rstrip() for l in fh.read().splitlines()]
+            out.append((os.path.basename(f), [l for l in zeilen if l.strip()] or ['']))
+        return out
+    with open(files[0], encoding='utf-8', errors='replace') as fh:
+        ganz = fh.read()
+    bloecke = [b for b in re.split(r'\n\s*\n\s*\n', ganz) if b.strip()]
+    name = os.path.splitext(os.path.basename(files[0]))[0]
+    return [('%s_%03d' % (name, n), [l.rstrip() for l in b.strip('\n').splitlines() if l.strip()])
+            for n, b in enumerate(bloecke, 1)]
+
+
+def plain_lines(texte):
+    """Zeilen ohne Lage im Bild. Die Seitenzahl oben erkennt man auch so; Fußnoten nicht – dafür braucht es die
+    Abstände, die nur im PAGE-XML stehen."""
+    lines = [dict(text=t, kind='body') for t in texte]
+    if lines and re.fullmatch(r'[\s\d—\-–]+', lines[0]['text']) and len(lines[0]['text']) <= 8:
+        lines[0]['kind'] = 'head'
+    return lines
+
+
+def read_export(src):
+    """Die Seiten eines Exports, gleich welcher Art: {schlüssel: dict(w, h, img, lines)}. Bei PAGE-XML haben die
+    Zeilen ihre Lage im Bild, bei einem Textexport nicht (w = 0). Dazu der Titel, wenn er dabeisteht."""
+    files, title = ([src], None) if os.path.isfile(src) and src.lower().endswith('.xml') else find_export(src)
+    if files:
+        out = {}
+        for f in sorted(files):
+            W, H, img, lines = parse_page(f)
+            out[f] = dict(w=W, h=H, img=img, lines=lines)
+        return out, title
+    return {k: dict(w=0, h=0, img='', lines=plain_lines(zeilen)) for k, zeilen in text_pages(src)}, None
+
+
 def import_into(src, folder, progress=lambda done, total, msg: None, save=True):
     """Den Text eines Transkribus-Exports in ein Buch übernehmen, das es schon gibt: Seitenbilder, Lesezeichen,
     Wortliste und Einstellungen bleiben, wo sie sind. Ersetzt werden nur die Seiten, für die der Export Text
     liefert; wofür er keinen hat, bleibt stehen. Liefert dict(pages, replaced, kept, how, backup, title)."""
     src, tmp = unpack(src)
     try:
-        files, title = find_export(src)
-        if not files:
-            raise ValueError('keine_xml')
-        files = sorted(files)
         if not book_pages(folder):
             raise ValueError('quelle_fehlt')
-        read = {}
-        for n, f in enumerate(files):  # erst lesen, dann zuordnen: der Wortlaut entscheidet mit
-            read[f] = parse_page(f)
-            progress(n + 1, len(files), 'lesen')
-        hit, how = match_to_pages(folder, files, lambda f: (image_of(f), f),
-                                  text_of=lambda f: '\n'.join(d['text'] for d in read[f][3]))
+        progress(0, 1, 'lesen')
+        read, title = read_export(src)
+        if not read:
+            raise ValueError('keine_xml')
+        keys = sorted(read)
+        hit, how = match_to_pages(folder, keys, lambda k: (read[k]['img'], k),
+                                  text_of=lambda k: '\n'.join(d['text'] for d in read[k]['lines']))
+        offen = [k for k in keys if k not in hit]
+        keys = [k for k in keys if k in hit]
         saved = backup(folder, sorted(hit.values())) if save else None
         geo, origin = load_json(folder, 'lines.json', {}), load_json(folder, 'quellen.json', {})
-        for n, f in enumerate(files):
-            pg = hit[f]
-            W, H, imgname, lines = read[f]
+        ohne_lage = []
+        for n, k in enumerate(keys):
+            pg, seite = hit[k], read[k]
+            lines, alt = seite['lines'], geo.get(pg)
+            if seite['w']:
+                geo[pg] = dict(w=seite['w'], h=seite['h'], lines=lines)
+            elif alt and len(alt['lines']) == len(lines):
+                # Derselbe Text, nur ohne Koordinaten: die vorhandenen Zeilen behalten ihre Lage im Bild
+                for l, neu in zip(alt['lines'], lines):
+                    l['text'] = neu['text']
+                    l.setdefault('bl', l.get('y1', 0))  # Bücher von außen kennen die Grundlinie nicht
+                    l.setdefault('x0', 0)
+                lines = classify(alt['lines'], (alt.get('h') or 3508) / 3508)
+                geo[pg] = dict(w=alt.get('w'), h=alt.get('h'), lines=lines)
+            else:
+                geo.pop(pg, None)  # andere Zeilenzahl: die alte Lage gehörte zu anderem Text
+                ohne_lage.append(pg)
             write_page(folder, pg, lines)
-            geo[pg] = dict(w=W, h=H, lines=lines)
-            origin.setdefault(pg, imgname or os.path.basename(f))
-            progress(n + 1, len(files), 'seiten')
+            origin.setdefault(pg, seite['img'] or os.path.basename(k))
+            progress(n + 1, len(keys), 'seiten')
         with open(os.path.join(folder, 'lines.json'), 'w', encoding='utf-8') as o:
             json.dump(dict(sorted(geo.items())), o, ensure_ascii=False)
         save_origin(folder, origin)
@@ -325,7 +391,8 @@ def import_into(src, folder, progress=lambda done, total, msg: None, save=True):
         except OSError:
             pass
         kept = [pg for pg in book_pages(folder) if pg not in set(hit.values())]
-        return dict(pages=len(book_pages(folder)), replaced=len(hit), kept=kept, how=how, backup=saved, title=title)
+        return dict(pages=len(book_pages(folder)), replaced=len(hit), kept=kept, how=how, backup=saved, title=title,
+                    nogeo=ohne_lage, unclear=len(offen))
     finally:
         if tmp:
             shutil.rmtree(tmp, ignore_errors=True)

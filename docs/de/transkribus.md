@@ -102,8 +102,10 @@ außerdem im Dokument selbst.
 
 1. In der Sammlung das Dokument (oder alle Seiten) auswählen.
 2. Oben auf den Knopf **„Action"** und darin auf **„Export"**.
-3. Als Format **„Page XML"** wählen – nicht PDF, nicht Word. Darin stecken die Zeilen samt ihrer Lage im Bild,
-   und genau das braucht der Fraktur-Korrektor.
+3. Als Format **„Page XML"** wählen – nicht PDF, nicht Word. Darin stecken die Zeilen samt ihrer Lage im
+   Bild, und genau das braucht der Fraktur-Korrektor, um den Text Zeile für Zeile neben dem Seitenbild
+   mitzuführen. Den einfachen **Textexport** liest das Programm zwar auch, aber der enthält nur den Wortlaut:
+   Die Zeilen lassen sich dann nicht mehr im Bild zeigen.
 4. Auf **„Start export"**.
 5. Sie bekommen eine E-Mail mit einem Link (zwei Wochen gültig). Ohne E-Mail: links unter
    **„Uploads & downloads"** beim fertigen Export auf die drei Punkte und **„Download"**.

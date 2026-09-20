@@ -856,9 +856,11 @@ def start_job(fn, *args):
 
 # Dateitypen des Mac-Dialogs als UTI; "any" muss alles zeigen, was finder.py erkennt.
 UTI = dict(pdf=['com.adobe.pdf'], zip=['public.zip-archive'],
+           export=['public.zip-archive', 'public.plain-text', 'public.xml'],
            any=['com.adobe.pdf', 'org.idpf.epub-container', 'public.zip-archive', 'public.xml', 'public.plain-text',
                 'public.jpeg', 'public.png', 'public.tiff'])
-PROMPT = dict(folder='Ordner wählen', pdf='PDF wählen', exe='Programm wählen', zip='Transkribus-Export (ZIP) wählen')
+PROMPT = dict(folder='Ordner wählen', pdf='PDF wählen', exe='Programm wählen', zip='Transkribus-Export (ZIP) wählen',
+              export='Transkribus-Export wählen (ZIP, Text oder XML)')
 
 
 def mac_dialog(kind):
@@ -886,7 +888,8 @@ def dialog(kind, out=None):
     root.attributes('-topmost', True)
     p = filedialog.askdirectory(parent=root) if kind == 'folder' else \
         filedialog.askopenfilename(parent=root, filetypes=dict(pdf=[('PDF', '*.pdf')], exe=[('*', '*.*')], any=[
-            ('PDF, EPUB, ZIP, Bilder, Buchseiten', '*.pdf *.epub *.zip *.xml *.txt *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
+            ('PDF, EPUB, ZIP, Bilder, Buchseiten', '*.pdf *.epub *.zip *.xml *.txt *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')],
+            export=[('Transkribus-Export', '*.zip *.txt *.xml'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
     if out:
         with open(out, 'w', encoding='utf-8') as f:
             f.write(p or '')

@@ -449,7 +449,7 @@ def images_from_book(folder, other, progress=lambda done, total, msg: None):
     hit, how = pagexml.match_to_pages(other, ziel, lambda pg: (mein.get(pg, ''),), text_of=text_of)
     fremd, n = pagexml.load_json(other, 'quellen.json', {}), 0
     for k, pg in enumerate(ziel):
-        src = sorted(glob.glob(os.path.join(other, 'img', hit[pg] + '.*')))
+        src = sorted(glob.glob(os.path.join(other, 'img', hit[pg] + '.*'))) if pg in hit else []
         if src:
             copy_image(src[0], free_slot(folder, pg))
             mein.setdefault(pg, fremd.get(hit[pg]) or os.path.basename(src[0]))

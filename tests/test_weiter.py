@@ -23,8 +23,8 @@ def make_book(folder, pages=TEXTE, images=True):
     for pg, lines in pages.items():
         with open(os.path.join(folder, pg + '.txt'), 'w', encoding='utf-8', newline='\n') as f:
             f.write('# \n' + '\n'.join(lines) + '\n')
-        geo[pg] = dict(w=1000, h=1500, lines=[dict(text=l, x0=100, x1=900, y0=100 + 60 * n, y1=140 + 60 * n, kind='body')
-                                              for n, l in enumerate(lines)])
+        geo[pg] = dict(w=1000, h=1500, lines=[dict(text=l, x0=100, x1=900, y0=100 + 60 * n, y1=140 + 60 * n,
+                                                   bl=132 + 60 * n, kind='body') for n, l in enumerate(lines)])
         if images:  # jede Seite ein anderes Bild, damit die Zuordnung prüfbar ist
             with open(os.path.join(folder, 'img', pg + '.png'), 'wb') as f:
                 f.write(png(500 + int(pg), 750))
@@ -153,6 +153,43 @@ def test_bilder_merken_sich_ihre_herkunft(tmp_path):
     ocr.build(str(quelle), str(tmp_path / 'neu'))
     assert json.load(open(str(tmp_path / 'neu' / 'quellen.json'), encoding='utf-8')) == \
         {'001': 'seite_001_1L.png', '002': 'seite_002_1L.png'}
+
+
+def test_textexport_statt_pagexml(tmp_path):
+    """Transkribus gibt auf Wunsch reinen Text aus – eine Datei, in der zwei Leerzeilen die Seiten trennen.
+    Bleibt die Zeilenzahl gleich, behalten die Zeilen ihre Lage im Bild."""
+    folder = make_book(str(tmp_path / 'buch'))
+    txt = tmp_path / 'Stumpp_1922.txt'
+    txt.write_text('\n\n\n'.join('\n'.join(z + ' (Transkribus)' for z in TEXTE[pg]) for pg in ('002', '003', '004')), encoding='utf-8')
+    r = pagexml.import_into(str(txt), folder)
+    assert r['replaced'] == 3 and r['how'] == 'text' and r['kept'] == ['001'] and not r['nogeo']
+    geo = json.load(open(os.path.join(folder, 'lines.json'), encoding='utf-8'))
+    assert 'Transkribus' in geo['002']['lines'][0]['text']
+    assert geo['002']['lines'][0]['x0'] == 100  # die Lage im Bild ist geblieben
+
+
+def test_textexport_mit_anderer_zeilenzahl(tmp_path):
+    """Schneidet die andere Erkennung die Zeilen anders, passt die alte Lage nicht mehr – dann lieber keine."""
+    folder = make_book(str(tmp_path / 'buch'))
+    txt = tmp_path / 'export.txt'
+    seiten = [' '.join(TEXTE['002']) + ' (Transkribus)',                       # drei Zeilen zu einer verschmolzen
+              '\n'.join(z + ' (Transkribus)' for z in TEXTE['003'])]
+    txt.write_text('\n\n\n'.join(seiten), encoding='utf-8')
+    r = pagexml.import_into(str(txt), folder)
+    assert r['replaced'] == 2 and r['nogeo'] == ['002']
+    geo = json.load(open(os.path.join(folder, 'lines.json'), encoding='utf-8'))
+    assert '002' not in geo and '003' in geo
+
+
+def test_textexport_je_seite_eine_datei(tmp_path):
+    ordner = tmp_path / 'export'
+    ordner.mkdir()
+    for n, pg in enumerate(('002', '003'), 1):
+        (ordner / ('%04d_seite.txt' % n)).write_text('\n'.join(TEXTE[pg]), encoding='utf-8')
+    (ordner / 'log.txt').write_text('LOGFILE FOR EXPORT JOB 1', encoding='utf-8')  # zählt nicht als Seite
+    seiten = pagexml.text_pages(str(ordner))
+    assert [k for k, _ in seiten] == ['0001_seite.txt', '0002_seite.txt']
+    assert seiten[0][1] == TEXTE['002']
 
 
 def test_herkunft_aelterer_buecher(tmp_path):

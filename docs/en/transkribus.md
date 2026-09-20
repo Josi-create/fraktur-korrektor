@@ -103,7 +103,9 @@ document itself.
 1. In the collection, select the document (or all pages).
 2. Click the **“Action”** button at the top, then **“Export”**.
 3. Choose the format **“Page XML”** – not PDF, not Word. It holds the lines together with their position on
-   the image, and that is what Fraktur-Korrektor needs.
+   the image, and that is what Fraktur-Korrektor needs to follow the text line by line next to the page image.
+   The plain **text export** can be read as well, but it only holds the wording: the lines can then no longer
+   be shown in the image.
 4. Click **“Start export”**.
 5. You get an email with a link (valid for two weeks). Without email: on the left under
    **“Uploads & downloads”**, click the three dots next to the finished export and choose **“Download”**.

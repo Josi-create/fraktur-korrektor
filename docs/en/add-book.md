@@ -62,7 +62,7 @@ In the library, every book has a row of buttons below it. Next to **Open book** 
 
 | | What for |
 |---|---|
-| **Take in the text from Transkribus** | The text from Transkribus takes the place of the present one. Your page images, your word list and your bookmark stay where they are. |
+| **Take in Transkribus text** | The text from Transkribus takes the place of the present one. Your page images, your word list and your bookmark stay where they are. You may point at the ZIP file, the unpacked folder or the text file of the export. |
 | **Add page images** | For books that are text only – a Transkribus export without images, say. Point at a folder of images, at the PDF the pages come from, or at another book that already has them. |
 | **Prepare for Transkribus** | The program names the folder you upload, puts it on the clipboard and opens it in a file window. |
 | **Prepare for ScanTailor** | Starts ScanTailor and names the input and output folder. |
@@ -82,8 +82,9 @@ So the program tries, in this order:
    without text (plates) follow from the distance between them.
 3. **In order** – only if both sides have the same number of pages.
 
-If none of these works out, the program stops and tells you, rather than putting text next to the wrong
-images. Then use **Open …** to create a separate book from the export.
+If single pages remain unclear – because the counts to their left and right do not agree –, the program leaves
+them out and says how many there were; the old text stays on those. If nothing works out at all, it stops
+rather than putting text next to the wrong images. Then use **Open …** to create a separate book from the export.
 
 The same holds for **page images from another book**: point at the book that has the images, and the program
 compares the texts of both – it is the same work after all, just recognised differently. So the book with the
@@ -96,6 +97,14 @@ from – and **ScanTailor** if the page images were tidied up with it. Next to t
 dictionary does not know (“20 % red words”). That is the same figure you see as red words while reading; old
 spellings and names are among them, so they are not all mistakes. The coloured dot before the title is the
 traffic light from reading the book in.
+
+### Text export instead of PAGE XML
+
+Transkribus can also give out its text as a plain text file, and the program reads that too. You do lose
+something, though: a text file does not say where the lines sit in the image. The text then lands on the right
+page, but can no longer be followed line by line next to the page image – unless the new recognition splits the
+lines exactly as the old one did. The program tells you afterwards for how many pages that was the case. If you
+need the lines in the image, export again as **PAGE XML**.
 
 ### If the book already contains corrections
 
