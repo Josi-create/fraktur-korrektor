@@ -43,6 +43,14 @@ button:disabled{opacity:.5;cursor:default}
 .tag{display:inline-block;font:12px Segoe UI,Arial,sans-serif;border-radius:9px;padding:1px 8px;margin-left:6px;vertical-align:2px;background:#e4e0d6;color:#444}
 .tag.rec{background:#3a6;color:#fff} .tag.new{background:#e6a700;color:#222} .tag.work{background:#c33;color:#fff}
 #more{margin-top:10px;font-size:14px} #rest{display:none}
+.act{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid #ccc;border-radius:5px;margin-top:10px;cursor:pointer;text-decoration:none;color:inherit}
+.act:hover{background:#faf8f2;border-color:#285} .act .ic{font-size:24px;line-height:1.1;width:30px;text-align:center;flex:none} .act b{font:17px Georgia,serif;display:block} .act small{color:#666;font-size:13.5px;line-height:1.5;display:block;margin-top:2px}
+#einfo{color:#666;font-size:14px;margin-bottom:10px} #einfo small{display:block;word-break:break-all;color:#999}
+#ewarn{margin-top:14px;padding:10px 14px;border-left:5px solid #e6a700;background:#fdf6e0;border-radius:0 4px 4px 0;line-height:1.5}
+#ewarn .radio{display:block;margin-top:8px} #ewarn .radio label{display:flex;align-items:flex-start;gap:6px;margin-top:4px;cursor:pointer}
+#edone h3{margin:0 0 10px;font:19px Georgia,serif;color:#285} #edone .more{margin-top:8px;font-size:14px;color:#555;line-height:1.55}
+#eprog{margin-top:14px;display:none} #ebar{height:10px;background:#ddd;border-radius:5px;overflow:hidden} #ebar i{display:block;height:100%;width:0;background:#3a6;transition:width .4s}
+#etext{font-size:13.5px;color:#555}
 #opts{margin-top:6px} #tl,#pair{margin-top:12px;padding:8px 12px;background:#eaf5ee;border:1px solid #9c9;border-radius:4px;font-size:14.5px;line-height:1.5}
 #tl label{display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:4px}
 #tools{font-size:14px;line-height:1.7;background:#f6f3ea;border-radius:4px;padding:8px 12px;margin-top:12px} #tools .no{color:#a40} #tools .ok{color:#285}
@@ -105,6 +113,18 @@ button:disabled{opacity:.5;cursor:default}
   <button type="button" id="bRedo" style="display:none"></button>
   <button type="button" id="oCancel" data-t="cancel"></button><button type="submit" id="oGo" class="main" style="display:none"></button><button type="button" id="bBook" style="display:none"></button></div>
 </form></div>
+<div id="edlg" class="dlg"><form id="eform">
+ <h2 id="etitle"></h2>
+ <div id="einfo"></div>
+ <div id="ehead"></div>
+ <div id="ebody"></div>
+ <div id="edone" style="display:none"></div>
+ <div id="eprog"><div id="ebar"><i></i></div><span id="etext"></span></div>
+ <div class="msg" id="emsg"></div>
+ <div class="btns"><button type="button" id="eBack" data-t="back" style="display:none"></button><span class="sp"></span>
+  <button type="button" id="eClose" data-t="cancel"></button><button type="submit" id="eGo" class="main" style="display:none"></button>
+  <button type="button" id="eBook" data-t="btn_open_book" style="display:none"></button></div>
+</form></div>
 <script>
 const $ = id => document.getElementById(id);
 applyI18n();
@@ -117,13 +137,14 @@ async function post(path, body) {
   if (!r.ok) throw new Error(t('err_' + (j.error || 'unknown')));
   return j;
 }
-let booksdir = '';
+let booksdir = '', entered = false;
 async function load() {
   const lib = await (await fetch('/api/library')).json();
   $('ver').textContent = lib.version ? 'Version ' + lib.version : '';
   if (lib.donate) { $('donate').href = lib.donate; $('donate').style.display = ''; }
   booksdir = lib.booksdir;
   if (!lib.local) { $('bOpen').disabled = true; $('note').textContent = t('remote'); }
+  const edit = (location.hash.startsWith('#edit=') ? location.hash.slice(6) : '').split('|').map(decodeURIComponent);
   const box = $('books'); box.innerHTML = '';
   if (!lib.books.length) { box.innerHTML = '<div id="empty">' + t('empty') + '</div>'; return; }
   for (const b of lib.books) {
@@ -131,16 +152,25 @@ async function load() {
     a.innerHTML = '<span class="ti"><b>' + (b.quality ? '<span class="amp ' + b.quality + '" title="' + t('q_dot_' + b.quality) + '"></span>' : '') + esc(b.title) + '</b><small title="' + esc(b.folder) + '">' + esc(b.folder) + '</small></span>' +
       '<span class="nr">' + (b.pages ? b.pages + ' ' + t('col_pages') + (b.bookmark ? '<small>' + t('col_pos') + ': ' + t('p_abbr') + ' ' + esc(b.bookmark) + '</small>' : '') : t('missing')) + '</span>' +
       '<span class="nr"><small>' + t('col_last') + '</small>' + esc((b.last || '').slice(0, 16)) + '</span>' +
+      (lib.local && b.pages ? '<button class="x e" title="' + t('edit_btn') + '">⋯</button>' : '') +
       (lib.local ? '<button class="x" title="' + t('forget') + '">✕</button>' : '');
-    const x = a.querySelector('.x');
+    const x = a.querySelector('.x:last-child'), e2 = a.querySelector('.x.e');
     if (x) x.onclick = async e => { e.preventDefault(); e.stopPropagation(); if (confirm(t('forget_confirm', { t: b.title }))) { await post('/api/forget', { id: b.id }); load(); } };
+    if (e2) e2.onclick = e => { e.preventDefault(); e.stopPropagation(); openEdit(b); };
     box.appendChild(a);
+    // Einstieg für den Selbsttest: #edit=<id> öffnet den Dialog, mit |<pfad> läuft das Übernehmen gleich durch.
+    // Nur beim ersten Laden – nach dem Einlesen frischt load() die Liste auf und würde sonst von vorn beginnen.
+    if (edit[0] == b.id && !entered) {
+      entered = true;
+      openEdit(b);
+      if (edit[1]) { editAct('trans'); $('eSrc').value = edit[1]; $('eform').requestSubmit(); }
+    }
   }
 }
 
 // ---- Öffnen: Der Nutzer zeigt eine Datei oder einen Ordner, das Programm findet heraus, was es ist
 let job = null, tools = null, found = [], sel = null;
-const AUTO = location.hash.startsWith('#auto=');
+const AUTO = location.hash.startsWith('#auto=') || location.hash.includes('|');
 const ICON = { book: '📖', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️' };
 const usesPdf = f => f && (f.kind == 'pdf' || (f.kind == 'epub' && f.pdf));
 const pdfHasText = f => f && (f.kind == 'pdf' ? f.text : f.pdf_text);
@@ -331,7 +361,114 @@ $('oST').onclick = async () => {
     if (r.out) $('iPath').value = r.out;
   } catch (err) { $('omsg').textContent = err.message; }
 };
-document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) $('dlg').classList.remove('on'); if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
+// ---- Ein Buch weiterbearbeiten: Text aus Transkribus nachlegen, Bilder ergänzen, die anderen Programme vorbereiten.
+// Wer sein Buch schon einmal eingelesen hat, soll nicht wieder von vorn anfangen – und seine Seitenbilder nicht suchen müssen.
+let eb = null, eact = null, enext = null;
+const ACTS = { trans: ['🗂️', b => true], images: ['🖼️', b => b.images < b.pages],
+               prep_trans: ['⬆️', b => b.images > 0], prep_st: ['✂️', b => b.images > 0] };
+const sepOf = p => p.includes('\\') ? '\\' : '/';
+
+function openEdit(b) {
+  eb = b; enext = null;
+  $('edlg').classList.add('on');
+  $('etitle').textContent = b.title;
+  const d = [t('ed_pages', { n: b.pages }),
+    b.images >= b.pages ? t('ed_imgs') : b.images ? t('ed_someimgs', { n: b.images, p: b.pages }) : t('ed_noimgs')];
+  if (b.corrections) d.push(t('ed_corr', { n: b.corrections }));
+  $('einfo').innerHTML = esc(d.join(' · ')) + '<small>' + esc(b.folder) + '</small>';
+  editPick();
+}
+function editPick() {
+  eact = null; $('emsg').textContent = ''; $('ehead').textContent = t('ed_what');
+  $('ebody').style.display = ''; $('edone').style.display = 'none';
+  $('eBack').style.display = $('eGo').style.display = $('eBook').style.display = 'none';
+  $('eClose').textContent = t('cancel');
+  $('ebody').innerHTML = Object.keys(ACTS).filter(k => ACTS[k][1](eb)).map(k =>
+    '<a href="#" class="act" data-a="' + k + '"><span class="ic">' + ACTS[k][0] + '</span><span><b>' + t('act_' + k) + '</b><small>' + t('act_' + k + '_hint') + '</small></span></a>').join('');
+  for (const el of $('ebody').querySelectorAll('a[data-a]')) el.onclick = ev => { ev.preventDefault(); editAct(el.dataset.a); };
+}
+function editAct(a) {
+  eact = a; $('emsg').textContent = ''; $('eBack').style.display = ''; $('ehead').innerHTML = '<b>' + t('act_' + a) + '</b>';
+  if (a == 'prep_trans' || a == 'prep_st') return editPrepare(a);
+  const img = a == 'images';
+  $('ebody').innerHTML = '<label class="f">' + t(img ? 'ed_imgsource' : 'ed_source') + '</label>' +
+    '<div class="row"><input type="text" id="eSrc" spellcheck="false">' +
+    (img ? '' : '<button type="button" id="eFile">📄 ' + t('pick_file') + '</button>') +
+    '<button type="button" id="eDir">📁 ' + t('pick_folder') + '</button></div>' +
+    (!img && eb.corrections ? '<div id="ewarn">' + t('ed_warn_corr', { n: eb.corrections }) +
+      '<div class="radio"><label><input type="radio" name="emode" value="replace" checked> ' + t('ed_mode_replace') + '</label>' +
+      '<label><input type="radio" name="emode" value="new"> ' + t('ed_mode_new') + '</label></div></div>' : '');
+  if ($('eFile')) $('eFile').onclick = () => editChoose('zip');
+  $('eDir').onclick = () => editChoose('folder');
+  $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t(img ? 'ed_take_imgs' : 'ed_take');
+  $('eSrc').focus();
+}
+async function editChoose(kind) {
+  try { const p = (await post('/api/choose', { kind })).path; if (p) $('eSrc').value = p; }
+  catch (err) { $('emsg').textContent = err.message; }
+}
+async function editPrepare(a) {
+  $('ebody').innerHTML = ''; $('eGo').style.display = 'none';
+  try {
+    const r = await post('/api/prepare', { id: eb.id, tool: a == 'prep_st' ? 'scantailor' : 'transkribus' });
+    let h = '<p>' + t(a == 'prep_st' ? 'ed_prep_st_done' : 'ed_prep_trans_done', { n: r.pages }) + '</p><p><code>' + esc(r.folder) + '</code></p>';
+    if (r.out) h += '<p>' + t('ed_prep_st_out') + '</p><p><code>' + esc(r.out) + '</code></p>';
+    if (r.clipboard) h += '<div class="hint">' + t('ed_clip', { keys: t(/Mac/i.test(navigator.platform) ? 'paste_mac' : 'paste') }) + '</div>';
+    $('ebody').innerHTML = h + '<div class="hint">' + (a == 'prep_st' ? t('ed_prep_after') : help('transkribus', t('q_advice_link'))) + '</div>';
+  } catch (err) { $('emsg').textContent = err.message; }
+}
+async function editJob(path, body) {
+  $('eprog').style.display = 'block'; $('eGo').disabled = true; $('ebar').firstChild.style.width = '0';
+  try {
+    const id = (await post(path, body)).job;
+    while (true) {
+      if (!AUTO) await new Promise(r => setTimeout(r, 400));  // Selbsttest: ohne Pause, siehe runJob
+      const j = await (await fetch('/api/job/' + id)).json();
+      if (j.total) $('ebar').firstChild.style.width = (100 * j.done / j.total) + '%';
+      $('etext').textContent = j.msg ? t('prog_' + j.msg, { d: j.done, t: j.total }) : '';
+      if (j.state == 'done') return j.result;
+      if (j.state == 'error') throw new Error(t('err_' + j.error));
+    }
+  } finally { $('eprog').style.display = 'none'; $('eGo').disabled = false; }
+}
+function editDone(h) {
+  $('ebody').style.display = 'none'; $('ehead').textContent = '';
+  $('eGo').style.display = $('eBack').style.display = 'none';
+  $('edone').style.display = ''; $('edone').innerHTML = h;
+  $('eBook').style.display = ''; $('eBook').className = 'main'; $('eClose').textContent = t('close');
+}
+$('eform').onsubmit = async ev => {
+  ev.preventDefault();
+  const src = $('eSrc') ? $('eSrc').value.trim() : '';
+  if (!src) return;
+  const mode = document.querySelector('input[name=emode]:checked');
+  try {
+    if (eact == 'images') {
+      const r = await editJob('/api/add_images', { id: eb.id, source: src });
+      enext = eb.id;
+      editDone('<h3>✔ ' + t('ed_done_imgs', { n: r.added }) + '</h3><div class="hint">' + t('ed_how_' + r.how) + '</div>');
+    } else if (mode && mode.value == 'new') {
+      // Nicht überschreiben, sondern daneben – die Seitenbilder kommen aus dem alten Buch mit
+      const r = await editJob('/api/import_transkribus', { job: true, source: src, title: '', images: eb.folder + sepOf(eb.folder) + 'img' });
+      enext = r.id;
+      editDone('<h3>✔ ' + t('done_title', { n: r.pages }) + '</h3>' +
+        (r.warnings || []).map(w => '<div class="hint">' + esc(t('warn_' + w)) + '</div>').join(''));
+    } else {
+      const r = await editJob('/api/add_transkribus', { id: eb.id, source: src });
+      enext = eb.id;
+      let h = '<h3>✔ ' + t('ed_done_trans', { r: r.replaced, p: r.pages }) + '</h3>';
+      if (r.kept && r.kept.length) h += '<div class="hint">' + t('ed_kept', { p: r.kept.join(', ') }) + '</div>';
+      h += '<div class="hint">' + t('ed_how_' + r.how) + '</div>';
+      if (r.backup) h += '<div class="hint">' + t('ed_backup', { f: esc(r.backup) }) + '</div>';
+      editDone(h);
+    }
+    load();
+  } catch (err) { $('emsg').textContent = err.message; }
+};
+$('eBack').onclick = () => editPick();
+$('eBook').onclick = () => { if (enext) location.href = '/buch/' + enext; };
+$('eClose').onclick = () => $('edlg').classList.remove('on');
+document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) { $('dlg').classList.remove('on'); $('edlg').classList.remove('on'); } if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
 load();
 // Einstieg aus der Hilfe: #open bzw. #open=<pfad>; #auto=<pfad> liest die Empfehlung gleich ein (Selbsttest, wie ?keys im Reader)
 if (location.hash.startsWith('#open') || AUTO) openDialog(location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');

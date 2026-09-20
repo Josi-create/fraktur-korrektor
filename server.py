@@ -561,8 +561,14 @@ def lib_list():
             q = json.load(open(os.path.join(e['folder'], 'qualitaet.json'), encoding='utf-8'))['rating']['level']
         except (OSError, ValueError, KeyError):
             q = None
+        try:
+            with open(os.path.join(e['folder'], 'korrekturen.log'), 'rb') as f:
+                corr = sum(1 for _ in f)
+        except OSError:
+            corr = 0
         out.append(dict(id=book_id(e['folder']), title=e.get('title') or default_title(e['folder']), folder=e['folder'],
-                        pages=n, bookmark=bm, last=e.get('last', ''), quality=q))
+                        pages=n, bookmark=bm, last=e.get('last', ''), quality=q, corrections=corr,
+                        images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*')))))
     out.sort(key=lambda b: b['last'], reverse=True)
     return out
 
@@ -603,6 +609,61 @@ def import_transkribus(source, title=None, images=None, target=None):
     e = lib_touch(out, title or r.get('title') or name)
     st = propose_settings(out)
     return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], warnings=r['warnings'], **st)
+
+
+def book_folder(bid):
+    """Der Ordner eines Buchs aus der Bibliothek."""
+    e = next((x for x in lib_load() if book_id(x['folder']) == bid), None)
+    if not e or not page_files(e['folder']):
+        raise ValueError('quelle_fehlt')
+    return e['folder']
+
+
+def add_transkribus(bid, source, progress, cancelled):
+    """Den Text eines Transkribus-Exports in ein Buch übernehmen, das es schon gibt. Wer sein Buch erst als PDF
+    einliest, die Seiten aufbereitet und zu Transkribus schickt, soll danach nicht wieder von vorn anfangen und
+    seine Seitenbilder suchen müssen – sie liegen ja längst hier."""
+    folder = book_folder(bid)
+    if not source or not os.path.exists(source):
+        raise ValueError('quelle_fehlt')
+    r = pagexml.import_into(source, folder, progress)
+    with LIBLOCK:
+        BOOKS.pop(bid, None)  # der Text auf der Platte ist ein anderer geworden
+    lib_touch(folder)
+    return dict(id=bid, folder=folder, **r)
+
+
+def add_images(bid, source, progress, cancelled):
+    """Seitenbilder zu einem Buch legen, das keine hat (Transkribus-Export ohne Bilder)."""
+    folder = book_folder(bid)
+    if not source or not os.path.isdir(source):
+        raise ValueError('quelle_fehlt')
+    r = ocr.add_images(folder, source, progress)
+    with LIBLOCK:
+        BOOKS.pop(bid, None)
+    lib_touch(folder)
+    return dict(id=bid, folder=folder, **r)
+
+
+def prepare(bid, tool):
+    """Sagt, welcher Ordner in ScanTailor bzw. zu Transkribus gehört, und macht ihn greifbar: in der
+    Zwischenablage und im Dateimanager geöffnet. Niemand soll sich einen Pfad merken oder abtippen müssen."""
+    folder = book_folder(bid)
+    img = os.path.join(folder, 'img')
+    if not glob.glob(os.path.join(img, '*.*')):
+        raise ValueError('keine_bilder')
+    exe = out = None
+    if tool == 'scantailor':
+        exe = ocr.find_scantailor()
+        if not exe:
+            raise ValueError('kein_scantailor')
+        out = os.path.join(folder, 'scantailor', 'out')
+        os.makedirs(out, exist_ok=True)
+    clip = ocr.to_clipboard(img)
+    ocr.reveal(img)
+    if exe:
+        ocr.launch(exe)
+    return dict(folder=img, out=out, clipboard=clip, pages=len(glob.glob(os.path.join(img, '*.*'))))
 
 
 def import_ocr(source, title, target, script, textlayer, progress, cancelled):
@@ -950,7 +1011,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -987,6 +1048,15 @@ class H(BaseHTTPRequestHandler):
                     return self.sendjson(dict(pages=ocr.pdf_count(src), text=ocr.pdf_has_text(src)) if ok else dict(pages=0, text=False))
                 except Exception:
                     return self.sendjson(dict(pages=0, text=False))
+            if u.path == '/api/add_transkribus':
+                return self.sendjson(dict(job=start_job(add_transkribus, body.get('id'), body.get('source'))))
+            if u.path == '/api/add_images':
+                return self.sendjson(dict(job=start_job(add_images, body.get('id'), body.get('source'))))
+            if u.path == '/api/prepare':
+                try:
+                    return self.sendjson(prepare(body.get('id'), body.get('tool')))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
             if u.path == '/api/import_ocr':
                 return self.sendjson(dict(job=start_job(import_ocr, body.get('source'), body.get('title'), body.get('target'), body.get('script'), body.get('textlayer'))))
             if u.path == '/api/scantailor':

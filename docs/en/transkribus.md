@@ -44,8 +44,10 @@ A *collection* is a drawer for your books; nothing works without one.
    - If you cleaned the scan up with **ScanTailor**: the files from its output folder **`…/scantailor/out`**.
      Those are the separated, straightened single pages (Transkribus accepts TIFF).
    - If you have already **read that result** into Fraktur-Korrektor: the images from the **`img`** folder of
-     that book – the same content, just numbered. The program shows you the folder with **Show folder …**
-     after reading in and puts the path on the clipboard.
+     that book – the same content, just numbered. **No need to go looking for it:** in the library, click the
+     three dots **⋯** on the book and choose **Prepare for Transkribus**. The program names the folder, puts
+     it on the clipboard and opens it in a file window, ready to drag in. This is also the route that matches
+     the pages back most reliably later on.
    - If the scan was fine to begin with: the images from `img`, or the **PDF** itself; Transkribus splits it
      into pages.
 
@@ -111,8 +113,14 @@ Fraktur-Korrektor – when opening, the program suggests your existing image fol
 
 ### 7. Back to Fraktur-Korrektor
 
-Library → **Open …** → **Choose file …** → the ZIP file. There is no need to unpack it; the program recognises
-the export and asks for matching page images if needed. Details: [Opening a book](add-book.md).
+**If the book is already in your library** – because you read it in with Tesseract first – the text belongs
+there, not in a new book: in the library click the three dots **⋯** on the book, then **Take in the text from
+Transkribus** and pick the ZIP file. Your page images stay where they are; nothing to search for, nothing
+created twice. Afterwards the program tells you how many pages it replaced and how it matched them.
+
+**If it is a new book:** Library → **Open …** → **Choose file …** → the ZIP file. There is no need to unpack
+it; the program recognises the export and asks for matching page images if needed.
+Details: [Opening a book](add-book.md).
 
 ## Afterwards
 

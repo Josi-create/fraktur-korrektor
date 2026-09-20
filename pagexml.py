@@ -1,6 +1,6 @@
 """PAGE-XML (Transkribus) -> Buchordner: NNN.txt (Kopfzeile, Haupttext, Zeile '---', Fußnoten), lines.json
 (je Seite Zeilen mit Bildkoordinaten in Transkribus-Pixeln, Bildgröße, Art) und – falls vorhanden – img/NNN.png|jpg."""
-import os, re, json, glob, shutil, zipfile, tempfile, statistics
+import os, re, json, glob, time, shutil, zipfile, tempfile, statistics
 import xml.etree.ElementTree as ET
 FN = re.compile(r'^\s*[\d*]{1,2}\)')          # Fußnotenbeginn: "1)" "12)" "*)"
 IMGEXT = ('.png', '.jpg', '.jpeg')
@@ -73,6 +73,24 @@ def numbering(files):
     return {f: n for n, f in enumerate(sorted(files), 1)}
 
 
+def write_page(out, pg, lines):
+    with open(os.path.join(out, pg + '.txt'), 'w', encoding='utf-8') as o:
+        o.write('\n'.join(page_text(lines)) + '\n')
+
+
+def save_origin(out, origin):
+    """Hält fest, wie das Bild jeder Seite ursprünglich hieß. Ohne das lässt sich ein Transkribus-Export, der
+    später zurückkommt, den Seiten nicht mehr sicher zuordnen: aus »seite_016_1L.tif« wurde hier »030.png«."""
+    origin = {k: v for k, v in origin.items() if v}
+    if not origin:
+        return
+    try:
+        with open(os.path.join(out, 'quellen.json'), 'w', encoding='utf-8') as o:
+            json.dump(dict(sorted(origin.items())), o, ensure_ascii=False, indent=1)
+    except OSError:
+        pass
+
+
 def build(xml_files, out, images=None):
     """Schreibt den Buchordner. images: Ordner mit Seitenbildern (nach Dateiname bzw. Reihenfolge zugeordnet).
     Vorhandene NNN.txt werden nicht überschrieben (dort stecken Korrekturen). Liefert dict(pages, fn, images, warnings)."""
@@ -85,13 +103,13 @@ def build(xml_files, out, images=None):
     num = numbering(xml_files)
     pool = sorted(f for f in glob.glob(os.path.join(images, '**', '*'), recursive=True) if f.lower().endswith(IMGEXT)) if images else []
     byname = {os.path.basename(f).lower(): f for f in pool}
-    allpages, nimg, warn = {}, 0, []
+    allpages, origin, nimg, warn = {}, {}, 0, []
     for k, f in enumerate(xml_files):
         W, H, imgname, lines = parse_page(f)
         pg = '%03d' % num[f]
-        with open(os.path.join(out, pg + '.txt'), 'w', encoding='utf-8') as o:
-            o.write('\n'.join(page_text(lines)) + '\n')
+        write_page(out, pg, lines)
         allpages[pg] = dict(w=W, h=H, lines=lines)
+        origin[pg] = imgname or os.path.basename(f)
         stem = os.path.splitext(os.path.basename(f))[0].lower()
         src = byname.get(imgname.lower()) or next((byname[stem + e] for e in IMGEXT if stem + e in byname), None) \
             or (pool[k] if len(pool) == len(xml_files) else None)
@@ -102,6 +120,7 @@ def build(xml_files, out, images=None):
         warn.append('bilder_fehlen')
     with open(os.path.join(out, 'lines.json'), 'w', encoding='utf-8') as o:
         json.dump(allpages, o, ensure_ascii=False)
+    save_origin(out, origin)
     nfn = sum(1 for p in allpages.values() if any(d['kind'] == 'fn' for d in p['lines']))
     return dict(pages=len(allpages), fn=nfn, images=nimg, warnings=warn)
 
@@ -126,19 +145,196 @@ def find_export(src):
     return files, title
 
 
+def unpack(src):
+    """Export als ZIP in einen Temp-Ordner auspacken. Liefert (Ordner, aufzuräumender Temp-Ordner oder None)."""
+    if os.path.isdir(src):
+        return src, None
+    if not (os.path.isfile(src) and zipfile.is_zipfile(src)):
+        raise ValueError('weder Ordner noch ZIP-Datei')
+    tmp = tempfile.mkdtemp(prefix='fraktur-import-')
+    with zipfile.ZipFile(src) as z:
+        for m in z.namelist():  # nur sichere Pfade entpacken
+            if m.strip('/') and not os.path.isabs(m) and '..' not in m.replace('\\', '/').split('/'):
+                z.extract(m, tmp)
+    return tmp, tmp
+
+
+def image_of(f):
+    """Der Bilddateiname, der in einer PAGE-XML steht – ohne die Datei ganz zu lesen."""
+    try:
+        with open(f, 'rb') as fh:
+            m = re.search(rb'imageFilename="([^"]*)"', fh.read(8000))
+    except OSError:
+        return ''
+    return m.group(1).decode('utf-8', 'replace') if m else ''
+
+
+def name_keys(name):
+    """Schlüssel, unter denen ein Datei- oder Bildname wiederzuerkennen ist: klein und ohne Endung. Transkribus
+    stellt jeder Datei die laufende Nummer voran (0030_seite_016_1L.xml) – darum auch der Name ohne sie."""
+    s = os.path.splitext(os.path.basename(name or ''))[0].lower()
+    m = re.match(r'\d{1,4}[_-](.+)', s)
+    return [s, m.group(1)] if m else [s]
+
+
+def book_pages(folder):
+    """Die Seitennummern eines Buchordners als '001', '002', …"""
+    return sorted(os.path.basename(f)[:3] for f in glob.glob(os.path.join(folder, '[0-9][0-9][0-9].txt')))
+
+
+def words(text):
+    """Die Wörter einer Seite als Menge – Grundlage, um dieselbe Buchseite in zwei Texterkennungen wiederzufinden.
+    Kurze Wörter bleiben weg: »und«, »der«, »die« stehen auf jeder Seite und sagen nichts."""
+    return set(re.findall(r'[^\W\d_]{4,}', text.lower()))
+
+
+def similarity(a, b):
+    return len(a & b) / len(a | b) if a and b else 0.0
+
+
+def match_by_text(folder, items, text_of):
+    """Die Seiten am Wortlaut wiedererkennen. Das braucht es für Bücher, die noch nicht wissen, wie ihre Bilder
+    ursprünglich hießen: Derselbe Buchtext steht in beiden Fassungen, auch wenn die eine schlechter erkannt ist.
+
+    Sicher erkannte Seiten sind die Anker; dazwischen zählt der Versatz. Stimmt er links und rechts einer Lücke
+    überein, liegen die Seiten dort so, wie es die Reihenfolge verlangt. Stimmt er nicht, fehlt irgendwo eine
+    Seite, und niemand kann sagen, wo – dann lieber abbrechen als danebenlegen."""
+    pages, items = book_pages(folder), list(items)
+    have = {}
+    for pg in pages:
+        try:
+            with open(os.path.join(folder, pg + '.txt'), encoding='utf-8') as f:
+                have[pg] = words(f.read())
+        except OSError:
+            have[pg] = set()
+    anchor = {}
+    for i, it in enumerate(items):
+        w = words(text_of(it))
+        if len(w) < 8:  # ein paar Wörter treffen zufällig überall
+            continue
+        best = sorted(((similarity(w, have[pg]), pg) for pg in pages), reverse=True)
+        if best[0][0] >= 0.25 and (len(best) < 2 or best[0][0] >= 1.6 * best[1][0]):
+            anchor[i] = pages.index(best[0][1])
+    idx = sorted(anchor)
+    if not idx or [anchor[i] for i in idx] != sorted({anchor[i] for i in idx}):
+        raise ValueError('seiten_passen_nicht')
+    hit = {}
+    for i, it in enumerate(items):
+        near = [j for j in (max((j for j in idx if j <= i), default=None), min((j for j in idx if j >= i), default=None)) if j is not None]
+        off = {anchor[j] - j for j in near}
+        k = i + off.pop() if len(off) == 1 else -1
+        if 0 <= k < len(pages):
+            hit[it] = pages[k]
+    if len(hit) != len(items) or len(set(hit.values())) != len(items):
+        raise ValueError('seiten_passen_nicht')
+    return hit
+
+
+def match_to_pages(folder, items, names, text_of=None):
+    """Ordnet Dateien den Seiten eines vorhandenen Buchs zu. names(datei) liefert die Namen, unter denen die Datei
+    zu erkennen ist; der erste, der auf eine Seite passt, entscheidet.
+
+    Der Reihe nach zuzuordnen wäre bequem und geht schief, sobald im Export eine Seite fehlt: dann stünde jeder
+    weitere Text neben dem falschen Bild. Darum zuerst über die Namen – wozu das Buch sich beim Einlesen gemerkt
+    hat, wie seine Bilder ursprünglich hießen (quellen.json). Die Reihenfolge bleibt der Notnagel, und nur, wenn
+    die Seitenzahl auf beiden Seiten gleich ist. Liefert (dict datei -> 'NNN', 'namen'|'reihenfolge')."""
+    pages, items = book_pages(folder), list(items)
+    known = {pg: pg for pg in pages}
+    try:
+        with open(os.path.join(folder, 'quellen.json'), encoding='utf-8') as f:
+            for pg, name in json.load(f).items():
+                for k in name_keys(name):
+                    known[k] = pg if known.get(k, pg) == pg else None  # zwei Seiten unter einem Namen: unbrauchbar
+    except (OSError, ValueError, AttributeError):
+        pass
+    hit, used = {}, set()
+    for it in items:
+        pg = next((known[k] for n in names(it) for k in name_keys(n) if known.get(k)), None)
+        if pg and pg not in used:
+            hit[it] = pg
+            used.add(pg)
+    if items and len(hit) == len(items):
+        return hit, 'namen'
+    if items and text_of:
+        try:
+            return match_by_text(folder, items, text_of), 'text'
+        except ValueError:
+            pass
+    if items and len(items) == len(pages):
+        return dict(zip(sorted(items), pages)), 'reihenfolge'
+    raise ValueError('seiten_passen_nicht')
+
+
+def backup(folder, pages):
+    """Die Seiten, die gleich überschrieben werden, vorher in eine ZIP-Datei sichern (samt Protokoll und Ampel):
+    hier steckt womöglich die Arbeit von Stunden. Liefert den Dateinamen der Sicherung oder None."""
+    names = [pg + '.txt' for pg in pages] + ['lines.json', 'quellen.json', 'qualitaet.json', 'korrekturen.log']
+    have = [n for n in names if os.path.isfile(os.path.join(folder, n))]
+    if not have:
+        return None
+    name = 'vorher-%s.zip' % time.strftime('%Y-%m-%d-%H%M%S')
+    with zipfile.ZipFile(os.path.join(folder, name), 'w', zipfile.ZIP_DEFLATED) as z:
+        for n in have:
+            z.write(os.path.join(folder, n), n)
+    return name
+
+
+def load_json(folder, name, default):
+    try:
+        with open(os.path.join(folder, name), encoding='utf-8') as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else default
+    except (OSError, ValueError):
+        return default
+
+
+def import_into(src, folder, progress=lambda done, total, msg: None):
+    """Den Text eines Transkribus-Exports in ein Buch übernehmen, das es schon gibt: Seitenbilder, Lesezeichen,
+    Wortliste und Einstellungen bleiben, wo sie sind. Ersetzt werden nur die Seiten, für die der Export Text
+    liefert; wofür er keinen hat, bleibt stehen. Liefert dict(pages, replaced, kept, how, backup, title)."""
+    src, tmp = unpack(src)
+    try:
+        files, title = find_export(src)
+        if not files:
+            raise ValueError('keine_xml')
+        files = sorted(files)
+        if not book_pages(folder):
+            raise ValueError('quelle_fehlt')
+        read = {}
+        for n, f in enumerate(files):  # erst lesen, dann zuordnen: der Wortlaut entscheidet mit
+            read[f] = parse_page(f)
+            progress(n + 1, len(files), 'lesen')
+        hit, how = match_to_pages(folder, files, lambda f: (image_of(f), f),
+                                  text_of=lambda f: '\n'.join(d['text'] for d in read[f][3]))
+        save = backup(folder, sorted(hit.values()))
+        geo, origin = load_json(folder, 'lines.json', {}), load_json(folder, 'quellen.json', {})
+        for n, f in enumerate(files):
+            pg = hit[f]
+            W, H, imgname, lines = read[f]
+            write_page(folder, pg, lines)
+            geo[pg] = dict(w=W, h=H, lines=lines)
+            origin.setdefault(pg, imgname or os.path.basename(f))
+            progress(n + 1, len(files), 'seiten')
+        with open(os.path.join(folder, 'lines.json'), 'w', encoding='utf-8') as o:
+            json.dump(dict(sorted(geo.items())), o, ensure_ascii=False)
+        save_origin(folder, origin)
+        # Die Ampel stammte von der alten Texterkennung und sagt über den neuen Text nichts mehr; sie steckt in
+        # der Sicherung, falls doch jemand nachsehen will.
+        try:
+            os.remove(os.path.join(folder, 'qualitaet.json'))
+        except OSError:
+            pass
+        kept = [pg for pg in book_pages(folder) if pg not in set(hit.values())]
+        return dict(pages=len(book_pages(folder)), replaced=len(hit), kept=kept, how=how, backup=save, title=title)
+    finally:
+        if tmp:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 def import_export(src, out, images=None):
     """src: Transkribus-Export als ZIP-Datei oder Ordner. Bilder aus dem Export selbst, wenn images fehlt."""
-    tmp = None
+    src, tmp = unpack(src)
     try:
-        if os.path.isfile(src):
-            if not zipfile.is_zipfile(src):
-                raise ValueError('weder Ordner noch ZIP-Datei')
-            tmp = tempfile.mkdtemp(prefix='fraktur-import-')
-            with zipfile.ZipFile(src) as z:
-                for m in z.namelist():  # nur sichere Pfade entpacken
-                    if m.strip('/') and not os.path.isabs(m) and '..' not in m.replace('\\', '/').split('/'):
-                        z.extract(m, tmp)
-            src = tmp
         files, title = find_export(src)
         r = build(files, out, images or src)
         r['title'] = title

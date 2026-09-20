@@ -54,6 +54,45 @@ Export Seiten hat, und schlägt ihn vor.
 
 Nichts wird je überschrieben: Gibt es den Titel schon, entsteht ein zweiter Ordner mit dem Zusatz „(2)“.
 
+## Ein Buch weiterbearbeiten
+
+Ein Buch entsteht selten in einem Zug: Erst lesen Sie ein PDF ein, dann bereiten Sie die Seiten mit ScanTailor
+auf, dann lassen Sie den Text bei Transkribus erkennen. **Dafür müssen Sie nicht jedes Mal von vorn anfangen.**
+
+Fahren Sie in der Bibliothek über den Buchtitel und klicken Sie auf die drei Punkte **⋯** am rechten Rand. Dann
+stehen Ihnen vier Wege offen:
+
+| | Wozu |
+|---|---|
+| **Text aus Transkribus einlesen** | Der Text von Transkribus tritt an die Stelle des bisherigen. Ihre Seitenbilder, Ihre Wortliste und Ihr Lesezeichen bleiben, wo sie sind. |
+| **Seitenbilder hinzufügen** | Für Bücher, die nur aus Text bestehen – etwa ein Transkribus-Export ohne Bilder. |
+| **Für Transkribus vorbereiten** | Das Programm nennt Ihnen den Ordner, den Sie hochladen, legt ihn in die Zwischenablage und öffnet ihn im Dateifenster. |
+| **Für ScanTailor vorbereiten** | Startet ScanTailor und nennt Ein- und Ausgabeordner. |
+
+So müssen Sie sich nie merken, wo die Bilder zu einem Buch liegen – das weiß das Programm.
+
+### Wie die Seiten zueinander finden
+
+Kommt ein Text von Transkribus zurück, muss jede Seite wieder zu ihrem Bild finden. Fehlt im Export auch nur
+eine Seite, stünde bei blinder Zuordnung der Reihe nach ab da jeder Text neben dem falschen Bild. Darum geht
+das Programm in dieser Reihenfolge vor:
+
+1. **Über die Dateinamen.** Beim Einlesen merkt sich das Programm, wie das Bild jeder Seite ursprünglich hieß
+   (`quellen.json`). Im Transkribus-Export stehen dieselben Namen – das passt eindeutig.
+2. **Über den Wortlaut.** Gibt es keine Namen, vergleicht das Programm die Wörter: Dieselbe Buchseite bleibt
+   erkennbar, auch wenn die eine Texterkennung schlechter war als die andere. Sichere Treffer sind die Anker,
+   Seiten ohne Text (Bildtafeln) ergeben sich aus deren Abstand.
+3. **Der Reihe nach** – nur, wenn hier wie dort gleich viele Seiten vorliegen.
+
+Geht keiner dieser Wege auf, bricht das Programm ab und sagt es Ihnen, statt den Text neben falsche Bilder zu
+legen. Dann legen Sie den Export mit **Öffnen …** als eigenes Buch an.
+
+### Wenn schon Korrekturen im Buch stecken
+
+Dann warnt das Programm: Der neue Text aus Transkribus enthält Ihre Arbeit nicht. Sie haben die Wahl, ihn
+trotzdem in dieses Buch zu übernehmen oder daneben ein neues anzulegen – die Seitenbilder kommen dabei mit.
+Die bisherige Fassung wird in jedem Fall zuerst gesichert: als `vorher-<Datum>.zip` im Buchordner.
+
 ## Was in einem Buchordner liegt
 
 Neue Bücher legt das Programm unter `Fraktur-Korrektor` in Ihrem Benutzerordner an.
@@ -67,6 +106,8 @@ Neue Bücher legt das Programm unter `Fraktur-Korrektor` in Ihrem Benutzerordner
 | `lesezeichen.json` | Ihre Leseposition |
 | `korrekturen.log` | Protokoll aller Änderungen |
 | `qualitaet.json` | nach dem Einlesen: die Werte der Ampel je Seite |
+| `quellen.json` | wie das Bild jeder Seite ursprünglich hieß – damit ein späterer Transkribus-Export sich zuordnen lässt |
+| `vorher-….zip` | Sicherung der Textfassung, die ein übernommener Transkribus-Text ersetzt hat |
 
 Die Textdateien dürfen Sie auch mit einem anderen Editor bearbeiten, sogar während das Programm läuft.
 Ändern Sie dabei nur nicht die Zahl der Zeilen einer Seite, sonst passt die Zuordnung zum Bild nicht mehr.

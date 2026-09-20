@@ -58,6 +58,10 @@ worse than the rest**, the page curves towards the gutter.
 The free program **ScanTailor Advanced** fixes all of this: it splits double pages, straightens them,
 flattens curvature and crops margins. ([Installation](install-tools.md))
 
+If the book is **already in your library**, there is a shorter way: click the three dots **⋯** on it and choose
+**Prepare for ScanTailor** – the input and output folder are then settled, and ScanTailor starts right away.
+For a PDF that has not been read in yet:
+
 1. Choose the PDF via **Open …** and click **Prepare with ScanTailor first …** in the window.
    The program saves every PDF page as an image (ScanTailor cannot open PDFs) and starts ScanTailor.
 2. In ScanTailor: **New Project**. As input directory, give the folder ending in `scantailor`. You do not

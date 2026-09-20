@@ -389,6 +389,8 @@ def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda:
     q = dict(model=model, rating=rating(quality), pages=quality)
     with open(os.path.join(out, 'qualitaet.json'), 'w', encoding='utf-8') as f:
         json.dump(q, f, ensure_ascii=False, indent=1)
+    if not is_pdf:  # damit ein Transkribus-Export später wiederfindet, welches Bild welche Seite war
+        pagexml.save_origin(out, {'%03d' % (n + 1): os.path.basename(files[n]) for n in range(total)})
     korrlib.save_cache()
     return dict(pages=total, quality=q['rating'])
 
@@ -396,11 +398,32 @@ def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda:
 def cleanup(out):
     """Nur das Erzeugte wieder entfernen – im Buchordner kann schon ein ScanTailor-Projekt liegen."""
     shutil.rmtree(os.path.join(out, 'img'), ignore_errors=True)
-    for f in glob.glob(os.path.join(out, '[0-9][0-9][0-9].txt')) + [os.path.join(out, n) for n in ('lines.json', 'qualitaet.json')]:
+    for f in glob.glob(os.path.join(out, '[0-9][0-9][0-9].txt')) + [os.path.join(out, n) for n in ('lines.json', 'qualitaet.json', 'quellen.json')]:
         try: os.remove(f)
         except OSError: pass
     try: os.rmdir(out)
     except OSError: pass
+
+
+def add_images(folder, source, progress=lambda done, total, msg: None):
+    """Seitenbilder zu einem Buch legen, das keine hat – etwa nach einem Transkribus-Export ohne Bilder. Zugeordnet
+    wird über die Namen, nicht blind der Reihe nach. Liefert dict(added, pages, how)."""
+    files = image_files(source) if os.path.isdir(source) else []
+    if not files:
+        raise ValueError('keine_seiten')
+    if not pagexml.book_pages(folder):
+        raise ValueError('quelle_fehlt')
+    hit, how = pagexml.match_to_pages(folder, files, lambda f: (f,))
+    os.makedirs(os.path.join(folder, 'img'), exist_ok=True)
+    origin = pagexml.load_json(folder, 'quellen.json', {})
+    for n, f in enumerate(sorted(hit)):
+        for old in glob.glob(os.path.join(folder, 'img', hit[f] + '.*')):
+            os.remove(old)
+        copy_image(f, os.path.join(folder, 'img', hit[f]))
+        origin.setdefault(hit[f], os.path.basename(f))
+        progress(n + 1, len(hit), 'bilder')
+    pagexml.save_origin(folder, origin)
+    return dict(added=len(hit), pages=len(pagexml.book_pages(folder)), how=how)
 
 
 def image_size(path):
