@@ -288,7 +288,7 @@ def load_json(folder, name, default):
         return default
 
 
-def import_into(src, folder, progress=lambda done, total, msg: None):
+def import_into(src, folder, progress=lambda done, total, msg: None, save=True):
     """Den Text eines Transkribus-Exports in ein Buch übernehmen, das es schon gibt: Seitenbilder, Lesezeichen,
     Wortliste und Einstellungen bleiben, wo sie sind. Ersetzt werden nur die Seiten, für die der Export Text
     liefert; wofür er keinen hat, bleibt stehen. Liefert dict(pages, replaced, kept, how, backup, title)."""
@@ -306,7 +306,7 @@ def import_into(src, folder, progress=lambda done, total, msg: None):
             progress(n + 1, len(files), 'lesen')
         hit, how = match_to_pages(folder, files, lambda f: (image_of(f), f),
                                   text_of=lambda f: '\n'.join(d['text'] for d in read[f][3]))
-        save = backup(folder, sorted(hit.values()))
+        saved = backup(folder, sorted(hit.values())) if save else None
         geo, origin = load_json(folder, 'lines.json', {}), load_json(folder, 'quellen.json', {})
         for n, f in enumerate(files):
             pg = hit[f]
@@ -325,7 +325,7 @@ def import_into(src, folder, progress=lambda done, total, msg: None):
         except OSError:
             pass
         kept = [pg for pg in book_pages(folder) if pg not in set(hit.values())]
-        return dict(pages=len(book_pages(folder)), replaced=len(hit), kept=kept, how=how, backup=save, title=title)
+        return dict(pages=len(book_pages(folder)), replaced=len(hit), kept=kept, how=how, backup=saved, title=title)
     finally:
         if tmp:
             shutil.rmtree(tmp, ignore_errors=True)

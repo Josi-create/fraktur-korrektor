@@ -386,13 +386,32 @@ def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda:
         raise ValueError('abgebrochen')
     with open(os.path.join(out, 'lines.json'), 'w', encoding='utf-8') as f:
         json.dump(geo, f, ensure_ascii=False)
-    q = dict(model=model, rating=rating(quality), pages=quality)
+    quelle = ['scantailor'] if not is_pdf and os.path.basename(os.path.dirname(source.rstrip('/\\'))).lower() == 'scantailor' else []
+    q = dict(model=model, rating=rating(quality), quelle=quelle + ['textebene' if textlayer else 'tesseract'], pages=quality)
     with open(os.path.join(out, 'qualitaet.json'), 'w', encoding='utf-8') as f:
         json.dump(q, f, ensure_ascii=False, indent=1)
     if not is_pdf:  # damit ein Transkribus-Export später wiederfindet, welches Bild welche Seite war
         pagexml.save_origin(out, {'%03d' % (n + 1): os.path.basename(files[n]) for n in range(total)})
     korrlib.save_cache()
     return dict(pages=total, quality=q['rating'])
+
+
+def rate_book(folder, quelle=(), model='transkribus'):
+    """Ampel und Wörterbuchquote für einen Text, dessen Erkennung keine Konfidenz mitliefert – Transkribus etwa
+    sagt nichts darüber, wie sicher es sich war. Gemessen wird, wie viele Wörter das Wörterbuch kennt; das ist
+    dieselbe Zahl, die der Leser später als rote Wörter sieht. quelle: die Schritte, die zu diesem Text führten."""
+    quality = {}
+    for f in sorted(glob.glob(os.path.join(folder, '[0-9][0-9][0-9].txt'))):
+        with open(f, encoding='utf-8') as fh:
+            lines = [korrlib.mask(l.rstrip('\n')) for l in fh]
+        quality[os.path.basename(f)[:3]] = page_quality([(None, l, False) for l in lines if l.strip() not in ('', '---')])
+    if not quality:
+        return None
+    q = dict(model=model, rating=rating(quality), quelle=list(quelle), pages=quality)
+    with open(os.path.join(folder, 'qualitaet.json'), 'w', encoding='utf-8') as f:
+        json.dump(q, f, ensure_ascii=False, indent=1)
+    korrlib.save_cache()
+    return q['rating']
 
 
 def cleanup(out):
@@ -406,24 +425,43 @@ def cleanup(out):
 
 
 def add_images(folder, source, progress=lambda done, total, msg: None):
-    """Seitenbilder zu einem Buch legen, das keine hat – etwa nach einem Transkribus-Export ohne Bilder. Zugeordnet
-    wird über die Namen, nicht blind der Reihe nach. Liefert dict(added, pages, how)."""
+    """Seitenbilder zu einem Buch legen, das keine hat – etwa nach einem Transkribus-Export ohne Bilder. Quelle ist
+    ein Bilderordner oder das PDF, aus dem die Seiten stammen. Zugeordnet wird über die Namen, nicht blind der
+    Reihe nach. Liefert dict(added, pages, how)."""
+    pages = pagexml.book_pages(folder)
+    if not pages:
+        raise ValueError('quelle_fehlt')
+    os.makedirs(os.path.join(folder, 'img'), exist_ok=True)
+
+    def frei(pg):  # ein vorhandenes Bild dieser Seite weicht dem neuen
+        for f in glob.glob(os.path.join(folder, 'img', pg + '.*')):
+            os.remove(f)
+        return os.path.join(folder, 'img', pg)
+
+    if os.path.isfile(source) and source.lower().endswith('.pdf'):
+        try:
+            import fitz
+        except ImportError:
+            raise ValueError('kein_pymupdf')
+        if pdf_count(source) != len(pages):  # Seite für Seite, also muss die Zahl stimmen
+            raise ValueError('seiten_passen_nicht')
+        with fitz.open(source) as d:
+            for n, pg in enumerate(pages):
+                pdf_page(d, n, frei(pg))
+                progress(n + 1, len(pages), 'bilder')
+        return dict(added=len(pages), pages=len(pages), how='reihenfolge')
+
     files = image_files(source) if os.path.isdir(source) else []
     if not files:
         raise ValueError('keine_seiten')
-    if not pagexml.book_pages(folder):
-        raise ValueError('quelle_fehlt')
     hit, how = pagexml.match_to_pages(folder, files, lambda f: (f,))
-    os.makedirs(os.path.join(folder, 'img'), exist_ok=True)
     origin = pagexml.load_json(folder, 'quellen.json', {})
     for n, f in enumerate(sorted(hit)):
-        for old in glob.glob(os.path.join(folder, 'img', hit[f] + '.*')):
-            os.remove(old)
-        copy_image(f, os.path.join(folder, 'img', hit[f]))
+        copy_image(f, frei(hit[f]))
         origin.setdefault(hit[f], os.path.basename(f))
         progress(n + 1, len(hit), 'bilder')
     pagexml.save_origin(folder, origin)
-    return dict(added=len(hit), pages=len(pagexml.book_pages(folder)), how=how)
+    return dict(added=len(hit), pages=len(pages), how=how)
 
 
 def image_size(path):

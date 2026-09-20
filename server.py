@@ -4,7 +4,7 @@ py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"
 Ohne Buchordner erscheint die Bibliothek (Bücher öffnen, Transkribus-Export importieren).
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png|jpg,
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
-import sys, os, json, re, glob, time, uuid, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
+import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import korrlib, pagexml, ocr, epub, finder
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
@@ -557,17 +557,18 @@ def lib_list():
             bm = json.load(open(os.path.join(e['folder'], 'lesezeichen.json'), encoding='utf-8')).get('page')
         except (OSError, ValueError):
             bm = None
-        try:
-            q = json.load(open(os.path.join(e['folder'], 'qualitaet.json'), encoding='utf-8'))['rating']['level']
-        except (OSError, ValueError, KeyError):
-            q = None
+        qj = pagexml.load_json(e['folder'], 'qualitaet.json', {})
+        q = (qj.get('rating') or {}).get('level')
+        quelle = qj.get('quelle') or ([qj['model']] if qj.get('model') else [])
+        unbekannt = (qj.get('rating') or {}).get('dict')
         try:
             with open(os.path.join(e['folder'], 'korrekturen.log'), 'rb') as f:
                 corr = sum(1 for _ in f)
         except OSError:
             corr = 0
         out.append(dict(id=book_id(e['folder']), title=e.get('title') or default_title(e['folder']), folder=e['folder'],
-                        pages=n, bookmark=bm, last=e.get('last', ''), quality=q, corrections=corr,
+                        pages=n, bookmark=bm, last=e.get('last', ''), quality=q, corrections=corr, quelle=quelle,
+                        unknown=None if unbekannt is None else round(100 * (1 - unbekannt)),
                         images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*')))))
     out.sort(key=lambda b: b['last'], reverse=True)
     return out
@@ -608,7 +609,8 @@ def import_transkribus(source, title=None, images=None, target=None):
         raise ValueError('keine_xml')
     e = lib_touch(out, title or r.get('title') or name)
     st = propose_settings(out)
-    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], warnings=r['warnings'], **st)
+    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], warnings=r['warnings'],
+                quality=ocr.rate_book(out, ['transkribus']), **st)
 
 
 def book_folder(bid):
@@ -619,24 +621,49 @@ def book_folder(bid):
     return e['folder']
 
 
-def add_transkribus(bid, source, progress, cancelled):
+def copy_book(folder, title=None):
+    """Ein Buch daneben anlegen: Seitenbilder, Texte und Einstellungen kommen mit. Das Protokoll und die
+    Leseposition bleiben beim Original – sie gehören zu dessen Text, nicht zu dem, der gleich hineinkommt."""
+    out = new_folder(title or default_title(folder), folder)[1]
+    os.makedirs(out, exist_ok=True)
+    for f in page_files(folder) + [os.path.join(folder, n) for n in ('lines.json', 'quellen.json', 'buch.json', 'whitelist.txt')]:
+        if os.path.isfile(f):
+            shutil.copyfile(f, os.path.join(out, os.path.basename(f)))
+    img = os.path.join(folder, 'img')
+    if os.path.isdir(img):
+        shutil.copytree(img, os.path.join(out, 'img'), dirs_exist_ok=True)
+    return out
+
+
+def add_transkribus(bid, source, mode, progress, cancelled):
     """Den Text eines Transkribus-Exports in ein Buch übernehmen, das es schon gibt. Wer sein Buch erst als PDF
     einliest, die Seiten aufbereitet und zu Transkribus schickt, soll danach nicht wieder von vorn anfangen und
-    seine Seitenbilder suchen müssen – sie liegen ja längst hier."""
+    seine Seitenbilder suchen müssen – sie liegen ja längst hier.
+
+    mode='new' legt statt dessen ein zweites Buch daneben an: erst eine Kopie samt Seitenbildern, dann derselbe
+    Weg hinein. So bleibt das Original mit seinen Korrekturen unangetastet, und die Bilder sind trotzdem dabei."""
     folder = book_folder(bid)
     if not source or not os.path.exists(source):
         raise ValueError('quelle_fehlt')
-    r = pagexml.import_into(source, folder, progress)
+    e = next((x for x in lib_load() if book_id(x['folder']) == bid), None)
+    alt = [q for q in (pagexml.load_json(folder, 'qualitaet.json', {}).get('quelle') or []) if q != 'transkribus']
+    ziel = copy_book(folder, e.get('title') if e else None) if mode == 'new' else folder
+    try:
+        r = pagexml.import_into(source, ziel, progress, save=ziel == folder)
+    except Exception:
+        if ziel != folder:
+            shutil.rmtree(ziel, ignore_errors=True)  # nichts Halbfertiges stehen lassen
+        raise
     with LIBLOCK:
-        BOOKS.pop(bid, None)  # der Text auf der Platte ist ein anderer geworden
-    lib_touch(folder)
-    return dict(id=bid, folder=folder, **r)
+        BOOKS.pop(book_id(ziel), None)  # der Text auf der Platte ist ein anderer geworden
+    lib_touch(ziel, e.get('title') if e and ziel != folder else None)
+    return dict(id=book_id(ziel), folder=ziel, neu=ziel != folder, quality=ocr.rate_book(ziel, alt + ['transkribus']), **r)
 
 
 def add_images(bid, source, progress, cancelled):
     """Seitenbilder zu einem Buch legen, das keine hat (Transkribus-Export ohne Bilder)."""
     folder = book_folder(bid)
-    if not source or not os.path.isdir(source):
+    if not source or not os.path.exists(source):
         raise ValueError('quelle_fehlt')
     r = ocr.add_images(folder, source, progress)
     with LIBLOCK:
@@ -975,7 +1002,9 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, open(p, 'rb').read(), IMGTYPES[ext])
             return self.send(404, '{}')
         if rest == '/api/overview':
-            r = dict(title=book.title, pages=book.overview())
+            # images/local: die Leseansicht bietet an, Seitenbilder oder einen Transkribus-Text nachzulegen
+            r = dict(title=book.title, pages=book.overview(), id=book.id, local=self.local(),
+                     images=len(glob.glob(os.path.join(book.imgdir, '*.*'))))
             korrlib.save_cache()
             return self.sendjson(r)
         if rest == '/api/settings':
@@ -1049,7 +1078,7 @@ class H(BaseHTTPRequestHandler):
                 except Exception:
                     return self.sendjson(dict(pages=0, text=False))
             if u.path == '/api/add_transkribus':
-                return self.sendjson(dict(job=start_job(add_transkribus, body.get('id'), body.get('source'))))
+                return self.sendjson(dict(job=start_job(add_transkribus, body.get('id'), body.get('source'), body.get('mode'))))
             if u.path == '/api/add_images':
                 return self.sendjson(dict(job=start_job(add_images, body.get('id'), body.get('source'))))
             if u.path == '/api/prepare':

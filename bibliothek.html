@@ -17,12 +17,16 @@ button:disabled{opacity:.5;cursor:default}
 #bOpen{font-size:17px;padding:10px 26px}
 #note{color:#a40;font-size:14px;min-height:20px;margin-bottom:10px}
 #books{background:#fff;border:1px solid #bbb;border-radius:4px}
-.book{display:flex;align-items:center;gap:18px;padding:12px 18px;border-bottom:1px solid #eee;cursor:pointer;text-decoration:none;color:inherit}
-.book:last-child{border-bottom:0} .book:hover{background:#fff8d8}
-.book .ti{flex:1;min-width:0} .book .ti b{font:20px Georgia,serif;display:block}
+.book{padding:12px 18px;border-bottom:1px solid #eee} .book:last-child{border-bottom:0} .book:hover{background:#fff8d8}
+.book .line{display:flex;align-items:center;gap:18px}
+.book .ti{flex:1;min-width:0;text-decoration:none;color:inherit} .book .ti b{font:20px Georgia,serif;display:block}
 .book .ti small{color:#888;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.book a.ti:hover b{text-decoration:underline}
 .book .nr{color:#555;font-size:14px;width:120px;flex:none} .book .nr small{color:#999;display:block}
-.book.gone{cursor:default;opacity:.55} .book .x{border:0;background:none;color:#999;font-size:18px;padding:4px 8px} .book .x:hover{color:#c00;background:none}
+.book.gone{opacity:.55}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px} .acts .sp{flex:1}
+.acts button{font-size:14px;padding:6px 14px} .acts button.weg,.book .line .weg{color:#a40;border-color:#caa;font-size:13.5px;padding:5px 10px}
+.acts button.weg:hover,.book .line .weg:hover{background:#fdeaea}
 #empty{padding:26px;color:#666;line-height:1.6}
 #foot{margin-top:22px;color:#777;font-size:13.5px;display:flex;gap:18px;flex-wrap:wrap} #foot a{color:#456}
 .dlg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
@@ -138,6 +142,9 @@ async function post(path, body) {
   return j;
 }
 let booksdir = '', entered = false;
+// Was mit einem Buch möglich ist – in der Reihenfolge, in der es auf der Zeile steht
+const BOOKACTS = [['open', b => true], ['trans', b => true], ['images', b => b.images < b.pages],
+                  ['prep_trans', b => b.images > 0], ['prep_st', b => b.images > 0]];
 async function load() {
   const lib = await (await fetch('/api/library')).json();
   $('ver').textContent = lib.version ? 'Version ' + lib.version : '';
@@ -148,29 +155,40 @@ async function load() {
   const box = $('books'); box.innerHTML = '';
   if (!lib.books.length) { box.innerHTML = '<div id="empty">' + t('empty') + '</div>'; return; }
   for (const b of lib.books) {
-    const a = document.createElement(b.pages ? 'a' : 'div'); a.className = 'book' + (b.pages ? '' : ' gone'); if (b.pages) a.href = '/buch/' + b.id;
-    a.innerHTML = '<span class="ti"><b>' + (b.quality ? '<span class="amp ' + b.quality + '" title="' + t('q_dot_' + b.quality) + '"></span>' : '') + esc(b.title) + '</b><small title="' + esc(b.folder) + '">' + esc(b.folder) + '</small></span>' +
+    const row = document.createElement('div'); row.className = 'book' + (b.pages ? '' : ' gone');
+    const ti = b.pages ? ['<a class="ti" href="/buch/' + b.id + '">', '</a>'] : ['<span class="ti">', '</span>'];
+    // Jede Möglichkeit bekommt einen beschrifteten Knopf: niemand soll erraten müssen, was hinter einem Zeichen steckt
+    const acts = lib.local && b.pages ? BOOKACTS.filter(([k, when]) => when(b)).map(([k]) =>
+      '<button class="' + (k == 'open' ? 'main' : '') + '" data-a="' + k + '">' + t(k == 'open' ? 'open_now' : 'act_' + k) + '</button>').join('') +
+      '<span class="sp"></span><button class="weg" data-a="forget">' + t('act_forget') + '</button>' : '';
+    row.innerHTML = '<div class="line">' + ti[0] + '<b>' + (b.quality ? '<span class="amp ' + b.quality + '" title="' + t('q_dot_' + b.quality) + '"></span>' : '') + esc(b.title) + '</b>' +
+      '<small title="' + esc(b.folder) + '">' + esc(b.folder) + '</small>' + ti[1] +
       '<span class="nr">' + (b.pages ? b.pages + ' ' + t('col_pages') + (b.bookmark ? '<small>' + t('col_pos') + ': ' + t('p_abbr') + ' ' + esc(b.bookmark) + '</small>' : '') : t('missing')) + '</span>' +
       '<span class="nr"><small>' + t('col_last') + '</small>' + esc((b.last || '').slice(0, 16)) + '</span>' +
-      (lib.local && b.pages ? '<button class="x e" title="' + t('edit_btn') + '">⋯</button>' : '') +
-      (lib.local ? '<button class="x" title="' + t('forget') + '">✕</button>' : '');
-    const x = a.querySelector('.x:last-child'), e2 = a.querySelector('.x.e');
-    if (x) x.onclick = async e => { e.preventDefault(); e.stopPropagation(); if (confirm(t('forget_confirm', { t: b.title }))) { await post('/api/forget', { id: b.id }); load(); } };
-    if (e2) e2.onclick = e => { e.preventDefault(); e.stopPropagation(); openEdit(b); };
-    box.appendChild(a);
-    // Einstieg für den Selbsttest: #edit=<id> öffnet den Dialog, mit |<pfad> läuft das Übernehmen gleich durch.
-    // Nur beim ersten Laden – nach dem Einlesen frischt load() die Liste auf und würde sonst von vorn beginnen.
+      (lib.local && !b.pages ? '<button class="weg" data-a="forget">' + t('act_forget') + '</button>' : '') + '</div>' +
+      (acts ? '<div class="acts">' + acts + '</div>' : '');
+    for (const el of row.querySelectorAll('button[data-a]')) el.onclick = async e => {
+      e.preventDefault(); e.stopPropagation();
+      const k = el.dataset.a;
+      if (k == 'open') return location.href = '/buch/' + b.id;
+      if (k != 'forget') return openEdit(b, k);
+      if (confirm(t('forget_confirm', { t: b.title }))) { await post('/api/forget', { id: b.id }); load(); }
+    };
+    box.appendChild(row);
+    // #edit=<id>|<was> öffnet den Dialog gleich bei der gewünschten Möglichkeit – so verweist die Leseansicht
+    // hierher. Ein dritter Teil |<pfad> lässt den Vorgang durchlaufen (Selbsttest). Nur beim ersten Laden:
+    // nach dem Einlesen frischt load() die Liste auf und würde sonst von vorn beginnen.
     if (edit[0] == b.id && !entered) {
       entered = true;
-      openEdit(b);
-      if (edit[1]) { editAct('trans'); $('eSrc').value = edit[1]; $('eform').requestSubmit(); }
+      openEdit(b, edit[1] || null);
+      if (edit[2]) { $('eSrc').value = edit[2]; $('eform').requestSubmit(); }
     }
   }
 }
 
 // ---- Öffnen: Der Nutzer zeigt eine Datei oder einen Ordner, das Programm findet heraus, was es ist
 let job = null, tools = null, found = [], sel = null;
-const AUTO = location.hash.startsWith('#auto=') || location.hash.includes('|');
+const AUTO = location.hash.startsWith('#auto=') || location.hash.split('|').length > 2;
 const ICON = { book: '📖', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️' };
 const usesPdf = f => f && (f.kind == 'pdf' || (f.kind == 'epub' && f.pdf));
 const pdfHasText = f => f && (f.kind == 'pdf' ? f.text : f.pdf_text);
@@ -292,14 +310,19 @@ function showDone(r) {
   // neu erkennen geht nur, wenn der Text aus der Textebene eines PDF stammt und Tesseract da ist
   const canRedo = fromPdf && r.matched == null && sel && sel.kind == 'pdf' && tools && tools.tesseract;
   let h = '<h3>✔ ' + t('done_title', { n: r.pages }) + '</h3>';
-  if (r.warnings && r.warnings.length) h += r.warnings.map(w => '<div class="more">' + esc(t('warn_' + w)) + '</div>').join('');
+  if (r.warnings && r.warnings.length) h += r.warnings.map(w => '<div class="more">' + esc(t('warn_' + w)) +
+    (w == 'bilder_fehlen' ? '<div style="margin-top:8px"><button type="button" id="addImgBtn" class="main">' + t('noimg_btn') + '</button></div>' : '') + '</div>').join('');
   if (r.matched != null) h += '<div class="verdict">' + t('epub_done', { m: Math.round(r.matched * 100) }) + '</div>';
   if (q) h += '<div class="verdict"><span class="amp ' + level + '"></span><b>' + t('q_' + level) + '</b></div><small>' +
     t(fromPdf ? 'q_values_text' : 'q_values', { n: r.pages, c: q.conf, d: Math.round(q.dict * 100) }) + '</small>';
   if (r.dics) h += '<div class="more">' + t(r.year ? 'done_dics_year' : 'done_dics', { y: r.year, d: r.dics.map(d => t('dic_name_' + d)).join(' + ') }) + '</div>';
-  const rec = r.matched != null || !q ? 'rec_gruen' : 'rec_' + level + (level == 'gruen' ? '' : canRedo ? '_redo' : fromPdf ? '_pdf' : '_ocr');
+  // Nach einem Transkribus-Import wäre »nimm Transkribus« ein schlechter Rat – da hilft nur eine bessere Vorlage
+  const fromTk = sel && sel.kind == 'transkribus';
+  const rec = r.matched != null || !q || level == 'gruen' ? 'rec_gruen'
+    : fromTk ? 'rec_' + level + '_tk' : 'rec_' + level + (canRedo ? '_redo' : fromPdf ? '_pdf' : '_ocr');
   h += '<div class="rec ' + (rec == 'rec_gruen' ? '' : level) + '"><b>' + t('rec') + '</b>' + t(rec) +
-    (rec != 'rec_gruen' && !canRedo ? ' ' + help('transkribus', t('q_advice_link')) : '') + '</div>';
+    (rec != 'rec_gruen' && !canRedo && !fromTk ? ' ' + help('transkribus', t('q_advice_link')) : '') +
+    (fromTk && level != 'gruen' ? ' ' + help('pdf-import', t('q_ends_link')) : '') + '</div>';
   if (q && r.matched == null) {
     if (q.ends.length * 4 >= r.pages) h += '<div class="more">' + t('q_ends', { n: q.ends.length }) + ' ' + help('pdf-import', t('q_ends_link')) + '</div>';
     else if (q.weak.length && level != 'gruen') h += '<div class="more">' + t('q_weak', { p: q.weak.slice(0, 25).join(', ') + (q.weak.length > 25 ? ' …' : '') }) + '</div>';
@@ -310,6 +333,11 @@ function showDone(r) {
     h += '<div class="more">' + t('q_upload', { folder: esc(r.images) }) +
       ' <a href="#" id="showImg">' + t('btn_show_folder') + '</a> <span id="shownMsg"></span></div>';
   $('done').innerHTML = h;
+  // Seitenbilder fehlen: von hier aus gleich nachlegen, statt den Nutzer Dateien schieben zu lassen
+  if ($('addImgBtn')) $('addImgBtn').onclick = () => {
+    $('dlg').classList.remove('on');
+    openEdit({ id: r.id, title: r.title || sel.name, folder: r.folder, pages: r.pages, images: 0, corrections: 0 }, 'images');
+  };
   if ($('showImg')) $('showImg').onclick = async e => {
     e.preventDefault();
     try {
@@ -366,9 +394,8 @@ $('oST').onclick = async () => {
 let eb = null, eact = null, enext = null;
 const ACTS = { trans: ['🗂️', b => true], images: ['🖼️', b => b.images < b.pages],
                prep_trans: ['⬆️', b => b.images > 0], prep_st: ['✂️', b => b.images > 0] };
-const sepOf = p => p.includes('\\') ? '\\' : '/';
 
-function openEdit(b) {
+function openEdit(b, act) {
   eb = b; enext = null;
   $('edlg').classList.add('on');
   $('etitle').textContent = b.title;
@@ -377,6 +404,7 @@ function openEdit(b) {
   if (b.corrections) d.push(t('ed_corr', { n: b.corrections }));
   $('einfo').innerHTML = esc(d.join(' · ')) + '<small>' + esc(b.folder) + '</small>';
   editPick();
+  if (act) editAct(act);
 }
 function editPick() {
   eact = null; $('emsg').textContent = ''; $('ehead').textContent = t('ed_what');
@@ -393,12 +421,12 @@ function editAct(a) {
   const img = a == 'images';
   $('ebody').innerHTML = '<label class="f">' + t(img ? 'ed_imgsource' : 'ed_source') + '</label>' +
     '<div class="row"><input type="text" id="eSrc" spellcheck="false">' +
-    (img ? '' : '<button type="button" id="eFile">📄 ' + t('pick_file') + '</button>') +
+    '<button type="button" id="eFile">📄 ' + t('pick_file') + '</button>' +
     '<button type="button" id="eDir">📁 ' + t('pick_folder') + '</button></div>' +
     (!img && eb.corrections ? '<div id="ewarn">' + t('ed_warn_corr', { n: eb.corrections }) +
       '<div class="radio"><label><input type="radio" name="emode" value="replace" checked> ' + t('ed_mode_replace') + '</label>' +
       '<label><input type="radio" name="emode" value="new"> ' + t('ed_mode_new') + '</label></div></div>' : '');
-  if ($('eFile')) $('eFile').onclick = () => editChoose('zip');
+  $('eFile').onclick = () => editChoose(img ? 'pdf' : 'zip');
   $('eDir').onclick = () => editChoose('folder');
   $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t(img ? 'ed_take_imgs' : 'ed_take');
   $('eSrc').focus();
@@ -447,16 +475,12 @@ $('eform').onsubmit = async ev => {
       const r = await editJob('/api/add_images', { id: eb.id, source: src });
       enext = eb.id;
       editDone('<h3>✔ ' + t('ed_done_imgs', { n: r.added }) + '</h3><div class="hint">' + t('ed_how_' + r.how) + '</div>');
-    } else if (mode && mode.value == 'new') {
-      // Nicht überschreiben, sondern daneben – die Seitenbilder kommen aus dem alten Buch mit
-      const r = await editJob('/api/import_transkribus', { job: true, source: src, title: '', images: eb.folder + sepOf(eb.folder) + 'img' });
-      enext = r.id;
-      editDone('<h3>✔ ' + t('done_title', { n: r.pages }) + '</h3>' +
-        (r.warnings || []).map(w => '<div class="hint">' + esc(t('warn_' + w)) + '</div>').join(''));
     } else {
-      const r = await editJob('/api/add_transkribus', { id: eb.id, source: src });
-      enext = eb.id;
+      // Ein neues Buch entsteht als Kopie des alten (mit seinen Seitenbildern) – derselbe Weg hinein
+      const r = await editJob('/api/add_transkribus', { id: eb.id, source: src, mode: mode ? mode.value : 'replace' });
+      enext = r.id;
       let h = '<h3>✔ ' + t('ed_done_trans', { r: r.replaced, p: r.pages }) + '</h3>';
+      if (r.neu) h += '<div class="hint">' + t('ed_new_book', { f: esc(r.folder) }) + '</div>';
       if (r.kept && r.kept.length) h += '<div class="hint">' + t('ed_kept', { p: r.kept.join(', ') }) + '</div>';
       h += '<div class="hint">' + t('ed_how_' + r.how) + '</div>';
       if (r.backup) h += '<div class="hint">' + t('ed_backup', { f: esc(r.backup) }) + '</div>';

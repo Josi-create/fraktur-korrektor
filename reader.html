@@ -19,6 +19,10 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #loading{position:absolute;inset:0;z-index:9;background:#e9e6df;display:flex;align-items:center;justify-content:center;padding:0 15%;text-align:center;font-size:18px;line-height:1.6;color:#555}
 #main{position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px;min-height:0}
 .pane{background:#fff;border:1px solid #bbb;border-radius:4px;position:relative;overflow:hidden;min-height:0}
+#noimg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center;color:#666}
+#noimg p{max-width:360px;line-height:1.6;margin:0}
+#noimg button{font:15px Segoe UI,Arial,sans-serif;padding:10px 20px;border:1px solid #285;border-radius:4px;background:#3a6;color:#fff;cursor:pointer}
+#noimg button:hover{background:#395}
 #imgwrap{position:absolute;left:0;top:0;transform-origin:0 0;transition:transform .18s ease-out}
 #imgwrap img{display:block}
 .hl{position:absolute;pointer-events:none;box-sizing:border-box}
@@ -98,6 +102,8 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <span id="mode"></span>
  <span id="pos"></span>
  <a href="#" id="diclink" data-t="dic_link"></a>
+ <a href="#" id="addTrans" data-t="act_trans" style="display:none"></a>
+ <a href="#" id="addImg" data-t="act_images" style="display:none"></a>
  <a id="helplink" data-help="usage" target="_blank" data-t="help_f1"></a>
  <span class="langsw"></span>
 </div>
@@ -105,6 +111,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <div id="loading" data-t="loading"></div>
  <div class="pane" id="imgpane">
   <div id="imgwrap"><img id="img" alt=""><div class="hl" id="hlLine"></div><div class="hl" id="hlWord"></div><div class="hl" id="hlWord2"></div></div>
+  <div id="noimg" style="display:none"><p data-t="noimg_text"></p><button type="button" id="noimgBtn" data-t="noimg_btn"></button></div>
  </div>
  <div id="right">
   <div class="pane" id="korr">
@@ -182,6 +189,15 @@ function skippable(i) { const l = data.lines[i]; return l.trim() === '' || l ===
 async function loadOverview() {
   const o = await (await fetch(BASE + '/api/overview')).json(); ov = o.pages;
   $('title').textContent = o.title; document.title = o.title + ' – Fraktur-Korrektor'; $('loading').style.display = 'none';
+  // Was dem Buch noch fehlt, lässt sich von hier aus nachlegen – der Dialog dafür steht in der Bibliothek
+  if (o.local && o.id) {
+    const weiter = was => ev => { ev.preventDefault(); location.href = '/bibliothek#edit=' + o.id + '|' + was; };
+    $('addTrans').style.display = ''; $('addTrans').onclick = weiter('trans');
+    if (!o.images) {
+      $('addImg').style.display = ''; $('addImg').onclick = weiter('images');
+      $('noimg').style.display = 'flex'; $('noimgBtn').onclick = weiter('images');
+    }
+  }
   const s = $('pagesel'); s.innerHTML = '';
   for (const p of ov) { const op = document.createElement('option'); op.value = p.page; op.textContent = p.page + ' (' + p.n + ')'; s.appendChild(op); }
   if (pg) s.value = pg;
