@@ -181,6 +181,33 @@ def test_textexport_mit_anderer_zeilenzahl(tmp_path):
     assert '002' not in geo and '003' in geo
 
 
+def test_text_aus_einem_anderen_buch(tmp_path):
+    """Die Quelle ist selbst ein Buch des Programms – etwa ein Transkribus-Export, der schon eingelesen wurde.
+    Dessen Seitennummern dürfen nicht als Namen gelten: »001« dort ist nicht »001« hier, sonst landet der ganze
+    Text um eine Seite verschoben neben den Bildern."""
+    ziel = make_book(str(tmp_path / 'ziel'))  # 4 Seiten, die erste steht im anderen Buch nicht
+    quelle = make_book(str(tmp_path / 'quelle'),
+                       {'001': [z + ' (Transkribus)' for z in TEXTE['002']],
+                        '002': [z + ' (Transkribus)' for z in TEXTE['003']],
+                        '003': [z + ' (Transkribus)' for z in TEXTE['004']]}, images=False)
+    r = pagexml.import_into(quelle, ziel)
+    assert r['replaced'] == 3 and r['kept'] == ['001'] and r['how'] == 'text'
+    for pg in ('002', '003', '004'):
+        neu = open(os.path.join(ziel, pg + '.txt'), encoding='utf-8').read()
+        assert 'Transkribus' in neu and TEXTE[pg][0] in neu
+    assert 'Transkribus' not in open(os.path.join(ziel, '001.txt'), encoding='utf-8').read()
+
+
+def test_kopfzeile_und_fussnoten_aus_einem_buchordner(tmp_path):
+    folder = str(tmp_path / 'quelle')
+    os.makedirs(folder)
+    with open(os.path.join(folder, '001.txt'), 'w', encoding='utf-8', newline='\n') as f:
+        f.write('# 17\nHaupttext der Seite\nund noch eine Zeile\n---\n1) Die Fußnote.\n')
+    lines = pagexml.read_book_page(os.path.join(folder, '001.txt'))
+    assert [(l['kind'], l['text']) for l in lines] == [
+        ('head', '17'), ('body', 'Haupttext der Seite'), ('body', 'und noch eine Zeile'), ('fn', '1) Die Fußnote.')]
+
+
 def test_textexport_je_seite_eine_datei(tmp_path):
     ordner = tmp_path / 'export'
     ordner.mkdir()

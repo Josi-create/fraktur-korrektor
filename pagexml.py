@@ -329,9 +329,28 @@ def plain_lines(texte):
     return lines
 
 
+def read_book_page(path):
+    """Eine Seite aus einem Buchordner: optional »# Kopfzeile«, Haupttext, Zeile »---«, Fußnoten."""
+    with open(path, encoding='utf-8') as f:
+        zeilen = [l.rstrip('\n') for l in f.read().splitlines()]
+    lines, kind = [], 'body'
+    for n, z in enumerate(zeilen):
+        if n == 0 and z.startswith('#'):
+            t = z[1:].strip()
+            if t:
+                lines.append(dict(text=t, kind='head'))
+            continue
+        if z.strip() == '---':
+            kind = 'fn'
+            continue
+        lines.append(dict(text=z, kind=kind))
+    return lines
+
+
 def read_export(src):
-    """Die Seiten eines Exports, gleich welcher Art: {schlüssel: dict(w, h, img, lines)}. Bei PAGE-XML haben die
-    Zeilen ihre Lage im Bild, bei einem Textexport nicht (w = 0). Dazu der Titel, wenn er dabeisteht."""
+    """Die Seiten einer Quelle, gleich welcher Art: {schlüssel: dict(w, h, img, lines)}. Bei PAGE-XML haben die
+    Zeilen ihre Lage im Bild, bei Text oder einem fremden Buchordner nicht (w = 0). Dazu der Titel, wenn er
+    dabeisteht."""
     files, title = ([src], None) if os.path.isfile(src) and src.lower().endswith('.xml') else find_export(src)
     if files:
         out = {}
@@ -339,6 +358,11 @@ def read_export(src):
             W, H, img, lines = parse_page(f)
             out[f] = dict(w=W, h=H, img=img, lines=lines)
         return out, title
+    if os.path.isdir(src) and book_pages(src):
+        # Die Quelle ist selbst ein Buch des Programms. Seine Seitennummern sagen nichts darüber, wohin sein
+        # Text hier gehört – »001« dort ist nicht »001« hier. Zugeordnet wird darum am Wortlaut.
+        return {pg: dict(w=0, h=0, img='', lines=read_book_page(os.path.join(src, pg + '.txt')), book=True)
+                for pg in book_pages(src)}, None
     return {k: dict(w=0, h=0, img='', lines=plain_lines(zeilen)) for k, zeilen in text_pages(src)}, None
 
 
@@ -355,7 +379,11 @@ def import_into(src, folder, progress=lambda done, total, msg: None, save=True):
         if not read:
             raise ValueError('keine_xml')
         keys = sorted(read)
-        hit, how = match_to_pages(folder, keys, lambda k: (read[k]['img'], k),
+        # Kommt der Text aus einem anderen Buch, taugen dessen Seitennummern nicht als Namen; was dort über die
+        # Herkunft der Bilder steht, dagegen schon.
+        fremd = load_json(src, 'quellen.json', {}) if any(v.get('book') for v in read.values()) else None
+        namen = (lambda k: (fremd.get(k, ''),)) if fremd is not None else (lambda k: (read[k]['img'], k))
+        hit, how = match_to_pages(folder, keys, namen,
                                   text_of=lambda k: '\n'.join(d['text'] for d in read[k]['lines']))
         offen = [k for k in keys if k not in hit]
         keys = [k for k in keys if k in hit]
