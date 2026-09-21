@@ -158,8 +158,8 @@ class Book:
         return m.group() if m else str(int(pg))
 
     def make_note(self, pg, text, lang='de'):
-        """Ein Zettel nach Luhmanns Art im Notizordner: fortlaufend nummeriert, oben das Zitat, Platz für die eigene Anmerkung,
-        unten die Quelle – Seite und Verweis auf die Quellenangabe des Buchs (Datei „0 Quellenangabe“, wird bei Bedarf als Vorlage
+        """Ein Zettel nach Luhmanns Art im Notizordner: fortlaufend nummeriert, oben Platz für die eigene Anmerkung, unter dem
+        Strich das Zitat und die Quelle – Seite und Verweis auf die Quellenangabe des Buchs (Datei „0 Quellenangabe“, wird bei Bedarf als Vorlage
         angelegt; dort trägt der Nutzer Herkunft und Zotero-Zitierweise ein). Liefert (ergebnis, fehler)."""
         W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
         folder = self.settings.get('notizen')
@@ -187,7 +187,7 @@ class Book:
         n = max(nums, default=0) + 1
         name = '%02d %s %s' % (n, W['page'], page)
         path = os.path.join(folder, name + '.md')
-        body = '> %s\n\n**%s**\n\n\n\n---\n%s %s, [[%s|%s]]\n' % (text, W['note'], W['page'], page, src, self.title)
+        body = '**%s**\n\n\n\n---\n\n> %s\n\n%s %s, [[%s|%s]]\n' % (W['note'], text, W['page'], page, src, self.title)
         with open(path, 'x', encoding='utf-8', newline='\n') as f:  # 'x': nie überschreiben
             f.write(body)
         return dict(file=path, name=name, number=n, page=page, text=text), None
@@ -764,9 +764,61 @@ def open_obsidian(path):
     """Die neue Notiz in Obsidian zeigen. Obsidian meldet beim System die Adresse obsidian://…; liegt die Datei in einem
     Vault, den Obsidian kennt, öffnet es sie dort. Ohne Obsidian bleibt die Datei einfach im Ordner."""
     try:
-        return bool(webbrowser.open('obsidian://open?path=' + urllib.parse.quote(path)))
+        ok = bool(webbrowser.open('obsidian://open?path=' + urllib.parse.quote(path)))
     except Exception:
         return False
+    if ok and sys.platform == 'win32':
+        threading.Thread(target=raise_window, args=('obsidian.exe',), daemon=True).start()
+    return ok
+
+
+def raise_window(exe, wait=6.0):
+    """Das Fenster eines Programms nach vorn holen (Windows). Der Server läuft im Hintergrund, und Windows lässt ein von dort
+    gestartetes Programm sonst nur in der Taskleiste blinken."""
+    import ctypes
+    from ctypes import wintypes
+    u, k = ctypes.windll.user32, ctypes.windll.kernel32
+    k.OpenProcess.restype = wintypes.HANDLE
+    k.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    k.QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
+    k.CloseHandle.argtypes = [wintypes.HANDLE]
+    found = []
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def each(hwnd, _):
+        if u.IsWindowVisible(hwnd) and u.GetWindowTextLengthW(hwnd):
+            pid = wintypes.DWORD()
+            u.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+            h = k.OpenProcess(0x1000, False, pid.value)  # PROCESS_QUERY_LIMITED_INFORMATION
+            if h:
+                buf, n = ctypes.create_unicode_buffer(1024), wintypes.DWORD(1024)
+                if k.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(n)) and os.path.basename(buf.value).lower() == exe:
+                    found.append(hwnd)
+                k.CloseHandle(h)
+        return True
+
+    end = time.time() + wait
+    while time.time() < end:  # Obsidian startet vielleicht erst
+        time.sleep(0.3)
+        del found[:]
+        u.EnumWindows(each, 0)
+        if found:
+            hwnd = found[0]  # EnumWindows liefert von vorn nach hinten: das zuletzt benutzte Fenster
+            if u.IsIconic(hwnd):
+                u.ShowWindow(hwnd, 9)  # SW_RESTORE
+            fg = u.GetForegroundWindow()
+            if fg != hwnd:  # an den Eingabestrang des vorderen Fensters (Browser) hängen: dann gilt der Wechsel als erlaubt
+                t1, t2 = u.GetWindowThreadProcessId(fg, None), k.GetCurrentThreadId()
+                u.AttachThreadInput(t2, t1, True)
+                u.BringWindowToTop(hwnd)
+                u.SetForegroundWindow(hwnd)
+                u.AttachThreadInput(t2, t1, False)
+            if u.GetForegroundWindow() != hwnd:  # Rückfall: ein leerer Alt-Tastendruck hebt die Sperre auf
+                u.keybd_event(0x12, 0, 0, 0)
+                u.keybd_event(0x12, 0, 2, 0)
+                u.SetForegroundWindow(hwnd)
+            return u.GetForegroundWindow() == hwnd
+    return False
 
 
 # ---- Aufträge: lange Arbeiten im Hintergrund, der Browser fragt den Fortschritt ab

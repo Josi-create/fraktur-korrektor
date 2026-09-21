@@ -174,22 +174,23 @@ Niklas Luhmanns Zettelkasten: ein Gedanke je Zettel, jeder mit Quellenangabe.
 
 Das Programm legt im Ordner eine Datei an, fortlaufend nummeriert, zum Beispiel `07 Seite 57.md`:
 
-    > Die Kolonisten zogen nach Rußland und der Weg war weit.
-
     **Anmerkung**
 
 
 
     ---
+
+    > Die Kolonisten zogen nach Rußland und der Weg war weit.
+
     Seite 57, [[0 Quellenangabe|Leibbrandt 1928]]
 
-Oben das Zitat (am Zeilenende getrennte Wörter sind zusammengezogen), darunter Platz für die eigene Anmerkung, unten die
+Oben Platz für die eigene Anmerkung, unter dem Strich das Zitat (am Zeilenende getrennte Wörter sind zusammengezogen) und die
 Seite – die gedruckte Seitenzahl aus der Kopfzeile, sonst die PDF-Seite – und der Verweis auf die Quellenangabe des Buchs.
 Diese Datei `0 Quellenangabe.md` legt das Programm beim ersten Zettel als Vorlage an; tragen Sie dort ein, woher das Buch
 stammt (Universitätsbibliothek, Fernleihe …) und die Zitierweise, wie Zotero sie liefert. So hat jeder Zettel per Klick
 seine vollständige Quelle. Das Zitat liegt außerdem in der Zwischenablage.
 
-Ist Obsidian installiert, öffnet es den neuen Zettel sofort (der Ordner muss in einem Vault liegen, den Obsidian kennt).
+Ist Obsidian installiert, öffnet es den neuen Zettel sofort und kommt unter Windows in den Vordergrund (der Ordner muss in einem Vault liegen, den Obsidian kennt).
 Ohne Obsidian bleibt die Datei einfach im Ordner – es ist gewöhnliches Markdown.
 
 ## Über das Heimnetz mitlesen

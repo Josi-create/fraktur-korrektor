@@ -172,22 +172,23 @@ Niklas Luhmann's Zettelkasten: one thought per note, each with its source.
 
 The program creates a file in that folder, numbered consecutively, for example `07 Page 57.md`:
 
-    > Die Kolonisten zogen nach Rußland und der Weg war weit.
-
     **Note**
 
 
 
     ---
+
+    > Die Kolonisten zogen nach Rußland und der Weg war weit.
+
     Page 57, [[0 Source|Leibbrandt 1928]]
 
-At the top the quotation (words hyphenated at line ends are joined), below it room for your own remark, at the bottom the
+At the top room for your own remark, below the rule the quotation (words hyphenated at line ends are joined) and the
 page – the printed page number from the running head, otherwise the PDF page – and a link to the book's source note. The
 program creates that file, `0 Source.md`, as a template with the first note; enter there where the book comes from
 (university library, interlibrary loan …) and the citation as Zotero gives it. This way every note is one click away
 from its full source. The quotation is also placed on the clipboard.
 
-If Obsidian is installed, it opens the new note immediately (the folder has to be inside a vault Obsidian knows).
+If Obsidian is installed, it opens the new note immediately and, on Windows, comes to the front (the folder has to be inside a vault Obsidian knows).
 Without Obsidian the file simply stays in the folder – it is plain Markdown.
 
 ## Reading along on the home network

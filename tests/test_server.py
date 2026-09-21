@@ -128,12 +128,12 @@ def test_notizen_fuer_obsidian(app, tmp_path):
     code, r = app.post('/api/notiz', dict(page='001', text='ber Weg war weit. Die Zu¬\nkunft lag  vor ihnen, baß sie\nber Heimat gedachten.'))
     assert code == 200 and r['name'] == '01 Seite 5' and r['page'] == '5' and not r['opened']  # gedruckte Seitenzahl aus der Kopfzeile
     note = open(folder / '01 Seite 5.md', encoding='utf-8').read()
-    assert note == '> ber Weg war weit. Die Zukunft lag vor ihnen, baß sie ber Heimat gedachten.\n\n**Anmerkung**\n\n\n\n---\nSeite 5, [[0 Quellenangabe|buch]]\n'
+    assert note == '**Anmerkung**\n\n\n\n---\n\n> ber Weg war weit. Die Zukunft lag vor ihnen, baß sie ber Heimat gedachten.\n\nSeite 5, [[0 Quellenangabe|buch]]\n'
     src = open(folder / '0 Quellenangabe.md', encoding='utf-8').read()
     assert src.startswith('# buch\n') and 'Zotero' in src
     open(folder / '0 Quellenangabe.md', 'w', encoding='utf-8').write('# Eigene Angaben\n')  # wird nie überschrieben
     r = app.post('/api/notiz', dict(page='002', text='<em>Der Vater</em> und ber Sohn.', lang='en'))[1]
-    assert r['name'] == '02 Page 6' and open(folder / '02 Page 6.md', encoding='utf-8').read().startswith('> Der Vater und ber Sohn.\n\n**Note**')
+    assert r['name'] == '02 Page 6' and open(folder / '02 Page 6.md', encoding='utf-8').read().startswith('**Note**\n\n\n\n---\n\n> Der Vater und ber Sohn.\n\nPage 6')
     assert open(folder / '0 Quellenangabe.md', encoding='utf-8').read() == '# Eigene Angaben\n'
     assert sorted(os.listdir(folder)) == ['0 Quellenangabe.md', '0 Source.md', '01 Seite 5.md', '02 Page 6.md']
     assert app.post('/api/notiz', dict(page='001', text='  \n '))[1]['error'] == 'kein_text'

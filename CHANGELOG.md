@@ -6,9 +6,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 
 ### Neu
 - **Notizen für Obsidian** (#60): Passage markieren, `F4` oder Rechtsklick – das Programm legt im Notizordner des Buchs
-  (Taste `N`, Ordner im Obsidian-Vault, gespeichert in `buch.json`) einen fortlaufend nummerierten Zettel an: oben das
-  Zitat, Platz für die Anmerkung, unten „Seite x“ mit Verweis auf die Quellenangabe des Buchs (`0 Quellenangabe.md`, wird
-  als Vorlage für Herkunft und Zotero-Zitierweise angelegt). Obsidian öffnet den Zettel sofort; das Zitat liegt auch in der
+  (Taste `N`, Ordner im Obsidian-Vault, gespeichert in `buch.json`) einen fortlaufend nummerierten Zettel an: oben
+  Platz für die Anmerkung, unter dem Strich das Zitat und „Seite x“ mit Verweis auf die Quellenangabe des Buchs (`0 Quellenangabe.md`, wird
+  als Vorlage für Herkunft und Zotero-Zitierweise angelegt). Obsidian öffnet den Zettel sofort und kommt in den Vordergrund; das Zitat liegt auch in der
   Zwischenablage. Ohne Markierung wird die Lesezeile zum Zettel.
 - **Installation für alle** (M4): Der Fraktur-Korrektor wird als fertiges Programm ausgeliefert – Doppelklick, fertig,
   nichts nachinstallieren. Windows: Installer und portables ZIP; Mac: `.app` im `.dmg` für Apple Silicon und Intel.
