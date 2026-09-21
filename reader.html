@@ -24,7 +24,7 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #find button:hover{background:#5a5a5a} #find b{color:#fff;min-width:44px;text-align:center}
 .found{background:#9fdcff;border-radius:2px;outline:2px solid #1780c0}
 #loading{position:absolute;inset:0;z-index:9;background:#e9e6df;display:flex;align-items:center;justify-content:center;padding:0 15%;text-align:center;font-size:18px;line-height:1.6;color:#555}
-#main{position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px;min-height:0}
+#main{position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;gap:10px;padding:10px;min-height:0}
 .pane{background:#fff;border:1px solid #bbb;border-radius:4px;position:relative;overflow:hidden;min-height:0}
 #noimg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center;color:#666}
 #noimg p{max-width:360px;line-height:1.6;margin:0}
@@ -36,7 +36,8 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #hlLine{background:rgba(255,220,60,.28)}
 #hlWord,#hlWord2{border:solid red}
 #right{display:flex;flex-direction:column;gap:10px;min-height:0}
-#korr{flex:none;padding:10px 12px;min-height:118px;overflow:visible}
+/* Wort und Tastaturhilfe über beide Spalten: nimmt links dem Bild etwas Höhe, gibt sie rechts dem Text (#55) */
+#korr{grid-column:1 / -1;padding:10px 12px;min-height:118px;overflow:visible}
 #word{font-size:19px;margin-bottom:6px}
 #word b{color:#c00}
 /* Eingabefelder liegen im Textfenster genau über der Lesezeile (und der Folgezeile bei getrennten Wörtern) */
@@ -118,16 +119,16 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 </div>
 <div id="main">
  <div id="loading" data-t="loading"></div>
+ <div class="pane" id="korr">
+  <div id="word"></div>
+  <div id="help"></div>
+  <div id="shint"></div>
+ </div>
  <div class="pane" id="imgpane">
   <div id="imgwrap"><div class="hl" id="hlLine"></div><div class="hl" id="hlWord"></div><div class="hl" id="hlWord2"></div></div>
   <div id="noimg" style="display:none"><p data-t="noimg_text"></p><button type="button" id="noimgBtn" data-t="noimg_btn"></button></div>
  </div>
  <div id="right">
-  <div class="pane" id="korr">
-   <div id="word"></div>
-   <div id="help"></div>
-   <div id="shint"></div>
-  </div>
   <div class="pane" id="text"><div id="centerline"></div><div id="lines"></div>
    <input id="edit" type="text" spellcheck="false" style="display:none">
    <input id="edit2" type="text" spellcheck="false" style="display:none" data-t-title="edit2_title">

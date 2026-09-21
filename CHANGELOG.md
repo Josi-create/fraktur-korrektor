@@ -105,6 +105,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Tests (pytest) und CI für Windows, macOS, Linux; `pyproject.toml`; Lizenz GPL-3.0-or-later; ROADMAP.
 
 ### Geändert
+- **Die Tastaturhilfe liegt über der ganzen Fensterbreite** (#55), nicht mehr nur über dem Text: Sie braucht so weniger
+  Zeilen, das Textfenster wird höher, das Seitenbild gibt dafür oben etwas Höhe ab.
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
 ## [0.5.0] – 2026-09-18
