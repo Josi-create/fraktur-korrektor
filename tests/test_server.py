@@ -106,7 +106,7 @@ def test_rechtschreibung_je_buch(app):
     import os, json
     old = app.text('002')[1]
     app.post('/api/edit/002', dict(edits=[dict(line=1, old=old, new='Der Vater sagte, dass die Thür offen sey. BWKG und BWKG.')]))
-    assert app.get('/api/settings')[1] == dict(year=None, dics=['1901'])              # Bücher von früher: wie bisher
+    assert app.get('/api/settings')[1] == dict(year=None, dics=['1901'], notizen=None)  # Bücher von früher: wie bisher
     assert words(app.get('/api/page/002')[1]) == ['dass', 'Thür', 'sey']              # die Sigle BWKG (zweimal, Großbuchstaben) gilt
     code, r = app.post('/api/settings', dict(dics=['neu', '1901']))
     assert code == 200 and r['dics'] == ['1901', 'neu'] and words(app.get('/api/page/002')[1]) == ['Thür', 'sey']
@@ -114,3 +114,28 @@ def test_rechtschreibung_je_buch(app):
     assert r['dics'] == ['1901', 'vor1901'] and words(app.get('/api/page/002')[1]) == ['dass']
     assert r['total'] == sum(p['n'] for p in app.get('/api/overview')[1]['pages'])
     assert json.load(open(os.path.join(app.folder, 'buch.json'), encoding='utf-8'))['dics'] == ['1901', 'vor1901']  # bleibt gespeichert
+
+
+def test_notizen_fuer_obsidian(app, tmp_path):
+    import os, json
+    assert app.post('/api/notiz', dict(page='001', text='Die Kolonisten'))[1]['error'] == 'kein_notizordner'
+    assert app.post('/api/settings', dict(notizen=str(tmp_path / 'gibtsnicht' / 'Buch')))[1]['notizen'].endswith('Buch')
+    assert app.post('/api/notiz', dict(page='001', text='x'))[1]['error'] == 'notizordner_fehlt'  # Elternordner fehlt: vertippt
+    folder = tmp_path / 'Vault' / 'Leibbrandt 1928'
+    folder.parent.mkdir()
+    app.post('/api/settings', dict(notizen=str(folder)))
+    assert json.load(open(os.path.join(app.folder, 'buch.json'), encoding='utf-8'))['notizen'] == str(folder)
+    code, r = app.post('/api/notiz', dict(page='001', text='ber Weg war weit. Die Zu¬\nkunft lag  vor ihnen, baß sie\nber Heimat gedachten.'))
+    assert code == 200 and r['name'] == '01 Seite 5' and r['page'] == '5' and not r['opened']  # gedruckte Seitenzahl aus der Kopfzeile
+    note = open(folder / '01 Seite 5.md', encoding='utf-8').read()
+    assert note == '> ber Weg war weit. Die Zukunft lag vor ihnen, baß sie ber Heimat gedachten.\n\n**Anmerkung**\n\n\n\n---\nSeite 5, [[0 Quellenangabe|buch]]\n'
+    src = open(folder / '0 Quellenangabe.md', encoding='utf-8').read()
+    assert src.startswith('# buch\n') and 'Zotero' in src
+    open(folder / '0 Quellenangabe.md', 'w', encoding='utf-8').write('# Eigene Angaben\n')  # wird nie überschrieben
+    r = app.post('/api/notiz', dict(page='002', text='<em>Der Vater</em> und ber Sohn.', lang='en'))[1]
+    assert r['name'] == '02 Page 6' and open(folder / '02 Page 6.md', encoding='utf-8').read().startswith('> Der Vater und ber Sohn.\n\n**Note**')
+    assert open(folder / '0 Quellenangabe.md', encoding='utf-8').read() == '# Eigene Angaben\n'
+    assert sorted(os.listdir(folder)) == ['0 Quellenangabe.md', '0 Source.md', '01 Seite 5.md', '02 Page 6.md']
+    assert app.post('/api/notiz', dict(page='001', text='  \n '))[1]['error'] == 'kein_text'
+    assert app.post('/api/settings', dict(dics=['neu']))[1]['notizen'] == str(folder)  # Wörterbuchwahl lässt den Ordner stehen
+    assert app.post('/api/settings', dict(notizen=''))[1]['notizen'] is None

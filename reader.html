@@ -73,10 +73,11 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .stext{font-family:Georgia,serif;font-size:16px;white-space:pre-wrap}
 #wlist{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
 #wlist.on{display:flex}
-#dics{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
-#dics.on{display:flex}
-#dhead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
-#dbody{padding:18px 22px;max-width:760px;font-size:16px;line-height:1.5}
+#dics,#notes{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
+#dics.on,#notes.on{display:flex}
+#dhead,#nhead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
+#dbody,#nbody{padding:18px 22px;max-width:760px;font-size:16px;line-height:1.5}
+#nbody input{flex:1;font-size:16px;padding:4px 6px} #nbody button{font-size:15px} #ninfo{margin-top:14px;color:#a40;min-height:24px}
 #dbody label{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid #ccc;border-radius:5px;margin-bottom:8px;cursor:pointer}
 #dbody label:hover{background:#faf8f2} #dbody input{margin-top:6px;transform:scale(1.3)} #dbody small{display:block;color:#666;font-size:14px}
 #dyear{color:#555;margin-bottom:12px} #dinfo{margin-top:14px;color:#a40;min-height:24px}
@@ -98,6 +99,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <span id="mode"></span>
  <span id="pos"></span>
  <a href="#" id="diclink" data-t="dic_link"></a>
+ <a href="#" id="notelink" data-t="note_link"></a>
  <a id="helplink" data-help="usage" target="_blank" data-t="help_f1"></a>
  <span class="langsw"></span>
 </div>
@@ -126,6 +128,16 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
    <label><input type="checkbox" value="1901"><span><b data-t="dic_1901"></b><small data-t="dic_1901_ex"></small></span></label>
    <label><input type="checkbox" value="neu"><span><b data-t="dic_neu"></b><small data-t="dic_neu_ex"></small></span></label>
    <div id="dinfo"></div>
+  </div>
+ </div>
+ <div id="notes">
+  <div id="nhead"><span data-t="note_head"></span>
+   <div style="color:#666;font-size:13.5px;margin-top:6px" data-t="note_help"></div></div>
+  <div id="nbody">
+   <p data-t="note_intro"></p>
+   <p data-t="note_folder"></p>
+   <div style="display:flex;gap:8px"><input id="nfolder" spellcheck="false" data-t-ph="note_folder_ph"><button id="nchoose" data-t="choose_folder"></button></div>
+   <div id="ninfo"></div>
   </div>
  </div>
  <div id="wlist">
@@ -569,6 +581,48 @@ async function dicsKey(e) {
   const b = dicBoxes()[{ '1': 0, '2': 1, '3': 2 }[k]];
   if (b) { e.preventDefault(); b.checked = !b.checked; await saveDics(); }
 }
+// ---- Notizen für Obsidian: die markierte Passage (sonst die Lesezeile) wird ein Zettel im Notizordner des Buchs –
+// oben das Zitat, unten „Seite x“ mit Verweis auf die Quellenangabe. F4 oder Rechtsklick auf die Markierung.
+function selectedText() {
+  const s = getSelection(); if (!s || s.isCollapsed || !s.rangeCount) return null;
+  const r = s.getRangeAt(0); if (!$('lines').contains(r.commonAncestorContainer)) return null;
+  const n = r.startContainer.nodeType == 1 ? r.startContainer : r.startContainer.parentNode, d = n.closest('#lines div[data-i]');
+  const text = s.toString().split('\n').filter(l => !l.startsWith('―')).join('\n');  // ohne die Seitentrenner
+  return { text, p: d ? d.dataset.p : pg };
+}
+async function makeNote() {
+  const sel = selectedText(), line = mode == 'fix' ? cf.line : li;
+  const text = sel ? sel.text : skippable(line) ? '' : strip(data.lines[line]), p = sel ? sel.p : pg;
+  if (!text.trim()) return;
+  const r = await fetch(BASE + '/api/notiz', { method: 'POST', body: JSON.stringify({ page: p, text, lang: LANG, open: true }) });
+  const x = await r.json();
+  if (x.error == 'kein_notizordner') { await openNotes(); return; }
+  if (x.error) { msg = t('err_' + x.error); render(); return; }
+  try { await navigator.clipboard.writeText(x.text); } catch (e) {}
+  try { getSelection().removeAllRanges(); } catch (e) {}
+  msg = t(x.opened ? 'note_done' : 'note_done_file', { n: x.name, f: x.file }); if (mode == 'read') render(); else $('shint').textContent = msg;
+}
+async function openNotes() {
+  const st = await (await fetch(BASE + '/api/settings')).json();
+  $('nfolder').value = st.notizen || ''; $('ninfo').textContent = st.notizen ? '' : t('note_none');
+  mode = 'notes'; cf = null; $('notes').classList.add('on'); $('edit').style.display = 'none'; $('edit2').style.display = 'none'; $('nfolder').focus();
+}
+async function saveNotes() {
+  const r = await fetch(BASE + '/api/settings', { method: 'POST', body: JSON.stringify({ notizen: $('nfolder').value.trim() }) });
+  const x = await r.json();
+  if (x.error) { $('ninfo').textContent = t('err_' + x.error); return false; }
+  msg = x.notizen ? t('note_saved', { f: x.notizen }) : t('note_off'); return true;
+}
+function closeNotes() { $('notes').classList.remove('on'); mode = 'read'; document.activeElement.blur(); render(); }
+async function notesKey(e) {
+  if (e.key == 'Escape') { e.preventDefault(); closeNotes(); }
+  else if (e.key == 'Enter') { e.preventDefault(); if (await saveNotes()) closeNotes(); }
+}
+$('nchoose').onclick = async () => {
+  const r = await (await fetch('/api/choose', { method: 'POST', body: JSON.stringify({ kind: 'folder' }) })).json();
+  if (r.path) $('nfolder').value = r.path; else if (r.error) $('ninfo').textContent = t('err_' + r.error);
+  $('nfolder').focus();
+};
 let wl = null;
 async function openWhitelist() {
   const r = await (await fetch(BASE + '/api/whitelist')).json();
@@ -643,7 +697,9 @@ async function onKey(e) {
   if (mode == 'table') return tbKey(e);
   if (mode == 'wlist') return wlKey(e);
   if (mode == 'dics') return dicsKey(e);
+  if (mode == 'notes') return notesKey(e);
   if (e.key == 'F9') { e.preventDefault(); await startSeries(); return; }
+  if (e.key == 'F4') { e.preventDefault(); await makeNote(); return; }
   if (mode == 'read') {
     if (e.target.tagName == 'SELECT') return;
     const k = e.key;
@@ -666,6 +722,7 @@ async function onKey(e) {
     else if (k == 'u' || k == 'U') await undoSeries();
     else if (k == 'w' || k == 'W') await openWhitelist();
     else if (k == 'd' || k == 'D') await openDics();
+    else if (k == 'n' || k == 'N') await openNotes();
     else if (k == 'f' || k == 'F') await footnoteSep();
     else if (k == 't' || k == 'T') await tableKey();
     else if (k == 'h' || k == 'H') await headingKey();
@@ -690,6 +747,7 @@ document.addEventListener('keydown', e => {
 document.addEventListener('keydown', async e => { if (busy) { e.preventDefault(); return; } busy = true; try { await onKey(e); } finally { busy = false; } });
 for (const b of dicBoxes()) b.onchange = async () => { if (!busy) { busy = true; try { await saveDics(); } finally { busy = false; } } };
 $('diclink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !busy) { busy = true; try { await openDics(); } finally { busy = false; } } };
+$('notelink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !busy) { busy = true; try { await openNotes(); } finally { busy = false; } } };
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
 $('img').onload = layoutImage;
 $('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });
@@ -716,8 +774,14 @@ $('lines').addEventListener('dblclick', async e => {
   while (a > 0 && W.test(l[a - 1])) a--; while (b < l.length && W.test(l[b])) b++;
   enterFree([a, b]);
 });
+$('lines').addEventListener('contextmenu', e => {
+  // Rechtsklick auf eine markierte Passage: Notiz daraus machen (ohne Markierung bleibt das gewohnte Menü)
+  if (mode != 'read' || busy || !selectedText()) return;
+  e.preventDefault(); busy = true; makeNote().finally(() => { busy = false; });
+});
 $('lines').addEventListener('click', async e => {
-  if (mode != 'read' || busy) return; const d = e.target.closest('#lines div[data-i]'); if (!d) return;
+  if (mode != 'read' || busy || !getSelection().isCollapsed) return;  // nach dem Markieren mit der Maus bleibt die Lesezeile stehen
+  const d = e.target.closest('#lines div[data-i]'); if (!d) return;
   if (e.detail <= 1) lastClick = { p: d.dataset.p, i: +d.dataset.i, off: charOffset(d, e.clientX, e.clientY) };
   else return;  // zweiter Klick eines Doppelklicks: der Text ist schon gerollt, nicht nochmal springen
   const i = +d.dataset.i;

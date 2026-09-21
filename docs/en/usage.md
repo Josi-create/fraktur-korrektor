@@ -34,6 +34,8 @@ is being changed – and **Edit line** (orange).
 | Reading | `V` | join the reading line with the next line |
 | Reading | `W` | show the whitelist |
 | Reading | `D` | dictionary: which spelling applies to this book (see below) |
+| Reading / Correction | `F4` or right-click the selection | note for Obsidian from the selected passage, otherwise from the reading line (see below) |
+| Reading | `N` | set the notes folder for this book |
 | anywhere | `F1` | this help |
 
 ## Hyphenated words
@@ -156,6 +158,37 @@ Independently of this, the following always count as correct: common abbreviatio
 such as Offb, Joh), sigla in capitals that occur more than once (BWKG, LKA), and longer words that occur at least three
 times in the book (mostly names). A name that is still red is confirmed once with `F8` – this then applies to every
 occurrence.
+
+## Notes for Obsidian (F4)
+
+If you take excerpts while reading, every passage can become a note in [Obsidian](https://obsidian.md) – modelled on
+Niklas Luhmann's Zettelkasten: one thought per note, each with its source.
+
+1. Once per book: press `N` (or “Notes” in the top bar) and enter the folder in your Obsidian vault where the notes on
+   this book belong, e.g. `…/Vault/Research/Leibbrandt 1928`. The “Choose folder …” button opens the file dialog; a
+   missing last folder is created. The choice is stored in `buch.json`.
+2. While reading, select a passage with the mouse – across several lines if you like – and press `F4`, or right-click the
+   selection. Without a selection the reading line becomes the note, so it works without a mouse at all.
+
+The program creates a file in that folder, numbered consecutively, for example `07 Page 57.md`:
+
+    > Die Kolonisten zogen nach Rußland und der Weg war weit.
+
+    **Note**
+
+
+
+    ---
+    Page 57, [[0 Source|Leibbrandt 1928]]
+
+At the top the quotation (words hyphenated at line ends are joined), below it room for your own remark, at the bottom the
+page – the printed page number from the running head, otherwise the PDF page – and a link to the book's source note. The
+program creates that file, `0 Source.md`, as a template with the first note; enter there where the book comes from
+(university library, interlibrary loan …) and the citation as Zotero gives it. This way every note is one click away
+from its full source. The quotation is also placed on the clipboard.
+
+If Obsidian is installed, it opens the new note immediately (the folder has to be inside a vault Obsidian knows).
+Without Obsidian the file simply stays in the folder – it is plain Markdown.
 
 ## Reading along on the home network
 
