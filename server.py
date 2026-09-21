@@ -16,6 +16,12 @@ LIBLOCK = threading.RLock()
 BOOKS = {}
 DEFAULT = None  # id des Buchs von der Kommandozeile
 IMGTYPES = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg'}
+# Wörter in den Zetteln für Obsidian (Dateinamen und Quellenzeile) in der Sprache der Oberfläche
+NOTE_WORDS = dict(
+    de=dict(page='Seite', note='Anmerkung', src='0 Quellenangabe',
+            template='# %s\n\nHerkunft: (z. B. Universitätsbibliothek Münster, Fernleihe)\n\nZitierweise (Zotero):\n'),
+    en=dict(page='Page', note='Note', src='0 Source',
+            template='# %s\n\nProvenance: (e.g. university library, interlibrary loan)\n\nCitation (Zotero):\n'))
 
 
 def version():
@@ -115,8 +121,8 @@ class Book:
         self.prog = None  # [geprüfte Seiten, Seiten] während overview() läuft – für den Ladebalken (/api/progress)
 
     def load_settings(self):
-        """buch.json: year (Erscheinungsjahr, geraten oder None), dics (welche Rechtschreibung gilt). Fehlt die Datei – Bücher
-        von früher –, gilt wie bisher nur 1901."""
+        """buch.json: year (Erscheinungsjahr, geraten oder None), dics (welche Rechtschreibung gilt), notizen (Ordner für
+        Zettel in Obsidian oder None). Fehlt die Datei – Bücher von früher –, gilt wie bisher nur 1901."""
         try:
             st = json.load(open(self.stpath, encoding='utf-8'))
         except (OSError, ValueError):
@@ -125,16 +131,67 @@ class Book:
             if os.path.exists(os.path.join(self.folder, 'qualitaet.json')) or os.path.normcase(self.folder).startswith(own):
                 st = propose_settings(self.folder)  # vom Programm eingelesen (auch EPUB-Textbücher), aber vor dieser Funktion: Vorschlag nachholen
         dics = [d for d in st.get('dics') or korrlib.DEFAULT if d in korrlib.DICS]
-        return dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT))
+        return dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT), notizen=st.get('notizen') or None)
+
+    def save_settings(self):
+        write_atomic(self.stpath, json.dumps(self.settings, ensure_ascii=False, indent=1))
 
     def set_dics(self, dics):
         with self.lock:
             if not any(d in dics for d in ('1901', 'neu')):  # 'vor1901' sind nur Regeln – ein Wörterbuch muss gelten
                 dics = list(dics) + ['1901']
             self.settings['dics'] = [d for d in korrlib.DICS if d in dics]
-            write_atomic(self.stpath, json.dumps(self.settings, ensure_ascii=False, indent=1))
+            self.save_settings()
             self.fcache.clear()
         return self.settings
+
+    def set_notes(self, folder):
+        """Ordner, in dem die Zettel dieses Buchs landen (im Obsidian-Vault); leer = keine Notizen."""
+        with self.lock:
+            self.settings['notizen'] = os.path.abspath(folder) if folder else None
+            self.save_settings()
+        return self.settings
+
+    def printed_page(self, pg):
+        """Seitenzahl für die Quellenangabe: die gedruckte aus der Kopfzeile, sonst die Nummer der Datei."""
+        lines = self.pages.get(pg) or []
+        m = re.search(r'\d+', lines[0]) if lines and lines[0].startswith('#') else None
+        return m.group() if m else str(int(pg))
+
+    def make_note(self, pg, text, lang='de'):
+        """Ein Zettel nach Luhmanns Art im Notizordner: fortlaufend nummeriert, oben Platz für die eigene Anmerkung, unter dem
+        Strich das Zitat und die Quelle – Seite und Verweis auf die Quellenangabe des Buchs (Datei „0 Quellenangabe“, wird bei Bedarf als Vorlage
+        angelegt; dort trägt der Nutzer Herkunft und Zotero-Zitierweise ein). Liefert (ergebnis, fehler)."""
+        W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
+        folder = self.settings.get('notizen')
+        if not folder:
+            return None, 'kein_notizordner'
+        if not os.path.isdir(folder):
+            if not os.path.isdir(os.path.dirname(folder)):
+                return None, 'notizordner_fehlt'
+            os.makedirs(folder)  # der Ordner des Buchs im Vault darf neu sein, sein Elternordner muss stehen (sonst ist der Pfad vertippt)
+        text = korrlib.TAG.sub('', text)
+        text = re.sub(r'¬\s*\n\s*', '', text)  # getrennte Wörter zusammenziehen, Zeilen zu einem Absatz
+        text = ' '.join(text.split()).strip()
+        if not text:
+            return None, 'kein_text'
+        with self.lock:
+            self.refresh()
+            if pg not in self.pages:
+                return None, 'quelle_fehlt'
+            page = self.printed_page(pg)
+        src = W['src']
+        if not os.path.exists(os.path.join(folder, src + '.md')):
+            with open(os.path.join(folder, src + '.md'), 'w', encoding='utf-8', newline='\n') as f:
+                f.write(W['template'] % self.title)
+        nums = [int(m.group(1)) for n in os.listdir(folder) for m in [re.match(r'(\d+)(?:\D|$)', n)] if m]
+        n = max(nums, default=0) + 1
+        name = '%02d %s %s' % (n, W['page'], page)
+        path = os.path.join(folder, name + '.md')
+        body = '**%s**\n\n\n\n---\n\n> %s\n\n%s %s, [[%s|%s]]\n' % (W['note'], text, W['page'], page, src, self.title)
+        with open(path, 'x', encoding='utf-8', newline='\n') as f:  # 'x': nie überschreiben
+            f.write(body)
+        return dict(file=path, name=name, number=n, page=page, text=text), None
 
     def autokorr_unsicher(self):
         out = {}
@@ -876,6 +933,67 @@ def scantailor(source, title, progress, cancelled):
     return dict(folder=folder, out=os.path.join(folder, 'out') if folder else None, clipboard=clip)
 
 
+def open_obsidian(path):
+    """Die neue Notiz in Obsidian zeigen. Obsidian meldet beim System die Adresse obsidian://…; liegt die Datei in einem
+    Vault, den Obsidian kennt, öffnet es sie dort. Ohne Obsidian bleibt die Datei einfach im Ordner."""
+    try:
+        ok = bool(webbrowser.open('obsidian://open?path=' + urllib.parse.quote(path)))
+    except Exception:
+        return False
+    if ok and sys.platform == 'win32':
+        threading.Thread(target=raise_window, args=('obsidian.exe',), daemon=True).start()
+    return ok
+
+
+def raise_window(exe, wait=6.0):
+    """Das Fenster eines Programms nach vorn holen (Windows). Der Server läuft im Hintergrund, und Windows lässt ein von dort
+    gestartetes Programm sonst nur in der Taskleiste blinken."""
+    import ctypes
+    from ctypes import wintypes
+    u, k = ctypes.windll.user32, ctypes.windll.kernel32
+    k.OpenProcess.restype = wintypes.HANDLE
+    k.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    k.QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
+    k.CloseHandle.argtypes = [wintypes.HANDLE]
+    found = []
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def each(hwnd, _):
+        if u.IsWindowVisible(hwnd) and u.GetWindowTextLengthW(hwnd):
+            pid = wintypes.DWORD()
+            u.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+            h = k.OpenProcess(0x1000, False, pid.value)  # PROCESS_QUERY_LIMITED_INFORMATION
+            if h:
+                buf, n = ctypes.create_unicode_buffer(1024), wintypes.DWORD(1024)
+                if k.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(n)) and os.path.basename(buf.value).lower() == exe:
+                    found.append(hwnd)
+                k.CloseHandle(h)
+        return True
+
+    end = time.time() + wait
+    while time.time() < end:  # Obsidian startet vielleicht erst
+        time.sleep(0.3)
+        del found[:]
+        u.EnumWindows(each, 0)
+        if found:
+            hwnd = found[0]  # EnumWindows liefert von vorn nach hinten: das zuletzt benutzte Fenster
+            if u.IsIconic(hwnd):
+                u.ShowWindow(hwnd, 9)  # SW_RESTORE
+            fg = u.GetForegroundWindow()
+            if fg != hwnd:  # an den Eingabestrang des vorderen Fensters (Browser) hängen: dann gilt der Wechsel als erlaubt
+                t1, t2 = u.GetWindowThreadProcessId(fg, None), k.GetCurrentThreadId()
+                u.AttachThreadInput(t2, t1, True)
+                u.BringWindowToTop(hwnd)
+                u.SetForegroundWindow(hwnd)
+                u.AttachThreadInput(t2, t1, False)
+            if u.GetForegroundWindow() != hwnd:  # Rückfall: ein leerer Alt-Tastendruck hebt die Sperre auf
+                u.keybd_event(0x12, 0, 0, 0)
+                u.keybd_event(0x12, 0, 2, 0)
+                u.SetForegroundWindow(hwnd)
+            return u.GetForegroundWindow() == hwnd
+    return False
+
+
 # ---- Aufträge: lange Arbeiten im Hintergrund, der Browser fragt den Fortschritt ab
 
 JOBS = {}
@@ -1241,10 +1359,20 @@ class H(BaseHTTPRequestHandler):
                 return self.send(400, '{}')
             return self.sendjson(book.series_replace(body['word'], body['new'], body.get('items', [])))
         if rest == '/api/settings':
+            if 'notizen' in body:  # Notizordner festlegen: schreibt später außerhalb des Buchs, darum nur am Rechner selbst
+                if not self.local():
+                    return self.sendjson(dict(error='nur_lokal'), 403)
+                return self.sendjson(book.set_notes((body.get('notizen') or '').strip()))
             st = book.set_dics(body.get('dics') or [])
             total = sum(o['n'] for o in book.overview())
             korrlib.save_cache()
             return self.sendjson(dict(st, total=total))
+        if rest == '/api/notiz':
+            r, err = book.make_note(str(body.get('page') or ''), body.get('text') or '', body.get('lang') or 'de')
+            if err:
+                return self.sendjson(dict(error=err), 400)
+            r['opened'] = bool(body.get('open')) and self.local() and open_obsidian(r['file'])
+            return self.sendjson(r)
         if rest == '/api/series_undo':
             return self.sendjson(book.series_undo())
         if rest == '/api/whitelist_remove':

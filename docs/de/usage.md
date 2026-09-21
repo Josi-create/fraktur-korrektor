@@ -36,6 +36,8 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `V` | Lesezeile mit der nächsten Zeile verbinden |
 | Lesen | `W` | Whitelist anzeigen |
 | Lesen | `D` | Wörterbuch: welche Rechtschreibung gilt in diesem Buch (siehe unten) |
+| Lesen / Korrektur | `F4` oder Rechtsklick auf die Markierung | Notiz für Obsidian aus der markierten Passage, sonst aus der Lesezeile (siehe unten) |
+| Lesen | `N` | Notizordner für dieses Buch festlegen |
 | überall | `F1` | diese Hilfe |
 
 ## Suchen (S) und Gehe zu Seite (G)
@@ -172,6 +174,38 @@ gibt – so sehen Sie sofort, was passt. Echte Lesefehler (`ber`, `bie`, `Bolk`)
 Unabhängig davon gelten immer: gängige Abkürzungen (Vgl, Bd, Ebd, Hg, Bibelstellen wie Offb, Joh), Siglen in
 Großbuchstaben, die mehrfach vorkommen (BWKG, LKA), und längere Wörter, die im Buch mindestens dreimal stehen (meist
 Namen). Einen Namen, der trotzdem rot ist, bestätigen Sie einmal mit `F8` – das gilt dann für alle Fundstellen.
+
+## Notizen für Obsidian (F4)
+
+Wer beim Lesen exzerpiert, kann jede Stelle als Zettel in [Obsidian](https://obsidian.md) ablegen – nach dem Vorbild von
+Niklas Luhmanns Zettelkasten: ein Gedanke je Zettel, jeder mit Quellenangabe.
+
+1. Einmal je Buch: `O` drücken (oder „Notizen“ in der Kopfleiste) und den Ordner im Obsidian-Vault angeben, in den die
+   Zettel zu diesem Buch gehören, etwa `…/Vault/Katharinenfeld/Recherche/Leibbrandt 1928`. Der Knopf „Ordner wählen …“
+   öffnet den Dateidialog; ein noch fehlender letzter Ordner wird angelegt. Die Wahl steht in `buch.json`.
+2. Beim Lesen eine Passage mit der Maus markieren – auch über mehrere Zeilen – und `F4` drücken oder mit der rechten
+   Maustaste auf die Markierung klicken. Ohne Markierung wird die Lesezeile zum Zettel; so geht es ganz ohne Maus.
+
+Das Programm legt im Ordner eine Datei an, fortlaufend nummeriert, zum Beispiel `07 Seite 57.md`:
+
+    **Anmerkung**
+
+
+
+    ---
+
+    > Die Kolonisten zogen nach Rußland und der Weg war weit.
+
+    Seite 57, [[0 Quellenangabe|Leibbrandt 1928]]
+
+Oben Platz für die eigene Anmerkung, unter dem Strich das Zitat (am Zeilenende getrennte Wörter sind zusammengezogen) und die
+Seite – die gedruckte Seitenzahl aus der Kopfzeile, sonst die PDF-Seite – und der Verweis auf die Quellenangabe des Buchs.
+Diese Datei `0 Quellenangabe.md` legt das Programm beim ersten Zettel als Vorlage an; tragen Sie dort ein, woher das Buch
+stammt (Universitätsbibliothek, Fernleihe …) und die Zitierweise, wie Zotero sie liefert. So hat jeder Zettel per Klick
+seine vollständige Quelle. Das Zitat liegt außerdem in der Zwischenablage.
+
+Ist Obsidian installiert, öffnet es den neuen Zettel sofort und kommt unter Windows in den Vordergrund (der Ordner muss in einem Vault liegen, den Obsidian kennt).
+Ohne Obsidian bleibt die Datei einfach im Ordner – es ist gewöhnliches Markdown.
 
 ## Über das Heimnetz mitlesen
 
