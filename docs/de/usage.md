@@ -36,6 +36,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `V` | Lesezeile mit der nächsten Zeile verbinden |
 | Lesen | `W` | Whitelist anzeigen |
 | Lesen | `D` | Wörterbuch: welche Rechtschreibung gilt in diesem Buch (siehe unten) |
+| Lesen | `Umschalt`+`↓` / `↑` | Zeilen für eine Notiz markieren (innerhalb der Seite); jede andere Taste hebt die Markierung auf |
 | Lesen / Korrektur | `F4` oder Rechtsklick auf die Markierung | Notiz für Obsidian aus der markierten Passage, sonst aus der Lesezeile (siehe unten) |
 | Lesen | `N` | Notizordner für dieses Buch festlegen |
 | überall | `F1` | diese Hilfe |
@@ -184,7 +185,8 @@ Niklas Luhmanns Zettelkasten: ein Gedanke je Zettel, jeder mit Quellenangabe.
    Zettel zu diesem Buch gehören, etwa `…/Vault/Katharinenfeld/Recherche/Leibbrandt 1928`. Der Knopf „Ordner wählen …“
    öffnet den Dateidialog; ein noch fehlender letzter Ordner wird angelegt. Die Wahl steht in `buch.json`.
 2. Beim Lesen eine Passage mit der Maus markieren – auch über mehrere Zeilen – und `F4` drücken oder mit der rechten
-   Maustaste auf die Markierung klicken. Ohne Markierung wird die Lesezeile zum Zettel; so geht es ganz ohne Maus.
+   Maustaste auf die Markierung klicken. Ganz ohne Maus: zur ersten Zeile gehen, `Umschalt` halten und mit `↓` oder `↑`
+   die gewünschten Zeilen markieren (blau hinterlegt), dann `F4`. Ohne Markierung wird die Lesezeile zum Zettel.
 
 Das Programm legt im Ordner eine Datei an, fortlaufend nummeriert, zum Beispiel `07 Seite 57.md`:
 

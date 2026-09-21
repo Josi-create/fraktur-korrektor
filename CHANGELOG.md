@@ -9,7 +9,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   (Taste `O`, Ordner im Obsidian-Vault, gespeichert in `buch.json`) einen fortlaufend nummerierten Zettel an: oben
   Platz für die Anmerkung, unter dem Strich das Zitat und „Seite x“ mit Verweis auf die Quellenangabe des Buchs (`0 Quellenangabe.md`, wird
   als Vorlage für Herkunft und Zotero-Zitierweise angelegt). Obsidian öffnet den Zettel sofort und kommt in den Vordergrund; das Zitat liegt auch in der
-  Zwischenablage. Ohne Markierung wird die Lesezeile zum Zettel.
+  Zwischenablage. Ohne Markierung wird die Lesezeile zum Zettel. Mehrere Zeilen lassen sich auch mit der Tastatur
+  markieren: `Umschalt`+`↓`/`↑`, dann `F4`.
 - **Das Seitenbild rollt fließend über die Seitengrenze**, wie der Text rechts: Links stehen Vorgänger, Seite und
   Nachfolger untereinander, das Mausrad läuft ohne Sprung von einer Seite in die nächste. Die Bildmaße kommen vom
   Server mit, damit die Nachbarseiten schon richtig liegen, bevor ihre Bilder geladen sind.

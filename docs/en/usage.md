@@ -36,6 +36,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `V` | join the reading line with the next line |
 | Reading | `W` | show the whitelist |
 | Reading | `D` | dictionary: which spelling applies to this book (see below) |
+| Reading | `Shift`+`↓` / `↑` | select lines for a note (within the page); any other key clears the selection |
 | Reading / Correction | `F4` or right-click the selection | note for Obsidian from the selected passage, otherwise from the reading line (see below) |
 | Reading | `N` | set the notes folder for this book |
 | anywhere | `F1` | this help |
@@ -181,7 +182,8 @@ Niklas Luhmann's Zettelkasten: one thought per note, each with its source.
    this book belong, e.g. `…/Vault/Research/Leibbrandt 1928`. The “Choose folder …” button opens the file dialog; a
    missing last folder is created. The choice is stored in `buch.json`.
 2. While reading, select a passage with the mouse – across several lines if you like – and press `F4`, or right-click the
-   selection. Without a selection the reading line becomes the note, so it works without a mouse at all.
+   selection. Without a mouse: go to the first line, hold `Shift` and select the lines you want with `↓` or `↑`
+   (highlighted in blue), then press `F4`. Without a selection the reading line becomes the note.
 
 The program creates a file in that folder, numbered consecutively, for example `07 Page 57.md`:
 

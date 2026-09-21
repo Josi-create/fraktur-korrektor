@@ -175,7 +175,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 const $ = id => document.getElementById(id);
 const BASE = (location.pathname.match(/^\/buch\/[0-9a-f]+/) || [''])[0];  // jedes Buch hat seine eigene Adresse
 applyI18n();
-let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null;
+let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null, nsel = null;
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
 let prevD = null, nextD = null, nbEls = {}, wheelAcc = 0;
 let imgEls = {}, imgState = null, imgKeep = null;  // Seitenbilder im Stapel, letzte Lage des Stapels, beim Seitenwechsel: das bisherige Bild festhalten
@@ -245,7 +245,7 @@ async function loadPage(p, line, smooth) {
   const d = await r.json();
   const idx = ov.findIndex(o => o.page == p);
   [prevD, nextD] = await Promise.all([idx > 0 ? fetchPage(ov[idx - 1].page) : null, idx >= 0 && idx < ov.length - 1 ? fetchPage(ov[idx + 1].page) : null]);
-  data = d; pg = p; $('pagesel').value = p; lastCy = null; passed = null; cf = null; mode = 'read';
+  data = d; pg = p; $('pagesel').value = p; lastCy = null; passed = null; cf = null; nsel = null; mode = 'read';
   li = line == 'last' ? data.lines.length - 1 : Math.min(Math.max(0, line || 0), data.lines.length - 1);
   if (line == 'last') { while (li > 0 && skippable(li)) li--; }
   else { while (li < data.lines.length - 1 && (skippable(li) || (!line && data.lines[li].startsWith('#')))) li++; }
@@ -317,7 +317,7 @@ function renderText() {
 }
 function render() {
   // Textspalte
-  lineEls.forEach((d, i) => { if (!d.classList.contains('sep')) { d.innerHTML = mark(i); d.classList.toggle('cur', i == li); d.classList.toggle('tsel', !!tb && i >= tb.a && i <= tb.b); } });
+  lineEls.forEach((d, i) => { if (!d.classList.contains('sep')) { d.innerHTML = mark(i); d.classList.toggle('cur', i == li); d.classList.toggle('tsel', tb ? i >= tb.a && i <= tb.b : nsel != null && i >= Math.min(nsel, li) && i <= Math.max(nsel, li)); } });
   decorate(lineEls, data);
   layoutText(); layoutImage();
   // Kopf
@@ -699,9 +699,24 @@ function selectedText() {
   const text = s.toString().split('\n').filter(l => !l.startsWith('―')).join('\n');  // ohne die Seitentrenner
   return { text, p: d ? d.dataset.p : pg };
 }
+// Mit der Tastatur markieren: Umschalt+↓/↑ dehnt die Markierung von der Lesezeile aus (nsel = Zeile, an der sie begann),
+// innerhalb der Seite; jede andere Taste hebt sie auf.
+function selMove(d) {
+  let i = li + d;
+  while (i >= 0 && i < data.lines.length && skippable(i)) i += d;
+  if (i < 0 || i >= data.lines.length) return;
+  if (nsel == null) nsel = li;
+  li = i; msg = ''; render();
+}
+function markedLines() {
+  if (nsel == null || mode != 'read') return null;
+  const out = [];
+  for (let i = Math.min(nsel, li); i <= Math.max(nsel, li); i++) if (!skippable(i)) out.push(strip(data.lines[i]));
+  return out.join('\n');
+}
 async function makeNote() {
-  const sel = selectedText(), line = mode == 'fix' ? cf.line : li;
-  const text = sel ? sel.text : skippable(line) ? '' : strip(data.lines[line]), p = sel ? sel.p : pg;
+  const sel = selectedText(), line = mode == 'fix' ? cf.line : li, ml = sel ? null : markedLines();
+  const text = sel ? sel.text : ml != null ? ml : skippable(line) ? '' : strip(data.lines[line]), p = sel ? sel.p : pg;
   if (!text.trim()) return;
   const r = await fetch(BASE + '/api/notiz', { method: 'POST', body: JSON.stringify({ page: p, text, lang: LANG, open: true }) });
   const x = await r.json();
@@ -709,6 +724,7 @@ async function makeNote() {
   if (x.error) { msg = t('err_' + x.error); render(); return; }
   try { await navigator.clipboard.writeText(x.text); } catch (e) {}
   try { getSelection().removeAllRanges(); } catch (e) {}
+  nsel = null;
   msg = t(x.opened ? 'note_done' : 'note_done_file', { n: x.name, f: x.file }); if (mode == 'read') render(); else $('shint').textContent = msg;
 }
 async function openNotes() {
@@ -815,6 +831,8 @@ async function onKey(e) {
   if (mode == 'read') {
     if (e.target.tagName == 'SELECT') return;
     const k = e.key;
+    if (e.shiftKey && (k == 'ArrowDown' || k == 'ArrowUp')) { e.preventDefault(); selMove(k == 'ArrowDown' ? 1 : -1); return; }
+    if (nsel != null && k != 'Shift') { nsel = null; render(); if (k == 'Escape') { e.preventDefault(); return; } }
     if (k == 'ArrowDown' || k == 'j') await move(1);
     else if (k == 'ArrowUp' || k == 'k') await move(-1);
     else if (k == ' ') await toFlag();
@@ -920,7 +938,7 @@ $('text').addEventListener('wheel', onWheel, { passive: false }); $('imgpane').a
   for (const k of ks ? ks.split(',') : []) {
     if (k.startsWith('=')) $('edit').value = k.slice(1);
     else if (k.startsWith('caret=')) $('edit').setSelectionRange(+k.slice(6), +k.slice(6));
-    else if (k == 'Shift+Enter' || k == 'Shift Enter') (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
+    else if (k.startsWith('Shift+') || k.startsWith('Shift ')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(6), shiftKey: true, bubbles: true }));
     else if (k.startsWith('Ctrl+') || k.startsWith('Ctrl ')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(5), ctrlKey: true, bubbles: true }));  // »+« wird in der Adresse zum Leerzeichen
     else if (k.includes('=')) $(k.split('=')[0]).value = k.split('=')[1];
     else (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k == 'Space' ? ' ' : k, bubbles: true }));
