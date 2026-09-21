@@ -105,6 +105,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Tests (pytest) und CI für Windows, macOS, Linux; `pyproject.toml`; Lizenz GPL-3.0-or-later; ROADMAP.
 
 ### Geändert
+- **Ein Buch öffnet sich sofort, wenn seine Wörter schon einmal geprüft wurden.** Bisher las das Programm bei jedem Start
+  erst das Hunspell-Wörterbuch ein (mehrere Sekunden), auch wenn es danach kein einziges Wort nachschlagen musste, weil alle
+  Ergebnisse im Zwischenspeicher lagen. Jetzt wird das Wörterbuch im Hintergrund geladen und nur bei einem wirklich neuen Wort
+  abgewartet. Für das erste Öffnen eines Buchs zeigt der Ladebildschirm einen **Fortschrittsbalken** (»Seite 12 von 300
+  geprüft«, neue Abfrage `/api/progress`).
 - **Die Tastaturhilfe liegt über der ganzen Fensterbreite** (#55), nicht mehr nur über dem Text: Sie braucht so weniger
   Zeilen, das Textfenster wird höher, das Seitenbild gibt dafür oben etwas Höhe ab.
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.

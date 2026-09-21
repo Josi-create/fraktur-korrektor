@@ -34,6 +34,16 @@ def test_cache_wird_gespeichert():
     assert os.path.exists(c.cache_path) and c.cache_path.startswith(os.environ['FRAKTUR_HOME'])
 
 
+def test_woerterbuch_erst_bei_bedarf(tmp_path, monkeypatch):
+    """Steht jedes Wort im Zwischenspeicher, wird das Wörterbuch gar nicht eingelesen (das kostet Sekunden bei jedem Start)."""
+    c = korrlib.checker('1901')
+    assert c.lookup('Haus') is True and c.d is not None  # echtes Nachschlagen lädt das Wörterbuch
+    c.save()
+    c2 = korrlib.Checker(c.path)  # neuer Prozess: nur der Zwischenspeicher von der Platte
+    assert c2.d is None and c2.lookup('Haus') is True and c2.d is None
+    assert c2.lookup('Zwischenspeicherprobe2') is False and c2.d is not None  # erst ein unbekanntes Wort holt es
+
+
 def test_rechtschreibung_je_epoche():
     alt, neu, alle = ('1901',), ('1901', 'neu'), ('1901', 'neu', 'vor1901')
     assert korrlib.in_dict('daß', alt) and korrlib.in_dict('Schiffahrt', alt)

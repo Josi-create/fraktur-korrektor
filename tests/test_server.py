@@ -8,6 +8,7 @@ def words(data, kind=None):
 def test_uebersicht_und_markierungen(app):
     code, ov = app.get('/api/overview')
     assert code == 200 and [p['page'] for p in ov['pages']] == ['001', '002']
+    assert app.get('/api/progress')[1] == dict(done=1, total=1)  # nichts in Arbeit: der Ladebalken bleibt verborgen
     code, d = app.get('/api/page/001')
     # ber: unbekannt; baß: Falle; Vgl: Zusatzliste; Zu¬kunft: über die Trennung hinweg bekannt
     assert words(d) == ['ber', 'baß', 'ber']

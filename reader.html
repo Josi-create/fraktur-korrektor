@@ -23,7 +23,8 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #find button{font:13px Segoe UI,Arial,sans-serif;padding:1px 9px;border:1px solid #888;border-radius:9px;background:#333;color:#eee;cursor:pointer}
 #find button:hover{background:#5a5a5a} #find b{color:#fff;min-width:44px;text-align:center}
 .found{background:#9fdcff;border-radius:2px;outline:2px solid #1780c0}
-#loading{position:absolute;inset:0;z-index:9;background:#e9e6df;display:flex;align-items:center;justify-content:center;padding:0 15%;text-align:center;font-size:18px;line-height:1.6;color:#555}
+#loading{position:absolute;inset:0;z-index:9;background:#e9e6df;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;padding:0 15%;text-align:center;font-size:18px;line-height:1.6;color:#555}
+#lprog{width:min(520px,90%);height:16px} #lpage{font-size:15px;color:#777}
 #main{position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;gap:10px;padding:10px;min-height:0}
 .pane{background:#fff;border:1px solid #bbb;border-radius:4px;position:relative;overflow:hidden;min-height:0}
 #noimg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center;color:#666}
@@ -118,7 +119,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <span class="langsw"></span>
 </div>
 <div id="main">
- <div id="loading" data-t="loading"></div>
+ <div id="loading"><div data-t="loading"></div><progress id="lprog" max="1" value="0" style="display:none"></progress><div id="lpage"></div></div>
  <div class="pane" id="korr">
   <div id="word"></div>
   <div id="help"></div>
@@ -200,7 +201,13 @@ function part2len(f) { return f.word.length - f.len - 1; }
 function skippable(i) { const l = data.lines[i]; return l.trim() === '' || l === '---'; }
 
 async function loadOverview() {
-  const o = await (await fetch(BASE + '/api/overview')).json(); ov = o.pages;
+  // Beim ersten Öffnen prüft der Server jedes Wort – der Balken zeigt, wie weit er ist. Ein schnelles Öffnen zeigt ihn gar nicht.
+  const tick = setInterval(async () => {
+    try { const p = await (await fetch(BASE + '/api/progress')).json(); if (p.done >= p.total) return;
+      $('lprog').max = p.total; $('lprog').value = p.done; $('lprog').style.display = ''; $('lpage').textContent = t('loading_page', { n: p.done, total: p.total }); } catch (e) {}
+  }, 300);
+  let o; try { o = await (await fetch(BASE + '/api/overview')).json(); } finally { clearInterval(tick); }
+  ov = o.pages;
   $('title').textContent = o.title; document.title = o.title + ' – Fraktur-Korrektor'; $('loading').style.display = 'none';
   // Was dem Buch noch fehlt, lässt sich von hier aus nachlegen – der Dialog dafür steht in der Bibliothek
   if (o.local && o.id) {

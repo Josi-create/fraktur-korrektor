@@ -112,6 +112,7 @@ class Book:
         self.unsicher = self.autokorr_unsicher()
         self.settings = self.load_settings()
         self.pages, self.mt, self.freq, self.wl, self.wlmt, self.fcache, self.size = {}, {}, {}, set(), None, {}, {}
+        self.prog = None  # [geprüfte Seiten, Seiten] während overview() läuft – für den Ladebalken (/api/progress)
 
     def load_settings(self):
         """buch.json: year (Erscheinungsjahr, geraten oder None), dics (welche Rechtschreibung gilt). Fehlt die Datei – Bücher
@@ -276,7 +277,14 @@ class Book:
     def overview(self):
         with self.lock:
             self.refresh()
-            return [dict(page=pg, n=len(self.flags(pg))) for pg in self.pages]
+            self.prog, out = [0, len(self.pages)], []
+            try:
+                for pg in self.pages:
+                    out.append(dict(page=pg, n=len(self.flags(pg))))
+                    self.prog[0] += 1
+            finally:
+                self.prog = None
+            return out
 
     def search(self, q, limit=1000):
         """Alle Stellen im Buch, an denen q vorkommt: ohne Rücksicht auf Groß- und Kleinschreibung und auf ſ/s,
@@ -1087,6 +1095,9 @@ class H(BaseHTTPRequestHandler):
                      images=len(glob.glob(os.path.join(book.imgdir, '*.*'))))
             korrlib.save_cache()
             return self.sendjson(r)
+        if rest == '/api/progress':  # ohne Sperre: der Ladebalken fragt, während overview() die Sperre hält
+            p = book.prog
+            return self.sendjson(dict(done=p[0], total=p[1]) if p else dict(done=1, total=1))
         if rest == '/api/settings':
             return self.sendjson(book.settings)
         if rest == '/api/whitelist':
@@ -1281,6 +1292,7 @@ def setup(A):
     global DEFAULT
     if A.dic:
         korrlib.set_dic(A.dic)
+    korrlib.warm()  # bei gefülltem Zwischenspeicher braucht das Öffnen das Wörterbuch nicht – aber ein neues Wort soll nicht warten
     httpd = Server(('0.0.0.0' if A.lan else '127.0.0.1', A.port), H)
     if A.folder:
         f = find_book_folder(A.folder)

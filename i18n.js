@@ -9,6 +9,7 @@ const T = {
 de: {
   library: 'Bibliothek', help: 'Hilfe', help_f1: 'Hilfe (F1)', page: 'Seite', p_abbr: 'S.',
   loading: 'Buch wird geladen … Beim ersten Öffnen prüft das Programm jedes Wort gegen das Wörterbuch – das kann bis zu einer Minute dauern. Danach geht es schnell.',
+  loading_page: 'Seite {n} von {total} geprüft',
   mode_read: 'Lesen', mode_fix: 'Korrektur', mode_free: 'Zeile bearbeiten',
   pos: 'Zeile {a}/{b} · rot auf dieser Seite: {c} · im Buch: {d}', nogeo: ' · (keine Bildzuordnung für diese Seite)',
   help_read: '<kbd>↓</kbd> <kbd>↑</kbd> Zeile · <kbd>Leertaste</kbd> zum nächsten roten Wort · <kbd>F8</kbd> nächstes rotes Wort ist richtig · <kbd>Enter</kbd> rotes Wort der Zeile ändern bzw. Zeile frei bearbeiten (<kbd>F2</kbd> immer frei) · <kbd>Bild↓</kbd> <kbd>Bild↑</kbd> Seite · <kbd>Pos1</kbd> <kbd>Ende</kbd> · <kbd>G</kbd> gehe zu Seite · <kbd>S</kbd> oder <kbd>Strg</kbd>+<kbd>F</kbd> suchen · <kbd>N</kbd> nächste Fundstelle · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom · <kbd>R</kbd> neu laden · <kbd>F9</kbd> Serienkorrektur · <kbd>U</kbd> letzte Serie zurücknehmen · <kbd>W</kbd> Whitelist · <kbd>F</kbd> Fußnoten beginnen hier · <kbd>T</kbd> Tabelle · <kbd>H</kbd> Überschrift · <kbd>V</kbd> mit nächster Zeile verbinden',
@@ -194,6 +195,7 @@ de: {
 en: {
   library: 'Library', help: 'Help', help_f1: 'Help (F1)', page: 'Page', p_abbr: 'p.',
   loading: 'Loading book … The first time a book is opened, every word is checked against the dictionary – this can take up to a minute. After that it is fast.',
+  loading_page: 'Page {n} of {total} checked',
   mode_read: 'Reading', mode_fix: 'Correction', mode_free: 'Edit line',
   pos: 'Line {a}/{b} · red on this page: {c} · in the book: {d}', nogeo: ' · (no image alignment for this page)',
   help_read: '<kbd>↓</kbd> <kbd>↑</kbd> line · <kbd>Space</kbd> next red word · <kbd>F8</kbd> next red word is correct · <kbd>Enter</kbd> change red word of this line, or edit the line (<kbd>F2</kbd> always edits) · <kbd>PgDn</kbd> <kbd>PgUp</kbd> page · <kbd>Home</kbd> <kbd>End</kbd> · <kbd>G</kbd> go to page · <kbd>S</kbd> or <kbd>Ctrl</kbd>+<kbd>F</kbd> search · <kbd>N</kbd> next match · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> zoom · <kbd>R</kbd> reload · <kbd>F9</kbd> batch correction · <kbd>U</kbd> undo last batch · <kbd>W</kbd> whitelist · <kbd>F</kbd> footnotes start here · <kbd>T</kbd> table · <kbd>H</kbd> heading · <kbd>V</kbd> join with next line',
