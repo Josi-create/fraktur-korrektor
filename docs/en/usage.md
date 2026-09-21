@@ -26,7 +26,7 @@ is being changed – and **Edit line** (orange).
 | Correction / Edit line | `F7` | insert the hyphenation mark `¬` at the cursor |
 | Correction / Edit line | `Shift`+`Enter` | split the line at the cursor (see below) |
 | Correction | `F8` | word is correct → whitelist |
-| Correction | `Tab` | next red word without changing anything |
+| Correction | `Tab` | next red word without changing anything; for a split word, first into its second half |
 | Correction | `Esc` | back to reading without changing anything |
 | Reading / Correction | `F9` | batch correction (see below) |
 | Reading | `U` | undo the last batch correction |
@@ -58,7 +58,9 @@ side turn the page like `PgUp` and `PgDn`.
 ## Hyphenated words
 
 Words split at the end of a line are written with the mark `¬`: `Zu¬` / `kunft`. Both parts are checked
-together. When correcting, both lines appear as input fields. `F7` inserts the mark.
+together. When correcting, both lines appear as input fields, with the cursor in the first. To reach the second half,
+press `Tab` or `↓`, or move past the end of the line with `→` – back with `Shift`+`Tab`, `↑`, or `←` at the start of
+the line. `Enter` applies both lines. `F7` inserts the mark.
 
 ## Batch correction (F9)
 

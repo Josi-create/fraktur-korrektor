@@ -479,6 +479,18 @@ function enterFree(sel) {
   const o = ed.pre.length, n = ed.core.length, at = x => Math.max(0, Math.min(n, x - o));
   render(); e1.focus(); setTimeout(() => e1.setSelectionRange(sel ? at(sel[0]) : 0, sel ? at(sel[1]) : 0), 0);
 }
+// Getrenntes Wort: Die zweite Hälfte steht im Feld darunter. Tab, ↓ und → am Zeilenende führen hin (wie in einem Text, der
+// in der nächsten Zeile weitergeht), Umschalt+Tab, ↑ und ← am Zeilenanfang zurück.
+function hopJoin(e) {
+  if (mode != 'fix' || !isJoin(cf)) return false;
+  const e1 = $('edit'), e2 = $('edit2'), el = e.target, k = e.key, arrow = !e.shiftKey && el.selectionStart == el.selectionEnd;
+  if (el == e1 && ((k == 'Tab' && !e.shiftKey) || k == 'ArrowDown' || (k == 'ArrowRight' && arrow && el.selectionStart == e1.value.length))) {
+    e2.focus(); e2.setSelectionRange(0, k == 'ArrowRight' ? 0 : (e2.value.match(WRE) || [''])[0].length);
+  } else if (el == e2 && ((k == 'Tab' && e.shiftKey) || k == 'ArrowUp' || (k == 'ArrowLeft' && arrow && el.selectionStart == 0))) {
+    e1.focus(); e1.setSelectionRange(e1.value.length, e1.value.length);
+  } else return false;
+  e.preventDefault(); return true;
+}
 function toRead(line) { mode = 'read'; cf = null; li = line; render(); bookmark(); }
 async function toFlag(from) {
   // nächstes rotes Wort ab Lesezeile (bzw. nach der zuletzt besuchten Stelle)
@@ -867,6 +879,7 @@ async function onKey(e) {
     else return;
     e.preventDefault();
   } else {
+    if (hopJoin(e)) return;
     if (e.key == 'Enter' && e.shiftKey) { e.preventDefault(); await splitLine(); }
     else if (e.key == 'Enter') { e.preventDefault(); await commit(); }
     else if (e.key == 'Escape') { e.preventDefault(); if (mode == 'fix') passed = { line: cf.line, start: cf.start }; toRead(mode == 'fix' ? cf.line : li); }

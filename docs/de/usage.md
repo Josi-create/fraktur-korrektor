@@ -26,7 +26,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Korrektur / Zeile bearbeiten | `F7` | Trennzeichen `¬` an der Schreibmarke einfügen |
 | Korrektur / Zeile bearbeiten | `Umschalt`+`Enter` | Zeile an der Schreibmarke teilen (siehe unten) |
 | Korrektur | `F8` | Wort ist richtig → Whitelist |
-| Korrektur | `Tab` | nächstes rotes Wort, ohne zu ändern |
+| Korrektur | `Tab` | nächstes rotes Wort, ohne zu ändern; bei einem getrennten Wort zuerst in die zweite Hälfte |
 | Korrektur | `Esc` | zurück zum Lesen, ohne zu ändern |
 | Lesen / Korrektur | `F9` | Serienkorrektur (siehe unten) |
 | Lesen | `U` | letzte Serienkorrektur zurücknehmen |
@@ -59,8 +59,9 @@ links und rechts davon blättern wie `Bild↑` und `Bild↓`.
 ## Getrennte Wörter
 
 Am Zeilenende getrennte Wörter schreibt das Programm mit dem Trennzeichen `¬`: `Zu¬` / `kunft`. Beide
-Teile werden zusammen geprüft. Bei der Korrektur erscheinen beide Zeilen als Eingabefelder. `F7` fügt das
-Zeichen ein.
+Teile werden zusammen geprüft. Bei der Korrektur erscheinen beide Zeilen als Eingabefelder, die Schreibmarke steht im
+ersten. In die zweite Hälfte kommen Sie mit `Tab`, mit `↓` oder indem Sie mit `→` über das Zeilenende hinausgehen –
+zurück mit `Umschalt`+`Tab`, `↑` oder `←` am Zeilenanfang. `Enter` übernimmt beide Zeilen. `F7` fügt das Zeichen ein.
 
 ## Serienkorrektur (F9)
 

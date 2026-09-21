@@ -124,6 +124,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
 ### Behoben
+- **Die zweite Hälfte eines getrennten Wortes (`Zu¬` / `kunft`) war mit der Tastatur nicht zu erreichen.** Bei der
+  Korrektur führen jetzt `Tab`, `↓` und `→` über das Zeilenende hinaus ins zweite Eingabefeld, `Umschalt`+`Tab`, `↑`
+  und `←` am Zeilenanfang zurück. Aus dem zweiten Feld geht `Tab` wie bisher zum nächsten roten Wort.
 - **„Text nachlegen“ und Einlesen endeten gelegentlich mit einem unbekannten Fehler:** Speicherten ein Hintergrundauftrag
   und eine Anfrage des Browsers gleichzeitig den Zwischenspeicher der Wortprüfung, schrieben beide über dieselbe
   Zwischendatei, und der zweite fand sie beim Umbenennen nicht mehr (`FileNotFoundError`). Der Text war dann schon
