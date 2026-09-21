@@ -52,6 +52,9 @@ match, `Shift`+`N` to the previous one, the × closes the search. `Esc` discards
 `G` asks for a page number in the same way. This means the page of the file (the number in the selector at the
 top), not the page number printed in the book.
 
+Next to the selector you see which page out of how many you are on ("4 / 30"); the arrows `←` and `→` on either
+side turn the page like `PgUp` and `PgDn`.
+
 ## Hyphenated words
 
 Words split at the end of a line are written with the mark `¬`: `Zu¬` / `kunft`. Both parts are checked

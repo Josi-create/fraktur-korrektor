@@ -53,6 +53,9 @@ die Eingabe.
 `G` fragt auf dieselbe Weise nach einer Seitenzahl. Gemeint ist die Seite der Datei (die Zahl in der Auswahl
 oben), nicht die gedruckte Seitenzahl des Buchs.
 
+Neben der Auswahl steht, die wievielte Seite von wie vielen Sie vor sich haben („4 / 30“); die Pfeile `←` und `→`
+links und rechts davon blättern wie `Bild↑` und `Bild↓`.
+
 ## Getrennte Wörter
 
 Am Zeilenende getrennte Wörter schreibt das Programm mit dem Trennzeichen `¬`: `Zu¬` / `kunft`. Beide

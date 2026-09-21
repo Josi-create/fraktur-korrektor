@@ -65,6 +65,7 @@ de: {
   err_notizordner_fehlt: 'Den Notizordner gibt es nicht – bitte den Pfad prüfen (Taste O).', err_kein_text: 'Nichts markiert.',
   goto_none: 'Seite {p} gibt es in diesem Buch nicht.', find_label: 'Suchen im Buch:', find_none: 'Nicht gefunden: „{q}“',
   find_prev: '← vorige (⇧N)', find_next: 'nächste → (N)', find_close: 'Suche schließen',
+  page_prev: 'vorige Seite (Bild↑)', page_next: 'nächste Seite (Bild↓)',
 
   lib_intro: 'Lesen und Korrekturlesen in einem: links das Seitenbild, rechts der erkannte Text.',
   open_folder: 'Buchordner öffnen …', import_tk: 'Transkribus-Export importieren …',
@@ -261,6 +262,7 @@ en: {
   err_notizordner_fehlt: 'The notes folder does not exist – please check the path (O key).', err_kein_text: 'Nothing selected.',
   goto_none: 'There is no page {p} in this book.', find_label: 'Search the book:', find_none: 'Not found: “{q}”',
   find_prev: '← previous (⇧N)', find_next: 'next → (N)', find_close: 'Close the search',
+  page_prev: 'previous page (PgUp)', page_next: 'next page (PgDn)',
 
   lib_intro: 'Reading and proofreading in one: the page image on the left, the recognised text on the right.',
   open_folder: 'Open book folder …', import_tk: 'Import Transkribus export …',

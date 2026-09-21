@@ -20,8 +20,10 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #qbar{display:none;gap:6px;align-items:center} #qbar.on{display:flex}
 #qbar input{font-size:14px;padding:2px 6px;width:210px;border-radius:3px;border:1px solid #888}
 #find{display:none;gap:8px;align-items:center;background:#454545;border-radius:12px;padding:2px 6px 2px 10px} #find.on{display:flex}
-#find button{font:13px Segoe UI,Arial,sans-serif;padding:1px 9px;border:1px solid #888;border-radius:9px;background:#333;color:#eee;cursor:pointer}
-#find button:hover{background:#5a5a5a} #find b{color:#fff;min-width:44px;text-align:center}
+#find button,#pnav button{font:13px Segoe UI,Arial,sans-serif;padding:1px 9px;border:1px solid #888;border-radius:9px;background:#333;color:#eee;cursor:pointer}
+#find button:hover,#pnav button:hover{background:#5a5a5a} #find b,#pnav b{color:#fff;min-width:44px;text-align:center}
+/* Blättern wie bei der Suche: ← Seite [Auswahl] 4 / 30 → */
+#pnav{display:flex;gap:8px;align-items:center} #pnav button:disabled{opacity:.4;cursor:default;background:#333}
 .found{background:#9fdcff;border-radius:2px;outline:2px solid #1780c0}
 #loading{position:absolute;inset:0;z-index:9;background:#e9e6df;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;padding:0 15%;text-align:center;font-size:18px;line-height:1.6;color:#555}
 #lprog{width:min(520px,90%);height:16px} #lpage{font-size:15px;color:#777}
@@ -108,7 +110,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 <div id="top">
  <a href="/bibliothek" data-t="library"></a>
  <b id="title">Fraktur-Korrektor</b>
- <label><span data-t="page"></span> <select id="pagesel"></select></label>
+ <span id="pnav"><button type="button" id="pprev" data-t-title="page_prev">←</button><label><span data-t="page"></span> <select id="pagesel"></select></label><b id="pcount"></b><button type="button" id="pnext" data-t-title="page_next">→</button></span>
  <span id="mode"></span>
  <span id="pos"></span>
  <span id="qbar"><span id="qlabel"></span><input id="qinp" type="text" spellcheck="false"></span>
@@ -231,12 +233,13 @@ async function loadOverview() {
     }
   }
   const s = $('pagesel'); s.innerHTML = '';
-  for (const p of ov) { const op = document.createElement('option'); op.value = p.page; op.textContent = p.page + ' (' + p.n + ')'; s.appendChild(op); }
+  for (const p of ov) { const op = document.createElement('option'); op.value = p.page; op.textContent = p.page; s.appendChild(op); }
   if (pg) s.value = pg;
 }
 function updateCount() {
-  const o = ov.find(o => o.page == pg); if (!o) return; o.n = data.flags.length;
-  const op = [...$('pagesel').options].find(x => x.value == pg); if (op) op.textContent = pg + ' (' + o.n + ')';
+  const i = pageIdx(), o = ov[i]; if (!o) return; o.n = data.flags.length;
+  // die Zahl der roten Wörter steht in der Statuszeile – in der Seitenauswahl wurde sie für eine Seitenzahl gehalten
+  $('pcount').textContent = (i + 1) + ' / ' + ov.length; $('pprev').disabled = i == 0; $('pnext').disabled = i == ov.length - 1;
 }
 async function fetchPage(p) { try { const r = await fetch(BASE + '/api/page/' + p); return r.ok ? await r.json() : null; } catch (e) { return null; } }
 async function loadPage(p, line, smooth) {
@@ -880,6 +883,8 @@ document.addEventListener('keydown', async e => { if (busy) { e.preventDefault()
 for (const b of dicBoxes()) b.onchange = async () => { if (!busy) { busy = true; try { await saveDics(); } finally { busy = false; } } };
 $('diclink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !busy) { busy = true; try { await openDics(); } finally { busy = false; } } };
 $('notelink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !busy) { busy = true; try { await openNotes(); } finally { busy = false; } } };
+// blur: ein Knopf, der den Fokus behält (und am Buchende gesperrt wird), würde die Tasten schlucken
+for (const [id, d] of [['pprev', -1], ['pnext', 1]]) $(id).onclick = e => { e.currentTarget.blur(); guarded(() => gotoPage(d))(); };
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
 $('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });
 window.addEventListener('resize', () => { layoutText(); layoutImage(); });
