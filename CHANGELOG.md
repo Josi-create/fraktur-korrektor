@@ -123,6 +123,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Zeilen, das Textfenster wird höher, das Seitenbild gibt dafür oben etwas Höhe ab.
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
+### Behoben
+- **„Text nachlegen“ und Einlesen endeten gelegentlich mit einem unbekannten Fehler:** Speicherten ein Hintergrundauftrag
+  und eine Anfrage des Browsers gleichzeitig den Zwischenspeicher der Wortprüfung, schrieben beide über dieselbe
+  Zwischendatei, und der zweite fand sie beim Umbenennen nicht mehr (`FileNotFoundError`). Der Text war dann schon
+  übernommen, nur die Rückmeldung fehlte. Das Speichern ist jetzt gegen gleichzeitige Zugriffe gesperrt; aufgefallen war
+  es als wackelnder Test.
+
 ## [0.5.0] – 2026-09-18
 
 Stand vor Beginn der Veröffentlichungsarbeiten: Lesemodus, Korrekturmodus, Serienkorrektur (F9) mit Rücknahme,

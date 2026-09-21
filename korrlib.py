@@ -61,16 +61,22 @@ class Checker:
                 self.cache[w] = any(d.lookup(v) for v in dict.fromkeys((w, w.lower(), w[0].upper() + w[1:])))
         return self.cache[w]
     def save(self):
-        if self.cache_path and len(self.cache) > self.n:
-            os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
-            with open(self.cache_path + '.tmp', 'w', encoding='utf-8') as f:
-                json.dump(self.cache, f, ensure_ascii=False)
-            os.replace(self.cache_path + '.tmp', self.cache_path)
-            self.n = len(self.cache)
-_checkers = {}
+        # Ein Hintergrundauftrag und eine Anfrage des Browsers speichern sonst zugleich über dieselbe .tmp-Datei, und wer
+        # zuletzt umbenennt, findet sie nicht mehr. Eigene Sperre: self.lock hält load() sekundenlang.
+        with _savelock:
+            if self.cache_path and len(self.cache) > self.n:
+                os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
+                stand = dict(self.cache)  # lookup() trägt währenddessen weiter ein
+                with open(self.cache_path + '.tmp', 'w', encoding='utf-8') as f:
+                    json.dump(stand, f, ensure_ascii=False)
+                os.replace(self.cache_path + '.tmp', self.cache_path)
+                self.n = len(stand)
+_checkers, _savelock, _newlock = {}, threading.Lock(), threading.Lock()
 def checker(name='1901'):
     if name not in _checkers:
-        _checkers[name] = Checker(find_dic() if name == '1901' else os.path.join(HERE, 'dict', 'de_DE_frami', 'de_DE_frami'))
+        with _newlock:  # zwei Threads zugleich sollen nicht zwei Wörterbücher anlegen (und beide einlesen)
+            if name not in _checkers:
+                _checkers[name] = Checker(find_dic() if name == '1901' else os.path.join(HERE, 'dict', 'de_DE_frami', 'de_DE_frami'))
     return _checkers[name]
 def warm(name='1901'):
     """Das Wörterbuch im Hintergrund einlesen, damit das erste unbekannte Wort später nicht darauf warten muss."""

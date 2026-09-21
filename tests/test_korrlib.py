@@ -44,6 +44,27 @@ def test_woerterbuch_erst_bei_bedarf(tmp_path, monkeypatch):
     assert c2.lookup('Zwischenspeicherprobe2') is False and c2.d is not None  # erst ein unbekanntes Wort holt es
 
 
+def test_cache_speichern_aus_zwei_threads():
+    """Hintergrundauftrag und Browser-Anfrage speichern zugleich: Beide schrieben über dieselbe .tmp-Datei, und wer zuletzt
+    umbenannte, fand sie nicht mehr – »Text nachlegen« endete dann mit einem unbekannten Fehler."""
+    import threading
+    c = korrlib.Checker(korrlib.checker('1901').path)
+    fehler = []
+
+    def speichern(k):
+        try:
+            for n in range(40):
+                c.cache['probe-%d-%d' % (k, n)] = False  # wie lookup(): es kommt laufend etwas dazu
+                c.save()
+        except Exception as e:
+            fehler.append(repr(e))
+    threads = [threading.Thread(target=speichern, args=(k,)) for k in range(4)]
+    for th in threads: th.start()
+    for th in threads: th.join()
+    assert not fehler
+    assert len(korrlib.Checker(c.path).cache) == len(c.cache)  # und die Datei ist heil und vollständig
+
+
 def test_rechtschreibung_je_epoche():
     alt, neu, alle = ('1901',), ('1901', 'neu'), ('1901', 'neu', 'vor1901')
     assert korrlib.in_dict('daß', alt) and korrlib.in_dict('Schiffahrt', alt)
