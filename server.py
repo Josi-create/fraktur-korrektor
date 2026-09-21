@@ -4,7 +4,7 @@ py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"
 Ohne Buchordner erscheint die Bibliothek (Bücher öffnen, Transkribus-Export importieren).
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png|jpg,
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
-import sys, os, json, re, glob, time, uuid, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
+import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import korrlib, pagexml, ocr, epub, finder
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
@@ -118,6 +118,7 @@ class Book:
         self.unsicher = self.autokorr_unsicher()
         self.settings = self.load_settings()
         self.pages, self.mt, self.freq, self.wl, self.wlmt, self.fcache, self.size = {}, {}, {}, set(), None, {}, {}
+        self.prog = None  # [geprüfte Seiten, Seiten] während overview() läuft – für den Ladebalken (/api/progress)
 
     def load_settings(self):
         """buch.json: year (Erscheinungsjahr, geraten oder None), dics (welche Rechtschreibung gilt), notizen (Ordner für
@@ -327,12 +328,45 @@ class Book:
         with self.lock:
             self.refresh()
             lines = self.pages[pg]
-            return dict(page=pg, lines=lines, geo=self.geo_lines(pg, lines), flags=self.flags(pg), img=self.img_url(pg))
+            # size: damit der Reader die Nachbarseiten schon richtig platziert, bevor ihre Bilder geladen sind
+            return dict(page=pg, lines=lines, geo=self.geo_lines(pg, lines), flags=self.flags(pg), img=self.img_url(pg), size=self.img_size(pg))
 
     def overview(self):
         with self.lock:
             self.refresh()
-            return [dict(page=pg, n=len(self.flags(pg))) for pg in self.pages]
+            self.prog, out = [0, len(self.pages)], []
+            try:
+                for pg in self.pages:
+                    out.append(dict(page=pg, n=len(self.flags(pg))))
+                    self.prog[0] += 1
+            finally:
+                self.prog = None
+            return out
+
+    def search(self, q, limit=1000):
+        """Alle Stellen im Buch, an denen q vorkommt: ohne Rücksicht auf Groß- und Kleinschreibung und auf ſ/s,
+        auch über die Zeilentrennung ¬ hinweg. Liefert [dict(page, line, start, len[, join, start2, len2])]."""
+        norm = lambda s: s.lower().replace('ſ', 's')
+        qn, out = norm(q.strip()), []
+        if not qn:
+            return out
+        with self.lock:
+            self.refresh()
+            for pg, lines in self.pages.items():
+                for i, l in enumerate(lines):
+                    ln = norm(l)
+                    s = ln.find(qn)
+                    while s >= 0:
+                        out.append(dict(page=pg, line=i, start=s, len=len(qn)))
+                        s = ln.find(qn, s + 1)
+                toks, joined = joined_tokens(lines)
+                for i, s1, w1, j, w2 in joined:  # Zu¬ / kunft: das Wort gibt es nur zusammengesetzt
+                    if qn in norm(w1 + w2) and qn not in norm(w1) and qn not in norm(w2):
+                        out.append(dict(page=pg, line=i, start=s1, len=len(w1), join=True, start2=toks[j][0][0], len2=len(w2)))
+                if len(out) >= limit:
+                    break
+        out.sort(key=lambda o: (o['page'], o['line'], o['start']))
+        return out[:limit]
 
     def occurrences(self, word, limit=500):
         """Alle Vorkommen eines Wortes im Buch (auch über Zeilentrennung ¬ hinweg), mit Zeilengeometrie."""
@@ -606,6 +640,44 @@ def lib_forget(bid):
         BOOKS.pop(bid, None)
 
 
+MARKS = {}  # Buchordner -> läuft die Nachberechnung noch? (je Programmlauf einmal)
+
+
+def guess_source(folder):
+    """Woher der Text eines Buchs stammt, das das noch nicht vermerkt hat: Transkribus nummeriert in lines.json
+    seine Zeilen (id), die eingebaute Erkennung merkt sich statt dessen, wie sicher sie war (conf)."""
+    for pg in pagexml.load_json(folder, 'lines.json', {}).values():
+        for l in pg.get('lines') or []:
+            return ['transkribus'] if l.get('id') else ['tesseract'] if l.get('conf') is not None else []
+    return []
+
+
+def ensure_marks(folder):
+    """Die Kennzeichen eines Buchs: woher sein Text stammt und wie viele Wörter das Wörterbuch nicht kennt.
+    Bücher von früher wissen das nicht – die Herkunft steht schnell fest, die Wörterbuchquote muss gerechnet
+    werden. Sie läuft darum nebenher: Die Bibliothek erscheint sofort und holt sich die Zahl nach."""
+    qj = pagexml.load_json(folder, 'qualitaet.json', {})
+    if qj.get('rating'):
+        if qj.get('quelle') is None:
+            m = qj.get('model')
+            qj['quelle'] = ([m] if m in ('textebene', 'transkribus', 'hocr') else ['tesseract']) if m else guess_source(folder)
+            write_atomic(os.path.join(folder, 'qualitaet.json'), json.dumps(qj, ensure_ascii=False, indent=1))
+        return qj
+    quelle = qj.get('quelle') or guess_source(folder)
+    if folder not in MARKS:
+        MARKS[folder] = True
+
+        def rechnen():
+            try:
+                ocr.rate_book(folder, quelle, quelle[0] if quelle else 'text')
+            except Exception:
+                pass
+            finally:
+                MARKS[folder] = False
+        threading.Thread(target=rechnen, daemon=True).start()
+    return dict(quelle=quelle, rating=None, pending=MARKS.get(folder, False))
+
+
 def lib_list():
     out = []
     for e in lib_load():
@@ -614,12 +686,20 @@ def lib_list():
             bm = json.load(open(os.path.join(e['folder'], 'lesezeichen.json'), encoding='utf-8')).get('page')
         except (OSError, ValueError):
             bm = None
+        qj = ensure_marks(e['folder']) if n else {}
+        q = (qj.get('rating') or {}).get('level')
+        quelle = qj.get('quelle') or []
+        unbekannt = (qj.get('rating') or {}).get('dict')
         try:
-            q = json.load(open(os.path.join(e['folder'], 'qualitaet.json'), encoding='utf-8'))['rating']['level']
-        except (OSError, ValueError, KeyError):
-            q = None
+            with open(os.path.join(e['folder'], 'korrekturen.log'), 'rb') as f:
+                corr = sum(1 for _ in f)
+        except OSError:
+            corr = 0
         out.append(dict(id=book_id(e['folder']), title=e.get('title') or default_title(e['folder']), folder=e['folder'],
-                        pages=n, bookmark=bm, last=e.get('last', ''), quality=q))
+                        pages=n, bookmark=bm, last=e.get('last', ''), quality=q, corrections=corr, quelle=quelle,
+                        pending=bool(qj.get('pending')), backups=pagexml.backups(e['folder']) if n else [],
+                        unknown=None if unbekannt is None else round(100 * (1 - unbekannt)),
+                        images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*')))))
     out.sort(key=lambda b: b['last'], reverse=True)
     return out
 
@@ -659,7 +739,100 @@ def import_transkribus(source, title=None, images=None, target=None):
         raise ValueError('keine_xml')
     e = lib_touch(out, title or r.get('title') or name)
     st = propose_settings(out)
-    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], warnings=r['warnings'], **st)
+    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], warnings=r['warnings'],
+                quality=ocr.rate_book(out, ['transkribus']), **st)
+
+
+def book_folder(bid):
+    """Der Ordner eines Buchs aus der Bibliothek."""
+    e = next((x for x in lib_load() if book_id(x['folder']) == bid), None)
+    if not e or not page_files(e['folder']):
+        raise ValueError('quelle_fehlt')
+    return e['folder']
+
+
+def copy_book(folder, title=None):
+    """Ein Buch daneben anlegen: Seitenbilder, Texte und Einstellungen kommen mit. Das Protokoll und die
+    Leseposition bleiben beim Original – sie gehören zu dessen Text, nicht zu dem, der gleich hineinkommt."""
+    out = new_folder(title or default_title(folder), folder)[1]
+    os.makedirs(out, exist_ok=True)
+    for f in page_files(folder) + [os.path.join(folder, n) for n in ('lines.json', 'quellen.json', 'buch.json', 'whitelist.txt')]:
+        if os.path.isfile(f):
+            shutil.copyfile(f, os.path.join(out, os.path.basename(f)))
+    img = os.path.join(folder, 'img')
+    if os.path.isdir(img):
+        shutil.copytree(img, os.path.join(out, 'img'), dirs_exist_ok=True)
+    return out
+
+
+def add_transkribus(bid, source, mode, progress, cancelled):
+    """Den Text eines Transkribus-Exports – oder den erkannten Text einer Bibliothek (hOCR, ALTO) – in ein Buch
+    übernehmen, das es schon gibt. Wer sein Buch erst als PDF
+    einliest, die Seiten aufbereitet und zu Transkribus schickt, soll danach nicht wieder von vorn anfangen und
+    seine Seitenbilder suchen müssen – sie liegen ja längst hier.
+
+    mode='new' legt statt dessen ein zweites Buch daneben an: erst eine Kopie samt Seitenbildern, dann derselbe
+    Weg hinein. So bleibt das Original mit seinen Korrekturen unangetastet, und die Bilder sind trotzdem dabei."""
+    folder = book_folder(bid)
+    if not source or not os.path.exists(source):
+        raise ValueError('quelle_fehlt')
+    e = next((x for x in lib_load() if book_id(x['folder']) == bid), None)
+    alt = [q for q in (pagexml.load_json(folder, 'qualitaet.json', {}).get('quelle') or []) if q not in ('transkribus', 'hocr')]
+    ziel = copy_book(folder, e.get('title') if e else None) if mode == 'new' else folder
+    try:
+        r = pagexml.import_into(source, ziel, progress, save=ziel == folder)
+    except Exception:
+        if ziel != folder:
+            shutil.rmtree(ziel, ignore_errors=True)  # nichts Halbfertiges stehen lassen
+        raise
+    with LIBLOCK:
+        BOOKS.pop(book_id(ziel), None)  # der Text auf der Platte ist ein anderer geworden
+    lib_touch(ziel, e.get('title') if e and ziel != folder else None)
+    art = 'hocr' if r.get('extern') else 'transkribus'  # hOCR/ALTO einer Bibliothek oder Transkribus
+    return dict(id=book_id(ziel), folder=ziel, neu=ziel != folder, quality=ocr.rate_book(ziel, alt + [art], art), **r)
+
+
+def add_images(bid, source, progress, cancelled):
+    """Seitenbilder zu einem Buch legen, das keine hat (Transkribus-Export ohne Bilder)."""
+    folder = book_folder(bid)
+    if not source or not os.path.exists(source):
+        raise ValueError('quelle_fehlt')
+    r = ocr.add_images(folder, source, progress)
+    with LIBLOCK:
+        BOOKS.pop(bid, None)
+    lib_touch(folder)
+    return dict(id=bid, folder=folder, **r)
+
+
+def restore(bid, name):
+    """Eine frühere Fassung eines Buchs zurückholen – das Gegenstück zum Ersetzen des Textes."""
+    folder = book_folder(bid)
+    r = pagexml.restore(folder, name)
+    with LIBLOCK:
+        BOOKS.pop(bid, None)
+    lib_touch(folder)
+    return dict(id=bid, folder=folder, **r)
+
+
+def prepare(bid, tool):
+    """Sagt, welcher Ordner in ScanTailor bzw. zu Transkribus gehört, und macht ihn greifbar: in der
+    Zwischenablage und im Dateimanager geöffnet. Niemand soll sich einen Pfad merken oder abtippen müssen."""
+    folder = book_folder(bid)
+    img = os.path.join(folder, 'img')
+    if not glob.glob(os.path.join(img, '*.*')):
+        raise ValueError('keine_bilder')
+    exe = out = None
+    if tool == 'scantailor':
+        exe = ocr.find_scantailor()
+        if not exe:
+            raise ValueError('kein_scantailor')
+        out = os.path.join(folder, 'scantailor', 'out')
+        os.makedirs(out, exist_ok=True)
+    clip = ocr.to_clipboard(img)
+    ocr.reveal(img)
+    if exe:
+        ocr.launch(exe)
+    return dict(folder=img, out=out, clipboard=clip, pages=len(glob.glob(os.path.join(img, '*.*'))))
 
 
 def import_ocr(source, title, target, script, textlayer, progress, cancelled):
@@ -847,9 +1020,11 @@ def start_job(fn, *args):
 
 # Dateitypen des Mac-Dialogs als UTI; "any" muss alles zeigen, was finder.py erkennt.
 UTI = dict(pdf=['com.adobe.pdf'], zip=['public.zip-archive'],
+           export=['public.zip-archive', 'public.plain-text', 'public.xml'],
            any=['com.adobe.pdf', 'org.idpf.epub-container', 'public.zip-archive', 'public.xml', 'public.plain-text',
                 'public.jpeg', 'public.png', 'public.tiff'])
-PROMPT = dict(folder='Ordner wählen', pdf='PDF wählen', exe='Programm wählen', zip='Transkribus-Export (ZIP) wählen')
+PROMPT = dict(folder='Ordner wählen', pdf='PDF wählen', exe='Programm wählen', zip='Transkribus-Export (ZIP) wählen',
+              export='Transkribus-Export wählen (ZIP, Text oder XML)')
 
 
 def mac_dialog(kind):
@@ -877,7 +1052,8 @@ def dialog(kind, out=None):
     root.attributes('-topmost', True)
     p = filedialog.askdirectory(parent=root) if kind == 'folder' else \
         filedialog.askopenfilename(parent=root, filetypes=dict(pdf=[('PDF', '*.pdf')], exe=[('*', '*.*')], any=[
-            ('PDF, EPUB, ZIP, Bilder, Buchseiten', '*.pdf *.epub *.zip *.xml *.txt *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
+            ('PDF, EPUB, ZIP, Bilder, Buchseiten', '*.pdf *.epub *.zip *.xml *.txt *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')],
+            export=[('Transkribus-Export, hOCR, ALTO', '*.zip *.txt *.xml *.html *.htm *.hocr *.alto'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
     if out:
         with open(out, 'w', encoding='utf-8') as f:
             f.write(p or '')
@@ -1032,9 +1208,14 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, open(p, 'rb').read(), IMGTYPES[ext])
             return self.send(404, '{}')
         if rest == '/api/overview':
-            r = dict(title=book.title, pages=book.overview())
+            # images/local: die Leseansicht bietet an, Seitenbilder oder einen Transkribus-Text nachzulegen
+            r = dict(title=book.title, pages=book.overview(), id=book.id, local=self.local(),
+                     images=len(glob.glob(os.path.join(book.imgdir, '*.*'))))
             korrlib.save_cache()
             return self.sendjson(r)
+        if rest == '/api/progress':  # ohne Sperre: der Ladebalken fragt, während overview() die Sperre hält
+            p = book.prog
+            return self.sendjson(dict(done=p[0], total=p[1]) if p else dict(done=1, total=1))
         if rest == '/api/settings':
             return self.sendjson(book.settings)
         if rest == '/api/whitelist':
@@ -1047,6 +1228,10 @@ class H(BaseHTTPRequestHandler):
             if q.get('count'):
                 return self.sendjson(dict(n=len(occ)))
             return self.sendjson(dict(word=w, items=occ, sizes={o['page']: book.img_size(o['page']) for o in occ}))
+        if rest == '/api/search':
+            qs = q.get('q', [''])[0]
+            items = book.search(qs) if qs.strip() else []
+            return self.sendjson(dict(q=qs, n=len(items), items=items))
         if rest == '/api/nextflag':
             after = q.get('after', ['000'])[0]
             for o in book.overview():
@@ -1068,7 +1253,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -1105,6 +1290,20 @@ class H(BaseHTTPRequestHandler):
                     return self.sendjson(dict(pages=ocr.pdf_count(src), text=ocr.pdf_has_text(src)) if ok else dict(pages=0, text=False))
                 except Exception:
                     return self.sendjson(dict(pages=0, text=False))
+            if u.path == '/api/add_transkribus':
+                return self.sendjson(dict(job=start_job(add_transkribus, body.get('id'), body.get('source'), body.get('mode'))))
+            if u.path == '/api/add_images':
+                return self.sendjson(dict(job=start_job(add_images, body.get('id'), body.get('source'))))
+            if u.path == '/api/restore':
+                try:
+                    return self.sendjson(restore(body.get('id'), body.get('name')))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
+            if u.path == '/api/prepare':
+                try:
+                    return self.sendjson(prepare(body.get('id'), body.get('tool')))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
             if u.path == '/api/import_ocr':
                 return self.sendjson(dict(job=start_job(import_ocr, body.get('source'), body.get('title'), body.get('target'), body.get('script'), body.get('textlayer'))))
             if u.path == '/api/scantailor':
@@ -1221,6 +1420,7 @@ def setup(A):
     global DEFAULT
     if A.dic:
         korrlib.set_dic(A.dic)
+    korrlib.warm()  # bei gefülltem Zwischenspeicher braucht das Öffnen das Wörterbuch nicht – aber ein neues Wort soll nicht warten
     httpd = Server(('0.0.0.0' if A.lan else '127.0.0.1', A.port), H)
     if A.folder:
         f = find_book_folder(A.folder)

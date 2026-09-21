@@ -44,8 +44,10 @@ Eine *Collection* ist eine Schublade für Ihre Bücher; ohne sie geht es nicht.
    - Haben Sie den Scan mit **ScanTailor** aufbereitet: die Dateien aus dessen Ausgabeordner
      **`…/scantailor/out`**. Das sind die getrennten, geraden Einzelseiten (TIFF nimmt Transkribus an).
    - Haben Sie dieses Ergebnis schon im Fraktur-Korrektor **eingelesen**: die Bilder aus dem Ordner **`img`**
-     dieses Buchs – inhaltlich dasselbe, nur durchnummeriert. Das Programm zeigt den Ordner nach dem Einlesen
-     mit **Ordner zeigen …** und legt den Pfad in die Zwischenablage.
+     dieses Buchs – inhaltlich dasselbe, nur durchnummeriert. **Den Ordner müssen Sie nicht suchen:** In der
+     Bibliothek steht beim Buch der Knopf **Für Transkribus vorbereiten**. Das
+     Programm nennt den Ordner, legt ihn in die Zwischenablage und öffnet ihn im Dateifenster, sodass Sie ihn
+     gleich hineinziehen können. Das ist auch der Weg, der die Seiten später am sichersten wieder zuordnet.
    - War der Scan schon in Ordnung: die Bilder aus `img` Ihres Buchordners oder gleich das **PDF**,
      Transkribus zerlegt es selbst in Seiten.
 
@@ -100,8 +102,10 @@ außerdem im Dokument selbst.
 
 1. In der Sammlung das Dokument (oder alle Seiten) auswählen.
 2. Oben auf den Knopf **„Action"** und darin auf **„Export"**.
-3. Als Format **„Page XML"** wählen – nicht PDF, nicht Word. Darin stecken die Zeilen samt ihrer Lage im Bild,
-   und genau das braucht der Fraktur-Korrektor.
+3. Als Format **„Page XML"** wählen – nicht PDF, nicht Word. Darin stecken die Zeilen samt ihrer Lage im
+   Bild, und genau das braucht der Fraktur-Korrektor, um den Text Zeile für Zeile neben dem Seitenbild
+   mitzuführen. Den einfachen **Textexport** liest das Programm zwar auch, aber der enthält nur den Wortlaut:
+   Die Zeilen lassen sich dann nicht mehr im Bild zeigen.
 4. Auf **„Start export"**.
 5. Sie bekommen eine E-Mail mit einem Link (zwei Wochen gültig). Ohne E-Mail: links unter
    **„Uploads & downloads"** beim fertigen Export auf die drei Punkte und **„Download"**.
@@ -111,8 +115,14 @@ Fraktur-Korrektor liegt – beim Öffnen schlägt das Programm Ihren vorhandenen
 
 ### 7. Zurück in den Fraktur-Korrektor
 
-Bibliothek → **Öffnen …** → **Datei wählen …** → die ZIP-Datei. Entpacken müssen Sie sie nicht; das Programm
-erkennt den Export und fragt gegebenenfalls nach den passenden Seitenbildern.
+**Liegt das Buch schon in Ihrer Bibliothek** – weil Sie es vorher mit Tesseract eingelesen haben –, dann
+gehört der Text dorthin und nicht in ein neues Buch: in der Bibliothek beim Buch auf
+**Transkribus-Text einlesen** klicken und die ZIP-Datei wählen. Ihre Seitenbilder bleiben, wo sie sind; Sie
+müssen nichts suchen und nichts doppelt anlegen. Das Programm sagt Ihnen danach, wie viele Seiten es ersetzt
+hat und wie es sie zugeordnet hat.
+
+**Ist es ein neues Buch:** Bibliothek → **Öffnen …** → **Datei wählen …** → die ZIP-Datei. Entpacken müssen
+Sie sie nicht; das Programm erkennt den Export und fragt gegebenenfalls nach den passenden Seitenbildern.
 Einzelheiten: [Ein Buch öffnen](add-book.md).
 
 ## Danach

@@ -92,6 +92,10 @@ und Mac, zweisprachige Dokumentation; später Epub-Export.
 
 Die Tests starten eigene Serverinstanzen auf freien Ports mit einem Wegwerf-Buch im Temp-Ordner.
 
+Auf dem Mac nimmt `./mac_lesen.sh` einem das ab: Es legt beim ersten Mal `.venv` an und startet den Server
+(`./mac_lesen.sh <buchordner> --lan`), baut mit `./mac_lesen.sh build` die App samt DMG lokal und lässt mit
+`./mac_lesen.sh test` die Tests laufen.
+
 ## Unterstützen
 
 Das Programm entsteht in der Freizeit. Wer mag, spendiert einen Kaffee: <https://buymeacoffee.com/josicreate> ☕

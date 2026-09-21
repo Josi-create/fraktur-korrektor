@@ -30,6 +30,10 @@ den Text bereits erkannt und unsichtbar hinter das Seitenbild gelegt. Der Fraktu
 
 Im Zweifel erst übernehmen und die Ampel ansehen. Ist sie nicht grün, das Buch noch einmal einlesen und neu erkennen lassen.
 
+Stammt das PDF aus einer Bibliothek und enthält keinen Text, lohnt ein Blick auf deren Seiten: Oft liegt der
+erkannte Text dort getrennt vom PDF bereit (hOCR oder ALTO) und lässt sich nachträglich über das Buch legen –
+siehe [Text aus einer Bibliothek](add-book.md).
+
 ## Die Ampel
 
 Nach der Erkennung schätzt das Programm, wie gut das Ergebnis ist. Es benutzt dafür zwei Werte: wie sicher
@@ -56,6 +60,10 @@ schlechter sind als der Rest**, ist die Seite zum Bund hin gewölbt.
 
 Das freie Programm **ScanTailor Advanced** behebt all das: Es trennt Doppelseiten, richtet sie gerade,
 entzerrt Wölbungen und schneidet Ränder ab. ([Installation](install-tools.md))
+
+Liegt das Buch **schon in Ihrer Bibliothek**, geht es kürzer: dort steht beim Buch der Knopf
+**Für ScanTailor vorbereiten** – dann stehen Eingabe- und Ausgabeordner fest, und ScanTailor startet gleich mit.
+Für ein PDF, das noch nicht eingelesen ist:
 
 1. Über **Öffnen …** das PDF wählen und im Fenster auf **Erst mit ScanTailor aufbereiten …** klicken.
    Das Programm speichert jede PDF-Seite als Bild (ScanTailor kann keine PDFs öffnen) und startet ScanTailor.

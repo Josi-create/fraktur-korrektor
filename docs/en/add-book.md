@@ -53,6 +53,92 @@ export has pages, and suggests it.
 
 Nothing is ever overwritten: if the title already exists, a second folder with the suffix “(2)” is created.
 
+## Continue working on a book
+
+A book is rarely finished in one go: first you read in a PDF, then you tidy up the pages with ScanTailor, then
+you have the text recognised by Transkribus. **You do not have to start over every time.**
+
+In the library, every book has a row of buttons below it. Next to **Open book** there are four more ways:
+
+| | What for |
+|---|---|
+| **Take in recognised text** | The text from Transkribus – or the text a library publishes for its digitised copy – takes the place of the present one. Your page images, your word list and your bookmark stay where they are. You may point at the ZIP file, the unpacked folder or the text file of the export, or at a folder of hOCR or ALTO files (see below). |
+| **Add page images** | For books that are text only – a Transkribus export without images, say. Point at a folder of images, at the PDF the pages come from, or at another book that already has them. |
+| **Prepare for Transkribus** | The program names the folder you upload, puts it on the clipboard and opens it in a file window. |
+| **Prepare for ScanTailor** | Starts ScanTailor and names the input and output folder. |
+| **Earlier version** | Brings back a text that a later import replaced. Only shown when there is something to bring back. |
+
+That way you never need to remember where a book’s images are – the program knows.
+
+### How the pages find each other
+
+When a text comes back from Transkribus, every page has to find its image again. If even one page is missing
+from the export, matching them blindly in order would put every text from there on next to the wrong image.
+So the program tries, in this order:
+
+1. **By file name.** When reading a book in, the program notes what each page’s image was originally called
+   (`quellen.json`). The Transkribus export carries the same names – that matches unambiguously.
+2. **By wording.** Without names, the program compares the words: the same page of the book stays
+   recognisable, even if one text recognition was worse than the other. Safe hits are the anchors; pages
+   without text (plates) follow from the distance between them.
+3. **In order** – only if both sides have the same number of pages.
+
+If single pages remain unclear – because the counts to their left and right do not agree –, the program leaves
+them out and says how many there were; the old text stays on those. If nothing works out at all, it stops
+rather than putting text next to the wrong images. Then use **Open …** to create a separate book from the export.
+
+The same holds for **page images from another book**: point at the book that has the images, and the program
+compares the texts of both – it is the same work after all, just recognised differently. So the book with the
+images may well have more pages than the one that lacks them.
+
+### What the marks in the library tell you
+
+Behind the title there are small marks: **Tesseract**, **Transkribus**, **PDF text** – where the text comes
+from – and **ScanTailor** if the page images were tidied up with it. Next to them is the share of words the
+dictionary does not know (“20 % red words”). That is the same figure you see as red words while reading; old
+spellings and names are among them, so they are not all mistakes. The coloured dot before the title is the
+traffic light from reading the book in.
+
+### Text export instead of PAGE XML
+
+Transkribus can also give out its text as a plain text file, and the program reads that too. You do lose
+something, though: a text file does not say where the lines sit in the image. The text then lands on the right
+page, but can no longer be followed line by line next to the page image – unless the new recognition splits the
+lines exactly as the old one did. The program tells you afterwards for how many pages that was the case. If you
+need the lines in the image, export again as **PAGE XML**.
+
+### Text from a library (hOCR, ALTO)
+
+Many libraries have long since run their digitised books through text recognition – but that text is rarely
+inside the PDF you can download. The PDF then holds nothing but images, and the Fraktur-Korrektor rightly
+suggests recognising the text anew. The library’s text, however, is often good and worth fetching. It comes in
+one of two formats: **hOCR** (files ending in `.html` or `.hocr`) or **ALTO** (`.xml`), one file per page, and
+both carry where each line sits in the image.
+
+Where to find it differs from library to library: in the viewer under “full text” or “OCR”, through an API, or
+by asking the library. The Bavarian State Library, for instance, serves it per page at
+`https://api.digitale-sammlungen.de/ocr/<identifier>/<page>`; the identifier (`bsb…`) is printed on the cover
+sheet of the PDF (as of September 2026). The program downloads nothing from the internet – you fetch the files
+yourself and put them in a folder.
+
+Then:
+
+1. Read the PDF in as usual (Tesseract, or take the text if the PDF has any). That text is the scaffold by which
+   the library’s pages are recognised.
+2. In the library, choose **Take in recognised text** for the book and point at the folder of hOCR or ALTO files.
+
+The pages find each other by wording (see above) – so it does not matter that the PDF starts with a library
+cover sheet that does not appear in its text files. If the library’s images are the same as those in the PDF,
+the line boxes fit as well; the book then carries the mark **Library**.
+
+### If the book already contains corrections
+
+The program warns you: the new text does not contain your work. You may take it into this
+book anyway, or create a new one next to it – the page images come along. Either way the present version is
+backed up first, as `vorher-<date>.zip` in the book folder. The button **Earlier version** brings it back at any
+time – and since going back saves the present state too, you can go forward again. If an import turns out badly,
+that is the way back; nothing has to be read in or recognised again.
+
 ## What is inside a book folder
 
 New books are created in `Fraktur-Korrektor` in your home folder.
@@ -66,6 +152,8 @@ New books are created in `Fraktur-Korrektor` in your home folder.
 | `lesezeichen.json` | your reading position |
 | `korrekturen.log` | log of all changes |
 | `qualitaet.json` | after reading in: the traffic-light values per page |
+| `quellen.json` | what each page’s image was originally called – so a later Transkribus export can be matched |
+| `vorher-….zip` | backup of the text version that a Transkribus text replaced |
 
 You may edit the text files with another editor, even while the program is running. Just do not change the
 number of lines of a page, or the alignment with the image is lost.

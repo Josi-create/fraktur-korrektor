@@ -6,10 +6,59 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 
 ### Neu
 - **Notizen für Obsidian** (#60): Passage markieren, `F4` oder Rechtsklick – das Programm legt im Notizordner des Buchs
-  (Taste `N`, Ordner im Obsidian-Vault, gespeichert in `buch.json`) einen fortlaufend nummerierten Zettel an: oben
+  (Taste `O`, Ordner im Obsidian-Vault, gespeichert in `buch.json`) einen fortlaufend nummerierten Zettel an: oben
   Platz für die Anmerkung, unter dem Strich das Zitat und „Seite x“ mit Verweis auf die Quellenangabe des Buchs (`0 Quellenangabe.md`, wird
   als Vorlage für Herkunft und Zotero-Zitierweise angelegt). Obsidian öffnet den Zettel sofort und kommt in den Vordergrund; das Zitat liegt auch in der
   Zwischenablage. Ohne Markierung wird die Lesezeile zum Zettel.
+- **Das Seitenbild rollt fließend über die Seitengrenze**, wie der Text rechts: Links stehen Vorgänger, Seite und
+  Nachfolger untereinander, das Mausrad läuft ohne Sprung von einer Seite in die nächste. Die Bildmaße kommen vom
+  Server mit, damit die Nachbarseiten schon richtig liegen, bevor ihre Bilder geladen sind.
+- **Suchen im ganzen Buch und Gehe zu Seite** (#56): `S` öffnet oben eine Eingabezeile; das Programm sucht im
+  ganzen Buch, ohne Rücksicht auf Groß-/Kleinschreibung und ſ/s, auch über die Zeilentrennung ¬ hinweg, und springt
+  zur ersten Fundstelle ab der Leseposition – blau im Text, eingerahmt im Seitenbild. Oben bleibt ein kleines Feld
+  mit Suchwort, Zählung („3 / 17“) und Knöpfen: `N` nächste, `Umschalt`+`N` vorige Fundstelle. `G` fragt auf
+  dieselbe Weise nach einer Seitenzahl statt über ein Browser-Fenster.
+- **Der erkannte Text einer Bibliothek (hOCR, ALTO) lässt sich über ein Buch legen.** Viele Bibliotheken geben
+  ihre Digitalisate als PDF ohne Text heraus, obwohl sie den Text längst erkannt haben – er liegt nur getrennt,
+  eine Datei je Seite (die Bayerische Staatsbibliothek etwa als hOCR über ihre Schnittstelle). Wer diese Dateien
+  in einen Ordner holt, liest sein PDF wie gewohnt ein und wählt dann *Erkannten Text einlesen* (bisher
+  *Transkribus-Text einlesen*). Die Seiten finden sich am Wortlaut der ersten Erkennung – ein Deckblatt vorn im
+  PDF stört darum nicht –, die Lage der Zeilen im Bild kommt mit, Satzzeichen, die die Bibliothek als eigene
+  Wörter führt, hängen wieder am Wort. Das Buch trägt danach das Kennzeichen *Bibliothek*. Das Programm lädt
+  weiterhin nichts aus dem Internet; die Hilfe sagt, wo man suchen kann. Geprüft am hOCR der BSB (360 Seiten,
+  alle zugeordnet); ALTO nach dem Standard, ohne echtes Beispiel.
+- **Ein Buch weiterbearbeiten, statt jedes Mal ein neues anzulegen** (#44): In der Bibliothek steht bei jedem Buch,
+  was möglich ist – *Transkribus-Text einlesen*, *Seitenbilder hinzufügen*, *Für Transkribus vorbereiten*,
+  *Für ScanTailor vorbereiten*. Wer sein Buch erst mit Tesseract einliest, die Seiten aufbereitet und
+  dann bei Transkribus erkennen lässt, fängt nicht wieder von vorn an und sucht seine Seitenbilder nicht: Der neue
+  Text tritt an die Stelle des alten, Bilder, Wortliste und Lesezeichen bleiben. Stecken schon Korrekturen im Buch,
+  wird gewarnt und ein neues Buch angeboten – erzwungen wird es nicht. Die bisherige Fassung sichert das Programm
+  vorher als `vorher-<Datum>.zip`.
+  **Die Seitenzuordnung** geschieht über die Namen der Bilddateien (dafür merkt sich das Programm beim Einlesen in
+  `quellen.json`, wie jedes Seitenbild ursprünglich hieß), sonst am Wortlaut der Seiten, erst zuletzt der Reihe nach.
+  Fehlt im Export eine Seite, verschiebt sich dadurch nichts; geht keiner der Wege auf, bricht das Programm lieber ab,
+  als Text neben falsche Bilder zu legen.
+- **Beschriftete Knöpfe an jedem Buch** (#46, #47): In der Bibliothek steht unter jedem Buch, was möglich ist –
+  *Buch öffnen*, *Transkribus-Text einlesen*, *Seitenbilder hinzufügen*, *Für Transkribus vorbereiten*,
+  *Für ScanTailor vorbereiten*. Dieselben Wege führen aus der Leseansicht dorthin; fehlen die Seitenbilder ganz,
+  steht an ihrer Stelle ein Angebot, sie nachzulegen. Auch die Meldung „Seitenbilder fehlen" nach einem Import
+  schickt niemanden mehr in den Unterordner `img`, sondern bietet einen Knopf (#49).
+- **Seitenbilder nachlegen, woher sie auch kommen** (#40, #51): ein Bilderordner, das PDF, aus dem die Seiten
+  stammen, oder **ein anderes Buch**. Im letzten Fall vergleicht das Programm die Texte beider Bücher – dasselbe
+  Werk, nur anders erkannt – und weiß daraus, welches Bild zu welcher Seite gehört. Das Bilderbuch darf dabei
+  mehr Seiten haben als das, dem die Bilder fehlen.
+- **Kennzeichen und Ampel für jedes Buch** (#50): Hinter dem Titel steht, woher der Text stammt (*Tesseract*,
+  *Transkribus*, *PDF-Text*) und ob die Seiten mit *ScanTailor* aufbereitet wurden, dazu der Anteil der Wörter,
+  die das Wörterbuch nicht kennt. Diesen Anteil rechnet das Programm jetzt auch für Texte aus, die ohne
+  Konfidenzwerte kommen – Transkribus liefert keine –, sodass auch ein Transkribus-Buch seine Ampel hat.
+- **Transkribus-Textexport lesen** (#53): Wer aus Transkribus „Text" statt „PAGE XML" geholt hat, steht nicht
+  mehr vor einer Absage. In der Textdatei trennen zwei Leerzeilen die Seiten; zugeordnet werden sie am Wortlaut
+  wie ein XML-Export. Stimmt die Zeilenzahl mit der bisherigen überein, behalten die Zeilen ihre Lage im Bild,
+  sonst sagt das Programm, für wie viele Seiten die Zeilenzuordnung verlorengeht – eine Textdatei enthält sie
+  nicht. Einzelne Seiten, deren Platz unklar bleibt, lässt es aus, statt alles zu verwerfen.
+- **Frühere Fassung zurückholen** (#54): Jeder übernommene Text sicherte schon bisher die Fassung, die er
+  ersetzt – jetzt gibt es dafür auch einen Knopf. Er zeigt die gesicherten Fassungen mit Datum und Seitenzahl und
+  holt die gewählte zurück; weil das Zurückholen seinerseits sichert, kommt man ebenso wieder vorwärts.
 - **Installation für alle** (M4): Der Fraktur-Korrektor wird als fertiges Programm ausgeliefert – Doppelklick, fertig,
   nichts nachinstallieren. Windows: Installer und portables ZIP; Mac: `.app` im `.dmg` für Apple Silicon und Intel.
   **Tesseract und die Modelle `frak2021` und `deu` sind enthalten**, ebenso die Wörterbücher und die Hilfe.
@@ -61,6 +110,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Tests (pytest) und CI für Windows, macOS, Linux; `pyproject.toml`; Lizenz GPL-3.0-or-later; ROADMAP.
 
 ### Geändert
+- **Ein Buch öffnet sich sofort, wenn seine Wörter schon einmal geprüft wurden.** Bisher las das Programm bei jedem Start
+  erst das Hunspell-Wörterbuch ein (mehrere Sekunden), auch wenn es danach kein einziges Wort nachschlagen musste, weil alle
+  Ergebnisse im Zwischenspeicher lagen. Jetzt wird das Wörterbuch im Hintergrund geladen und nur bei einem wirklich neuen Wort
+  abgewartet. Für das erste Öffnen eines Buchs zeigt der Ladebildschirm einen **Fortschrittsbalken** (»Seite 12 von 300
+  geprüft«, neue Abfrage `/api/progress`).
+- **Die Tastaturhilfe liegt über der ganzen Fensterbreite** (#55), nicht mehr nur über dem Text: Sie braucht so weniger
+  Zeilen, das Textfenster wird höher, das Seitenbild gibt dafür oben etwas Höhe ab.
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
 ## [0.5.0] – 2026-09-18

@@ -54,6 +54,95 @@ Export Seiten hat, und schlägt ihn vor.
 
 Nichts wird je überschrieben: Gibt es den Titel schon, entsteht ein zweiter Ordner mit dem Zusatz „(2)“.
 
+## Ein Buch weiterbearbeiten
+
+Ein Buch entsteht selten in einem Zug: Erst lesen Sie ein PDF ein, dann bereiten Sie die Seiten mit ScanTailor
+auf, dann lassen Sie den Text bei Transkribus erkennen. **Dafür müssen Sie nicht jedes Mal von vorn anfangen.**
+
+In der Bibliothek steht unter jedem Buch eine Reihe von Knöpfen. Neben **Buch öffnen** stehen dort vier
+weitere Wege:
+
+| | Wozu |
+|---|---|
+| **Erkannten Text einlesen** | Der Text von Transkribus – oder der, den eine Bibliothek zu ihrem Digitalisat herausgibt – tritt an die Stelle des bisherigen. Ihre Seitenbilder, Ihre Wortliste und Ihr Lesezeichen bleiben, wo sie sind. Angeben können Sie die ZIP-Datei, den entpackten Ordner oder die Textdatei des Exports, oder einen Ordner mit hOCR- oder ALTO-Dateien (siehe unten). |
+| **Seitenbilder hinzufügen** | Für Bücher, die nur aus Text bestehen – etwa ein Transkribus-Export ohne Bilder. Zeigen Sie auf einen Bilderordner, auf das PDF, aus dem die Seiten stammen, oder auf ein anderes Buch, das die Bilder schon hat. |
+| **Für Transkribus vorbereiten** | Das Programm nennt Ihnen den Ordner, den Sie hochladen, legt ihn in die Zwischenablage und öffnet ihn im Dateifenster. |
+| **Für ScanTailor vorbereiten** | Startet ScanTailor und nennt Ein- und Ausgabeordner. |
+| **Frühere Fassung** | Holt einen Text zurück, den ein späterer Import ersetzt hat. Erscheint nur, wenn es etwas zurückzuholen gibt. |
+
+So müssen Sie sich nie merken, wo die Bilder zu einem Buch liegen – das weiß das Programm.
+
+### Wie die Seiten zueinander finden
+
+Kommt ein Text von Transkribus zurück, muss jede Seite wieder zu ihrem Bild finden. Fehlt im Export auch nur
+eine Seite, stünde bei blinder Zuordnung der Reihe nach ab da jeder Text neben dem falschen Bild. Darum geht
+das Programm in dieser Reihenfolge vor:
+
+1. **Über die Dateinamen.** Beim Einlesen merkt sich das Programm, wie das Bild jeder Seite ursprünglich hieß
+   (`quellen.json`). Im Transkribus-Export stehen dieselben Namen – das passt eindeutig.
+2. **Über den Wortlaut.** Gibt es keine Namen, vergleicht das Programm die Wörter: Dieselbe Buchseite bleibt
+   erkennbar, auch wenn die eine Texterkennung schlechter war als die andere. Sichere Treffer sind die Anker,
+   Seiten ohne Text (Bildtafeln) ergeben sich aus deren Abstand.
+3. **Der Reihe nach** – nur, wenn hier wie dort gleich viele Seiten vorliegen.
+
+Bleiben dabei einzelne Seiten unklar – weil links und rechts von ihnen die Zählung nicht zusammenpasst –,
+lässt das Programm sie aus und sagt, wie viele es waren. Dort steht dann noch der alte Text. Geht gar nichts
+auf, bricht es ab, statt den Text neben falsche Bilder zu legen. Dann legen Sie den Export mit **Öffnen …** als eigenes Buch an.
+
+Dasselbe gilt für **Seitenbilder aus einem anderen Buch**: Sie zeigen auf das Buch, das die Bilder hat, und das
+Programm vergleicht die Texte beider Bücher – es ist ja dasselbe Werk, nur anders erkannt. Darum darf das
+Bilderbuch ruhig mehr Seiten haben als das, dem die Bilder fehlen.
+
+### Woran Sie ein Buch in der Bibliothek erkennen
+
+Hinter dem Titel stehen kleine Kennzeichen: **Tesseract**, **Transkribus**, **PDF-Text** – woher der Text
+stammt – und **ScanTailor**, wenn die Seitenbilder damit aufbereitet wurden. Daneben steht, wie viele Wörter
+das Wörterbuch nicht kennt („20 % rote Wörter"). Das ist dieselbe Zahl, die Sie beim Lesen als rote Wörter
+sehen; alte Schreibweisen und Namen sind darunter, es sind also nicht lauter Fehler. Der farbige Punkt vor dem
+Titel ist die Ampel aus dem Einlesen.
+
+### Textexport statt PAGE XML
+
+Transkribus kann seinen Text auch als einfache Textdatei ausgeben; die liest das Programm ebenso. Sie verlieren
+dabei aber etwas: Eine Textdatei sagt nicht, wo die Zeilen im Bild stehen. Der Text steht dann zwar richtig auf
+seiner Seite, lässt sich aber nicht mehr Zeile für Zeile neben dem Seitenbild mitführen – es sei denn, die neue
+Erkennung teilt die Zeilen genau so auf wie die alte. Das Programm sagt Ihnen hinterher, für wie viele Seiten
+das zutraf. Wenn Sie die Zeilen im Bild brauchen, holen Sie den Export noch einmal als **PAGE XML**.
+
+### Text aus einer Bibliothek (hOCR, ALTO)
+
+Viele Bibliotheken haben ihre Digitalisate längst durch eine Texterkennung geschickt – nur steckt dieser Text
+selten im PDF, das man herunterladen kann. Das PDF enthält dann nichts als Bilder, und der Fraktur-Korrektor
+schlägt zu Recht vor, den Text neu zu erkennen. Der Text der Bibliothek ist aber oft gut und lohnt die Mühe,
+ihn zu holen. Er kommt in einem von zwei Formaten: **hOCR** (Dateien mit der Endung `.html` oder `.hocr`) oder
+**ALTO** (`.xml`), jeweils eine Datei je Seite, und beide bringen mit, wo jede Zeile im Bild steht.
+
+Wo man ihn findet, ist von Bibliothek zu Bibliothek verschieden: im Viewer unter „Volltext“ oder „OCR“, in
+einer Schnittstelle, oder auf Nachfrage bei der Bibliothek. Die Bayerische Staatsbibliothek etwa gibt ihn je
+Seite unter `https://api.digitale-sammlungen.de/ocr/<Kennung>/<Seite>` heraus; die Kennung (`bsb…`) steht auf dem
+Deckblatt des PDF (Stand September 2026). Das Programm lädt nichts aus dem Internet – die Dateien holen Sie
+selbst und legen sie in einen Ordner.
+
+Dann geht es so:
+
+1. Das PDF wie gewohnt einlesen (Tesseract oder, wenn das PDF Text enthält, den übernehmen). Dieser Text ist das
+   Gerüst, an dem die Seiten der Bibliothek wiedererkannt werden.
+2. In der Bibliothek beim Buch **Erkannten Text einlesen** wählen und auf den Ordner mit den hOCR- oder
+   ALTO-Dateien zeigen.
+
+Die Seiten finden sich am Wortlaut (siehe oben) – darum stört es nicht, dass das PDF vorn ein Deckblatt der
+Bibliothek trägt, das in ihren Textdateien nicht vorkommt. Sind die Bilder der Bibliothek dieselben wie im PDF,
+passen auch die Zeilenkästchen; das Buch trägt danach das Kennzeichen **Bibliothek**.
+
+### Wenn schon Korrekturen im Buch stecken
+
+Dann warnt das Programm: Der neue Text enthält Ihre Arbeit nicht. Sie haben die Wahl, ihn
+trotzdem in dieses Buch zu übernehmen oder daneben ein neues anzulegen – die Seitenbilder kommen dabei mit.
+Die bisherige Fassung wird in jedem Fall zuerst gesichert: als `vorher-<Datum>.zip` im Buchordner. Über den
+Knopf **Frühere Fassung** holen Sie sie jederzeit zurück – und weil auch das Zurückholen vorher sichert, kommen
+Sie ebenso wieder vorwärts. Gefällt Ihnen ein Import nicht, ist das der Weg zurück; Sie müssen nichts noch
+einmal einlesen oder erkennen lassen.
+
 ## Was in einem Buchordner liegt
 
 Neue Bücher legt das Programm unter `Fraktur-Korrektor` in Ihrem Benutzerordner an.
@@ -67,6 +156,8 @@ Neue Bücher legt das Programm unter `Fraktur-Korrektor` in Ihrem Benutzerordner
 | `lesezeichen.json` | Ihre Leseposition |
 | `korrekturen.log` | Protokoll aller Änderungen |
 | `qualitaet.json` | nach dem Einlesen: die Werte der Ampel je Seite |
+| `quellen.json` | wie das Bild jeder Seite ursprünglich hieß – damit ein späterer Transkribus-Export sich zuordnen lässt |
+| `vorher-….zip` | Sicherung der Textfassung, die ein übernommener Transkribus-Text ersetzt hat |
 
 Die Textdateien dürfen Sie auch mit einem anderen Editor bearbeiten, sogar während das Programm läuft.
 Ändern Sie dabei nur nicht die Zahl der Zeilen einer Seite, sonst passt die Zuordnung zum Bild nicht mehr.

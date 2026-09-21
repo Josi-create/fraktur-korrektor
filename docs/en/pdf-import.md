@@ -31,6 +31,10 @@ the text and placed it invisibly behind the page image. Fraktur-Korrektor notice
 If in doubt, use the text first and look at the traffic light. If it is not green, read the book in again and have
 it recognised afresh.
 
+If the PDF comes from a library and contains no text, have a look at the library’s site: the recognised text
+is often available there separately from the PDF (hOCR or ALTO) and can be laid over the book afterwards –
+see [Text from a library](add-book.md).
+
 ## The traffic light
 
 After recognition the program estimates how good the result is. It uses two values: how confident Tesseract
@@ -57,6 +61,10 @@ worse than the rest**, the page curves towards the gutter.
 
 The free program **ScanTailor Advanced** fixes all of this: it splits double pages, straightens them,
 flattens curvature and crops margins. ([Installation](install-tools.md))
+
+If the book is **already in your library**, there is a shorter way: it has a button
+**Prepare for ScanTailor** – the input and output folder are then settled, and ScanTailor starts right away.
+For a PDF that has not been read in yet:
 
 1. Choose the PDF via **Open …** and click **Prepare with ScanTailor first …** in the window.
    The program saves every PDF page as an image (ScanTailor cannot open PDFs) and starts ScanTailor.

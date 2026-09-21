@@ -6,7 +6,7 @@ Welche Rechtschreibung gilt, ist je Buch wählbar (DICS):
   neu      neue Rechtschreibung ab 1996 (dass, Schifffahrt) – mitgeliefert: dict/de_DE_frami
   vor1901  kein Wörterbuch, sondern Regeln: Thür, seyn, Noth, civilisiren gelten, wenn die heutige Form bekannt ist
 dict/zusatz.txt: zusätzlich gültige Wörter (Abkürzungen); dict/fallen.txt: nie gültig, weil fast immer OCR-Fehler (baß)."""
-import os, re, sys, glob, json, atexit, hashlib, collections, functools, itertools
+import os, re, sys, glob, json, atexit, hashlib, collections, functools, itertools, threading
 from spylls.hunspell import Dictionary
 HERE = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))  # gepackt liegt dict/ im Bundle
 HOME = os.environ.get('FRAKTUR_HOME') or os.path.join(os.path.expanduser('~'), '.fraktur-korrektor')
@@ -38,21 +38,24 @@ def find_dic():
     raise SystemExit('Kein Wörterbuch gefunden. Gesucht wurde (jeweils .dic und .aff):\n  ' + '\n  '.join(cand) +
                      '\nAbhilfe: den Ordner dict/ des Programms wiederherstellen oder ein Hunspell-Wörterbuch mit --dic <pfad> angeben.')
 class Checker:
-    """Ein Hunspell-Wörterbuch mit Zwischenspeicher der Prüfergebnisse auf der Platte (die freien Wörterbücher prüfen langsam)."""
+    """Ein Hunspell-Wörterbuch mit Zwischenspeicher der Prüfergebnisse auf der Platte (die freien Wörterbücher prüfen langsam).
+    Das Wörterbuch selbst wird erst eingelesen, wenn ein Wort nicht im Zwischenspeicher steht: spylls braucht dafür mehrere
+    Sekunden, und bei einem Buch, das schon einmal offen war, kommt es meist gar nicht dazu (warm() holt es im Hintergrund)."""
     def __init__(self, path):
-        self.path, self.d, self.cache, self.cache_path, self.n = path, None, {}, None, 0
+        self.path, self.d, self.cache, self.lock = path, None, {}, threading.Lock()
+        key = '|'.join([self.path] + [str(os.path.getmtime(self.path + e)) for e in ('.dic', '.aff')])
+        self.cache_path = os.path.join(HOME, 'cache', hashlib.md5(key.encode('utf-8')).hexdigest() + '.json')
+        try: self.cache.update(json.load(open(self.cache_path, encoding='utf-8')))
+        except (OSError, ValueError): pass
+        self.n = len(self.cache)
     def load(self):
-        if self.d is None:
-            self.d = Dictionary.from_files(self.path)
-            key = '|'.join([self.path] + [str(os.path.getmtime(self.path + e)) for e in ('.dic', '.aff')])
-            self.cache_path = os.path.join(HOME, 'cache', hashlib.md5(key.encode('utf-8')).hexdigest() + '.json')
-            try: self.cache.update(json.load(open(self.cache_path, encoding='utf-8')))
-            except (OSError, ValueError): pass
-            self.n = len(self.cache)
+        with self.lock:  # zwei Anfragen zugleich sollen das Wörterbuch nicht zweimal einlesen
+            if self.d is None:
+                self.d = Dictionary.from_files(self.path)
         return self.d
     def lookup(self, w):
         if w not in self.cache:
-            d = self.load() if self.d is None else self.d
+            d = self.d or self.load()
             if w not in self.cache:
                 # auch klein (Satzanfang) und groß (Substantivierung) – aber jede Schreibweise nur einmal: Fehlversuche sind teuer
                 self.cache[w] = any(d.lookup(v) for v in dict.fromkeys((w, w.lower(), w[0].upper() + w[1:])))
@@ -67,9 +70,11 @@ class Checker:
 _checkers = {}
 def checker(name='1901'):
     if name not in _checkers:
-        c = _checkers[name] = Checker(find_dic() if name == '1901' else os.path.join(HERE, 'dict', 'de_DE_frami', 'de_DE_frami'))
-        c.load()
+        _checkers[name] = Checker(find_dic() if name == '1901' else os.path.join(HERE, 'dict', 'de_DE_frami', 'de_DE_frami'))
     return _checkers[name]
+def warm(name='1901'):
+    """Das Wörterbuch im Hintergrund einlesen, damit das erste unbekannte Wort später nicht darauf warten muss."""
+    threading.Thread(target=lambda: checker(name).load(), daemon=True).start()
 def set_dic(path):
     global DIC
     DIC = _base(path)

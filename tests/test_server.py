@@ -8,6 +8,7 @@ def words(data, kind=None):
 def test_uebersicht_und_markierungen(app):
     code, ov = app.get('/api/overview')
     assert code == 200 and [p['page'] for p in ov['pages']] == ['001', '002']
+    assert app.get('/api/progress')[1] == dict(done=1, total=1)  # nichts in Arbeit: der Ladebalken bleibt verborgen
     code, d = app.get('/api/page/001')
     # ber: unbekannt; baß: Falle; Vgl: Zusatzliste; Zu¬kunft: über die Trennung hinweg bekannt
     assert words(d) == ['ber', 'baß', 'ber']
@@ -19,6 +20,7 @@ def test_bildzuordnung(app):
     assert len(d['geo']) == len(d['lines'])
     assert d['geo'][5] is None                      # Fußnotentrenner hat keine Bildzeile
     assert d['geo'][1] == dict(x0=50, x1=450, y0=80, y1=100)   # Maßstab 0.5
+    assert d['size'] == [500, 750]                    # Bildmaße, damit der Reader die Nachbarseiten platzieren kann
     assert d['img'] == app.book + '/img/001.png' and app.raw(d['img'])[1][:4] == b'\x89PNG'
 
 
@@ -139,3 +141,13 @@ def test_notizen_fuer_obsidian(app, tmp_path):
     assert app.post('/api/notiz', dict(page='001', text='  \n '))[1]['error'] == 'kein_text'
     assert app.post('/api/settings', dict(dics=['neu']))[1]['notizen'] == str(folder)  # Wörterbuchwahl lässt den Ordner stehen
     assert app.post('/api/settings', dict(notizen=''))[1]['notizen'] is None
+
+
+def test_suche_im_ganzen_buch(app):
+    """Suchen (S im Reader): ohne Rücksicht auf Groß-/Kleinschreibung, auch über die Zeilentrennung ¬ hinweg."""
+    r = app.get('/api/search?q=ber')[1]
+    assert r['n'] == 3 and [(o['page'], o['line'], o['start'], o['len']) for o in r['items']] == [('001', 2, 0, 3), ('001', 4, 0, 3), ('002', 1, 14, 3)]
+    assert [o['start'] for o in app.get('/api/search?q=RUSSLAND')[1]['items']] == [] and [o['start'] for o in app.get('/api/search?q=ru%C3%9Fland')[1]['items']] == [26]
+    j = app.get('/api/search?q=Zukunft')[1]['items']  # steht nirgends in einer Zeile, nur als Zu¬ / kunft
+    assert len(j) == 1 and j[0]['join'] and (j[0]['line'], j[0]['start'], j[0]['len'], j[0]['start2'], j[0]['len2']) == (2, 22, 2, 0, 5)
+    assert app.get('/api/search?q=')[1]['n'] == 0 and app.get('/api/search?q=gibtesnicht')[1]['n'] == 0
