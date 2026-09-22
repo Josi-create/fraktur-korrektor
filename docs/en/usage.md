@@ -14,7 +14,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `↓` `↑` (or `j` `k`), mouse wheel | next / previous line; the text flows across page breaks. Clicking a line makes it the reading line |
 | Reading | `Space` | jump to the next red word → correction |
 | Reading | double-click a word | correct this line, with the clicked word selected |
-| Reading | `F8` | first red word of the reading line is correct → whitelist. `F8` again = the next one. With no red word in the reading line: the next one further down the page |
+| Reading | `F8` (or `#`) | first red word of the reading line is correct → whitelist. `F8` again = the next one. With no red word in the reading line: the next one further down the page |
 | Reading | `Enter` | if the reading line has a red word: go there; otherwise like `F2` |
 | Reading | `F2` | edit the reading line freely (punctuation, footnote marks, anything the automatic check misses) |
 | Reading | `PgDn` `PgUp`, `Home` `End` | page forward/back, top/bottom of page |
@@ -25,9 +25,9 @@ is being changed – and **Edit line** (orange).
 | Reading | `Shift`+mouse wheel | scroll a wide table sideways; it follows the reading line by itself |
 | Reading | `R` | reload the page (after changes in another editor) |
 | Correction | `Enter` | apply and read on (if the same line has another red word, that comes first) |
-| Correction / Edit line | `F7` | insert the hyphenation mark `¬` at the cursor |
+| Correction / Edit line | `F7` (or `-` at the end of the line) | insert the hyphenation mark `¬` at the cursor. Within the line `-` stays a hyphen; if the line already ends with `¬`, `-` puts a hyphen before it (`Ost-¬` / `Preußen`) |
 | Correction / Edit line | `Shift`+`Enter` | split the line at the cursor (see below) |
-| Correction | `F8` | word is correct → whitelist |
+| Correction | `F8` (or `#`) | word is correct → whitelist |
 | Correction | `Tab` | next red word without changing anything; for a split word, first into its second half |
 | Correction | `Esc` | back to reading without changing anything |
 | Reading / Correction | `F9` | batch correction (see below) |
@@ -62,7 +62,8 @@ side turn the page like `PgUp` and `PgDn`.
 Words split at the end of a line are written with the mark `¬`: `Zu¬` / `kunft`. Both parts are checked
 together. When correcting, both lines appear as input fields, with the cursor in the first. To reach the second half,
 press `Tab` or `↓`, or move past the end of the line with `→` – back with `Shift`+`Tab`, `↑`, or `←` at the start of
-the line. `Enter` applies both lines. `F7` inserts the mark.
+the line. `Enter` applies both lines. `F7` inserts the mark, at the end of the line so does `-` (reachable on a MacBook
+without `fn`).
 
 ## Batch correction (F9)
 

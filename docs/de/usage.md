@@ -14,7 +14,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `↓` `↑` (oder `j` `k`), Mausrad | nächste / vorige Zeile; der Text läuft fließend über Seitengrenzen. Ein Klick auf eine Zeile macht sie zur Lesezeile |
 | Lesen | `Leertaste` | zum nächsten roten Wort → Korrektur |
 | Lesen | Doppelklick auf ein Wort | Korrektur dieser Zeile, das angeklickte Wort ist markiert |
-| Lesen | `F8` | erstes rotes Wort der Lesezeile ist richtig → Whitelist. Nochmal `F8` = nächstes. Ohne rotes Wort in der Lesezeile: das nächste weiter unten auf der Seite |
+| Lesen | `F8` (oder `#`) | erstes rotes Wort der Lesezeile ist richtig → Whitelist. Nochmal `F8` = nächstes. Ohne rotes Wort in der Lesezeile: das nächste weiter unten auf der Seite |
 | Lesen | `Enter` | steht in der Lesezeile ein rotes Wort: direkt dorthin; sonst wie `F2` |
 | Lesen | `F2` | die Lesezeile frei bearbeiten (Satzzeichen, Fußnotenzeichen, alles, was die Automatik nicht bemerkt) |
 | Lesen | `Bild↓` `Bild↑`, `Pos1` `Ende` | Seite vor/zurück, Seitenanfang/-ende |
@@ -25,9 +25,9 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `Umschalt`+Mausrad | eine breite Tabelle seitwärts rollen; mit der Lesezeile rollt sie von selbst |
 | Lesen | `R` | Seite neu laden (nach Änderungen in einem anderen Editor) |
 | Korrektur | `Enter` | übernehmen und weiterlesen (steht in derselben Zeile noch ein rotes Wort, kommt dieses zuerst) |
-| Korrektur / Zeile bearbeiten | `F7` | Trennzeichen `¬` an der Schreibmarke einfügen |
+| Korrektur / Zeile bearbeiten | `F7` (oder `-` am Zeilenende) | Trennzeichen `¬` an der Schreibmarke einfügen. Mitten in der Zeile bleibt `-` ein Bindestrich; endet die Zeile schon mit `¬`, setzt `-` einen Bindestrich davor (`Ost-¬` / `Preußen`) |
 | Korrektur / Zeile bearbeiten | `Umschalt`+`Enter` | Zeile an der Schreibmarke teilen (siehe unten) |
-| Korrektur | `F8` | Wort ist richtig → Whitelist |
+| Korrektur | `F8` (oder `#`) | Wort ist richtig → Whitelist |
 | Korrektur | `Tab` | nächstes rotes Wort, ohne zu ändern; bei einem getrennten Wort zuerst in die zweite Hälfte |
 | Korrektur | `Esc` | zurück zum Lesen, ohne zu ändern |
 | Lesen / Korrektur | `F9` | Serienkorrektur (siehe unten) |
@@ -63,7 +63,8 @@ links und rechts davon blättern wie `Bild↑` und `Bild↓`.
 Am Zeilenende getrennte Wörter schreibt das Programm mit dem Trennzeichen `¬`: `Zu¬` / `kunft`. Beide
 Teile werden zusammen geprüft. Bei der Korrektur erscheinen beide Zeilen als Eingabefelder, die Schreibmarke steht im
 ersten. In die zweite Hälfte kommen Sie mit `Tab`, mit `↓` oder indem Sie mit `→` über das Zeilenende hinausgehen –
-zurück mit `Umschalt`+`Tab`, `↑` oder `←` am Zeilenanfang. `Enter` übernimmt beide Zeilen. `F7` fügt das Zeichen ein.
+zurück mit `Umschalt`+`Tab`, `↑` oder `←` am Zeilenanfang. `Enter` übernimmt beide Zeilen. `F7` fügt das Zeichen ein, am Zeilenende auch `-` (auf dem MacBook ohne `fn` zu
+erreichen).
 
 ## Serienkorrektur (F9)
 

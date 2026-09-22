@@ -27,7 +27,7 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 .found{background:#9fdcff;border-radius:2px;outline:2px solid #1780c0}
 #loading{position:absolute;inset:0;z-index:9;background:#e9e6df;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;padding:0 15%;text-align:center;font-size:18px;line-height:1.6;color:#555}
 #lprog{width:min(520px,90%);height:16px} #lpage{font-size:15px;color:#777}
-#main{position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;gap:10px;padding:10px;min-height:0}
+#main{position:relative;flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto;gap:10px;padding:10px;min-height:0}
 .pane{background:#fff;border:1px solid #bbb;border-radius:4px;position:relative;overflow:hidden;min-height:0}
 #noimg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center;color:#666}
 #noimg p{max-width:360px;line-height:1.6;margin:0}
@@ -40,15 +40,15 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #hlWord,#hlWord2{border:solid red}
 #right{display:flex;flex-direction:column;gap:10px;min-height:0}
 /* Wort und Tastaturhilfe über beide Spalten: nimmt links dem Bild etwas Höhe, gibt sie rechts dem Text (#55) */
-#korr{grid-column:1 / -1;padding:10px 12px;min-height:118px;overflow:visible}
-#word{font-size:19px;margin-bottom:6px}
+/* Kürzel unten ohne Rahmen; Mindesthöhe = Lesemodus-Kürzel, damit Bild und Text beim Moduswechsel nicht springen */
+#korr{grid-column:1 / -1;grid-row:2;padding:0;border:0;background:none;overflow:visible;min-height:72px}
+#word{font-size:17px;margin-bottom:2px}
 #word b{color:#c00}
 /* Eingabefelder liegen im Textfenster genau über der Lesezeile (und der Folgezeile bei getrennten Wörtern) */
 #edit,#edit2{position:absolute;left:21px;right:21px;z-index:3;margin:0;padding:0 5px;box-sizing:border-box;border:2px solid #c33;border-radius:3px;background:#fffbe6;color:#000;font-family:Georgia,'Times New Roman',serif;font-size:19px;outline:none;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 #edit2{border-color:#c60}
-#korr{min-height:78px}
-#help{color:#666;font-size:13.5px;line-height:1.7}
-kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:3px;padding:0 5px;font-family:Consolas,monospace;font-size:12.5px;color:#222}
+#help{color:#666;font-size:13px;line-height:1.5}
+kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:3px;padding:0 4px;font-family:Consolas,monospace;font-size:12px;color:#222}
 #text{flex:1}
 /* --tz: Textzoom (Strg + / − / 0), alle Schriftgrade im Textfenster skalieren mit */
 #lines{position:absolute;left:0;right:0;top:0;padding:0 22px;transition:transform .18s ease-out;font-family:Georgia,'Times New Roman',serif;font-size:calc(19px * var(--tz, 1));line-height:1.65}
@@ -72,7 +72,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 #lines div.hd1{font-size:calc(27px * var(--tz, 1));font-weight:bold;color:#222} #lines div.hd2{font-size:calc(23px * var(--tz, 1));font-weight:bold;color:#222} #lines div.hd3{font-size:calc(20px * var(--tz, 1));font-weight:bold;color:#222}
 #tprev{border-collapse:collapse;font:14px Georgia,serif;margin-top:6px;color:#222} #tprev td,#tprev th{border:1px solid #9bc;padding:1px 9px} #tprev th{background:#e3eefa}
 #centerline{position:absolute;left:0;width:5px;top:25%;height:30px;margin-top:-15px;background:#c90;border-radius:0 3px 3px 0}
-#shint{margin-top:6px;font-size:14.5px;color:#a40}
+#shint{margin-top:2px;font-size:14px;color:#a40} #shint:empty{display:none}
 #serie{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
 #serie.on{display:flex}
 #shead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
@@ -880,7 +880,7 @@ async function onKey(e) {
     else if (k == '+') setZoom(zoom * 1.15);
     else if (k == '-') setZoom(zoom / 1.15);
     else if (k == '0') setZoom(1);
-    else if (k == 'F8') await whitelistRead();
+    else if (k == 'F8' || k == '#') await whitelistRead();  // # liegt am Mac neben Enter, F8 nur mit fn
     else if (k == 'u' || k == 'U') await undoSeries();
     else if (k == 'w' || k == 'W') await openWhitelist();
     else if (k == 'd' || k == 'D') await openDics();
@@ -900,14 +900,23 @@ async function onKey(e) {
     if (e.key == 'Enter' && e.shiftKey) { e.preventDefault(); await splitLine(); }
     else if (e.key == 'Enter') { e.preventDefault(); await commit(); }
     else if (e.key == 'Escape') { e.preventDefault(); if (mode == 'fix') passed = { line: cf.line, start: cf.start }; toRead(mode == 'fix' ? cf.line : li); }
-    else if (e.key == 'F8' && mode == 'fix') { e.preventDefault(); await whitelist(); }
+    else if ((e.key == 'F8' || e.key == '#') && mode == 'fix') { e.preventDefault(); await whitelist(); }
     else if (e.key == 'Tab' && mode == 'fix') { e.preventDefault(); await toFlag({ line: cf.line, start: cf.start }); }
   }
 }
-// F7: Trennzeichen ¬ an der Schreibmarke einfügen (in jedem Eingabefeld)
+// F7: Trennzeichen ¬ an der Schreibmarke einfügen (in jedem Eingabefeld). In der Textzeile tut es auch »-« am
+// Zeilenende (F7 braucht am Mac die fn-Taste); mitten in der Zeile bleibt »-« ein Bindestrich (Ost-Preußen).
+// Endet die Zeile schon mit ¬, setzt »-« einen echten Bindestrich davor: Ost-¬ / Preußen.
 document.addEventListener('keydown', e => {
-  if (e.key != 'F7' || e.target.tagName != 'INPUT') return;
-  e.preventDefault(); const el = e.target; el.setRangeText('¬', el.selectionStart, el.selectionEnd, 'end'); el.dispatchEvent(new Event('input'));
+  const el = e.target;
+  if (el.tagName != 'INPUT' || e.ctrlKey || e.altKey || e.metaKey) return;
+  if (e.key == 'F7') { e.preventDefault(); el.setRangeText('¬', el.selectionStart, el.selectionEnd, 'end'); }
+  else if (e.key == '-' && (el.id == 'edit' || el.id == 'edit2') && el.selectionStart == el.value.length && el.selectionEnd == el.value.length) {
+    e.preventDefault();
+    if (el.value.endsWith('¬')) el.setRangeText('-', el.value.length - 1, el.value.length - 1, 'end'); else el.setRangeText('¬', el.value.length, el.value.length, 'end');
+    el.setSelectionRange(el.value.length, el.value.length);
+  } else return;
+  el.dispatchEvent(new Event('input'));
 }, true);
 document.addEventListener('keydown', async e => { if (busy) { e.preventDefault(); return; } busy = true; try { await onKey(e); } finally { busy = false; } });
 for (const b of dicBoxes()) b.onchange = async () => { if (!busy) { busy = true; try { await saveDics(); } finally { busy = false; } } };
