@@ -740,20 +740,25 @@ function markedLines() {
   for (let i = Math.min(nsel, li); i <= Math.max(nsel, li); i++) if (!skippable(i)) out.push(strip(data.lines[i]));
   return out.join('\n');
 }
-async function makeNote() {
-  const sel = selectedText(), line = mode == 'fix' ? cf.line : li, ml = sel ? null : markedLines();
-  const text = sel ? sel.text : ml != null ? ml : skippable(line) ? '' : strip(data.lines[line]), p = sel ? sel.p : pg;
-  if (!text.trim()) return;
-  const r = await fetch(BASE + '/api/notiz', { method: 'POST', body: JSON.stringify({ page: p, text, lang: LANG, open: true }) });
+let pendingNote = null;  // Notiz, die noch auf den Notizordner wartet (erstes F4: Ordner wählen, dann gleich anlegen)
+async function makeNote(req) {
+  if (!req) {
+    const sel = selectedText(), line = mode == 'fix' ? cf.line : li, ml = sel ? null : markedLines();
+    const text = sel ? sel.text : ml != null ? ml : skippable(line) ? '' : strip(data.lines[line]);
+    if (!text.trim()) return;
+    req = { page: sel ? sel.p : pg, text };
+  }
+  const r = await fetch(BASE + '/api/notiz', { method: 'POST', body: JSON.stringify({ ...req, lang: LANG, open: true }) });
   const x = await r.json();
-  if (x.error == 'kein_notizordner') { await openNotes(); return; }
+  if (x.error == 'kein_notizordner') { await openNotes(req); return; }
   if (x.error) { msg = t('err_' + x.error); render(); return; }
   try { await navigator.clipboard.writeText(x.text); } catch (e) {}
   try { getSelection().removeAllRanges(); } catch (e) {}
   nsel = null;
   msg = t(x.opened ? 'note_done' : 'note_done_file', { n: x.name, f: x.file }); if (mode == 'read') render(); else $('shint').textContent = msg;
 }
-async function openNotes() {
+async function openNotes(req) {
+  pendingNote = req || null;
   const st = await (await fetch(BASE + '/api/settings')).json();
   $('nfolder').value = st.notizen || ''; $('ninfo').textContent = st.notizen ? '' : t('note_none');
   mode = 'notes'; cf = null; $('notes').classList.add('on'); $('edit').style.display = 'none'; $('edit2').style.display = 'none'; $('nfolder').focus();
@@ -767,7 +772,13 @@ async function saveNotes() {
 function closeNotes() { $('notes').classList.remove('on'); mode = 'read'; document.activeElement.blur(); render(); }
 async function notesKey(e) {
   if (e.key == 'Escape') { e.preventDefault(); closeNotes(); }
-  else if (e.key == 'Enter') { e.preventDefault(); if (await saveNotes()) closeNotes(); }
+  else if (e.key == 'Enter') {
+    e.preventDefault();
+    if (!await saveNotes()) return;
+    const folder = $('nfolder').value.trim(), req = pendingNote; pendingNote = null;
+    closeNotes();
+    if (req && folder) await makeNote(req);  // die wartende Notiz jetzt anlegen
+  }
 }
 $('nchoose').onclick = async () => {
   const r = await (await fetch('/api/choose', { method: 'POST', body: JSON.stringify({ kind: 'folder' }) })).json();
