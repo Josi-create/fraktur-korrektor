@@ -127,17 +127,21 @@ def test_notizen_fuer_obsidian(app, tmp_path):
     folder.parent.mkdir()
     app.post('/api/settings', dict(notizen=str(folder)))
     assert json.load(open(os.path.join(app.folder, 'buch.json'), encoding='utf-8'))['notizen'] == str(folder)
-    code, r = app.post('/api/notiz', dict(page='001', text='ber Weg war weit. Die Zu¬\nkunft lag  vor ihnen, baß sie\nber Heimat gedachten.'))
+    code, r = app.post('/api/notiz', dict(page='001', text='ber Weg war weit. Die Zu¬\nkunft lag  vor ihnen, baß sie\nber Heimat gedachten.', lines=[3, 5]))
     assert code == 200 and r['name'] == '01 Seite 5' and r['page'] == '5' and not r['opened']  # gedruckte Seitenzahl aus der Kopfzeile
     note = open(folder / '01 Seite 5.md', encoding='utf-8').read()
-    assert note == '**Anmerkung**\n\n\n\n---\n\n> ber Weg war weit. Die Zukunft lag vor ihnen, baß sie ber Heimat gedachten.\n\nSeite 5, [[0 Quellenangabe|buch]]\n'
+    assert note == '**Anmerkung**\n\n\n\n---\n\n> ber Weg war weit. Die Zukunft lag vor ihnen, baß sie ber Heimat gedachten.\n\nSeite 5, Zeile 3–5, [[0 Quellenangabe|buch]]\n'
+    code, r = app.post('/api/notiz', dict(page='001', text='Die Kolonisten', lines=[2, 2], lang='en'))  # eine Zeile, englisch
+    assert code == 200 and open(folder / '02 Page 5.md', encoding='utf-8').read().endswith('\n\nPage 5, Line 2, [[0 Source|buch]]\n')
+    code, r = app.post('/api/notiz', dict(page='001', text='Die Kolonisten'))  # ohne Zeilenangabe (ältere Aufrufer)
+    assert code == 200 and open(folder / '03 Seite 5.md', encoding='utf-8').read().endswith('\n\nSeite 5, [[0 Quellenangabe|buch]]\n')
     src = open(folder / '0 Quellenangabe.md', encoding='utf-8').read()
     assert src.startswith('# buch\n') and 'Zotero' in src
     open(folder / '0 Quellenangabe.md', 'w', encoding='utf-8').write('# Eigene Angaben\n')  # wird nie überschrieben
     r = app.post('/api/notiz', dict(page='002', text='<em>Der Vater</em> und ber Sohn.', lang='en'))[1]
-    assert r['name'] == '02 Page 6' and open(folder / '02 Page 6.md', encoding='utf-8').read().startswith('**Note**\n\n\n\n---\n\n> Der Vater und ber Sohn.\n\nPage 6')
+    assert r['name'] == '04 Page 6' and open(folder / '04 Page 6.md', encoding='utf-8').read().startswith('**Note**\n\n\n\n---\n\n> Der Vater und ber Sohn.\n\nPage 6')
     assert open(folder / '0 Quellenangabe.md', encoding='utf-8').read() == '# Eigene Angaben\n'
-    assert sorted(os.listdir(folder)) == ['0 Quellenangabe.md', '0 Source.md', '01 Seite 5.md', '02 Page 6.md']
+    assert sorted(os.listdir(folder)) == ['0 Quellenangabe.md', '0 Source.md', '01 Seite 5.md', '02 Page 5.md', '03 Seite 5.md', '04 Page 6.md']
     assert app.post('/api/notiz', dict(page='001', text='  \n '))[1]['error'] == 'kein_text'
     assert app.post('/api/settings', dict(dics=['neu']))[1]['notizen'] == str(folder)  # Wörterbuchwahl lässt den Ordner stehen
     assert app.post('/api/settings', dict(notizen=''))[1]['notizen'] is None

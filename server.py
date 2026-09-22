@@ -18,9 +18,9 @@ DEFAULT = None  # id des Buchs von der Kommandozeile
 IMGTYPES = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg'}
 # Wörter in den Zetteln für Obsidian (Dateinamen und Quellenzeile) in der Sprache der Oberfläche
 NOTE_WORDS = dict(
-    de=dict(page='Seite', note='Anmerkung', src='0 Quellenangabe',
+    de=dict(page='Seite', line='Zeile', note='Anmerkung', src='0 Quellenangabe',
             template='# %s\n\nHerkunft: (z. B. Universitätsbibliothek Münster, Fernleihe)\n\nZitierweise (Zotero):\n'),
-    en=dict(page='Page', note='Note', src='0 Source',
+    en=dict(page='Page', line='Line', note='Note', src='0 Source',
             template='# %s\n\nProvenance: (e.g. university library, interlibrary loan)\n\nCitation (Zotero):\n'))
 
 
@@ -159,10 +159,11 @@ class Book:
         m = re.search(r'\d+', lines[0]) if lines and lines[0].startswith('#') else None
         return m.group() if m else str(int(pg))
 
-    def make_note(self, pg, text, lang='de'):
+    def make_note(self, pg, text, lang='de', lines=None):
         """Ein Zettel nach Luhmanns Art im Notizordner: fortlaufend nummeriert, oben Platz für die eigene Anmerkung, unter dem
-        Strich das Zitat und die Quelle – Seite und Verweis auf die Quellenangabe des Buchs (Datei „0 Quellenangabe“, wird bei Bedarf als Vorlage
-        angelegt; dort trägt der Nutzer Herkunft und Zotero-Zitierweise ein). Liefert (ergebnis, fehler)."""
+        Strich das Zitat und die Quelle – Seite, Zeilen (lines = (von, bis), gezählt wie in der Leiste des Readers) und Verweis auf die
+        Quellenangabe des Buchs (Datei „0 Quellenangabe“, wird bei Bedarf als Vorlage angelegt; dort trägt der Nutzer Herkunft und
+        Zotero-Zitierweise ein). Liefert (ergebnis, fehler)."""
         W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
         folder = self.settings.get('notizen')
         if not folder:
@@ -189,7 +190,11 @@ class Book:
         n = max(nums, default=0) + 1
         name = '%02d %s %s' % (n, W['page'], page)
         path = os.path.join(folder, name + '.md')
-        body = '**%s**\n\n\n\n---\n\n> %s\n\n%s %s, [[%s|%s]]\n' % (W['note'], text, W['page'], page, src, self.title)
+        where = '%s %s' % (W['page'], page)
+        if lines:
+            a, b = int(lines[0]), int(lines[-1])
+            where += ', %s %s' % (W['line'], str(a) if a == b else '%d–%d' % (a, b))
+        body = '**%s**\n\n\n\n---\n\n> %s\n\n%s, [[%s|%s]]\n' % (W['note'], text, where, src, self.title)
         with open(path, 'x', encoding='utf-8', newline='\n') as f:  # 'x': nie überschreiben
             f.write(body)
         return dict(file=path, name=name, number=n, page=page, text=text), None
@@ -1434,7 +1439,7 @@ class H(BaseHTTPRequestHandler):
             korrlib.save_cache()
             return self.sendjson(dict(st, total=total))
         if rest == '/api/notiz':
-            r, err = book.make_note(str(body.get('page') or ''), body.get('text') or '', body.get('lang') or 'de')
+            r, err = book.make_note(str(body.get('page') or ''), body.get('text') or '', body.get('lang') or 'de', body.get('lines'))
             if err:
                 return self.sendjson(dict(error=err), 400)
             r['opened'] = bool(body.get('open')) and self.local() and open_obsidian(r['file'])

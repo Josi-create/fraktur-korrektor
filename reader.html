@@ -721,9 +721,12 @@ async function dicsKey(e) {
 function selectedText() {
   const s = getSelection(); if (!s || s.isCollapsed || !s.rangeCount) return null;
   const r = s.getRangeAt(0); if (!$('lines').contains(r.commonAncestorContainer)) return null;
-  const n = r.startContainer.nodeType == 1 ? r.startContainer : r.startContainer.parentNode, d = n.closest('#lines div[data-i]');
+  const div = n => (n.nodeType == 1 ? n : n.parentNode).closest('#lines div[data-i]'), d = div(r.startContainer), e = div(r.endContainer);
   const text = s.toString().split('\n').filter(l => !l.startsWith('―')).join('\n');  // ohne die Seitentrenner
-  return { text, p: d ? d.dataset.p : pg };
+  const p = d ? d.dataset.p : pg;
+  // Zeilen wie in der Leiste gezählt (ab 1); reicht die Markierung auf die nächste Seite, gilt bis zum Seitenende
+  const lines = d ? [+d.dataset.i + 1, e && e.dataset.p == p ? +e.dataset.i + 1 : [prevD, data, nextD].find(b => b && b.page == p).lines.length] : null;
+  return { text, p, lines };
 }
 // Mit der Tastatur markieren: Umschalt+↓/↑ dehnt die Markierung von der Lesezeile aus (nsel = Zeile, an der sie begann),
 // innerhalb der Seite; jede andere Taste hebt sie auf.
@@ -736,17 +739,17 @@ function selMove(d) {
 }
 function markedLines() {
   if (nsel == null || mode != 'read') return null;
-  const out = [];
-  for (let i = Math.min(nsel, li); i <= Math.max(nsel, li); i++) if (!skippable(i)) out.push(strip(data.lines[i]));
-  return out.join('\n');
+  const out = [], a = Math.min(nsel, li), b = Math.max(nsel, li);
+  for (let i = a; i <= b; i++) if (!skippable(i)) out.push(strip(data.lines[i]));
+  return { text: out.join('\n'), lines: [a + 1, b + 1] };
 }
 let pendingNote = null;  // Notiz, die noch auf den Notizordner wartet (erstes F4: Ordner wählen, dann gleich anlegen)
 async function makeNote(req) {
   if (!req) {
     const sel = selectedText(), line = mode == 'fix' ? cf.line : li, ml = sel ? null : markedLines();
-    const text = sel ? sel.text : ml != null ? ml : skippable(line) ? '' : strip(data.lines[line]);
+    const text = sel ? sel.text : ml ? ml.text : skippable(line) ? '' : strip(data.lines[line]);
     if (!text.trim()) return;
-    req = { page: sel ? sel.p : pg, text };
+    req = { page: sel ? sel.p : pg, text, lines: sel ? sel.lines : ml ? ml.lines : [line + 1, line + 1] };
   }
   const r = await fetch(BASE + '/api/notiz', { method: 'POST', body: JSON.stringify({ ...req, lang: LANG, open: true }) });
   const x = await r.json();

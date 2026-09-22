@@ -205,10 +205,11 @@ Das Programm legt im Ordner eine Datei an, fortlaufend nummeriert, zum Beispiel 
 
     > Die Kolonisten zogen nach Rußland und der Weg war weit.
 
-    Seite 57, [[0 Quellenangabe|Leibbrandt 1928]]
+    Seite 57, Zeile 3–4, [[0 Quellenangabe|Leibbrandt 1928]]
 
 Oben Platz für die eigene Anmerkung, unter dem Strich das Zitat (am Zeilenende getrennte Wörter sind zusammengezogen) und die
-Seite – die gedruckte Seitenzahl aus der Kopfzeile, sonst die PDF-Seite – und der Verweis auf die Quellenangabe des Buchs.
+Seite – die gedruckte Seitenzahl aus der Kopfzeile, sonst die PDF-Seite –, die Zeilen (gezählt wie „Zeile 3/42“ in der
+Kopfleiste des Programms) und der Verweis auf die Quellenangabe des Buchs.
 Diese Datei `0 Quellenangabe.md` legt das Programm beim ersten Zettel als Vorlage an; tragen Sie dort ein, woher das Buch
 stammt (Universitätsbibliothek, Fernleihe …) und die Zitierweise, wie Zotero sie liefert. So hat jeder Zettel per Klick
 seine vollständige Quelle. Das Zitat liegt außerdem in der Zwischenablage.
