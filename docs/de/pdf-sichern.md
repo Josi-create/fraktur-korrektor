@@ -36,8 +36,24 @@ neue PDF „… (2).pdf“.
    und trägt es in die Bibliothek ein.
 
 Gibt es dort schon ein Buch dieses Namens, entsteht ein zweites mit dem Zusatz „(2)“; nichts wird
-überschrieben. Ein Buch, das schon in der Bibliothek liegt (weil Sie es von diesem Rechner gesichert haben), wird
-als solches gekennzeichnet.
+überschrieben.
+
+## Auf zwei Rechnern arbeiten: das Buch aktualisieren
+
+Der übliche Ablauf: am PC begonnen, als PDF gesichert, am Laptop eingelesen und dort weitergearbeitet, wieder
+gesichert – und zurück am PC soll es im **vorhandenen** Buch weitergehen, nicht in einer Kopie „(2)“.
+
+Das Programm erkennt beim Öffnen des PDF, dass dasselbe Buch schon in der Bibliothek liegt (jedes Buch trägt eine
+feste Kennung, die im PDF mitreist), und sieht nach, ob hier seit dem Sichern etwas geschehen ist:
+
+- **Nichts geschehen** – alles, was hier im Korrekturprotokoll steht, steht auch im PDF: Dann lautet die Empfehlung
+  **Vorhandenes Buch aktualisieren**. Das Buch bekommt Text, Seitenbilder, Wortliste, Lesezeichen und Protokoll
+  aus dem PDF; die bisherige Fassung wird vorher gesichert (`vorher-<Datum>.zip`, zurückzuholen über **Frühere
+  Fassung**). Wer lieber ein zweites Buch möchte, wählt das daneben.
+- **An beiden Stellen weitergearbeitet** – hier wie dort neue Korrekturen: Das kann das Programm noch nicht
+  zusammenführen. Es sagt, wie viele Änderungen auf jeder Seite stehen, und legt das PDF als zweites Buch an;
+  nichts geht verloren. Am besten arbeitet man jeweils an einer Stelle weiter, sichert dort und liest das PDF am
+  anderen Rechner ein, bevor man dort etwas ändert.
 
 ## Was Sie wissen sollten
 
@@ -45,6 +61,4 @@ als solches gekennzeichnet.
 - Der unsichtbare Text sitzt **zeilengenau**: Beim Suchen springt der Reader zur richtigen Zeile, die Markierung
   beim Ziehen mit der Maus trifft aber nicht jedes Wort genau.
 - Ein Buch ohne Seitenbilder (etwa aus einem EPUB) bekommt Seiten mit sichtbarem Text.
-- **Zusammenführen** gibt es noch nicht: Wer auf zwei Rechnern an demselben Buch korrigiert, erhält beim
-  Einlesen zwei Bücher nebeneinander. Am besten arbeitet man an einer Stelle weiter, sichert, und liest am
-  anderen Rechner das PDF neu ein.
+- **Zusammenführen** zweier Arbeitsstände, die beide neue Korrekturen enthalten, gibt es noch nicht – siehe oben.

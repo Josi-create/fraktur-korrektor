@@ -56,9 +56,10 @@ button:disabled{opacity:.5;cursor:default}
 #edone h3{margin:0 0 10px;font:19px Georgia,serif;color:#285} #edone .more{margin-top:8px;font-size:14px;color:#555;line-height:1.55}
 #eprog{margin-top:14px;display:none} #ebar{height:10px;background:#ddd;border-radius:5px;overflow:hidden} #ebar i{display:block;height:100%;width:0;background:#3a6;transition:width .4s}
 #etext{font-size:13.5px;color:#555}
-#opts{margin-top:6px} #tl,#pair{margin-top:12px;padding:8px 12px;background:#eaf5ee;border:1px solid #9c9;border-radius:4px;font-size:14.5px;line-height:1.5}
-#tl label{display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:4px}
-#tools{font-size:14px;line-height:1.7;background:#f6f3ea;border-radius:4px;padding:8px 12px;margin-top:12px} #tools .no{color:#a40} #tools .ok{color:#285}
+#opts{margin-top:6px} #tl,#pair,#upd{margin-top:12px;padding:8px 12px;background:#eaf5ee;border:1px solid #9c9;border-radius:4px;font-size:14.5px;line-height:1.5}
+#tl label,#upd label{display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:4px} #upd.warn{background:#fdf6e0;border-color:#e6a700}
+.tools{font-size:14px;line-height:1.7;background:#f6f3ea;border-radius:4px;padding:8px 12px;margin-top:12px} .tools .no{color:#a40} .tools .ok{color:#285}
+#empty h2{font:21px Georgia,serif;font-weight:normal;margin:0 0 8px} #empty .tools{max-width:620px}
 #prog{margin-top:14px;display:none} #bar{height:10px;background:#ddd;border-radius:5px;overflow:hidden} #bar i{display:block;height:100%;width:0;background:#3a6;transition:width .4s}
 #ptext{font-size:13.5px;color:#555}
 .amp{display:inline-block;width:13px;height:13px;border-radius:50%;margin-right:7px;vertical-align:-1px}
@@ -105,7 +106,8 @@ button:disabled{opacity:.5;cursor:default}
     <div class="row"><input type="text" id="oImages" spellcheck="false"><button type="button" id="cImg" data-t="choose_folder"></button></div></div>
    <div id="oScriptBox"><label class="f" data-t="ocr_script"></label>
     <div class="radio"><label><input type="radio" name="script" value="fraktur" checked> <span data-t="script_fraktur"></span></label><label><input type="radio" name="script" value="antiqua"> <span data-t="script_antiqua"></span></label></div></div>
-   <div id="tools"></div>
+   <div id="upd"></div>
+   <div id="tools" class="tools"></div>
    <div class="hint" id="target"></div>
   </div>
  </div>
@@ -155,7 +157,7 @@ async function load() {
   if (!lib.local) { $('bOpen').disabled = true; $('note').textContent = t('remote'); }
   const edit = (location.hash.startsWith('#edit=') ? location.hash.slice(6) : '').split('|').map(decodeURIComponent);
   const box = $('books'); box.innerHTML = '';
-  if (!lib.books.length) { box.innerHTML = '<div id="empty">' + t('empty') + '</div>'; return; }
+  if (!lib.books.length) { box.innerHTML = '<div id="empty">' + t('empty') + '</div>'; showStart(); return; }
   for (const b of lib.books) {
     const row = document.createElement('div'); row.className = 'book' + (b.pages ? '' : ' gone');
     const ti = b.pages ? ['<a class="ti" href="/buch/' + b.id + '">', '</a>'] : ['<span class="ti">', '</span>'];
@@ -193,8 +195,32 @@ async function load() {
   }
 }
 
+// ---- Erster Start (#19): Ist alles da? Haken statt Fachwörter, und hinter jedem Kreuz der Weg zur Abhilfe
+async function showStart() {
+  let x; try { x = await (await fetch('/api/tools')).json(); } catch (e) { return; }
+  const el = $('empty'); if (!el) return;
+  const row = (ok, text, tool) => '<div class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '✔ ' : '✘ ') + text +
+    (ok || !tool ? '' : ' ' + help('install-tools', t('how_install')) + ' · <a href="#" data-tool="' + tool + '">' + t('show_program') + '</a>') + '</div>';
+  el.innerHTML = '<h2>' + t('start_head') + '</h2><div>' + t('start_intro') + '</div><div class="tools">' +
+    row(x.dict, t(x.dict ? 'start_dic_ok' : 'start_dic_no')) + row(x.tesseract, t(x.tesseract ? 'tool_tess_ok' : 'start_tess_no'), 'tesseract') +
+    row(x.scantailor, t(x.scantailor ? 'tool_st_ok' : 'start_st_no'), 'scantailor') + (x.pdf ? '' : row(false, t('tool_pdf_no'))) +
+    '</div><div style="margin-top:14px">' + t('start_next') + ' ' + help('index', t('help')) + '</div>';
+  bindToolLinks(el, showStart);
+}
+function bindToolLinks(box, after) {
+  // »Programm zeigen …«: der Nutzer zeigt die Programmdatei, das merkt sich der Fraktur-Korrektor
+  for (const a of box.querySelectorAll('a[data-tool]')) a.onclick = async e => {
+    e.preventDefault();
+    try { const p = (await post('/api/choose', { kind: 'exe' })).path; if (p) { await post('/api/set_tool', { tool: a.dataset.tool, path: p }); await after(); } }
+    catch (err) { $('omsg').textContent = err.message; }
+  };
+}
+
 // ---- Öffnen: Der Nutzer zeigt eine Datei oder einen Ordner, das Programm findet heraus, was es ist
 let job = null, tools = null, found = [], sel = null;
+// Ein gesichertes PDF, dessen Buch schon in der Bibliothek liegt: die Kennung des Buchs, wenn es aktualisiert werden soll (#66)
+const updChoice = () => { const r = document.querySelector('input[name=upd]:checked'); return sel && sel.kind == 'pdfbuch' && sel.book && r ? r.value : ''; };
+const updInto = () => updChoice() == 'update' ? sel.book.id : null;
 const AUTO = location.hash.startsWith('#auto=') || location.hash.split('|').length > 2;
 const ICON = { book: '📖', pdfbuch: '📕', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️' };
 const usesPdf = f => f && (f.kind == 'pdf' || (f.kind == 'epub' && f.pdf));
@@ -262,6 +288,16 @@ async function choose(n) {
   $('oImgBox').style.display = k == 'transkribus' && !sel.images ? '' : 'none'; $('oImages').value = sel.images_dir || '';
   $('pair').style.display = k == 'epub' ? '' : 'none';
   $('pair').innerHTML = k == 'epub' ? (sel.pdf ? t('pair_yes', { f: esc(base(sel.pdf)) }) : t('pair_no')) : '';
+  // Dasselbe Buch liegt schon hier: aktualisieren, wenn hier seit dem Sichern nichts geschah – sonst wird es ein zweites Buch
+  // Vier Fälle: nur im PDF Neues → aktualisieren; nichts Neues oder nur hier Neues → das vorhandene Buch öffnen;
+  // an beiden Stellen Neues → zweites Buch, mehr geht noch nicht
+  const upd = k == 'pdfbuch' && sel.book ? sel.update : null, conflict = upd && upd.here > 0 && upd.there > 0;
+  const radio = (v, text, on) => '<label><input type="radio" name="upd" value="' + v + '"' + (on ? ' checked' : '') + '> ' + text + '</label>';
+  $('upd').style.display = upd ? '' : 'none'; $('upd').className = conflict ? 'warn' : '';
+  $('upd').innerHTML = !upd ? '' : conflict ? t('upd_conflict', { t: esc(sel.book.title), a: upd.here, b: upd.there })
+    : upd.there > 0 ? t('upd_safe', { t: esc(sel.book.title), n: upd.there }) + radio('update', t('upd_yes'), true) + radio('', t('upd_new'))
+    : t(upd.here > 0 ? 'upd_ahead' : 'upd_same', { t: esc(sel.book.title), n: upd.here }) + radio('open', t('upd_open'), true) + radio('', t('upd_new'));
+  for (const el of $('upd').querySelectorAll('input')) el.onchange = update;
   $('tl').style.display = sel.kind == 'pdf' && sel.text ? '' : 'none'; $('tlinfo').textContent = t('tl_found', { n: sel.pages });
   $('target').textContent = isBook ? '' : t('imp_target', { dir: booksdir });
   $('oST').style.display = k == 'pdf' ? '' : 'none';
@@ -270,7 +306,9 @@ async function choose(n) {
 async function update() {
   const ocr = needsOcr();
   $('oScriptBox').style.display = ocr ? '' : 'none'; $('tools').style.display = ocr || (sel && sel.kind == 'pdf') ? '' : 'none';
-  $('oGo').textContent = t(!sel || sel.kind == 'book' ? 'go_open' : sel.kind == 'pdfbuch' ? 'go_pdfbuch' : ocr ? 'ocr_go' : 'ocr_go_text');
+  const plain = !sel || sel.kind == 'book' || updChoice();  // kein neues Buch: kein Titel, kein Zielordner
+  $('oTitleBox').style.display = plain ? 'none' : ''; $('target').textContent = plain ? '' : t('imp_target', { dir: booksdir });
+  $('oGo').textContent = t(!sel || sel.kind == 'book' || updChoice() == 'open' ? 'go_open' : updInto() ? 'go_update' : sel.kind == 'pdfbuch' ? 'go_pdfbuch' : ocr ? 'ocr_go' : 'ocr_go_text');
   if ($('tools').style.display != 'none') await showTools(ocr);
   $('oGo').disabled = !!job || (ocr && !(tools && tools.tesseract));
 }
@@ -282,11 +320,7 @@ async function showTools(ocr) {
     (x.tesseract ? row(true, x.model ? t('tool_model_ok', { m: x.model }) : t('tool_model_no')) : '') : '') +
     (x.pdf ? '' : row(false, t('tool_pdf_no'))) +
     (sel && sel.kind == 'pdf' ? row(x.scantailor, x.scantailor ? t('tool_st_ok') : t('tool_st_no') + ' ' + help('install-tools', t('how_install')) + show('scantailor')) : '');
-  for (const a of $('tools').querySelectorAll('a[data-tool]')) a.onclick = async e => {
-    e.preventDefault();
-    try { const p = (await post('/api/choose', { kind: 'exe' })).path; if (p) { await post('/api/set_tool', { tool: a.dataset.tool, path: p }); await update(); } }
-    catch (err) { $('omsg').textContent = err.message; }
-  };
+  bindToolLinks($('tools'), update);
   $('oST').disabled = !!job || !x.scantailor;
 }
 async function openBook(f) {
@@ -317,7 +351,8 @@ function showDone(r) {
   const q = r.quality, fromPdf = q && q.conf == null, level = q ? q.level : 'gruen';
   // neu erkennen geht nur, wenn der Text aus der Textebene eines PDF stammt und Tesseract da ist
   const canRedo = fromPdf && r.matched == null && sel && sel.kind == 'pdf' && tools && tools.tesseract;
-  let h = '<h3>✔ ' + t('done_title', { n: r.pages }) + '</h3>';
+  let h = '<h3>✔ ' + t(r.updated ? 'upd_done' : 'done_title', { n: r.pages, t: esc(r.title || '') }) + '</h3>';
+  if (r.updated && r.backup) h += '<div class="more">' + t('ed_backup', { f: esc(r.backup) }) + ' ' + t('upd_restore') + '</div>';
   if (r.warnings && r.warnings.length) h += r.warnings.map(w => '<div class="more">' + esc(t('warn_' + w)) +
     (w == 'bilder_fehlen' ? '<div style="margin-top:8px"><button type="button" id="addImgBtn" class="main">' + t('noimg_btn') + '</button></div>' : '') + '</div>').join('');
   if (r.matched != null) h += '<div class="verdict">' + t('epub_done', { m: Math.round(r.matched * 100) }) + '</div>';
@@ -386,8 +421,9 @@ $('form').onsubmit = async e => {
   const title = $('oTitle').value.trim(), script = document.querySelector('input[name=script]:checked').value;
   try {
     if (sel.kind == 'book') return await openBook(sel);
+    if (updChoice() == 'open') return location.href = '/buch/' + sel.book.id;  // das PDF bringt nichts Neues: das vorhandene Buch
     const r = sel.kind == 'transkribus' ? await runJob('/api/import_transkribus', { job: true, source: sel.path, title, images: $('oImages').value.trim() })
-      : sel.kind == 'pdfbuch' ? await runJob('/api/import_pdfbuch', { source: sel.path, title })
+      : sel.kind == 'pdfbuch' ? await runJob('/api/import_pdfbuch', { source: sel.path, title, into: updInto() })
       : sel.kind == 'epub' ? await runJob('/api/import_epub', { source: sel.path, pdf: sel.pdf, title, script, textlayer: useText() })
       : await runJob('/api/import_ocr', { source: sel.path, title, script, textlayer: useText() });
     showDone(r); load();

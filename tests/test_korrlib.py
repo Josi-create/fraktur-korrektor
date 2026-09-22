@@ -92,3 +92,19 @@ def test_kein_woerterbuch_verstaendliche_meldung(monkeypatch, tmp_path):
     with pytest.raises(SystemExit) as e:
         korrlib.find_dic()
     assert 'Kein Wörterbuch gefunden' in str(e.value) and 'gibtsnicht' in str(e.value)
+
+
+def test_ocr_kandidaten():
+    """Typische Verwechslungen der Fraktur-OCR, einmal getauscht – gültig ist, was ok() durchlässt."""
+    ok = {'der', 'daß', 'Volk', 'Zukunft', 'Rußland', 'Katharinenfeld'}.__contains__
+    assert korrlib.ocr_candidates('ber', ok) == ['der']
+    assert korrlib.ocr_candidates('Bolk', ok) == ['Volk'] and korrlib.ocr_candidates('Zutunft', ok) == ['Zukunft']
+    assert korrlib.ocr_candidates('Rußlanb', ok) == ['Rußland'] and korrlib.ocr_candidates('Katharinenfelb', ok) == ['Katharinenfeld']
+    assert korrlib.ocr_candidates('der', ok) == [] and korrlib.ocr_candidates('Haus', lambda w: True) != []
+    assert 'baß' not in korrlib.ocr_candidates('daß', lambda w: True)  # was in fallen.txt steht, wird nie vorgeschlagen
+
+
+def test_hunspell_vorschlaege():
+    s = korrlib.suggest('Zutunft')
+    assert 'Zukunft' in s and 'Zutunft' not in s and all(not w.startswith('-') for w in s)
+    assert korrlib.suggest('Kolonisten') == [] or 'Kolonisten' not in korrlib.suggest('Kolonisten')

@@ -155,6 +155,19 @@ def info(pdf):
         return None
 
 
+def member(pdf, name):
+    """Eine Datei aus dem Anhang (etwa korrekturen.log) als Bytes – None, wenn es sie dort nicht gibt."""
+    try:
+        fitz = _fitz()
+        with fitz.open(pdf) as d:
+            if ANHANG not in d.embfile_names():
+                return None
+            with zipfile.ZipFile(io.BytesIO(d.embfile_get(ANHANG))) as z:
+                return z.read(name) if name in z.namelist() else None
+    except Exception:
+        return None
+
+
 def load(pdf, out, progress=lambda done, total, msg: None, cancelled=lambda: False):
     """Aus einem gesicherten PDF wieder einen Buchordner machen. Liefert dict(pages, images, corrections, title, saved)."""
     fitz = _fitz()
@@ -174,7 +187,7 @@ def load(pdf, out, progress=lambda done, total, msg: None, cancelled=lambda: Fal
             if cancelled():
                 raise ValueError('abgebrochen')
             if m['seiten'][pg] and n < d.page_count:
-                if ocr.pdf_page(d, n, os.path.join(out, 'img', pg))[0]:
+                if ocr.pdf_page(d, n, ocr.free_slot(out, pg))[0]:  # beim Aktualisieren (#66) weicht das bisherige Bild
                     n_img += 1
             progress(n + 1, len(pages), 'entpacken')
     if not pagexml.book_pages(out):

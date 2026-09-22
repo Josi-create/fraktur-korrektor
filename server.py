@@ -4,7 +4,7 @@ py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"
 Ohne Buchordner erscheint die Bibliothek (Bücher öffnen, Transkribus-Export importieren).
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png|jpg,
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
-import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
+import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse, collections
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import korrlib, pagexml, ocr, epub, finder, pdfbuch
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
@@ -119,6 +119,7 @@ class Book:
         self.settings = self.load_settings()
         self.pages, self.mt, self.freq, self.wl, self.wlmt, self.fcache, self.size = {}, {}, {}, set(), None, {}, {}
         self.prog = None  # [geprüfte Seiten, Seiten] während overview() läuft – für den Ladebalken (/api/progress)
+        self.gelernt, self.sugcache = None, {}  # Korrekturvorschläge: (mtime des Protokolls, Wortpaare) und Hunspell-Ergebnisse je Wort
 
     def load_settings(self):
         """buch.json: year (Erscheinungsjahr, geraten oder None), dics (welche Rechtschreibung gilt), notizen (Ordner für
@@ -230,6 +231,43 @@ class Book:
                 if len(f) == 5 and f[4] == 'unsicher':
                     out.setdefault(f[0], []).append((int(f[1]) - 1, f[3].replace('¬', '')))
         return out
+
+    def learned(self):
+        """Was in diesem Buch schon einmal aus einem Wort gemacht wurde (#41): aus jeder Änderung im Protokoll, bei der
+        genau ein Wort anders wurde, ein Paar »Würllemberg« → »Württemberg«. Gezählt, damit das Häufigste vorn steht."""
+        mt = os.path.getmtime(self.klogpath) if os.path.exists(self.klogpath) else None
+        if self.gelernt is None or self.gelernt[0] != mt:
+            pairs = {}
+            if mt:
+                for l in open(self.klogpath, encoding='utf-8'):
+                    f = l.rstrip('\n').split('\t')
+                    if len(f) != 6 or not (f[1] == 'edit' or f[1].startswith('serie:')):
+                        continue
+                    a, b = korrlib.WORD.findall(korrlib.mask(f[4])), korrlib.WORD.findall(korrlib.mask(f[5]))
+                    diff = [(x, y) for x, y in zip(a, b) if x != y]
+                    if len(a) == len(b) and len(diff) == 1:
+                        pairs.setdefault(diff[0][0], collections.Counter())[diff[0][1]] += 1
+            self.gelernt = (mt, pairs)
+        return self.gelernt[1]
+
+    def suggestions(self, word, hunspell=True):
+        """Vorschläge für ein rotes Wort, das Wahrscheinlichste zuerst: was hier schon einmal daraus gemacht wurde, dann
+        typische OCR-Verwechslungen, die ein gültiges Wort ergeben (häufige im Buch zuerst), zuletzt Hunspell."""
+        word = word.replace('¬', '')
+        with self.lock:
+            self.refresh()
+            dics, freq, wl = tuple(self.settings['dics']), self.freq, self.wl
+            out = [w for w, n in self.learned().get(word, collections.Counter()).most_common()]
+        cand = korrlib.ocr_candidates(word, lambda c: c in wl or known(c, freq, dics))
+        cand.sort(key=lambda c: -freq.get(c, 0))
+        if hunspell and len(word) > 2:
+            if (word, dics) not in self.sugcache:
+                self.sugcache[(word, dics)] = korrlib.suggest(word, dics)
+            cand += self.sugcache[(word, dics)]
+        for c in cand:
+            if c not in out and c != word:
+                out.append(c)
+        return out[:6]
 
     def klog(self, kind, pg, line, old, new):
         """Korrekturprotokoll: Zeit, Art (edit | serie:ID | undo:ID), Seite, Zeile (1-basiert), alte Zeile, neue Zeile."""
@@ -847,6 +885,26 @@ def restore(bid, name):
     return dict(id=bid, folder=folder, **r)
 
 
+def replace_page(bid, pg, source, n, script, progress, cancelled):
+    """Eine einzelne Seite ersetzen (#52): neues Seitenbild aus einer Bilddatei oder aus Seite n eines PDF, und nur
+    diese Seite neu erkennen – etwa wenn eine Seite schief eingescannt war. Bisheriger Text, Zeilenlage und Bild
+    der Seite kommen vorher in eine Sicherung (vorher-*.zip), aus der »Frühere Fassung« sie zurückholt."""
+    folder, book = book_folder(bid), get_book(bid)
+    if pg not in pagexml.book_pages(folder):
+        raise ValueError('quelle_fehlt')
+    if not source or not os.path.isfile(source):
+        raise ValueError('quelle_fehlt')
+    with book.lock:
+        old = book.img_file(pg)
+        backup = pagexml.backup(folder, [pg], extra=[os.path.relpath(old, folder)] if old else [])
+        r = ocr.recognize_page(folder, pg, source, n, 'antiqua' if script == 'antiqua' else 'fraktur', progress)
+        book.klog('seite', pg, -1, os.path.basename(old or ''), os.path.basename(source) + (' S. %d' % n if source.lower().endswith('.pdf') else ''))
+    with LIBLOCK:
+        BOOKS.pop(bid, None)  # Zeilenlage und Wortliste des Buchs neu einlesen
+    lib_touch(folder)
+    return dict(id=bid, page=pg, backup=backup, **r)
+
+
 def prepare(bid, tool):
     """Sagt, welcher Ordner in ScanTailor bzw. zu Transkribus gehört, und macht ihn greifbar: in der
     Zwischenablage und im Dateimanager geöffnet. Niemand soll sich einen Pfad merken oder abtippen müssen."""
@@ -962,27 +1020,54 @@ def export_pdf(bid, target, progress, cancelled):
     return dict(id=bid, folder=target, **r)
 
 
-def import_pdfbuch(source, title, target, progress, cancelled):
-    """Ein mit diesem Programm gesichertes PDF wieder als Buch anlegen (läuft als Auftrag im Hintergrund)."""
+def update_check(folder, pdf):
+    """Darf das Buch in folder durch den Stand im PDF ersetzt werden (#66)? Ja, wenn alles, was hier im Protokoll steht,
+    dort auch steht – das Protokoll des PDF beginnt dann mit dem hiesigen: Auf dem anderen Rechner wurde weitergemacht,
+    hier seit dem Sichern nichts. Liefert dict(safe, here, there): Änderungen, die nur hier bzw. nur im PDF stehen."""
+    try:
+        mine = open(os.path.join(folder, 'korrekturen.log'), encoding='utf-8').read().splitlines()
+    except OSError:
+        mine = []
+    theirs = (pdfbuch.member(pdf, 'korrekturen.log') or b'').decode('utf-8', 'replace').splitlines()
+    k = 0
+    while k < min(len(mine), len(theirs)) and mine[k] == theirs[k]:
+        k += 1
+    return dict(safe=k == len(mine), here=len(mine) - k, there=len(theirs) - k)
+
+
+def import_pdfbuch(source, title, target, into, progress, cancelled):
+    """Ein mit diesem Programm gesichertes PDF wieder als Buch anlegen (läuft als Auftrag im Hintergrund).
+    into: die Kennung eines Buchs der Bibliothek, das statt dessen auf den Stand des PDF gebracht wird (#66) – nur wenn
+    hier seit dem Sichern nichts geschehen ist; die bisherige Fassung kommt in eine Sicherung."""
     if not source or not os.path.isfile(source):
         raise ValueError('quelle_fehlt')
     m = pdfbuch.info(source)
     if not m:
         raise ValueError('kein_pdfbuch')
-    name, out = new_folder(title or m.get('titel'), source, target)
-    try:
+    if into:
+        out = book_folder(into)
+        if pagexml.load_json(out, 'buch.json', {}).get('kennung') != m.get('kennung') or not update_check(out, source)['safe']:
+            raise ValueError('nicht_aktualisierbar')
+        backup = pagexml.backup(out, pagexml.book_pages(out))
         r = pdfbuch.load(source, out, progress, cancelled)
-    except Exception:
-        shutil.rmtree(out, ignore_errors=True)  # nichts Halbfertiges stehen lassen
-        raise
-    e = lib_touch(out, title or r['title'] or name)
+        with LIBLOCK:
+            BOOKS.pop(into, None)
+        e, name = lib_touch(out), None
+    else:
+        name, out = new_folder(title or m.get('titel'), source, target)
+        try:
+            r = pdfbuch.load(source, out, progress, cancelled)
+        except Exception:
+            shutil.rmtree(out, ignore_errors=True)  # nichts Halbfertiges stehen lassen
+            raise
+        e, backup = lib_touch(out, title or r['title'] or name), None
     st = Book(out).settings  # buch.json kam mit; fehlt sie (sehr altes Buch), wird sie hier vorgeschlagen
     try:
         bm = json.load(open(os.path.join(out, 'lesezeichen.json'), encoding='utf-8')).get('page')
     except (OSError, ValueError):
         bm = None
     return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], corrections=r['corrections'],
-                saved=r['saved'], bookmark=bm, quality=None, year=st.get('year'), dics=st.get('dics'))
+                saved=r['saved'], bookmark=bm, quality=None, year=st.get('year'), dics=st.get('dics'), updated=bool(into), backup=backup)
 
 
 def scan(path):
@@ -990,13 +1075,23 @@ def scan(path):
     r = finder.scan(path)
     lib = lib_load()
     known = {book_id(x['folder']) for x in lib}
-    kennungen = {pagexml.load_json(x['folder'], 'buch.json', {}).get('kennung') for x in lib} - {None}
+    kennungen = {}
+    for x in lib:
+        if page_files(x['folder']):
+            kennungen.setdefault(pagexml.load_json(x['folder'], 'buch.json', {}).get('kennung'), []).append(x)
     for f in r['found']:
         if f['kind'] == 'book':
             f['id'] = book_id(f['path'])
             f['known'] = f['id'] in known
         elif f['kind'] == 'pdfbuch':  # dasselbe Buch liegt schon in der Bibliothek (von hier gesichert oder schon einmal eingelesen)
-            f['known'] = bool(f.get('kennung')) and f['kennung'] in kennungen
+            cands = kennungen.get(f['kennung'], []) if f.get('kennung') else []
+            f['known'] = bool(cands)
+            if cands:  # dann lässt es sich vielleicht aktualisieren statt ein zweites Mal anlegen (#66). Liegt das Buch mehrmals
+                # hier (schon einmal eingelesen), zählt das, dem das PDF etwas bringt; sonst das mit demselben Stand
+                checks = [(update_check(e['folder'], f['path']), e) for e in cands]
+                u, e = min(checks, key=lambda c: (not c[0]['safe'], c[0]['there'] == 0))
+                f['book'] = dict(id=book_id(e['folder']), title=e.get('title') or default_title(e['folder']), folder=e['folder'])
+                f['update'] = u
     return r
 
 
@@ -1111,10 +1206,11 @@ def start_job(fn, *args):
 # Dateitypen des Mac-Dialogs als UTI; "any" muss alles zeigen, was finder.py erkennt.
 UTI = dict(pdf=['com.adobe.pdf'], zip=['public.zip-archive'],
            export=['public.zip-archive', 'public.plain-text', 'public.xml'],
+           page=['com.adobe.pdf', 'public.jpeg', 'public.png', 'public.tiff'],
            any=['com.adobe.pdf', 'org.idpf.epub-container', 'public.zip-archive', 'public.xml', 'public.plain-text',
                 'public.jpeg', 'public.png', 'public.tiff'])
 PROMPT = dict(folder='Ordner wählen', pdf='PDF wählen', exe='Programm wählen', zip='Transkribus-Export (ZIP) wählen',
-              export='Transkribus-Export wählen (ZIP, Text oder XML)')
+              export='Transkribus-Export wählen (ZIP, Text oder XML)', page='Neue Seite wählen (PDF oder Bild)')
 
 
 def mac_dialog(kind):
@@ -1143,7 +1239,8 @@ def dialog(kind, out=None):
     p = filedialog.askdirectory(parent=root) if kind == 'folder' else \
         filedialog.askopenfilename(parent=root, filetypes=dict(pdf=[('PDF', '*.pdf')], exe=[('*', '*.*')], any=[
             ('PDF, EPUB, ZIP, Bilder, Buchseiten', '*.pdf *.epub *.zip *.xml *.txt *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')],
-            export=[('Transkribus-Export, hOCR, ALTO', '*.zip *.txt *.xml *.html *.htm *.hocr *.alto'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
+            export=[('Transkribus-Export, hOCR, ALTO', '*.zip *.txt *.xml *.html *.htm *.hocr *.alto'), ('*', '*.*')],
+            page=[('PDF oder Bild', '*.pdf *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
     if out:
         with open(out, 'w', encoding='utf-8') as f:
             f.write(p or '')
@@ -1318,6 +1415,11 @@ class H(BaseHTTPRequestHandler):
             if q.get('count'):
                 return self.sendjson(dict(n=len(occ)))
             return self.sendjson(dict(word=w, items=occ, sizes={o['page']: book.img_size(o['page']) for o in occ}))
+        if rest == '/api/suggest':  # fast=1: ohne Hunspell, kommt sofort – der Reader fragt danach noch einmal vollständig
+            w = q.get('word', [''])[0].strip()
+            items = book.suggestions(w, hunspell=not q.get('fast')) if w else []
+            korrlib.save_cache()
+            return self.sendjson(dict(word=w, items=items))
         if rest == '/api/search':
             qs = q.get('q', [''])[0]
             items = book.search(qs) if qs.strip() else []
@@ -1347,7 +1449,7 @@ class H(BaseHTTPRequestHandler):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
-                return self.sendjson(dict(path=choose(body.get('kind') if body.get('kind') in ('folder', 'pdf', 'exe', 'any') else 'zip')))
+                return self.sendjson(dict(path=choose(body.get('kind') if body.get('kind') in ('folder', 'pdf', 'exe', 'any', 'page') else 'zip')))
             if u.path == '/api/reveal':
                 # Ordner im Dateifenster zeigen und den Pfad in die Zwischenablage – zum Hochladen bei Transkribus
                 p = body.get('path') or ''
@@ -1389,7 +1491,7 @@ class H(BaseHTTPRequestHandler):
                     return self.sendjson(dict(error='quelle_fehlt'), 400)
                 return self.sendjson(dict(job=start_job(export_pdf, body['id'], (body.get('target') or '').strip())))
             if u.path == '/api/import_pdfbuch':
-                return self.sendjson(dict(job=start_job(import_pdfbuch, body.get('source'), body.get('title'), body.get('target'))))
+                return self.sendjson(dict(job=start_job(import_pdfbuch, body.get('source'), body.get('title'), body.get('target'), body.get('into'))))
             if u.path == '/api/restore':
                 try:
                     return self.sendjson(restore(body.get('id'), body.get('name')))
@@ -1450,6 +1552,14 @@ class H(BaseHTTPRequestHandler):
         if m:
             r = book.fnsep(m.group(1), body['line'], body['old'])
             return self.sendjson(r) if r else self.send(409, '{}')
+        if rest == '/api/replace_page':  # liest eine Datei von der Platte, darum nur am Rechner selbst
+            if not self.local():
+                return self.sendjson(dict(error='nur_lokal'), 403)
+            try:
+                n = max(1, int(body.get('n') or 1))
+            except (TypeError, ValueError):
+                n = 1
+            return self.sendjson(dict(job=start_job(replace_page, book.id, str(body.get('page') or ''), body.get('source'), n, body.get('script'))))
         if rest == '/api/series':
             if not body.get('word') or not body.get('new') or re.search(r'\s', body['new']):
                 return self.send(400, '{}')

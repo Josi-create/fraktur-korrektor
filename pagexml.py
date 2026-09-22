@@ -442,10 +442,12 @@ def match_to_pages(folder, items, names, text_of=None):
     raise ValueError('seiten_passen_nicht')
 
 
-def backup(folder, pages):
-    """Die Seiten, die gleich überschrieben werden, vorher in eine ZIP-Datei sichern (samt Protokoll und Ampel):
-    hier steckt womöglich die Arbeit von Stunden. Liefert den Dateinamen der Sicherung oder None."""
-    names = [pg + '.txt' for pg in pages] + ['lines.json', 'quellen.json', 'qualitaet.json', 'korrekturen.log']
+def backup(folder, pages, extra=()):
+    """Die Seiten, die gleich überschrieben werden, vorher in eine ZIP-Datei sichern (samt Protokoll, Ampel, Wortliste
+    und Lesezeichen): hier steckt womöglich die Arbeit von Stunden. extra: weitere Dateien relativ zum Buchordner,
+    etwa das Seitenbild einer ersetzten Seite (img/029.jpg). Liefert den Dateinamen der Sicherung oder None."""
+    names = [pg + '.txt' for pg in pages] + ['lines.json', 'quellen.json', 'qualitaet.json', 'korrekturen.log', 'whitelist.txt', 'lesezeichen.json']
+    names += [e.replace(os.sep, '/') for e in extra]
     have = [n for n in names if os.path.isfile(os.path.join(folder, n))]
     if not have:
         return None
@@ -457,6 +459,11 @@ def backup(folder, pages):
     with zipfile.ZipFile(os.path.join(folder, name), 'w', zipfile.ZIP_DEFLATED) as z:
         for n in have:
             z.write(os.path.join(folder, n), n)
+        # Gab es noch keine Wortliste oder kein Lesezeichen, gehört auch das zum Stand: leer, damit das Zurückholen
+        # nicht stehen lässt, was erst danach hereinkam (etwa aus einem gesicherten PDF)
+        for n, leer in (('whitelist.txt', ''), ('lesezeichen.json', '{}')):
+            if n not in have:
+                z.writestr(n, leer)
     return name
 
 
@@ -477,7 +484,7 @@ def backups(folder):
     return out
 
 
-SICHERBAR = re.compile(r'\d{3}\.txt|lines\.json|quellen\.json|qualitaet\.json|korrekturen\.log')
+SICHERBAR = re.compile(r'\d{3}\.txt|lines\.json|quellen\.json|qualitaet\.json|korrekturen\.log|whitelist\.txt|lesezeichen\.json|img/\d{3}\.(?:jpg|png)')
 
 
 def restore(folder, name):
@@ -492,9 +499,13 @@ def restore(folder, name):
     with zipfile.ZipFile(p) as z:
         for n in z.namelist():
             if SICHERBAR.fullmatch(n):
-                with open(os.path.join(folder, n), 'wb') as f:
+                if n.startswith('img/'):  # das gesicherte Seitenbild verdrängt das jetzige, auch wenn das eine andere Endung hat
+                    for f in glob.glob(os.path.join(folder, 'img', n[4:7] + '.*')):
+                        os.remove(f)
+                    os.makedirs(os.path.join(folder, 'img'), exist_ok=True)
+                with open(os.path.join(folder, *n.split('/')), 'wb') as f:
                     f.write(z.read(n))
-                zurueck += n.endswith('.txt')
+                zurueck += bool(re.fullmatch(r'\d{3}\.txt', n))
     return dict(restored=os.path.basename(p), backup=saved, pages=len(book_pages(folder)), back=zurueck)
 
 

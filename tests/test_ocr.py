@@ -95,7 +95,7 @@ def wait(lib, job):
 
 
 def test_auftraege_und_fehler(lib, tmp_path):
-    assert set(lib.lget('/api/tools')[1]) == {'tesseract', 'model', 'antiqua', 'scantailor', 'pdf'}
+    assert set(lib.lget('/api/tools')[1]) == {'tesseract', 'model', 'antiqua', 'scantailor', 'pdf', 'dict'}
     assert lib.lget('/api/job/00000000')[0] == 404
     j = wait(lib, lib.lpost('/api/import_ocr', dict(source=str(tmp_path / 'fehlt.pdf')))[1]['job'])
     assert (j['state'], j['error']) == ('error', 'quelle_fehlt')

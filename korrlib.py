@@ -111,6 +111,37 @@ def in_dict(w, dics=DEFAULT):
     real = [d for d in dics if d != 'vor1901'] or ['1901']
     if any(checker(d).lookup(w) for d in real): return True
     return 'vor1901' in dics and len(w) > 2 and any(checker(d).lookup(v) for v in modern(w) for d in real)
+# ---- Korrekturvorschläge (#41). Erst das Billige: Was die Fraktur-OCR typischerweise verwechselt (b/d, f/s, n/u, r/t,
+# ll/tt, fehlende Umlautpunkte), an jeder Stelle des Wortes einmal getauscht und nachgesehen, ob das ein Wort ergibt.
+# Hunspell selbst erst danach: spylls braucht dafür Sekunden, darum mit Zeitbudget.
+CONFUSIONS = [('b', 'd'), ('d', 'b'), ('f', 's'), ('s', 'f'), ('n', 'u'), ('u', 'n'), ('r', 't'), ('t', 'r'), ('t', 'k'), ('k', 't'),
+              ('l', 'i'), ('i', 'l'), ('c', 'e'), ('e', 'c'), ('o', 'v'), ('v', 'o'), ('h', 'b'), ('b', 'h'), ('ll', 'tt'), ('tt', 'll'),
+              ('rn', 'm'), ('m', 'rn'), ('in', 'm'), ('ii', 'n'), ('ck', 'd'), ('a', 'ä'), ('o', 'ö'), ('u', 'ü'), ('ä', 'a'), ('ö', 'o'),
+              ('ü', 'u'), ('ß', 'ss'), ('ss', 'ß'), ('B', 'V'), ('V', 'B'), ('R', 'N'), ('N', 'R'), ('S', 'G'), ('G', 'S'), ('J', 'I'),
+              ('I', 'J'), ('C', 'E'), ('E', 'C'), ('D', 'O'), ('O', 'D'), ('K', 'R'), ('R', 'K'), ('Z', 'B'), ('B', 'Z'), ('T', 'X'),
+              ('A', 'U'), ('U', 'A'), ('M', 'N'), ('W', 'B')]
+def ocr_candidates(w, ok):
+    """Wörter, die sich von w um eine typische Verwechslung unterscheiden und die ok() für gültig hält."""
+    out = []
+    for a, b in CONFUSIONS:
+        i = w.find(a)
+        while i >= 0:
+            c = w[:i] + b + w[i + len(a):]
+            if c != w and c not in out and c not in FALLEN and ok(c): out.append(c)
+            i = w.find(a, i + 1)
+    return out
+def suggest(w, dics=DEFAULT, budget=1.5, limit=5):
+    """Hunspell-Vorschläge zu w. spylls liefert sie nacheinander, die naheliegenden zuerst – nach dem Budget (Sekunden)
+    wird nicht weiter gewartet; ein einzelner Schritt kann es trotzdem überziehen."""
+    import time
+    real = [d for d in dics if d != 'vor1901'] or ['1901']
+    out, t0 = [], time.monotonic()
+    for d in real:
+        for s in checker(d).load().suggest(w):
+            s = s.strip('-')  # spylls schlägt auch Zusammensetzungen mit Bindestrich vor (-kolonisten)
+            if s and s != w and s not in out and s not in FALLEN: out.append(s)
+            if len(out) >= limit or time.monotonic() - t0 > budget: return out
+    return out
 def dics_for_year(year):
     """Vorschlag nach dem Erscheinungsjahr. Ab 1998 beide Rechtschreibungen: Die Umstellung zog sich hin, und neuere
     Arbeiten zitieren ältere Texte."""

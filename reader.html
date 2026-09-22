@@ -73,6 +73,9 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 #tprev{border-collapse:collapse;font:14px Georgia,serif;margin-top:6px;color:#222} #tprev td,#tprev th{border:1px solid #9bc;padding:1px 9px} #tprev th{background:#e3eefa}
 #centerline{position:absolute;left:0;width:5px;top:25%;height:30px;margin-top:-15px;background:#c90;border-radius:0 3px 3px 0}
 #shint{margin-top:2px;font-size:14px;color:#a40} #shint:empty{display:none}
+/* Korrekturvorschläge zum roten Wort: ↓ ↑ wählt, Klick übernimmt */
+.sug{display:inline-block;margin:0 5px 2px 0;padding:0 8px;border:1px solid #c90;border-radius:9px;background:#fff8d8;color:#000;cursor:pointer;font-family:Georgia,'Times New Roman',serif;font-size:15px}
+.sug.on{background:#c90;color:#fff}
 #serie{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
 #serie.on{display:flex}
 #shead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
@@ -89,11 +92,13 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .stext{font-family:Georgia,serif;font-size:16px;white-space:pre-wrap}
 #wlist{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
 #wlist.on{display:flex}
-#dics,#notes{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
-#dics.on,#notes.on{display:flex}
-#dhead,#nhead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
-#dbody,#nbody{padding:18px 22px;max-width:760px;font-size:16px;line-height:1.5}
-#nbody input{flex:1;font-size:16px;padding:4px 6px} #nbody button{font-size:15px} #ninfo{margin-top:14px;color:#a40;min-height:24px}
+#dics,#notes,#repl{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
+#dics.on,#notes.on,#repl.on{display:flex}
+#dhead,#nhead,#rhead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
+#dbody,#nbody,#rbody{padding:18px 22px;max-width:760px;font-size:16px;line-height:1.5}
+#nbody input,#rbody #rsrc{flex:1;font-size:16px;padding:4px 6px} #nbody button,#rbody button{font-size:15px} #ninfo,#rinfo{margin-top:14px;color:#a40;min-height:24px}
+#rgo{padding:8px 18px;border:1px solid #285;border-radius:4px;background:#3a6;color:#fff;cursor:pointer} #rgo:disabled{opacity:.5}
+#rbody label{cursor:pointer} #rn{width:70px;font-size:16px;padding:3px}
 #dbody label{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid #ccc;border-radius:5px;margin-bottom:8px;cursor:pointer}
 #dbody label:hover{background:#faf8f2} #dbody input{margin-top:6px;transform:scale(1.3)} #dbody small{display:block;color:#666;font-size:14px}
 #dyear{color:#555;margin-bottom:12px} #dinfo{margin-top:14px;color:#a40;min-height:24px}
@@ -121,6 +126,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <a href="#" id="savePdf" data-t="act_pdf" style="display:none"></a>
  <a href="#" id="addTrans" data-t="act_trans" style="display:none"></a>
  <a href="#" id="addImg" data-t="act_images" style="display:none"></a>
+ <a href="#" id="replPage" data-t="act_page" style="display:none"></a>
  <a id="helplink" data-help="usage" target="_blank" data-t="help_f1"></a>
  <span class="langsw"></span>
 </div>
@@ -160,6 +166,18 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
    <p data-t="note_folder"></p>
    <div style="display:flex;gap:8px"><input id="nfolder" spellcheck="false" data-t-ph="note_folder_ph"><button id="nchoose" data-t="choose_folder"></button></div>
    <div id="ninfo"></div>
+  </div>
+ </div>
+ <div id="repl">
+  <div id="rhead"><span id="rtitle"></span>
+   <div style="color:#666;font-size:13.5px;margin-top:6px" data-t="repl_help"></div></div>
+  <div id="rbody">
+   <p data-t="repl_intro"></p>
+   <div style="display:flex;gap:8px"><input id="rsrc" spellcheck="false" data-t-ph="repl_ph"><button id="rchoose" data-t="repl_choose"></button></div>
+   <div id="rpdf" style="display:none;margin-top:10px"><label><span data-t="repl_pdfpage"></span> <input id="rn" type="number" min="1"></label> <span id="rpages" style="color:#666"></span></div>
+   <div style="margin-top:10px"><span data-t="ocr_script"></span>: <label><input type="radio" name="rscript" value="fraktur" checked> <span data-t="script_fraktur"></span></label> &nbsp; <label><input type="radio" name="rscript" value="antiqua"> <span data-t="script_antiqua"></span></label></div>
+   <div style="margin-top:16px"><button id="rgo" data-t="repl_go"></button></div>
+   <div id="rinfo"></div>
   </div>
  </div>
  <div id="wlist">
@@ -236,6 +254,7 @@ async function loadOverview() {
       $('addImg').style.display = ''; $('addImg').onclick = weiter('images');
       $('noimg').style.display = 'flex'; $('noimgBtn').onclick = weiter('images');
     }
+    $('replPage').style.display = ''; $('replPage').onclick = ev => { ev.preventDefault(); if (mode == 'read' && !busy) openReplace(); };
   }
   const s = $('pagesel'); s.innerHTML = '';
   for (const p of ov) { const op = document.createElement('option'); op.value = p.page; op.textContent = p.page; s.appendChild(op); }
@@ -335,7 +354,8 @@ function render() {
   $('pos').textContent = t('pos', { a: li + 1, b: data.lines.length, c: data.flags.length, d: total }) + (data.geo ? '' : t('nogeo'));
   // Korrekturfeld
   $('help').innerHTML = HELP[mode] || '';
-  $('shint').innerHTML = mode == 'table' ? tbPreview() : pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
+  $('shint').innerHTML = mode == 'table' ? tbPreview() : mode == 'fix' && sug && sug.items.length ? sugHtml() : pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
+  if (mode == 'fix' && sug) renderSug();
   if (mode == 'table') { const c = tbCells().length; $('word').innerHTML = t('tbl_word', { n: c, r: Math.ceil(c / tb.cols), c: tb.cols }); }
   const e1 = $('edit'), e2 = $('edit2');
   if (mode == 'read') {
@@ -480,11 +500,46 @@ function enterFix(f) {
   const e1 = $('edit'), e2 = $('edit2');
   ed = parts(data.lines[f.line]); e1.style.display = ''; e1.value = ed.core;
   const j = isJoin(f); e2.style.display = j ? '' : 'none'; if (j) { ed2 = parts(data.lines[f.line + 1]); e2.value = ed2.core; }
+  sug = null; if (f.kind != 'page') loadSuggestions(f);  // eine Seitenzahl hat ihren Vorschlag schon im Hinweis
   render(); e1.focus(); setTimeout(() => e1.setSelectionRange(f.start - ed.pre.length, f.start - ed.pre.length + f.len), 0); bookmark();
+}
+// ---- Korrekturvorschläge zum roten Wort (#41): erst, was in diesem Buch schon einmal daraus gemacht wurde, dann typische
+// Lesefehler der Fraktur-OCR, zuletzt das Wörterbuch. Zwei Anfragen: die schnelle zeigt sofort etwas, die vollständige
+// (Hunspell, dauert Sekunden) ergänzt. ↓ ↑ wählt und setzt den Vorschlag ins Feld, Klick ebenso.
+let sug = null, sugSeq = 0;  // word, items, i (gewählt, -1 = wie erkannt), orig
+function sugHtml() {
+  return '<span style="color:#666">' + t('sug_label') + '</span> ' + sug.items.map((s, k) => '<span class="sug' + (k == sug.i ? ' on' : '') + '" data-k="' + k + '">' + esc(s) + '</span>').join('') +
+    '<span style="color:#888">' + t('sug_keys') + '</span>';
+}
+function renderSug() {
+  if (mode != 'fix' || !sug) return;
+  $('shint').innerHTML = sug.items.length ? sugHtml() : '';
+  for (const el of $('shint').querySelectorAll('.sug')) el.onclick = () => { applySug(+el.dataset.k); $('edit').focus(); };
+}
+async function loadSuggestions(f) {
+  const w = f.word.replace('¬', ''), my = ++sugSeq;
+  sug = { word: w, items: [], i: -1, orig: w, seq: my };
+  for (const q of ['&fast=1', '']) {
+    let r; try { r = await (await fetch(BASE + '/api/suggest?word=' + encodeURIComponent(w) + q)).json(); } catch (e) { return; }
+    if (!sug || sug.seq != my || mode != 'fix') return;
+    if (sug.i < 0) sug.items = r.items; else for (const s of r.items) if (!sug.items.includes(s)) sug.items.push(s);  // schon gewählt: nur ergänzen
+    renderSug();
+  }
+}
+function applySug(k) {
+  const f = cf, e1 = $('edit'); if (!sug || !f || mode != 'fix') return;
+  sug.i = Math.max(-1, Math.min(sug.items.length - 1, k));
+  const nw = sug.i < 0 ? sug.orig : sug.items[sug.i], fs = f.start - ed.pre.length;
+  const cur = (e1.value.slice(fs).match(WRE) || [''])[0];  // das Wort, das dort gerade steht (der Nutzer kann schon getippt haben)
+  if (isJoin(f)) {  // getrenntes Wort: die erste Hälfte bleibt so lang wie bisher, der Rest kommt in die Folgezeile
+    const e2 = $('edit2'), cur2 = (e2.value.match(WRE) || [''])[0];
+    e1.setRangeText(nw.slice(0, f.len), fs, fs + cur.length, 'select'); e2.setRangeText(nw.slice(f.len), 0, cur2.length, 'select');
+  } else e1.setRangeText(nw, fs, fs + cur.length, 'select');
+  renderSug();
 }
 function enterFree(sel) {
   if (skippable(li)) return;
-  mode = 'free'; cf = null;
+  mode = 'free'; cf = null; sug = null;
   $('word').innerHTML = t('edit_line', { n: li + 1 });
   ed = parts(data.lines[li]); const e1 = $('edit'); e1.style.display = ''; e1.value = ed.core; $('edit2').style.display = 'none';
   const o = ed.pre.length, n = ed.core.length, at = x => Math.max(0, Math.min(n, x - o));
@@ -502,7 +557,7 @@ function hopJoin(e) {
   } else return false;
   e.preventDefault(); return true;
 }
-function toRead(line) { mode = 'read'; cf = null; li = line; render(); bookmark(); }
+function toRead(line) { mode = 'read'; cf = null; sug = null; li = line; render(); bookmark(); }
 async function toFlag(from) {
   // nächstes rotes Wort ab Lesezeile (bzw. nach der zuletzt besuchten Stelle)
   const p = from || (passed && passed.line == li ? passed : null);
@@ -788,6 +843,53 @@ $('nchoose').onclick = async () => {
   if (r.path) $('nfolder').value = r.path; else if (r.error) $('ninfo').textContent = t('err_' + r.error);
   $('nfolder').focus();
 };
+// ---- Eine Seite ersetzen (#52): neues Seitenbild aus einer Bilddatei oder einer PDF-Seite, nur diese Seite neu erkennen.
+// Der Server sichert die bisherige Seite vorher (»Frühere Fassung« in der Bibliothek holt sie zurück).
+let rjob = null;
+function openReplace() {
+  mode = 'repl'; cf = null; sug = null; $('repl').classList.add('on'); $('edit').style.display = 'none'; $('edit2').style.display = 'none';
+  $('rtitle').textContent = t('repl_head', { p: pg }); $('rsrc').value = ''; $('rinfo').textContent = ''; $('rpdf').style.display = 'none';
+  $('rn').value = String(parseInt(pg, 10) || 1); $('rn').max = '';  // im PDF des ganzen Buchs hat die Seite meist dieselbe Nummer
+  render(); $('rsrc').focus();
+}
+async function replaceSource(p) {
+  $('rsrc').value = p; $('rpdf').style.display = 'none';
+  if (!/\.pdf$/i.test(p)) return false;
+  const r = await (await fetch('/api/pdf_info', { method: 'POST', body: JSON.stringify({ source: p }) })).json();
+  if (r.pages > 1) { $('rpdf').style.display = ''; $('rpages').textContent = t('repl_pdfpages', { n: r.pages }); $('rn').max = r.pages; return true; }
+  return false;
+}
+async function runReplace() {
+  const src = $('rsrc').value.trim(); if (!src || rjob) return;
+  $('rinfo').textContent = t('repl_wait'); $('rgo').disabled = true;
+  try {
+    const r0 = await (await fetch(BASE + '/api/replace_page', { method: 'POST', body: JSON.stringify({ page: pg, source: src, n: +$('rn').value || 1, script: document.querySelector('input[name=rscript]:checked').value }) })).json();
+    if (r0.error) throw new Error(t('err_' + r0.error));
+    rjob = r0.job;
+    while (true) {
+      await new Promise(r => setTimeout(r, NOTRANS ? 0 : 400));
+      const j = await (await fetch('/api/job/' + rjob)).json();
+      if (j.state == 'error') throw new Error(t('err_' + j.error));
+      if (j.state == 'done') { const p = pg; closeReplace(); await loadOverview(); await loadPage(p, 0); msg = t('repl_done', { n: j.result.lines }); render(); return; }
+    }
+  } catch (e) { $('rinfo').textContent = e.message; }
+  finally { rjob = null; $('rgo').disabled = false; }
+}
+function closeReplace() { $('repl').classList.remove('on'); mode = 'read'; document.activeElement.blur(); render(); }
+async function replKey(e) {
+  if (e.key == 'Escape') { if (!rjob) { e.preventDefault(); closeReplace(); } }
+  else if (e.key == 'Enter') {
+    e.preventDefault();
+    if (e.target.id == 'rsrc' && await replaceSource($('rsrc').value.trim())) { $('rn').focus(); $('rn').select(); return; }  // erst die PDF-Seite wählen
+    await runReplace();
+  }
+}
+$('rchoose').onclick = async () => {
+  const r = await (await fetch('/api/choose', { method: 'POST', body: JSON.stringify({ kind: 'page' }) })).json();
+  if (r.path) { if (!await replaceSource(r.path)) $('rgo').focus(); else { $('rn').focus(); $('rn').select(); } } else if (r.error) $('rinfo').textContent = t('err_' + r.error);
+};
+$('rsrc').addEventListener('change', () => replaceSource($('rsrc').value.trim()));
+$('rgo').onclick = async () => { if (!busy) { busy = true; try { await runReplace(); } finally { busy = false; } } };
 let wl = null;
 async function openWhitelist() {
   const r = await (await fetch(BASE + '/api/whitelist')).json();
@@ -873,6 +975,7 @@ async function onKey(e) {
   if (mode == 'wlist') return wlKey(e);
   if (mode == 'dics') return dicsKey(e);
   if (mode == 'notes') return notesKey(e);
+  if (mode == 'repl') return replKey(e);
   if (e.key == 'F9') { e.preventDefault(); await startSeries(); return; }
   if (e.key == 'F4') { e.preventDefault(); await makeNote(); return; }
   if (mode == 'read') {
@@ -911,6 +1014,8 @@ async function onKey(e) {
     else return;
     e.preventDefault();
   } else {
+    // ↓ ↑ gehen durch die Vorschläge (bei getrenntem Wort führen Tab und → weiter in die zweite Hälfte)
+    if (mode == 'fix' && sug && sug.items.length && (e.key == 'ArrowDown' || e.key == 'ArrowUp')) { e.preventDefault(); applySug(sug.i + (e.key == 'ArrowDown' ? 1 : -1)); return; }
     if (hopJoin(e)) return;
     if (e.key == 'Enter' && e.shiftKey) { e.preventDefault(); await splitLine(); }
     else if (e.key == 'Enter') { e.preventDefault(); await commit(); }
@@ -999,6 +1104,7 @@ $('text').addEventListener('wheel', onWheel, { passive: false }); $('imgpane').a
   const ks = new URLSearchParams(location.search).get('keys');
   for (const k of ks ? ks.split(',') : []) {
     if (k.startsWith('=')) $('edit').value = k.slice(1);
+    else if (k.startsWith('click:')) $(k.slice(6)).click();  // ein Knopf oder Link der Oberfläche, z. B. click:replPage
     else if (k.startsWith('caret=')) $('edit').setSelectionRange(+k.slice(6), +k.slice(6));
     else if (k.startsWith('Shift+') || k.startsWith('Shift ')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(6), shiftKey: true, bubbles: true }));
     else if (k.startsWith('Ctrl+') || k.startsWith('Ctrl ')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(5), ctrlKey: true, bubbles: true }));  // »+« wird in der Adresse zum Leerzeichen

@@ -103,3 +103,42 @@ def test_buch_ohne_bilder(lib, tmp_path):
     assert pdfbuch.info(r['file'])['seiten'] == {'001': None, '002': None}
     r2 = job(lib, '/api/import_pdfbuch', dict(source=r['file'], target=str(tmp_path / 'zurueck')))
     assert r2['images'] == 0 and lib.lget('/buch/%s/api/page/001' % r2['id'])[1]['img'] is None
+
+
+def test_buch_aus_dem_pdf_aktualisieren(lib, tmp_path):
+    """#66: Am PC gesichert, am Laptop weitergearbeitet und wieder gesichert – zurück am PC geht es im vorhandenen Buch weiter."""
+    make_book(str(tmp_path / 'Probebuch'))
+    pc = lib.lpost('/api/open', dict(folder=str(tmp_path / 'Probebuch')))[1]['id']
+    old = lib.lget('/buch/%s/api/page/001' % pc)[1]['lines'][2]
+    lib.lpost('/buch/%s/api/edit/001' % pc, dict(edits=[dict(line=2, old=old, new='der Weg war weit. Die Zu¬')]))
+    pdf = job(lib, '/api/export_pdf', dict(id=pc, target=str(tmp_path)))['file']
+    # »Laptop«: einlesen, dort korrigieren, wieder sichern
+    lap = job(lib, '/api/import_pdfbuch', dict(source=pdf, target=str(tmp_path / 'laptop')))['id']
+    lib.lpost('/buch/%s/api/edit/002' % lap, dict(edits=[dict(line=1, old='Der Vater und ber Sohn.', new='Der Vater und der Sohn.')]))
+    lib.lpost('/buch/%s/api/whitelist' % lap, dict(word='Kolonisten'))
+    lib.lpost('/buch/%s/api/bookmark' % lap, dict(page='002', line=1))
+    (tmp_path / 'stick').mkdir()
+    pdf2 = job(lib, '/api/export_pdf', dict(id=lap, target=str(tmp_path / 'stick')))['file']
+    # zurück am PC: das PDF erkennen – dasselbe Buch, hier seit dem Sichern nichts geschehen
+    f = lib.lpost('/api/scan', dict(path=pdf2))[1]['found'][0]
+    assert f['kind'] == 'pdfbuch' and f['known'] and f['book']['id'] == pc and f['book']['title'] == 'Probebuch'
+    assert f['update'] == dict(safe=True, here=0, there=2)
+    r = job(lib, '/api/import_pdfbuch', dict(source=pdf2, into=pc))
+    assert r['updated'] and r['id'] == pc and r['folder'] == str(tmp_path / 'Probebuch') and r['backup'].startswith('vorher-') and r['bookmark'] == '002'
+    assert lib.lget('/buch/%s/api/page/002' % pc)[1]['lines'][1] == 'Der Vater und der Sohn.'
+    assert lib.lget('/buch/%s/api/whitelist' % pc)[1]['words'] == ['Kolonisten']
+    assert [x['title'] for x in lib.lget('/api/library')[1]['books']] == ['Probebuch', 'Probebuch']  # kein drittes Buch
+    assert len(lib.lget('/buch/%s/api/overview' % pc)[1]['pages']) == 2 and os.path.exists(tmp_path / 'Probebuch' / 'img' / '001.png')
+    # die Sicherung bringt den alten Stand zurück – samt Wortliste
+    b = [x for x in lib.lget('/api/library')[1]['books'] if x['id'] == pc][0]['backups']
+    assert len(b) == 1 and lib.lpost('/api/restore', dict(id=pc, name=b[0]['name']))[0] == 200
+    assert lib.lget('/buch/%s/api/page/002' % pc)[1]['lines'][1] == 'Der Vater und ber Sohn.' and lib.lget('/buch/%s/api/whitelist' % pc)[1]['words'] == []
+    # an beiden Stellen weitergearbeitet: nicht aktualisierbar, es wird ein zweites Buch (das Laptop-Buch liegt hier
+    # nur wegen des Tests in derselben Bibliothek; es hat genau den Stand des PDF und würde sonst zum Öffnen empfohlen)
+    lib.lpost('/api/forget', dict(id=lap))
+    lib.lpost('/buch/%s/api/edit/001' % pc, dict(edits=[dict(line=4, old='ber Heimat gedachten.', new='der Heimat gedachten.')]))
+    f = lib.lpost('/api/scan', dict(path=pdf2))[1]['found'][0]
+    assert f['update']['safe'] is False and f['update']['here'] >= 1 and f['update']['there'] == 2
+    j = wait(lib, lib.lpost('/api/import_pdfbuch', dict(source=pdf2, into=pc))[1]['job'])
+    assert (j['state'], j['error']) == ('error', 'nicht_aktualisierbar')
+    assert job(lib, '/api/import_pdfbuch', dict(source=pdf2, target=str(tmp_path / 'zwei')))['updated'] is False

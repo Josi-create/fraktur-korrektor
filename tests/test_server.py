@@ -194,3 +194,18 @@ def test_seitenzahl_passt_nicht_zu_nachbarn(tmp_path):
         os.utime(folder / ('%03d.txt' % (i + 1)), (0, 2e9))
     b.refresh()
     assert b.flags('003') == [] and b.printed_page('003') == '45'
+
+
+def test_korrekturvorschlaege(app):
+    """#41: gelernt aus dem Protokoll, dann OCR-Verwechslungen (häufige im Buch zuerst), zuletzt Hunspell."""
+    old = app.text('001')[2]
+    app.post('/api/edit/001', dict(edits=[dict(line=2, old=old, new='der Weg war weit. Die Zu¬')]))
+    r = app.get('/api/suggest?fast=1&word=ber')[1]
+    assert r['items'][0] == 'der' and 'ber' not in r['items']
+    assert app.get('/api/suggest?fast=1&word=ba%C3%9F')[1]['items'][0] == 'daß'  # b/d – „baß“ selbst steht in fallen.txt
+    assert app.get('/api/suggest?fast=1&word=Bolk')[1]['items'] == ['Volk']
+    app.post('/api/whitelist', dict(word='Katharinenfeld'))  # die Whitelist zählt als bekannt
+    assert app.get('/api/suggest?fast=1&word=Katharinenfelb')[1]['items'] == ['Katharinenfeld']
+    assert app.get('/api/suggest?fast=1&word=Zu%C2%ACkunft')[1]['items'] == []  # getrenntes Wort: als Ganzes, und das ist richtig
+    assert 'Zukunft' in app.get('/api/suggest?word=Zutunft')[1]['items']  # mit Hunspell
+    assert app.get('/api/suggest?word=')[1]['items'] == []

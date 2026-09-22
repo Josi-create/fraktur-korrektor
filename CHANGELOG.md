@@ -5,6 +5,23 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Korrekturvorschläge** (#41): Unter dem Eingabefeld stehen zu jedem roten Wort Vorschläge, `↓`/`↑` setzen sie ins
+  Feld, Klick ebenso, `Enter` übernimmt. Zuerst, was in diesem Buch schon einmal aus dem Wort gemacht wurde
+  (gelernt aus `korrekturen.log`: `Würllemberg` → `Württemberg`), dann typische Lesefehler der Fraktur-OCR rückgängig
+  gemacht (`b`/`d`, `f`/`s`, `n`/`u`, `r`/`t`, `ll`/`tt`, Umlautpunkte – nur wenn ein bekanntes Wort herauskommt, häufige
+  im Buch zuerst), zuletzt Hunspell. Hunspell braucht über spylls Sekunden je Wort und kommt darum in einer zweiten
+  Anfrage nach; die ersten Vorschläge stehen sofort da.
+- **Eine Seite ersetzen** (#52): *Seite ersetzen …* in der Kopfleiste der Leseansicht tauscht das Seitenbild gegen eine
+  Bilddatei oder eine PDF-Seite und erkennt nur diese Seite neu (Tesseract, ohne Tesseract die Textebene des PDF).
+  Text, Zeilenlage und Bild der Seite kommen vorher in `vorher-<Datum>.zip`; *Frühere Fassung* holt auch das Bild
+  zurück. Die Sicherungen enthalten jetzt außerdem Wortliste und Lesezeichen.
+- **Buch aus dem gesicherten PDF aktualisieren** (#66, einfacher Fall): Liegt dasselbe Buch schon in der Bibliothek und
+  ist hier seit dem Sichern nichts geschehen (das Protokoll des PDF beginnt mit dem hiesigen), empfiehlt *Öffnen …*
+  **Vorhandenes Buch aktualisieren** statt einer Kopie „(2)“; die bisherige Fassung wird gesichert. Wurde an beiden
+  Stellen korrigiert, sagt das Programm, wie viele Änderungen auf jeder Seite stehen, und legt wie bisher ein zweites
+  Buch an – das Zusammenführen bleibt offen.
+- **Erste Schritte beim ersten Start** (#19): Die leere Bibliothek zeigt, ob Wörterbuch, Tesseract und ScanTailor da
+  sind – Haken oder Kreuz, dahinter *So installieren* und *Programm zeigen …* –, und was als Nächstes zu tun ist.
 - **Ein Buch als PDF sichern und auf einem anderen Rechner weiterlesen** (#58): *Als PDF sichern* (Bibliothek oder
   Leseansicht) schreibt eine Datei mit den Seitenbildern (unverändert eingepackt), dem Text unsichtbar darüber
   (Suchen, Kopieren, Vorlesen in jedem PDF-Reader – mit den Korrekturen) und dem ganzen Arbeitsstand als Anhang

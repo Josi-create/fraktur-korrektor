@@ -107,8 +107,13 @@ def tools():
         pdf = True
     except ImportError:
         pdf = False
+    try:
+        korrlib.find_dic()
+        dic = True
+    except SystemExit:
+        dic = False
     return dict(tesseract=tess, model=pick_model(tess)[0] if tess else None, antiqua=pick_model(tess, 'antiqua')[0] if tess else None,
-                scantailor=find_scantailor(), pdf=pdf)
+                scantailor=find_scantailor(), pdf=pdf, dict=dic)
 
 
 def clean(text):
@@ -296,6 +301,74 @@ def copy_image(src, stem):
     return stem + ('.jpg' if ext == '.jpeg' else ext)
 
 
+def page_lines(lines, h):
+    """Erkannte Zeilen einer Seite in Lesereihenfolge bringen, Kopfzeile und Fußnoten erkennen, Trennungen setzen."""
+    pagexml.classify(lines, h / 3508)
+    for kind in ('body', 'fn'):  # Trennungen je Textteil, nicht vom Haupttext in die Fußnoten
+        part = [d for d in lines if d['kind'] == kind]
+        for d, t in zip(part, hyphens([d['text'] for d in part])):
+            d['text'] = t
+    return lines
+
+
+def recognize_page(folder, pg, source, n=1, script='fraktur', progress=lambda done, total, msg: None):
+    """Eine Seite eines Buchs neu machen (#52): Seitenbild aus einer Bilddatei oder aus Seite n (ab 1) eines PDF, dann
+    nur diese Seite erkennen – mit Tesseract; ohne Tesseract mit der Textebene des PDF, wenn es eine hat. Schreibt
+    NNN.txt, das Bild und die Seite in lines.json und qualitaet.json. Liefert dict(lines, words, quality)."""
+    is_pdf = source.lower().endswith('.pdf')
+    tess = find_tesseract()
+    stem = free_slot(folder, pg)
+    if is_pdf:
+        try:
+            import fitz
+        except ImportError:
+            raise ValueError('kein_pymupdf')
+        with fitz.open(source) as d:
+            if not 1 <= n <= d.page_count:
+                raise ValueError('keine_seiten')
+            img, w, h, dpi, words = pdf_page(d, n - 1, stem, text=not tess)
+    elif source.lower().endswith(SRCEXT):
+        img, dpi, words = copy_image(source, stem), DPI, []
+        w, h = image_size(img) or (0, 0)
+        if not (w and h):
+            raise ValueError('quelle_fehlt')
+    else:
+        raise ValueError('quelle_fehlt')
+    progress(1, 2, 'ocr')
+    if tess:
+        model, tessdata = pick_model(tess, script)
+        if not model:
+            progress(0, 2, 'modell')
+            try:
+                download_model()
+            except OSError:
+                raise ValueError('modell_laden')
+            model, tessdata = pick_model(tess, script)
+            if not model:
+                raise ValueError('modell_laden')
+        lines, words = ocr_image(tess, img, model, tessdata, dpi)
+    elif words:
+        lines, words = group_words(words), [(None, x[4], False) for x in words]
+    else:
+        raise ValueError('kein_tesseract')
+    page_lines(lines, h)
+    with open(os.path.join(folder, pg + '.txt'), 'w', encoding='utf-8') as f:
+        f.write('\n'.join(pagexml.page_text(lines)) + '\n')
+    geo = pagexml.load_json(folder, 'lines.json', {})
+    geo[pg] = dict(w=w, h=h, lines=lines)
+    with open(os.path.join(folder, 'lines.json'), 'w', encoding='utf-8') as f:
+        json.dump(dict(sorted(geo.items())), f, ensure_ascii=False)
+    q = pagexml.load_json(folder, 'qualitaet.json', {})
+    if q.get('pages'):  # die Ampel des Buchs kennt diese Seite jetzt neu
+        q['pages'][pg] = page_quality(words)
+        q['rating'] = rating(q['pages'])
+        with open(os.path.join(folder, 'qualitaet.json'), 'w', encoding='utf-8') as f:
+            json.dump(q, f, ensure_ascii=False, indent=1)
+    korrlib.save_cache()
+    progress(2, 2, 'ocr')
+    return dict(lines=len(lines), words=len(words), quality=page_quality(words))
+
+
 def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda: False, script='fraktur', textlayer=False):
     """source: PDF-Datei oder Ordner mit Seitenbildern. Schreibt den Buchordner out; liefert dict(pages, quality).
     textlayer: den Text eines durchsuchbaren PDF übernehmen, statt ihn neu zu erkennen (braucht kein Tesseract).
@@ -334,11 +407,7 @@ def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda:
     os.makedirs(os.path.join(out, 'img'), exist_ok=True)
 
     def finish(pg, w, h, lines, words):
-        pagexml.classify(lines, h / 3508)
-        for kind in ('body', 'fn'):  # Trennungen je Textteil, nicht vom Haupttext in die Fußnoten
-            part = [d for d in lines if d['kind'] == kind]
-            for d, t in zip(part, hyphens([d['text'] for d in part])):
-                d['text'] = t
+        page_lines(lines, h)
         with open(os.path.join(out, pg + '.txt'), 'w', encoding='utf-8') as f:
             f.write('\n'.join(pagexml.page_text(lines)) + '\n')
         geo[pg] = dict(w=w, h=h, lines=lines)

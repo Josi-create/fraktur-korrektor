@@ -30,6 +30,7 @@ is being changed – and **Edit line** (orange).
 | Correction / Edit line | `F7` (or `-` at the end of the line) | insert the hyphenation mark `¬` at the cursor. Within the line `-` stays a hyphen; if the line already ends with `¬`, `-` puts a hyphen before it (`Ost-¬` / `Preußen`) |
 | Correction / Edit line | `Shift`+`Enter` | split the line at the cursor (see below) |
 | Correction | `F8` (or `#`) | word is correct → whitelist |
+| Correction | `↓` `↑` | put a suggested correction into the field (see below); `Enter` applies it |
 | Correction | `Tab` | next red word without changing anything; for a split word, first into its second half |
 | Correction | `Esc` | back to reading without changing anything |
 | Reading / Correction | `F9` | batch correction (see below) |
@@ -63,9 +64,23 @@ side turn the page like `PgUp` and `PgDn`.
 
 Words split at the end of a line are written with the mark `¬`: `Zu¬` / `kunft`. Both parts are checked
 together. When correcting, both lines appear as input fields, with the cursor in the first. To reach the second half,
-press `Tab` or `↓`, or move past the end of the line with `→` – back with `Shift`+`Tab`, `↑`, or `←` at the start of
-the line. `Enter` applies both lines. `F7` inserts the mark, at the end of the line so does `-` (reachable on a MacBook
-without `fn`).
+press `Tab` or move past the end of the line with `→` – back with `Shift`+`Tab` or `←` at the start of the line (`↓`
+and `↑` do the same as long as there are no suggestions; otherwise they pick a suggestion). `Enter` applies both lines.
+`F7` inserts the mark, at the end of the line so does `-` (reachable on a MacBook without `fn`).
+
+## Suggested corrections
+
+For every red word the program shows suggestions below the input field, the most likely first:
+
+1. **What you have already made of it in this book.** Once you have corrected `Würllemberg` to `Württemberg`, the next
+   `Würllemberg` gets that as its first suggestion – the program learns from your correction log.
+2. **Typical misreadings of Fraktur OCR**, undone: `b`/`d`, `f`/`s`, `n`/`u`, `r`/`t`, `ll`/`tt`, missing umlaut dots.
+   `ber` becomes `der`, `Bolk` becomes `Volk`, `Zutunft` becomes `Zukunft` – but only if the result is a known word
+   (dictionary, whitelist, or frequent in the book). Words frequent in the book come first.
+3. **The dictionary** (Hunspell). These take a second or two and appear a little later.
+
+`↓` puts the first suggestion into the field, each further `↓` the next, `↑` goes back (down to the word as it was
+recognised); clicking a suggestion does the same. `Enter` applies as always. If none of the suggestions fits, just type.
 
 ## Batch correction (F9)
 
@@ -216,6 +231,21 @@ from its full source. The quotation is also placed on the clipboard.
 
 If Obsidian is installed, it opens the new note immediately and, on Windows, comes to the front (the folder has to be inside a vault Obsidian knows).
 Without Obsidian the file simply stays in the folder – it is plain Markdown.
+
+## Replacing a page
+
+One page was scanned crooked, cut off or blurred, and the book is otherwise fine? Then the whole book need not be
+recognised again. Photograph or scan the page once more and click **Replace page …** in the top bar (only on the
+computer the program runs on):
+
+1. Choose the file – an image (JPG, PNG, TIF) or a PDF. For a PDF with several pages, say which page is meant; the
+   number of the page you are on is suggested.
+2. Choose the script (Fraktur or Antiqua) and click **Replace page**.
+
+The page image is swapped and the text of **this page only** is recognised again – with Tesseract, or without Tesseract
+with the text a searchable PDF already carries. All other pages stay as they are, including your corrections there.
+The previous version of the page – text, line positions and image – is backed up in the book folder
+(`vorher-<date>.zip`); **Earlier version** in the library brings it back.
 
 ## Reading along on the home network
 

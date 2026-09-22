@@ -30,6 +30,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Korrektur / Zeile bearbeiten | `F7` (oder `-` am Zeilenende) | Trennzeichen `¬` an der Schreibmarke einfügen. Mitten in der Zeile bleibt `-` ein Bindestrich; endet die Zeile schon mit `¬`, setzt `-` einen Bindestrich davor (`Ost-¬` / `Preußen`) |
 | Korrektur / Zeile bearbeiten | `Umschalt`+`Enter` | Zeile an der Schreibmarke teilen (siehe unten) |
 | Korrektur | `F8` (oder `#`) | Wort ist richtig → Whitelist |
+| Korrektur | `↓` `↑` | einen Korrekturvorschlag ins Feld setzen (siehe unten); `Enter` übernimmt ihn |
 | Korrektur | `Tab` | nächstes rotes Wort, ohne zu ändern; bei einem getrennten Wort zuerst in die zweite Hälfte |
 | Korrektur | `Esc` | zurück zum Lesen, ohne zu ändern |
 | Lesen / Korrektur | `F9` | Serienkorrektur (siehe unten) |
@@ -64,9 +65,25 @@ links und rechts davon blättern wie `Bild↑` und `Bild↓`.
 
 Am Zeilenende getrennte Wörter schreibt das Programm mit dem Trennzeichen `¬`: `Zu¬` / `kunft`. Beide
 Teile werden zusammen geprüft. Bei der Korrektur erscheinen beide Zeilen als Eingabefelder, die Schreibmarke steht im
-ersten. In die zweite Hälfte kommen Sie mit `Tab`, mit `↓` oder indem Sie mit `→` über das Zeilenende hinausgehen –
-zurück mit `Umschalt`+`Tab`, `↑` oder `←` am Zeilenanfang. `Enter` übernimmt beide Zeilen. `F7` fügt das Zeichen ein, am Zeilenende auch `-` (auf dem MacBook ohne `fn` zu
+ersten. In die zweite Hälfte kommen Sie mit `Tab` oder indem Sie mit `→` über das Zeilenende hinausgehen –
+zurück mit `Umschalt`+`Tab` oder `←` am Zeilenanfang (`↓` und `↑` tun es auch, solange es keine Korrekturvorschläge
+gibt; sonst wählen sie den Vorschlag). `Enter` übernimmt beide Zeilen. `F7` fügt das Zeichen ein, am Zeilenende auch `-` (auf dem MacBook ohne `fn` zu
 erreichen).
+
+## Korrekturvorschläge
+
+Zu jedem roten Wort zeigt das Programm unter dem Eingabefeld Vorschläge, das Wahrscheinlichste zuerst:
+
+1. **Was Sie in diesem Buch schon einmal daraus gemacht haben.** Wer `Würllemberg` einmal zu `Württemberg` berichtigt
+   hat, bekommt das beim nächsten `Würllemberg` als ersten Vorschlag – das Programm lernt aus Ihrem Korrekturprotokoll.
+2. **Typische Lesefehler der Fraktur-Erkennung**, rückgängig gemacht: `b`/`d`, `f`/`s`, `n`/`u`, `r`/`t`, `ll`/`tt`,
+   fehlende Umlautpunkte. Aus `ber` wird `der`, aus `Bolk` `Volk`, aus `Zutunft` `Zukunft` – aber nur, wenn das Ergebnis
+   ein bekanntes Wort ist (Wörterbuch, Whitelist oder häufig im Buch). Was im Buch oft vorkommt, steht vorn.
+3. **Das Wörterbuch** (Hunspell). Diese Vorschläge brauchen ein, zwei Sekunden und erscheinen etwas später.
+
+`↓` setzt den ersten Vorschlag ins Feld, jedes weitere `↓` den nächsten, `↑` geht zurück (bis zum Wort, wie es erkannt
+wurde); ein Klick auf einen Vorschlag tut dasselbe. `Enter` übernimmt wie immer. Wollen Sie keinen der Vorschläge,
+tippen Sie einfach.
 
 ## Serienkorrektur (F9)
 
@@ -219,6 +236,21 @@ seine vollständige Quelle. Das Zitat liegt außerdem in der Zwischenablage.
 
 Ist Obsidian installiert, öffnet es den neuen Zettel sofort und kommt unter Windows in den Vordergrund (der Ordner muss in einem Vault liegen, den Obsidian kennt).
 Ohne Obsidian bleibt die Datei einfach im Ordner – es ist gewöhnliches Markdown.
+
+## Eine Seite ersetzen
+
+Eine Seite war schief eingescannt, abgeschnitten oder unscharf, und das Buch ist sonst in Ordnung? Dann muss nicht das
+ganze Buch neu erkannt werden. Fotografieren oder scannen Sie die Seite noch einmal und klicken Sie in der Kopfleiste
+auf **Seite ersetzen …** (nur am Rechner, auf dem das Programm läuft):
+
+1. Datei wählen – eine Bilddatei (JPG, PNG, TIF) oder ein PDF. Bei einem PDF mit mehreren Seiten geben Sie an, welche
+   Seite gemeint ist; vorgeschlagen wird die Nummer der Seite, auf der Sie gerade stehen.
+2. Schrift wählen (Fraktur oder Antiqua) und **Seite ersetzen**.
+
+Das Seitenbild wird ausgetauscht und der Text **nur dieser Seite** neu erkannt – mit Tesseract; ohne Tesseract mit dem
+Text, den ein durchsuchbares PDF schon mitbringt. Alle anderen Seiten bleiben, wie sie sind, auch Ihre Korrekturen
+dort. Die bisherige Fassung der Seite – Text, Zeilenlage und Bild – liegt danach gesichert im Buchordner
+(`vorher-<Datum>.zip`); in der Bibliothek holt **Frühere Fassung** sie zurück.
 
 ## Über das Heimnetz mitlesen
 

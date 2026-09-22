@@ -36,7 +36,23 @@ called “… (2).pdf”.
    and adds it to the library.
 
 If a book of that name already exists there, a second one is created with the suffix “(2)”; nothing is
-overwritten. A book that is already in the library (because you saved it from this computer) is marked as such.
+overwritten.
+
+## Working on two computers: updating the book
+
+The usual routine: started on the PC, saved as PDF, read in on the laptop and continued there, saved again – and
+back on the PC you want to carry on in the **existing** book, not in a copy “(2)”.
+
+When you open the PDF, the program recognises that the same book is already in the library (every book carries a
+fixed identifier that travels in the PDF) and checks whether anything has happened here since it was saved:
+
+- **Nothing happened** – everything in the local correction log is also in the PDF: then the recommendation is
+  **Update the existing book**. The book receives text, page images, word list, bookmark and log from the PDF;
+  the present version is backed up first (`vorher-<date>.zip`, brought back via **Earlier version**). If you would
+  rather have a second book, choose that next to it.
+- **Work continued in both places** – new corrections here as well as there: the program cannot merge those yet. It
+  says how many changes are on each side and creates the PDF as a second book; nothing is lost. Best carry on in one
+  place at a time, save there, and read the PDF in on the other computer before changing anything there.
 
 ## Good to know
 
@@ -44,5 +60,4 @@ overwritten. A book that is already in the library (because you saved it from th
 - The invisible text is placed **per line**: when searching, the reader jumps to the right line, but a selection
   dragged with the mouse will not hit every word exactly.
 - A book without page images (from an EPUB, say) gets pages with visible text.
-- **Merging** does not exist yet: whoever corrects the same book on two computers ends up with two books side by
-  side after reading it in. Best carry on in one place, save, and read the PDF in afresh on the other computer.
+- **Merging** two states that both contain new corrections does not exist yet – see above.
