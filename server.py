@@ -315,12 +315,14 @@ class Book:
 
     def geo_lines(self, pg, lines):
         """Zeilenrahmen in Bildpixeln je Textzeile; None ohne Zuordnung oder ohne Bild.
-        Transkribus legt die Seite höhenfüllend und horizontal zentriert auf sein Format (g['w'] x g['h'])."""
+        Transkribus legt die Seite höhenfüllend und horizontal zentriert auf sein Format (g['w'] x g['h']). Ist das Bild
+        dagegen höher als der Rahmen (die SuUB Bremen hängt unten an jedes PDF-Bild eine DFG-Leiste), gilt die Breite,
+        und der Rahmen sitzt oben – sonst läge die Markierung unten auf der Seite eine Zeile zu tief."""
         seq, sz, g = self.geo_seq(pg, lines), self.img_size(pg), self.geo.get(pg)
         if seq is None or not sz:
             return None
         w, h = sz
-        s = h / g['h']
+        s = min(h / g['h'], w / g['w'])
         ox = (w - g['w'] * s) / 2
         return [None if l is None else dict(x0=l['x0'] * s + ox, x1=l['x1'] * s + ox, y0=l['y0'] * s, y1=l['y1'] * s) for l in seq]
 

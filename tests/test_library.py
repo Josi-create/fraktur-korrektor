@@ -57,6 +57,18 @@ def test_zwei_buecher_nebeneinander(app, tmp_path):
     assert app.lget(other + '/api/page/002')[1]['lines'][1] == old
 
 
+def test_bild_hoeher_als_rahmen(tmp_path):
+    """SuUB Bremen: unter dem Seitenbild hängt eine DFG-Leiste, das Bild ist höher als der ALTO-Rahmen. Dann gilt die
+    Breite als Maßstab und der Rahmen sitzt oben, nicht höhenfüllend und mittig."""
+    import server
+    from conftest import make_book, png
+    folder = make_book(str(tmp_path / 'buch')) or str(tmp_path / 'buch')
+    with open(os.path.join(folder, 'img', '001.png'), 'wb') as f:
+        f.write(png(500, 800))  # Rahmen 1000 x 1500, Bild 500 x 800: Maßstab 0.5 nach der Breite, 50 px Leiste unten
+    g = server.Book(folder).page_data('001')['geo'][1]
+    assert (g['x0'], g['x1'], g['y0'], g['y1']) == (50, 450, 80, 100)
+
+
 def test_transkribus_import(lib, tmp_path):
     z = str(tmp_path / 'export.zip')
     make_export(z)

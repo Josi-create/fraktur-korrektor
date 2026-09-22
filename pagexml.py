@@ -152,6 +152,16 @@ def parse_hocr(f):
     return W, H, p.img, _finish_lines(lines, W, H)
 
 
+def _box(e, strict=True):
+    """(x0, y0, x1, y1) eines ALTO-Elements aus HPOS/VPOS/WIDTH/HEIGHT; None ohne Angaben, strict: auch ohne Fläche."""
+    try:
+        x0, y0 = int(float(e.get('HPOS'))), int(float(e.get('VPOS')))
+        w, h = int(float(e.get('WIDTH'))), int(float(e.get('HEIGHT')))
+    except (TypeError, ValueError):
+        return None
+    return (x0, y0, x0 + w, y0 + h) if (w > 0 and h > 0) or not strict else None
+
+
 def parse_alto(f):
     """Liefert (Breite, Höhe, Bildname, Zeilen) einer ALTO-Datei. Die Maßeinheit ist gleichgültig, solange Seite und
     Zeilen dieselbe verwenden: Im Reader wird die Seite ohnehin höhenfüllend auf das Bild gelegt."""
@@ -171,13 +181,16 @@ def parse_alto(f):
             elif e.tag == q('HYP'):  # Trennstrich am Zeilenende, damit hyphens() ihn zu »¬« macht
                 ws.append((ws.pop() if ws else '') + (e.get('CONTENT') or '-'))
         text = _join_punct(' '.join(ws).strip())
-        try:
-            x0, y0 = int(float(l.get('HPOS'))), int(float(l.get('VPOS')))
-            x1, y1 = x0 + int(float(l.get('WIDTH'))), y0 + int(float(l.get('HEIGHT')))
-        except (TypeError, ValueError):
-            continue
         if not text:
             continue
+        # Der Zeilenkasten: die Vereinigung der Wortkästen, nicht das TextLine-Attribut. Die SuUB Bremen schreibt dort
+        # HEIGHT="-2" oder "6" bei VPOS in Zeilenmitte – im Reader wäre die Markierung nur ein Strich unter der Zeile.
+        boxes = [_box(e) for e in l if e.tag == q('String')]
+        boxes = [b for b in boxes if b] or [_box(l, strict=False)]
+        if not boxes[0]:
+            continue
+        x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+        x1, y1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
         try:
             bl = int(float(l.get('BASELINE')))  # ALTO 2/3: eine Zahl; ALTO 4 darf Punkte angeben
         except (TypeError, ValueError):

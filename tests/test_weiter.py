@@ -405,7 +405,8 @@ def test_alto_einer_bibliothek(tmp_path):
     zeilen = open(os.path.join(folder, '002.txt'), encoding='utf-8').read().splitlines()
     assert zeilen[1].endswith('Zu¬') and zeilen[2].startswith('kunft')
     geo = json.load(open(os.path.join(folder, 'lines.json'), encoding='utf-8'))
-    assert geo['003']['lines'][0]['bl'] == 132 and geo['003']['lines'][0]['x1'] == 880
+    # x1: rechte Kante des letzten Wortkastens (make_alto: 30 breit, alle 40 px), nicht das TextLine-Attribut
+    assert geo['003']['lines'][0]['bl'] == 132 and geo['003']['lines'][0]['x1'] == 110 + 40 * len(TEXTE['003'][0].split())
 
 
 def test_alto_satzzeichen_als_eigene_woerter(tmp_path):
@@ -417,6 +418,21 @@ def test_alto_satzzeichen_als_eigene_woerter(tmp_path):
     assert [d['text'] for d in lines] == ['Zur Förderung seitens der württembergi¬', 'schen Regierung, die „christliche Kolonisation" (so Clöter).',
                                           '44) Am 25. Dezember 1807.']
     assert [d['kind'] for d in lines] == ['body', 'body', 'fn']
+
+
+def test_alto_zeilenkasten_aus_den_woertern(tmp_path):
+    # SuUB Bremen: TextLine mit HEIGHT="-2" oder "6" bei VPOS in Zeilenmitte – der Kasten muss aus den Wörtern kommen,
+    # sonst ist die Markierung im Reader nur ein Strich. Eine Zeile ohne Wortkästen behält den TextLine-Kasten.
+    xml = ('<TextLine HPOS="670" VPOS="480" WIDTH="1297" HEIGHT="-2">'
+           '<String CONTENT="Das" HPOS="670" VPOS="480" WIDTH="72" HEIGHT="32"/><SP/>'
+           '<String CONTENT="Verbot" HPOS="765" VPOS="464" WIDTH="430" HEIGHT="51"/></TextLine>'
+           '<TextLine HPOS="670" VPOS="560" WIDTH="500" HEIGHT="6"><String CONTENT="ohne"/><SP/><String CONTENT="Lage"/></TextLine>')
+    os.makedirs(str(tmp_path / 'alto'))
+    with open(str(tmp_path / 'alto' / 'a.xml'), 'w', encoding='utf-8') as f:
+        f.write(ALTO % dict(n=1, lines=xml))
+    W, H, img, lines = pagexml.parse_alto(str(tmp_path / 'alto' / 'a.xml'))
+    assert [(d['text'], d['x0'], d['y0'], d['x1'], d['y1'], d['bl']) for d in lines] == [
+        ('Das Verbot', 670, 464, 1195, 515, 515), ('ohne Lage', 670, 560, 1170, 566, 566)]
 
 
 def test_bibliothekstext_ueber_den_server(lib, tmp_path):

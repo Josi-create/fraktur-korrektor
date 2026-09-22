@@ -125,6 +125,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
 ### Behoben
+- **ALTO einer Bibliothek: die gelbe Lesezeile im Seitenbild war nur ein Strich unter der Zeile** und wirkte wie
+  eine Zeile zu tief. Die SuUB Bremen gibt ihren Zeilen (`TextLine`) eine Höhe von −2 oder 6 Pixeln bei einer
+  Lage in Zeilenmitte; nur die Wörter (`String`) haben brauchbare Kästen. Der Zeilenkasten kommt jetzt aus den
+  Wortkästen; das `TextLine`-Attribut gilt nur noch für Zeilen ohne Wortkästen. Dazu hängt die SuUB unten an jedes
+  PDF-Bild eine graue DFG-Leiste, das Bild ist also höher als der ALTO-Rahmen: Bisher wurde der Rahmen höhenfüllend
+  aufs Bild gelegt, womit die Markierung unten auf der Seite eine Zeile zu tief lag. Ist das Bild höher als der
+  Rahmen, gilt jetzt die Breite, und der Rahmen sitzt oben. Schon eingelesene Bücher brauchen dafür kein neues Einlesen.
 - **Die zweite Hälfte eines getrennten Wortes (`Zu¬` / `kunft`) war mit der Tastatur nicht zu erreichen.** Bei der
   Korrektur führen jetzt `Tab`, `↓` und `→` über das Zeilenende hinaus ins zweite Eingabefeld, `Umschalt`+`Tab`, `↑`
   und `←` am Zeilenanfang zurück. Aus dem zweiten Feld geht `Tab` wie bisher zum nächsten roten Wort.
