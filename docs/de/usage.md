@@ -20,7 +20,9 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `Bild↓` `Bild↑`, `Pos1` `Ende` | Seite vor/zurück, Seitenanfang/-ende |
 | Lesen | `G` | gehe zu Seite: oben erscheint eine Eingabezeile für die Seitenzahl |
 | Lesen | `S` (oder `/`, `Strg`+`F`, am Mac auch `Cmd`+`F`) | im ganzen Buch suchen; `N` nächste, `Umschalt`+`N` vorige Fundstelle (siehe unten) |
-| Lesen | `+` `−` `0` | Zoom des Seitenbildes |
+| Lesen | `+` `−` `0` | Zoom des Seitenbildes (auch `Strg`+Mausrad über dem Bild) |
+| Lesen | `Strg`+`+` `Strg`+`−` `Strg`+`0` | Schriftgröße des Textes (auch `Strg`+Mausrad über dem Text); bleibt gespeichert |
+| Lesen | `Umschalt`+Mausrad | eine breite Tabelle seitwärts rollen; mit der Lesezeile rollt sie von selbst |
 | Lesen | `R` | Seite neu laden (nach Änderungen in einem anderen Editor) |
 | Korrektur | `Enter` | übernehmen und weiterlesen (steht in derselben Zeile noch ein rotes Wort, kommt dieses zuerst) |
 | Korrektur / Zeile bearbeiten | `F7` | Trennzeichen `¬` an der Schreibmarke einfügen |

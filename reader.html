@@ -50,25 +50,26 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #help{color:#666;font-size:13.5px;line-height:1.7}
 kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:3px;padding:0 5px;font-family:Consolas,monospace;font-size:12.5px;color:#222}
 #text{flex:1}
-#lines{position:absolute;left:0;right:0;top:0;padding:0 22px;transition:transform .18s ease-out;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:1.65}
+/* --tz: Textzoom (Strg + / − / 0), alle Schriftgrade im Textfenster skalieren mit */
+#lines{position:absolute;left:0;right:0;top:0;padding:0 22px;transition:transform .18s ease-out;font-family:Georgia,'Times New Roman',serif;font-size:calc(19px * var(--tz, 1));line-height:1.65}
 #lines div{white-space:pre-wrap;border-radius:3px;padding:0 6px;color:#555}
 #lines div.cur{background:#fff3b8;color:#000}
-#lines div.head{color:#aaa;font-size:14px;font-family:Segoe UI,Arial,sans-serif}
+#lines div.head{color:#aaa;font-size:calc(14px * var(--tz, 1));font-family:Segoe UI,Arial,sans-serif}
 #lines div.sep{border-top:1px solid #999;height:0;margin:10px 0;padding:0}
-#lines div.fn{font-size:16px}
+#lines div.fn{font-size:calc(16px * var(--tz, 1))}
 #lines div.pgsep{text-align:center;color:#999;font:13px Segoe UI,Arial,sans-serif;letter-spacing:1px;margin:18px 0 10px 0;white-space:nowrap;overflow:hidden}
 .flag{background:#f99;border-radius:2px}
 .auto{background:#fc8;border-radius:2px}
 .curflag{outline:2px solid #c00}
 /* Auszeichnung im Text (XHTML wie im EPUB) wird nicht gezeigt, sondern dargestellt: Tabellen als Gitter – jede Zelle ist
    weiterhin eine Zeile (Lesecursor, Klick, Eingabefeld) –, Überschriften groß, <em>/<sup> … als Schrift */
-#lines .tblgrid{display:grid;width:max-content;max-width:100%;margin:8px 0 8px 6px;padding:0;border-radius:0;border-top:1px solid #8ab;border-left:1px solid #8ab;white-space:normal}
+#lines .tblgrid{display:grid;width:max-content;max-width:100%;overflow-x:auto;margin:8px 0 8px 6px;padding:0;border-radius:0;border-top:1px solid #8ab;border-left:1px solid #8ab;white-space:normal}
 #lines .tblgrid > div{border-right:1px solid #8ab;border-bottom:1px solid #8ab;border-radius:0;padding:1px 12px;color:#333;white-space:pre-wrap}
 #lines .tblgrid > div.thcell{font-weight:bold;background:#eaf2fb}
 #lines .tblgrid > div.cur{background:#fff3b8;color:#000}
 #lines .tblgrid > div.blank{display:none}
 #lines div.tsel{background:#d6eaff !important;color:#000}
-#lines div.hd1{font-size:27px;font-weight:bold;color:#222} #lines div.hd2{font-size:23px;font-weight:bold;color:#222} #lines div.hd3{font-size:20px;font-weight:bold;color:#222}
+#lines div.hd1{font-size:calc(27px * var(--tz, 1));font-weight:bold;color:#222} #lines div.hd2{font-size:calc(23px * var(--tz, 1));font-weight:bold;color:#222} #lines div.hd3{font-size:calc(20px * var(--tz, 1));font-weight:bold;color:#222}
 #tprev{border-collapse:collapse;font:14px Georgia,serif;margin-top:6px;color:#222} #tprev td,#tprev th{border:1px solid #9bc;padding:1px 9px} #tprev th{background:#e3eefa}
 #centerline{position:absolute;left:0;width:5px;top:25%;height:30px;margin-top:-15px;background:#c90;border-radius:0 3px 3px 0}
 #shint{margin-top:6px;font-size:14.5px;color:#a40}
@@ -179,6 +180,8 @@ const BASE = (location.pathname.match(/^\/buch\/[0-9a-f]+/) || [''])[0];  // jed
 applyI18n();
 let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null, nsel = null;
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
+let tzoom = 1; try { tzoom = parseFloat(localStorage.getItem('tzoom')) || 1; } catch (e) {}  // Schriftgröße des Textes, unabhängig vom Bild
+document.documentElement.style.setProperty('--tz', tzoom);
 let prevD = null, nextD = null, nbEls = {}, wheelAcc = 0;
 let imgEls = {}, imgState = null, imgKeep = null;  // Seitenbilder im Stapel, letzte Lage des Stapels, beim Seitenwechsel: das bisherige Bild festhalten
 const IMG_GAP = 60;  // Abstand zwischen den Seitenbildern, in Bildpixeln
@@ -343,6 +346,12 @@ function render() {
 function layoutText() {
   const el = lineEls[li]; if (!el) return;
   const H = $('text').clientHeight;
+  // Zelle einer breiten Tabelle: das Gitter seitwärts rollen, bis die Lesezelle zu sehen ist
+  const g = el.parentElement;
+  if (g && g.classList.contains('tblgrid')) {
+    const a = el.getBoundingClientRect(), b = g.getBoundingClientRect();
+    if (a.left < b.left) g.scrollLeft += a.left - b.left - 12; else if (a.right > b.right) g.scrollLeft += a.right - b.right + 12;
+  }
   $('lines').style.transform = 'translateY(' + (H * READ_POS - (el.offsetTop + el.offsetHeight / 2)) + 'px)';
   // Eingabefelder deckungsgleich über Lesezeile und Folgezeile
   const top = H * READ_POS - el.offsetHeight / 2, e1 = $('edit'), e2 = $('edit2'), nx = lineEls[li + 1];
@@ -829,11 +838,17 @@ async function footnoteSep() {
   updateCount(); renderText(); render(); bookmark();
 }
 function setZoom(z) { zoom = Math.min(4, Math.max(0.4, z)); try { localStorage.setItem('zoom', zoom); } catch (e) {} layoutImage(); }
+function setTextZoom(z) {
+  tzoom = Math.min(2.5, Math.max(0.6, z)); try { localStorage.setItem('tzoom', tzoom); } catch (e) {}
+  document.documentElement.style.setProperty('--tz', tzoom); layoutText(); layoutImage();
+}
 
 async function onKey(e) {
   if (e.key == 'F1') { e.preventDefault(); window.open($('helplink').href, '_blank'); return; }
   // Strg+F (Mac: Cmd+F) ist die gewohnte Suche – beim Lesen unsere statt der des Browsers
   if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key == 'f' || e.key == 'F') && data && mode == 'read') { e.preventDefault(); askOpen('find'); return; }
+  // Strg + / − / 0: Schriftgröße des Textes (statt des Browser-Zooms, der auch Leisten und Bild vergrößert)
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && data && ['+', '-', '0', '='].includes(e.key)) { e.preventDefault(); setTextZoom(e.key == '0' ? 1 : e.key == '-' ? tzoom / 1.15 : tzoom * 1.15); return; }
   if (e.ctrlKey || e.altKey || e.metaKey || !data) return;
   if (mode == 'ask') return askKey(e);
   if (mode == 'serie') return serieKey(e);
@@ -938,6 +953,9 @@ $('lines').addEventListener('click', async e => {
   else { busy = true; try { await loadPage(d.dataset.p, i, true); bookmark(); } finally { busy = false; } }
 });
 function onWheel(e) {
+  // Strg+Mausrad: über dem Text die Schriftgröße, über dem Bild der Bild-Zoom
+  if (e.ctrlKey) { e.preventDefault(); const f = e.deltaY < 0 ? 1.15 : 1 / 1.15; if (e.currentTarget == $('text')) setTextZoom(tzoom * f); else setZoom(zoom * f); return; }
+  if (e.shiftKey || e.deltaX) return;  // seitwärts: eine breite Tabelle rollt von selbst (Browser), wir halten uns raus
   // Mausrad: eine Raste = eine Zeile, läuft fließend über Seitengrenzen
   if (mode != 'read') return; e.preventDefault();
   wheelAcc += e.deltaMode == 1 ? e.deltaY * 33 : e.deltaY;

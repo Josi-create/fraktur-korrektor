@@ -20,7 +20,9 @@ is being changed – and **Edit line** (orange).
 | Reading | `PgDn` `PgUp`, `Home` `End` | page forward/back, top/bottom of page |
 | Reading | `G` | go to page: an input line for the page number appears at the top |
 | Reading | `S` (or `/`, `Ctrl`+`F`, on a Mac also `Cmd`+`F`) | search the whole book; `N` next, `Shift`+`N` previous match (see below) |
-| Reading | `+` `−` `0` | zoom the page image |
+| Reading | `+` `−` `0` | zoom the page image (also `Ctrl`+mouse wheel over the image) |
+| Reading | `Ctrl`+`+` `Ctrl`+`−` `Ctrl`+`0` | text size (also `Ctrl`+mouse wheel over the text); remembered |
+| Reading | `Shift`+mouse wheel | scroll a wide table sideways; it follows the reading line by itself |
 | Reading | `R` | reload the page (after changes in another editor) |
 | Correction | `Enter` | apply and read on (if the same line has another red word, that comes first) |
 | Correction / Edit line | `F7` | insert the hyphenation mark `¬` at the cursor |

@@ -5,6 +5,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Schriftgröße des Textes** (`Strg`+`+`/`−`/`0` oder `Strg`+Mausrad über dem Text) – unabhängig vom Zoom des
+  Seitenbildes (`+`/`−`/`0`), die Einstellung bleibt erhalten. **Breite Tabellen** liefen bisher rechts aus dem Fenster,
+  ohne dass man hinkam: Jetzt rollt die Tabelle mit der Lesezeile seitwärts mit, von Hand mit `Umschalt`+Mausrad.
 - **Notizen für Obsidian** (#60): Passage markieren, `F4` oder Rechtsklick – das Programm legt im Notizordner des Buchs
   (Taste `O`, Ordner im Obsidian-Vault, gespeichert in `buch.json`) einen fortlaufend nummerierten Zettel an: oben
   Platz für die Anmerkung, unter dem Strich das Zitat und „Seite x“ mit Verweis auf die Quellenangabe des Buchs (`0 Quellenangabe.md`, wird
