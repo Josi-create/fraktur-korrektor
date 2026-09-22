@@ -2,7 +2,9 @@
 
 Page image on the left, text on the right. The **reading line**, highlighted in yellow, always stays at the
 same height; image and text move together. Red marks words the dictionary does not know; orange marks
-places where an automatic pre-correction made an uncertain replacement.
+places where an automatic pre-correction made an uncertain replacement. A page number in the running head that does
+not fit the neighbouring pages is red as well (in Fraktur, OCR likes to read “16” as “46”) – the hint names the number
+that should be there, and `Space`, `Enter` correct it like a word.
 
 The program has three states, shown in the top bar: **Reading** (green), **Correction** (red) – a red word
 is being changed – and **Edit line** (orange).
@@ -206,7 +208,8 @@ The program creates a file in that folder, numbered consecutively, for example `
     Page 57, Line 3–4, [[0 Source|Leibbrandt 1928]]
 
 At the top room for your own remark, below the rule the quotation (words hyphenated at line ends are joined) and the
-page – the printed page number from the running head, otherwise the PDF page –, the lines (counted as in “Line 3/42” in
+page – the printed page number from the running head; if it is missing or does not fit the neighbouring pages, the
+number the neighbouring pages imply; otherwise the PDF page –, the lines (counted as in “Line 3/42” in
 the program's top bar) and a link to the book's source note. The program creates that file, `0 Source.md`, as a template with the first note; enter there where the book comes from
 (university library, interlibrary loan …) and the citation as Zotero gives it. This way every note is one click away
 from its full source. The quotation is also placed on the clipboard.

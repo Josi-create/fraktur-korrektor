@@ -153,11 +153,33 @@ class Book:
             self.save_settings()
         return self.settings
 
-    def printed_page(self, pg):
-        """Seitenzahl für die Quellenangabe: die gedruckte aus der Kopfzeile, sonst die Nummer der Datei."""
+    def page_number(self, pg):
+        """Gedruckte Seitenzahl aus der Kopfzeile als (zahl, position, länge) – oder None."""
         lines = self.pages.get(pg) or []
         m = re.search(r'\d+', lines[0]) if lines and lines[0].startswith('#') else None
-        return m.group() if m else str(int(pg))
+        return (int(m.group()), m.start(), len(m.group())) if m else None
+
+    def expected_page(self, pg):
+        """Seitenzahl, die nach den Nachbarseiten in der Kopfzeile stehen müsste – oder None, wenn die Nachbarn sich nicht
+        einig sind. Die OCR liest in Fraktur gern 1 als 4 (16 → 46), auch auf zwei Seiten hintereinander; die drei Seiten
+        davor und danach verraten es, wenn mindestens drei von ihnen mit Zweidrittelmehrheit dieselbe Zahl ergeben. Bei einem
+        fehlenden oder doppelten Scan stehen die Nachbarn halb gegen halb, dann bleibt es still."""
+        keys = list(self.pages)
+        k = keys.index(pg)
+        votes = {}
+        for d in (-3, -2, -1, 1, 2, 3):
+            n = self.page_number(keys[k + d]) if 0 <= k + d < len(keys) else None
+            if n:
+                votes[n[0] - d] = votes.get(n[0] - d, 0) + 1
+        best = max(votes, key=votes.get) if votes else None
+        return best if best is not None and votes[best] >= 3 and votes[best] * 3 >= sum(votes.values()) * 2 else None
+
+    def printed_page(self, pg):
+        """Seitenzahl für die Quellenangabe: die gedruckte aus der Kopfzeile – bei einem Lesefehler oder ohne Kopfzeile
+        (Kapitelanfang) die nach den Nachbarseiten richtige –, sonst die Nummer der Datei."""
+        n = self.page_number(pg)
+        exp = self.expected_page(pg)
+        return str(exp if exp is not None else n[0] if n else int(pg))
 
     def make_note(self, pg, text, lang='de', lines=None):
         """Ein Zettel nach Luhmanns Art im Notizordner: fortlaufend nummeriert, oben Platz für die eigene Anmerkung, unter dem
@@ -242,12 +264,15 @@ class Book:
 
     def flags(self, pg):
         dics = tuple(self.settings['dics'])
-        key = (self.mt[pg], self.wlmt, dics)
+        n, exp = self.page_number(pg), self.expected_page(pg)
+        key = (self.mt[pg], self.wlmt, dics, exp)  # exp hängt an den Nachbarseiten, nicht an dieser Datei
         c = self.fcache.get(pg)
         if c and c[0] == key:
             return c[1]
         lines, wl, freq = self.pages[pg], self.wl, self.freq
         out = []
+        if n and exp is not None and exp != n[0]:  # Seitenzahl, die nicht zu den Nachbarseiten passt
+            out.append(dict(line=0, start=n[1], len=n[2], word=str(n[0]), kind='page', expect=exp))
         toks, joined = joined_tokens(lines)
         jstart = {(i, s1) for i, s1, w1, j, w2 in joined}
         jend = {(j, toks[j][0][0]) for i, s1, w1, j, w2 in joined}  # der zweite Teil beginnt hinter etwaiger Auszeichnung (<td>)

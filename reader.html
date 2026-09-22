@@ -476,7 +476,7 @@ $('fnext').onclick = guarded(() => nextHit(1)); $('fprev').onclick = guarded(() 
 
 function enterFix(f) {
   mode = 'fix'; cf = f; li = f.line;
-  $('word').innerHTML = t(f.kind == 'auto' ? 'kind_auto' : 'kind_oov') + '<b>' + esc(f.word) + '</b>';
+  $('word').innerHTML = (f.kind == 'page' ? t('kind_page', { n: f.expect }) : t(f.kind == 'auto' ? 'kind_auto' : 'kind_oov')) + '<b>' + esc(f.word) + '</b>';
   const e1 = $('edit'), e2 = $('edit2');
   ed = parts(data.lines[f.line]); e1.style.display = ''; e1.value = ed.core;
   const j = isJoin(f); e2.style.display = j ? '' : 'none'; if (j) { ed2 = parts(data.lines[f.line + 1]); e2.value = ed2.core; }
@@ -523,7 +523,7 @@ async function commit() {
   const v = $('edit').value, full = ed.pre + v + ed.post; if (full !== data.lines[line]) edits.push({ line, old: data.lines[line], new: full });
   if (mode == 'fix' && isJoin(f)) { const v2 = ed2.pre + $('edit2').value + ed2.post; if (v2 !== data.lines[line + 1]) edits.push({ line: line + 1, old: data.lines[line + 1], new: v2 }); }
   let oldW = '', newW = '';
-  if (mode == 'fix') {
+  if (mode == 'fix' && f.kind != 'page') {  // eine Seitenzahl ist kein Wort für die Serienkorrektur
     oldW = f.word.replace('¬', '');
     const fs = f.start - ed.pre.length, a = (v.slice(fs).match(WRE) || [''])[0];
     newW = isJoin(f) && v.trimEnd().endsWith('¬') && v.trimEnd().length - 1 == fs + a.length ? a + (($('edit2').value.match(WRE) || [''])[0]) : a;
@@ -542,7 +542,7 @@ async function commit() {
   if (mode == 'fix') afterFix(f.line, f.start); else toRead(line);
 }
 async function whitelist() {
-  const f = cf; if (!f) return;
+  const f = cf; if (!f || f.kind == 'page') return;  // eine falsche Seitenzahl lässt sich nur berichtigen
   await fetch(BASE + '/api/whitelist', { method: 'POST', body: JSON.stringify({ word: f.word.replace('¬', '') }) });
   data = await (await fetch(BASE + '/api/page/' + pg)).json(); updateCount();
   afterFix(f.line, f.start);
@@ -837,6 +837,7 @@ async function whitelistRead() {
   // von links nach rechts; ohne rotes Wort in der Lesezeile: das nächste weiter unten auf der Seite, diese Zeile wird Lesezeile
   const f = data.flags.find(x => isJoin(x) && x.line + 1 == li) || data.flags.find(x => x.line == li) || data.flags.find(x => x.line > li);
   if (!f) { msg = t('no_red'); render(); return; }
+  if (f.kind == 'page') { enterFix(f); return; }
   if (f.line > li) { li = f.line; bookmark(); }
   const w = f.word.replace('¬', '');
   await fetch(BASE + '/api/whitelist', { method: 'POST', body: JSON.stringify({ word: w }) });

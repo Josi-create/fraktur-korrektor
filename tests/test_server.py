@@ -155,3 +155,42 @@ def test_suche_im_ganzen_buch(app):
     j = app.get('/api/search?q=Zukunft')[1]['items']  # steht nirgends in einer Zeile, nur als Zu¬ / kunft
     assert len(j) == 1 and j[0]['join'] and (j[0]['line'], j[0]['start'], j[0]['len'], j[0]['start2'], j[0]['len2']) == (2, 22, 2, 0, 5)
     assert app.get('/api/search?q=')[1]['n'] == 0 and app.get('/api/search?q=gibtesnicht')[1]['n'] == 0
+
+
+def test_seitenzahl_passt_nicht_zu_nachbarn(tmp_path):
+    """Die OCR liest in Fraktur 1 als 4: Kopfzeilen 13, 14, 45, 46, 17, 18. Die falschen Zahlen werden rot, mit der nach den
+    Nachbarn richtigen Zahl; die Notiz nimmt gleich die richtige. Wo die Nachbarn sich nicht einig sind, bleibt es still."""
+    import os, server
+    folder = tmp_path / 'buch'
+    folder.mkdir()
+    for i, n in enumerate(['13', '14', '45', '46', '17', '18', '', '20', '21']):  # 007 ohne Kopfzeile (Tafel), 008 stimmt wieder
+        (folder / ('%03d.txt' % (i + 1))).write_text(('# %s\n' % n if n else '') + 'Die Kolonisten zogen.\n', encoding='utf-8')
+    b = server.Book(str(folder))
+    b.refresh()
+    assert [f for f in b.flags('001') if f['kind'] == 'page'] == []  # 13: 14 sagt ja, 45 und 46 nein – keine Dreiviertel, kein Rot
+    assert [f for f in b.flags('003') if f['kind'] == 'page'] == [dict(line=0, start=2, len=2, word='45', kind='page', expect=15)]
+    assert [f for f in b.flags('004') if f['kind'] == 'page'] == [dict(line=0, start=2, len=2, word='46', kind='page', expect=16)]
+    assert [f for f in b.flags('005') if f['kind'] == 'page'] == []
+    assert b.printed_page('004') == '16' and b.printed_page('005') == '17'
+    assert b.printed_page('007') == '19' and b.flags('007') == []  # Kapitelanfang ohne Kopfzeile: die Notiz weiß trotzdem die Seite
+    assert b.expected_page('008') == 20 and b.printed_page('009') == '21'
+    # fehlender Scan: 1 2 3 4 | 6 7 8 9 – die Nachbarn stehen halb gegen halb, nichts wird rot
+    g = tmp_path / 'luecke'
+    g.mkdir()
+    for i, n in enumerate([1, 2, 3, 4, 6, 7, 8, 9]):
+        (g / ('%03d.txt' % (i + 1))).write_text('# %d\nText.\n' % n, encoding='utf-8')
+    g = server.Book(str(g))
+    g.refresh()
+    assert all(f['kind'] != 'page' for pg in g.pages for f in g.flags(pg))
+    (folder / '004.txt').write_text('# 16\nDie Kolonisten zogen.\n', encoding='utf-8')
+    os.utime(folder / '004.txt', (0, 1e9))
+    b.refresh()
+    assert b.flags('004') == [] and b.printed_page('004') == '16'
+    # Nachbarseiten berichtigt, ohne dass 003 sich ändert: das Urteil über 003 darf nicht aus dem Zwischenspeicher kommen
+    for i, n in enumerate(['43', '44', None, '46', '47', '48', '', '50', '51']):  # 003 bleibt unberührt
+        if n is None:
+            continue
+        (folder / ('%03d.txt' % (i + 1))).write_text(('# %s\n' % n if n else '') + 'Die Kolonisten zogen.\n', encoding='utf-8')
+        os.utime(folder / ('%03d.txt' % (i + 1)), (0, 2e9))
+    b.refresh()
+    assert b.flags('003') == [] and b.printed_page('003') == '45'

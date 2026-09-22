@@ -2,7 +2,9 @@
 
 Links das Seitenbild, rechts der Text. Die gelb hinterlegte **Lesezeile** steht immer auf derselben Höhe;
 Bild und Text wandern gemeinsam. Rot markiert sind Wörter, die das Wörterbuch nicht kennt; orange sind
-Stellen, die eine automatische Vorkorrektur unsicher ersetzt hat.
+Stellen, die eine automatische Vorkorrektur unsicher ersetzt hat. Rot wird auch eine Seitenzahl in der Kopfzeile, die
+nicht zu den Nachbarseiten passt (die OCR liest in Fraktur gern „16“ als „46“) – der Hinweis nennt die Zahl, die dort
+stehen müsste, und `Leertaste`, `Enter` berichtigen sie wie ein Wort.
 
 Das Programm kennt drei Zustände, oben in der Leiste angezeigt: **Lesen** (grün), **Korrektur** (rot) –
 ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
@@ -208,7 +210,8 @@ Das Programm legt im Ordner eine Datei an, fortlaufend nummeriert, zum Beispiel 
     Seite 57, Zeile 3–4, [[0 Quellenangabe|Leibbrandt 1928]]
 
 Oben Platz für die eigene Anmerkung, unter dem Strich das Zitat (am Zeilenende getrennte Wörter sind zusammengezogen) und die
-Seite – die gedruckte Seitenzahl aus der Kopfzeile, sonst die PDF-Seite –, die Zeilen (gezählt wie „Zeile 3/42“ in der
+Seite – die gedruckte Seitenzahl aus der Kopfzeile; fehlt sie oder passt sie nicht zu den Nachbarseiten, die Zahl, die
+sich aus den Nachbarseiten ergibt; sonst die PDF-Seite –, die Zeilen (gezählt wie „Zeile 3/42“ in der
 Kopfleiste des Programms) und der Verweis auf die Quellenangabe des Buchs.
 Diese Datei `0 Quellenangabe.md` legt das Programm beim ersten Zettel als Vorlage an; tragen Sie dort ein, woher das Buch
 stammt (Universitätsbibliothek, Fernleihe …) und die Zitierweise, wie Zotero sie liefert. So hat jeder Zettel per Klick
