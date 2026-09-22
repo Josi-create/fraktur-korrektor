@@ -19,6 +19,8 @@ as its window.
    a PDF, an EPUB, page images, a Transkribus export or a book you have already worked on: [Opening a book](add-book.md).
 3. **Read and correct** – [Usage](usage.md). Everything works from the keyboard; the most important keys
    are always shown at the top right.
+4. **Take it along** – [Saving a book as PDF](pdf-sichern.md): one file with page images, searchable text and all
+   your work, readable in any PDF reader and a book again on another computer.
 
 ## Good to know
 

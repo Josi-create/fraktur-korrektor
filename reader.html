@@ -118,6 +118,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <span id="find"><span id="findq"></span><button type="button" id="fprev"></button><b id="findn"></b><button type="button" id="fnext"></button><button type="button" id="fclose" data-t-title="find_close">×</button></span>
  <a href="#" id="diclink" data-t="dic_link"></a>
  <a href="#" id="notelink" data-t="note_link"></a>
+ <a href="#" id="savePdf" data-t="act_pdf" style="display:none"></a>
  <a href="#" id="addTrans" data-t="act_trans" style="display:none"></a>
  <a href="#" id="addImg" data-t="act_images" style="display:none"></a>
  <a id="helplink" data-help="usage" target="_blank" data-t="help_f1"></a>
@@ -230,6 +231,7 @@ async function loadOverview() {
   if (o.local && o.id) {
     const weiter = was => ev => { ev.preventDefault(); location.href = '/bibliothek#edit=' + o.id + '|' + was; };
     $('addTrans').style.display = ''; $('addTrans').onclick = weiter('trans');
+    $('savePdf').style.display = ''; $('savePdf').onclick = weiter('pdf');
     if (!o.images) {
       $('addImg').style.display = ''; $('addImg').onclick = weiter('images');
       $('noimg').style.display = 'flex'; $('noimgBtn').onclick = weiter('images');

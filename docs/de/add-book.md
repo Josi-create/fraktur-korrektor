@@ -12,6 +12,7 @@ Programm eine **Datei** oder einen **Ordner**. Es sieht nach, was darin steckt, 
 | Gefunden | Was dann geschieht |
 |---|---|
 | 📖 **Buch** – ein Ordner, an dem Sie mit dem Fraktur-Korrektor schon gearbeitet haben | wird sofort geöffnet |
+| 📕 **Gesichertes Buch (PDF)** – ein PDF, das der Fraktur-Korrektor geschrieben hat, auch auf einem anderen Rechner | wird mit allem, was darin steckt, als Buch angelegt. Siehe [Ein Buch als PDF sichern](pdf-sichern.md) |
 | 📄 **PDF** | Ist es schon durchsuchbar, wird der Text in Sekunden übernommen; sonst erkennt Tesseract den Text. Siehe [PDF oder Bilder einlesen](pdf-import.md) |
 | 📗 **EPUB** | Liegt ein **gleichnamiges PDF** daneben, erscheint links der Scan und rechts der Text des EPUB. Ohne PDF wird das Buch ohne Seitenbilder geöffnet |
 | 🖼️ **Seitenbilder** – ein Ordner mit JPG, PNG oder TIF | Tesseract erkennt den Text |

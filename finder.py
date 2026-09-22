@@ -5,6 +5,7 @@ Fund = dict(kind, path, name, pages, mtime, …):
   book         Buchordner des Fraktur-Korrektors (NNN.txt) – corrections = Zeilen in korrekturen.log
   transkribus  Export als ZIP oder Ordner (PAGE-XML) – images = Seitenbilder liegen bei; images_dir = passender Bilderordner
   epub         EPUB – pdf = gleichlautendes PDF (dann: links das PDF, rechts der EPUB-Text)
+  pdfbuch      PDF, das dieses Programm gesichert hat (Arbeitsstand im Anhang) – corrections, saved, kennung
   pdf          PDF – text = durchsuchbar
   images       Ordner mit Seitenbildern
 Der erste Fund ist die Empfehlung: Wo schon Korrekturen stecken, geht nichts verloren; sonst der fertigste Text."""
@@ -14,7 +15,7 @@ import xml.etree.ElementTree as ET
 IMG = ('.png', '.jpg', '.jpeg', '.tif', '.tiff')
 PRUNE = {'venv', '.venv', 'node_modules', '__pycache__', 'build', 'dist', 'site-packages', '$recycle.bin', 'system volume information',
          'cache'}  # ScanTailor legt in out/cache Miniaturbilder und Zwischenschritte ab – die sind keine Buchseiten
-RANK = dict(book=0, transkribus=1, epub=2, pdf=3, images=4)
+RANK = dict(book=0, pdfbuch=1, transkribus=2, epub=3, pdf=4, images=5)
 MAXDEPTH, MAXFILES, MAXTIME = 4, 40000, 6.0
 
 
@@ -102,6 +103,16 @@ def transkribus_zip(path):
 def pdf_info(path, deep=True):
     d = dict(kind='pdf', path=path, name=os.path.splitext(os.path.basename(path))[0], pages=0, text=False, mtime=_mtime(path),
              size=os.path.getsize(path))
+    # Von diesem Programm gesichert? Das steht im Anhang und kostet nur einen Blick ins Inhaltsverzeichnis des PDF
+    try:
+        import pdfbuch
+        m = pdfbuch.info(path)
+    except Exception:
+        m = None
+    if m:
+        seiten = m.get('seiten') or {}
+        return dict(kind='pdfbuch', path=path, name=m.get('titel') or d['name'], pages=len(seiten), corrections=m.get('korrekturen') or 0,
+                    images=any(seiten.values()), saved=m.get('gesichert') or '', kennung=m.get('kennung'), mtime=_mtime(path), size=d['size'])
     if deep:
         try:
             import ocr

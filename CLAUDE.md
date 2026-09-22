@@ -26,6 +26,7 @@ Das Projekt wird Open Source (GPL-3.0-or-later), Mitarbeit erwünscht. Plan und 
 | `ocr.py` | PDF/Bilder → Tesseract oder vorhandene Textebene; Qualitätsampel; ScanTailor finden/starten |
 | `epub.py` | EPUB lesen; Textbuch; EPUB-Wortlaut auf die Zeilen eines PDF legen (`transplant`) |
 | `pagexml.py` | Transkribus-PAGE-XML → Buchordner; `classify` (Kopfzeile, Fußnoten) für alle Importwege |
+| `pdfbuch.py` | Buch als PDF sichern (Bilder, unsichtbare Textebene, Arbeitsstand als Anhang) und daraus wieder einlesen |
 | `reader.html`, `bibliothek.html`, `i18n.js` | Oberfläche; alle Texte zweisprachig in `i18n.js` (`t('schluessel')`) |
 | `docs/de`, `docs/en` | Hilfe: dieselben Dateinamen in beiden Sprachen, im Programm unter `/hilfe/<sprache>/<seite>` |
 | `dict/` | mitgelieferte Wörterbücher (GPL) samt Lizenztexten, `zusatz.txt`, `fallen.txt` |

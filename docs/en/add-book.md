@@ -11,6 +11,7 @@ You do not need to know in which form your book exists. Click **Open …** and s
 | Found | What happens then |
 |---|---|
 | 📖 **Book** – a folder you have already worked on with Fraktur-Korrektor | is opened immediately |
+| 📕 **Saved book (PDF)** – a PDF written by Fraktur-Korrektor, on another computer too | is created as a book with everything in it. See [Saving a book as PDF](pdf-sichern.md) |
 | 📄 **PDF** | If it is already searchable, its text is taken over within seconds; otherwise Tesseract recognises the text. See [Reading in a PDF or images](pdf-import.md) |
 | 📗 **EPUB** | If a **PDF of the same name** lies next to it, the scan appears on the left and the EPUB text on the right. Without a PDF the book is opened without page images |
 | 🖼️ **Page images** – a folder with JPG, PNG or TIF | Tesseract recognises the text |

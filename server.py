@@ -6,7 +6,7 @@ Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
 import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-import korrlib, pagexml, ocr, epub, finder
+import korrlib, pagexml, ocr, epub, finder, pdfbuch
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
 
 HERE = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))  # gepackt liegen dict/, docs/ und die HTML-Dateien im Bundle
@@ -131,7 +131,8 @@ class Book:
             if os.path.exists(os.path.join(self.folder, 'qualitaet.json')) or os.path.normcase(self.folder).startswith(own):
                 st = propose_settings(self.folder)  # vom Programm eingelesen (auch EPUB-Textbücher), aber vor dieser Funktion: Vorschlag nachholen
         dics = [d for d in st.get('dics') or korrlib.DEFAULT if d in korrlib.DICS]
-        return dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT), notizen=st.get('notizen') or None)
+        # kennung: bleibt dem Buch über das Sichern als PDF hinweg erhalten – daran erkennt ein anderer Rechner dasselbe Buch wieder
+        return dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT), notizen=st.get('notizen') or None, kennung=st.get('kennung') or None)
 
     def save_settings(self):
         write_atomic(self.stpath, json.dumps(self.settings, ensure_ascii=False, indent=1))
@@ -701,7 +702,7 @@ def lib_list():
                         pages=n, bookmark=bm, last=e.get('last', ''), quality=q, corrections=corr, quelle=quelle,
                         pending=bool(qj.get('pending')), backups=pagexml.backups(e['folder']) if n else [],
                         unknown=None if unbekannt is None else round(100 * (1 - unbekannt)),
-                        images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*')))))
+                        images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*'))), pdfdir=pdf_target(e['folder'])))
     out.sort(key=lambda b: b['last'], reverse=True)
     return out
 
@@ -901,14 +902,71 @@ def discard(bid):
     ocr.cleanup(f)
 
 
+def pdf_target(folder):
+    """Wohin ein gesichertes PDF vorgeschlagen wird: neben den Buchordner – bei …/<Titel>/ocr/korr neben <Titel>."""
+    t = os.path.abspath(folder)
+    while os.path.basename(t).lower() in ('korr', 'ocr'):
+        t = os.path.dirname(t)
+    return os.path.dirname(t)
+
+
+def export_pdf(bid, target, progress, cancelled):
+    """Ein Buch als PDF sichern (#58): Seitenbilder, unsichtbare Textebene, Arbeitsstand als Anhang. Läuft als Auftrag.
+    Ein PDF, das dieses Programm von demselben Buch geschrieben hat, wird ersetzt – alles andere bekommt »(2)«."""
+    folder = book_folder(bid)
+    book = get_book(bid)
+    with book.lock:
+        if not book.settings.get('kennung'):
+            book.settings['kennung'] = uuid.uuid4().hex
+            book.save_settings()
+    target = target or pdf_target(folder)
+    if not os.path.isdir(target):
+        raise ValueError('kein_ordner')
+    name = re.sub(r'[\\/:*?"<>|]+', ' ', book.title).strip()[:80].rstrip(' .') or 'Buch'
+    out, n = os.path.join(target, name + '.pdf'), 1
+    while os.path.exists(out) and (pdfbuch.info(out) or {}).get('kennung') != book.settings['kennung']:
+        n += 1
+        out = os.path.join(target, '%s (%d).pdf' % (name, n))
+    r = pdfbuch.save(book, out, version(), progress, cancelled)
+    lib_touch(folder)
+    return dict(id=bid, folder=target, **r)
+
+
+def import_pdfbuch(source, title, target, progress, cancelled):
+    """Ein mit diesem Programm gesichertes PDF wieder als Buch anlegen (läuft als Auftrag im Hintergrund)."""
+    if not source or not os.path.isfile(source):
+        raise ValueError('quelle_fehlt')
+    m = pdfbuch.info(source)
+    if not m:
+        raise ValueError('kein_pdfbuch')
+    name, out = new_folder(title or m.get('titel'), source, target)
+    try:
+        r = pdfbuch.load(source, out, progress, cancelled)
+    except Exception:
+        shutil.rmtree(out, ignore_errors=True)  # nichts Halbfertiges stehen lassen
+        raise
+    e = lib_touch(out, title or r['title'] or name)
+    st = Book(out).settings  # buch.json kam mit; fehlt sie (sehr altes Buch), wird sie hier vorgeschlagen
+    try:
+        bm = json.load(open(os.path.join(out, 'lesezeichen.json'), encoding='utf-8')).get('page')
+    except (OSError, ValueError):
+        bm = None
+    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], corrections=r['corrections'],
+                saved=r['saved'], bookmark=bm, quality=None, year=st.get('year'), dics=st.get('dics'))
+
+
 def scan(path):
     """finder.scan, ergänzt um das, was nur der Server weiß: Steht der Fund schon in der Bibliothek?"""
     r = finder.scan(path)
-    known = {book_id(x['folder']) for x in lib_load()}
+    lib = lib_load()
+    known = {book_id(x['folder']) for x in lib}
+    kennungen = {pagexml.load_json(x['folder'], 'buch.json', {}).get('kennung') for x in lib} - {None}
     for f in r['found']:
         if f['kind'] == 'book':
             f['id'] = book_id(f['path'])
             f['known'] = f['id'] in known
+        elif f['kind'] == 'pdfbuch':  # dasselbe Buch liegt schon in der Bibliothek (von hier gesichert oder schon einmal eingelesen)
+            f['known'] = bool(f.get('kennung')) and f['kennung'] in kennungen
     return r
 
 
@@ -1101,7 +1159,7 @@ pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} 
 <div id="wrap"><nav>%(nav)s</nav><main>%(body)s</main></div></body></html>'''
 
 
-HELP_ORDER = ['index', 'add-book', 'pdf-import', 'transkribus', 'usage', 'install', 'install-tools']
+HELP_ORDER = ['index', 'add-book', 'pdf-import', 'transkribus', 'usage', 'pdf-sichern', 'install', 'install-tools']
 
 
 def help_pages(lang):
@@ -1255,7 +1313,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/import_pdfbuch'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -1296,6 +1354,12 @@ class H(BaseHTTPRequestHandler):
                 return self.sendjson(dict(job=start_job(add_transkribus, body.get('id'), body.get('source'), body.get('mode'))))
             if u.path == '/api/add_images':
                 return self.sendjson(dict(job=start_job(add_images, body.get('id'), body.get('source'))))
+            if u.path == '/api/export_pdf':
+                if not get_book(body.get('id') or ''):
+                    return self.sendjson(dict(error='quelle_fehlt'), 400)
+                return self.sendjson(dict(job=start_job(export_pdf, body['id'], (body.get('target') or '').strip())))
+            if u.path == '/api/import_pdfbuch':
+                return self.sendjson(dict(job=start_job(import_pdfbuch, body.get('source'), body.get('title'), body.get('target'))))
             if u.path == '/api/restore':
                 try:
                     return self.sendjson(restore(body.get('id'), body.get('name')))

@@ -5,6 +5,15 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Ein Buch als PDF sichern und auf einem anderen Rechner weiterlesen** (#58): *Als PDF sichern* (Bibliothek oder
+  Leseansicht) schreibt eine Datei mit den Seitenbildern (unverändert eingepackt), dem Text unsichtbar darüber
+  (Suchen, Kopieren, Vorlesen in jedem PDF-Reader – mit den Korrekturen) und dem ganzen Arbeitsstand als Anhang
+  `fraktur-korrektor.zip`: Seitentexte, Zeilenlage, Wortliste, Lesezeichen, Protokoll, Einstellungen. *Öffnen …*
+  erkennt ein solches PDF („gesichertes Buch“, mit Datum und Zahl der Korrekturen) und legt daraus wieder ein Buch
+  an, die Bilder verlustfrei. Ein zweites Sichern desselben Buchs ersetzt sein eigenes PDF, fremde Dateien nie.
+  Jedes Buch bekommt dafür eine feste Kennung (`buch.json`), an der ein anderer Rechner es wiedererkennt;
+  das Zusammenführen zweier Arbeitsstände ist noch offen (#66). Neues Modul `pdfbuch.py`, Hilfeseite
+  *Ein Buch als PDF sichern*.
 - **Schriftgröße des Textes** (`Strg`+`+`/`−`/`0` oder `Strg`+Mausrad über dem Text) – unabhängig vom Zoom des
   Seitenbildes (`+`/`−`/`0`), die Einstellung bleibt erhalten. **Breite Tabellen** liefen bisher rechts aus dem Fenster,
   ohne dass man hinkam: Jetzt rollt die Tabelle mit der Lesezeile seitwärts mit, von Hand mit `Umschalt`+Mausrad.

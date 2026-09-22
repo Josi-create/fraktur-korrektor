@@ -108,7 +108,7 @@ def test_rechtschreibung_je_buch(app):
     import os, json
     old = app.text('002')[1]
     app.post('/api/edit/002', dict(edits=[dict(line=1, old=old, new='Der Vater sagte, dass die Thür offen sey. BWKG und BWKG.')]))
-    assert app.get('/api/settings')[1] == dict(year=None, dics=['1901'], notizen=None)  # Bücher von früher: wie bisher
+    assert app.get('/api/settings')[1] == dict(year=None, dics=['1901'], notizen=None, kennung=None)  # Bücher von früher: wie bisher
     assert words(app.get('/api/page/002')[1]) == ['dass', 'Thür', 'sey']              # die Sigle BWKG (zweimal, Großbuchstaben) gilt
     code, r = app.post('/api/settings', dict(dics=['neu', '1901']))
     assert code == 200 and r['dics'] == ['1901', 'neu'] and words(app.get('/api/page/002')[1]) == ['Thür', 'sey']

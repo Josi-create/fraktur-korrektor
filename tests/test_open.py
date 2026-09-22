@@ -202,7 +202,7 @@ def test_vorschlag_nach_erscheinungsjahr(lib, tmp_path):
     d.save(str(tmp_path / 'neu.pdf')); d.close()
     r = wait(lib, lib.lpost('/api/import_ocr', dict(source=str(tmp_path / 'neu.pdf'), textlayer=True, target=str(tmp_path / 'ziel')))[1]['job'])['result']
     assert (r['year'], r['dics']) == (2010, ['1901', 'neu'])
-    assert lib.lget('/buch/%s/api/settings' % r['id'])[1] == dict(year=2010, dics=['1901', 'neu'], notizen=None)
+    assert lib.lget('/buch/%s/api/settings' % r['id'])[1] == dict(year=2010, dics=['1901', 'neu'], notizen=None, kennung=None)
     assert lib.lget('/buch/%s/api/page/002' % r['id'])[1]['flags'] == []   # dass, Fluss, Schifffahrt: nichts rot
     assert r['quality']['level'] == 'gruen'                               # die Ampel hängt nicht an der Rechtschreibung
 
@@ -218,8 +218,8 @@ def test_vorschlag_wird_fuer_aeltere_importe_nachgeholt(tmp_path):
     old = server.books_dir
     server.books_dir = lambda: str(home)
     try:
-        assert server.Book(str(book)).settings == dict(year=2010, dics=['1901', 'neu'], notizen=None)
+        assert server.Book(str(book)).settings == dict(year=2010, dics=['1901', 'neu'], notizen=None, kennung=None)
         assert json.load(open(book / 'buch.json', encoding='utf-8'))['year'] == 2010
-        assert server.Book(str(fremd)).settings == dict(year=None, dics=['1901'], notizen=None) and not (fremd / 'buch.json').exists()  # von Hand angelegt: bleibt
+        assert server.Book(str(fremd)).settings == dict(year=None, dics=['1901'], notizen=None, kennung=None) and not (fremd / 'buch.json').exists()  # von Hand angelegt: bleibt
     finally:
         server.books_dir = old

@@ -144,7 +144,7 @@ async function post(path, body) {
 }
 let booksdir = '', entered = false;
 // Was mit einem Buch möglich ist – in der Reihenfolge, in der es auf der Zeile steht
-const BOOKACTS = [['open', b => true], ['trans', b => true], ['images', b => b.images < b.pages],
+const BOOKACTS = [['open', b => true], ['pdf', b => true], ['trans', b => true], ['images', b => b.images < b.pages],
                   ['prep_trans', b => b.images > 0], ['prep_st', b => b.images > 0],
                   ['restore', b => (b.backups || []).length]];
 async function load() {
@@ -196,7 +196,7 @@ async function load() {
 // ---- Öffnen: Der Nutzer zeigt eine Datei oder einen Ordner, das Programm findet heraus, was es ist
 let job = null, tools = null, found = [], sel = null;
 const AUTO = location.hash.startsWith('#auto=') || location.hash.split('|').length > 2;
-const ICON = { book: '📖', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️' };
+const ICON = { book: '📖', pdfbuch: '📕', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️' };
 const usesPdf = f => f && (f.kind == 'pdf' || (f.kind == 'epub' && f.pdf));
 const pdfHasText = f => f && (f.kind == 'pdf' ? f.text : f.pdf_text);
 // EPUB + PDF: der Wortlaut kommt ohnehin aus dem EPUB – die Textebene des PDF dient nur den Zeilenpositionen, also nicht nachfragen
@@ -231,7 +231,8 @@ async function doScan() {
 }
 function details(f, first) {
   const d = [f.pages ? t('det_pages', { n: f.pages }) : '', f.mtime];
-  if (f.kind == 'book' && f.corrections) d.push('<b>' + t('det_corr', { n: f.corrections }) + '</b>');
+  if ((f.kind == 'book' || f.kind == 'pdfbuch') && f.corrections) d.push('<b>' + t('det_corr', { n: f.corrections }) + '</b>');
+  if (f.kind == 'pdfbuch') d.push(t('det_saved', { d: esc((f.saved || '').slice(0, 16)) }));
   if (f.kind == 'pdf') d.push(t(f.text ? 'det_text' : 'det_notext'));
   if (f.kind == 'transkribus') d.push(t(f.images || f.images_dir ? 'det_images' : 'det_noimages'));
   if (f.kind == 'epub') d.push(f.pdf ? t('det_pair', { f: esc(base(f.pdf)) }) : t('det_nopair'));
@@ -269,7 +270,7 @@ async function choose(n) {
 async function update() {
   const ocr = needsOcr();
   $('oScriptBox').style.display = ocr ? '' : 'none'; $('tools').style.display = ocr || (sel && sel.kind == 'pdf') ? '' : 'none';
-  $('oGo').textContent = t(!sel || sel.kind == 'book' ? 'go_open' : ocr ? 'ocr_go' : 'ocr_go_text');
+  $('oGo').textContent = t(!sel || sel.kind == 'book' ? 'go_open' : sel.kind == 'pdfbuch' ? 'go_pdfbuch' : ocr ? 'ocr_go' : 'ocr_go_text');
   if ($('tools').style.display != 'none') await showTools(ocr);
   $('oGo').disabled = !!job || (ocr && !(tools && tools.tesseract));
 }
@@ -320,6 +321,9 @@ function showDone(r) {
   if (r.warnings && r.warnings.length) h += r.warnings.map(w => '<div class="more">' + esc(t('warn_' + w)) +
     (w == 'bilder_fehlen' ? '<div style="margin-top:8px"><button type="button" id="addImgBtn" class="main">' + t('noimg_btn') + '</button></div>' : '') + '</div>').join('');
   if (r.matched != null) h += '<div class="verdict">' + t('epub_done', { m: Math.round(r.matched * 100) }) + '</div>';
+  // Aus einem gesicherten PDF: sagen, welcher Arbeitsstand mitgekommen ist
+  if (r.saved != null) h += '<div class="verdict">' + t('pb_done', { n: r.corrections, d: esc(r.saved.slice(0, 16)) }) +
+    (r.bookmark ? ' ' + t('pb_bookmark', { p: esc(r.bookmark) }) : '') + (r.images < r.pages ? '<br>' + t('pb_noimg') : '') + '</div>';
   if (q) h += '<div class="verdict"><span class="amp ' + level + '"></span><b>' + t('q_' + level) + '</b></div><small>' +
     t(fromPdf ? 'q_values_text' : 'q_values', { n: r.pages, c: q.conf, d: Math.round(q.dict * 100) }) + '</small>';
   if (r.dics) h += '<div class="more">' + t(r.year ? 'done_dics_year' : 'done_dics', { y: r.year, d: r.dics.map(d => t('dic_name_' + d)).join(' + ') }) + '</div>';
@@ -383,6 +387,7 @@ $('form').onsubmit = async e => {
   try {
     if (sel.kind == 'book') return await openBook(sel);
     const r = sel.kind == 'transkribus' ? await runJob('/api/import_transkribus', { job: true, source: sel.path, title, images: $('oImages').value.trim() })
+      : sel.kind == 'pdfbuch' ? await runJob('/api/import_pdfbuch', { source: sel.path, title })
       : sel.kind == 'epub' ? await runJob('/api/import_epub', { source: sel.path, pdf: sel.pdf, title, script, textlayer: useText() })
       : await runJob('/api/import_ocr', { source: sel.path, title, script, textlayer: useText() });
     showDone(r); load();
@@ -399,7 +404,7 @@ $('oST').onclick = async () => {
 // ---- Ein Buch weiterbearbeiten: Text aus Transkribus nachlegen, Bilder ergänzen, die anderen Programme vorbereiten.
 // Wer sein Buch schon einmal eingelesen hat, soll nicht wieder von vorn anfangen – und seine Seitenbilder nicht suchen müssen.
 let eb = null, eact = null, enext = null;
-const ACTS = { trans: ['🗂️', b => true], images: ['🖼️', b => b.images < b.pages],
+const ACTS = { pdf: ['📕', b => true], trans: ['🗂️', b => true], images: ['🖼️', b => b.images < b.pages],
                prep_trans: ['⬆️', b => b.images > 0], prep_st: ['✂️', b => b.images > 0],
                restore: ['⏪', b => (b.backups || []).length] };
 
@@ -427,6 +432,7 @@ function editAct(a) {
   eact = a; $('emsg').textContent = ''; $('eBack').style.display = ''; $('ehead').innerHTML = '<b>' + t('act_' + a) + '</b>';
   if (a == 'prep_trans' || a == 'prep_st') return editPrepare(a);
   if (a == 'restore') return editRestore();
+  if (a == 'pdf') return editPdf();
   const img = a == 'images';
   $('ebody').innerHTML = '<label class="f">' + t(img ? 'ed_imgsource' : 'ed_source') + '</label>' +
     '<div class="row"><input type="text" id="eSrc" spellcheck="false">' +
@@ -439,6 +445,15 @@ function editAct(a) {
   $('eDir').onclick = () => editChoose('folder');
   $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t(img ? 'ed_take_imgs' : 'ed_take');
   $('eSrc').focus();
+}
+function editPdf() {
+  // Das PDF kommt neben den Buchordner; wer es gleich auf einen Stick will, wählt einen anderen Ordner
+  $('ebody').innerHTML = '<div>' + t('ed_pdf_intro') + '</div><label class="f">' + t('ed_pdf_target') + '</label>' +
+    '<div class="row"><input type="text" id="eSrc" spellcheck="false"><button type="button" id="eDir">📁 ' + t('pick_folder') + '</button></div>' +
+    '<div class="hint">' + t('ed_pdf_hint') + ' ' + help('pdf-sichern', t('help')) + '</div>';
+  $('eSrc').value = eb.pdfdir || '';
+  $('eDir').onclick = () => editChoose('folder');
+  $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t('ed_pdf_go');
 }
 async function editRestore() {
   // Jede ersetzte Fassung liegt als vorher-<Datum>.zip im Buchordner – von hier aus lässt sie sich zurückholen
@@ -495,10 +510,21 @@ function editDone(h) {
 $('eform').onsubmit = async ev => {
   ev.preventDefault();
   const src = $('eSrc') ? $('eSrc').value.trim() : '';
-  if (!src) return;
+  if (!src && eact != 'pdf') return;
   const mode = document.querySelector('input[name=emode]:checked');
   try {
-    if (eact == 'images') {
+    if (eact == 'pdf') {
+      const r = await editJob('/api/export_pdf', { id: eb.id, target: src });
+      enext = eb.id;
+      editDone('<h3>✔ ' + t('ed_pdf_done', { n: r.pages, s: r.size >= 1048576 ? (r.size / 1048576).toFixed(1) + ' MB' : Math.round(r.size / 1024) + ' KB' }) + '</h3><p><code>' + esc(r.file) + '</code> ' +
+        '<a href="#" id="showPdf">' + t('btn_show_folder') + '</a> <span id="shownPdf"></span></p>' +
+        '<div class="hint">' + t('ed_pdf_inside', { n: r.corrections }) + '</div><div class="hint">' + t('ed_pdf_other') + '</div>');
+      $('showPdf').onclick = async ev => {
+        ev.preventDefault();
+        try { await post('/api/reveal', { path: r.folder }); $('shownPdf').textContent = t('shown_clip'); }
+        catch (err) { $('shownPdf').textContent = err.message; }
+      };
+    } else if (eact == 'images') {
       const r = await editJob('/api/add_images', { id: eb.id, source: src });
       enext = eb.id;
       editDone('<h3>✔ ' + t('ed_done_imgs', { n: r.added }) + '</h3><div class="hint">' + t('ed_how_' + r.how) + '</div>');
