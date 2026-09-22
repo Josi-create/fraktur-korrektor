@@ -27,7 +27,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   PDF stört darum nicht –, die Lage der Zeilen im Bild kommt mit, Satzzeichen, die die Bibliothek als eigene
   Wörter führt, hängen wieder am Wort. Das Buch trägt danach das Kennzeichen *Bibliothek*. Das Programm lädt
   weiterhin nichts aus dem Internet; die Hilfe sagt, wo man suchen kann. Geprüft am hOCR der BSB (360 Seiten,
-  alle zugeordnet); ALTO nach dem Standard, ohne echtes Beispiel.
+  alle zugeordnet) und am ALTO der SuUB Bremen (309 Seiten; dort ist auch der Trennstrich am Zeilenende ein
+  eigenes Wort und wird wieder zu »¬«).
 - **Ein Buch weiterbearbeiten, statt jedes Mal ein neues anzulegen** (#44): In der Bibliothek steht bei jedem Buch,
   was möglich ist – *Transkribus-Text einlesen*, *Seitenbilder hinzufügen*, *Für Transkribus vorbereiten*,
   *Für ScanTailor vorbereiten*. Wer sein Buch erst mit Tesseract einliest, die Seiten aufbereitet und

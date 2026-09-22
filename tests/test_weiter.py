@@ -2,6 +2,7 @@
 die anderen Programme vorbereiten. Die Seitenzuordnung ist der heikle Teil – fehlt im Export eine Seite, darf
 nicht der halbe Text neben dem falschen Bild landen."""
 import os, json, glob, struct, zipfile
+from xml.sax.saxutils import escape
 import pytest
 import ocr, pagexml
 from conftest import png
@@ -384,8 +385,10 @@ def make_alto(folder, pages):
         xml = []
         for k, z in enumerate(zeilen):
             ws = z.split()
-            strings = '<SP/>'.join('<String CONTENT="%s" HPOS="%d" VPOS="%d" WIDTH="30" HEIGHT="40"/>' % (w.rstrip('-'), 120 + 40 * i, 100 + 60 * k) for i, w in enumerate(ws))
-            if z.endswith('-'):
+            # Ein Wort, das nur aus »-« besteht, bleibt ein eigenes <String> (so liefert es die SuUB Bremen); sonst wird
+            # der Trennstrich wie bei ABBYY/Kitodo zum <HYP>
+            strings = '<SP/>'.join('<String CONTENT="%s" HPOS="%d" VPOS="%d" WIDTH="30" HEIGHT="40"/>' % (escape(w if w == '-' else w.rstrip('-'), {'"': '&quot;'}), 120 + 40 * i, 100 + 60 * k) for i, w in enumerate(ws))
+            if z.endswith('-') and ws[-1] != '-':
                 strings += '<HYP CONTENT="-"/>'
             xml.append(ALINE % dict(y0=100 + 60 * k, bl=132 + 60 * k, strings=strings))
         with open(os.path.join(folder, 'alto_%04d.xml' % n), 'w', encoding='utf-8') as f:
@@ -403,6 +406,17 @@ def test_alto_einer_bibliothek(tmp_path):
     assert zeilen[1].endswith('Zu¬') and zeilen[2].startswith('kunft')
     geo = json.load(open(os.path.join(folder, 'lines.json'), encoding='utf-8'))
     assert geo['003']['lines'][0]['bl'] == 132 and geo['003']['lines'][0]['x1'] == 880
+
+
+def test_alto_satzzeichen_als_eigene_woerter(tmp_path):
+    # SuUB Bremen: jedes Satzzeichen ein eigenes <String>, der Trennstrich ebenso (kein <HYP>), keine BASELINE.
+    # Ohne das Anhängen bleibt »44 )« Haupttext und »württembergi -« ungetrennt.
+    src = make_alto(str(tmp_path / 'alto'), [['Zur Förderung seitens der württembergi -', 'schen Regierung , die „ christliche Kolonisation " ( so Clöter ) .',
+                                              '44 ) Am 25 . Dezember 1807 .']])
+    W, H, img, lines = pagexml.parse_alto(os.path.join(src, 'alto_0001.xml'))
+    assert [d['text'] for d in lines] == ['Zur Förderung seitens der württembergi¬', 'schen Regierung, die „christliche Kolonisation" (so Clöter).',
+                                          '44) Am 25. Dezember 1807.']
+    assert [d['kind'] for d in lines] == ['body', 'body', 'fn']
 
 
 def test_bibliothekstext_ueber_den_server(lib, tmp_path):

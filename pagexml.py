@@ -115,6 +115,14 @@ def _baseline(title):
     return (float(m.group(1)), float(m.group(2))) if m else None
 
 
+def _join_punct(text):
+    """Manche Bibliotheken (BSB, SuUB Bremen) führen Satzzeichen als eigene Wörter: »Händen ,« »44 )« »„ Wort "«
+    »württembergi -« – wieder anhängen. Erst danach erkennt classify die Fußnote »44)« und hyphens den Trennstrich."""
+    text = re.sub(r' (?=[,.;:!?)\]])', '', re.sub(r'(?<=[(\[„»]) ', '', text))
+    text = re.sub(r' (?=["“«](?:[\s,.;:!?)\]]|$))', '', text)
+    return re.sub(r'(?<=[A-Za-zÄÖÜäöüß]) (?=[-=]$)', '', text)
+
+
 def _finish_lines(lines, W, H):
     """Zeilen einordnen (Kopfzeile, Fußnoten) und Trennstriche wie bei der eigenen Erkennung zu »¬« machen."""
     from ocr import hyphens  # hier, nicht oben: ocr braucht seinerseits pagexml
@@ -134,8 +142,7 @@ def parse_hocr(f):
     lines = []
     for l in p.lines:
         text = ' '.join(l['ws']) if l['ws'] else ' '.join(l['raw'].split())
-        # Manche Bibliotheken (BSB) führen Satzzeichen als eigene Wörter: »Händen ,« – wieder anhängen
-        text = re.sub(r' (?=[,.;:!?)\]])', '', re.sub(r'(?<=[(\[]) ', '', text))
+        text = _join_punct(text)
         if not text or not l['bbox']:
             continue
         x0, y0, x1, y1 = l['bbox']
@@ -163,7 +170,7 @@ def parse_alto(f):
                 ws.append(e.get('CONTENT'))
             elif e.tag == q('HYP'):  # Trennstrich am Zeilenende, damit hyphens() ihn zu »¬« macht
                 ws.append((ws.pop() if ws else '') + (e.get('CONTENT') or '-'))
-        text = ' '.join(ws).strip()
+        text = _join_punct(' '.join(ws).strip())
         try:
             x0, y0 = int(float(l.get('HPOS'))), int(float(l.get('VPOS')))
             x1, y1 = x0 + int(float(l.get('WIDTH'))), y0 + int(float(l.get('HEIGHT')))
