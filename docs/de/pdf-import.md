@@ -110,6 +110,16 @@ stehen Eingabe- und Ausgabeordner fest, und ScanTailor startet gleich mit. Für 
    Wollen Sie den Text lieber von [Transkribus](transkribus.md) lesen lassen, laden Sie dort die Dateien aus
    `…/scantailor/out` bzw. `…/aufbereitet` hoch – Transkribus trennt Doppelseiten nämlich nicht.
 
-## Grenzen
+## Zweispaltiger Satz
 
-- Mehrspaltiger Satz (Zeitungen, Lexika) wird nicht spaltenweise gelesen.
+Zeitungen und Lexika sind meist in zwei Spalten gesetzt. Das Programm erkennt das an der Lage der Zeilen und liest
+spaltenweise: erst die linke Spalte von oben nach unten, dann die rechte. Eine Überschrift über beide Spalten
+kommt davor; steht unter den Spalten wieder Text über die ganze Breite, folgt er danach. Kurze Fußnoten, die zu
+zweit nebeneinanderstehen, bleiben zeilenweise – so sind sie durchnummeriert.
+
+Grenzen: Drei und mehr Spalten, Tabellen und Verzeichnisse mit Seitenzahlen am rechten Rand werden weiter Zeile
+für Zeile gelesen; im Zweifel ändert das Programm die Reihenfolge lieber nicht. Hat Tesseract zwei Spalten zu einer
+Zeile zusammengezogen, kann das Programm sie nicht mehr trennen. Stimmt die Reihenfolge einer Seite nicht, gibt es
+in der Leseansicht keinen Griff, um Zeilen zu verschieben – lassen Sie die Seite dann von
+[Transkribus](transkribus.md) lesen: Dort lässt sich jede Spalte als eigener Bereich anlegen, und der Export
+ersetzt den Text der Seite.

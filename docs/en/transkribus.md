@@ -14,6 +14,10 @@ recognition in historical documents. For Fraktur prints it usually gives much be
   For a book you buy additional credits or spread the work over several months.
   Current prices: <https://www.transkribus.org/plans>.
 - The web application (in the browser) is sufficient for everything described here.
+- **Two-column layouts** (newspapers, encyclopaedias): the layout analysis of Transkribus usually creates a
+  separate text region per column; the program then reads column by column – first the left one from top to
+  bottom, then the right one. If the columns come out interleaved, check the regions of the page in Transkribus
+  (one region per column, no line running across both columns) and export again.
 
 ## Step by step
 

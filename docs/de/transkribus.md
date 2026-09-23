@@ -14,6 +14,10 @@ Tesseract – vor allem bei mäßigen Vorlagen. Der Fraktur-Korrektor ist für g
   nicht für ein ganzes Buch. Für ein Buch kauft man Credits nach oder verteilt die Arbeit auf mehrere Monate.
   Aktuelle Preise: <https://www.transkribus.org/plans>.
 - Es gibt die Web-Anwendung (im Browser) – sie genügt für alles hier Beschriebene.
+- **Zweispaltiger Satz** (Zeitungen, Lexika): Die Layoutanalyse von Transkribus legt in der Regel je Spalte einen
+  eigenen Textbereich an; das Programm liest dann spaltenweise – erst links von oben nach unten, dann rechts.
+  Sind die Spalten im Ergebnis verschränkt, prüfen Sie in Transkribus die Bereiche der Seite (jede Spalte ein
+  Bereich, keine Zeile über beide Spalten hinweg) und exportieren Sie erneut.
 
 ## Schritt für Schritt
 

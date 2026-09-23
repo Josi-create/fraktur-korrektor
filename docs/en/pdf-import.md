@@ -110,6 +110,15 @@ folder are then settled, and ScanTailor starts right away. For a PDF that has no
    If you would rather have [Transkribus](transkribus.md) read the text, upload the files from
    `…/scantailor/out` or `…/aufbereitet` there – Transkribus does not split double pages.
 
-## Limitations
+## Two-column layouts
 
-- Multi-column layouts (newspapers, encyclopaedias) are not read column by column.
+Newspapers and encyclopaedias are usually set in two columns. The program recognises this from the position of
+the lines and reads column by column: first the left column from top to bottom, then the right one. A heading
+across both columns comes first; text across the full width below the columns follows afterwards. Short footnotes
+that stand side by side stay line by line – that is how they are numbered.
+
+Limits: three or more columns, tables and lists with page numbers at the right margin are still read line by line;
+when in doubt, the program leaves the order alone. Where Tesseract has merged two columns into one line, the
+program cannot separate them any more. If the order of a page is wrong, the reading view has no handle for moving
+lines – have the page read by [Transkribus](transkribus.md) instead: there each column can be marked as its own
+region, and the export replaces the text of the page.

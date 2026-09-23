@@ -5,6 +5,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Zweispaltiger Satz** (#37): Zeitungen und Lexika werden spaltenweise gelesen – linke Spalte von oben nach
+  unten, dann die rechte – statt Zeile für Zeile verschränkt. `pagexml.columns` erkennt die Spalten an den
+  Zeilenkästen (eine durchgehende Lücke in der Mitte, beide Seiten nebeneinander und breit), darum gilt es für
+  alle Wege: Tesseract, PDF-Textebene, Transkribus, hOCR und ALTO. Eine Zeile über die Seitenmitte (Überschrift)
+  trennt Abschnitte, die je für sich geprüft werden. Nebeneinanderstehende kurze Fußnoten bleiben zeilenweise,
+  einspaltige Seiten unverändert; drei Spalten, Tabellen und Verzeichnisse mit Seitenzahlen rechts bleiben Zeile
+  für Zeile. Hilfe unter *PDF einlesen* und *Transkribus*.
 - **Häufige Fragen und Fehlerbehebung** (#26): neue Hilfeseite `faq` in beiden Sprachen – Firewall-Nachfrage, belegter
   Port, SmartScreen und Gatekeeper, fehlendes Wörterbuch, verlorene Bildzuordnung, 409-Konflikt nach dem Bearbeiten in
   einem Editor, orange Zeilen nach dem Zusammenführen und die übrigen Fehlermeldungen des Programms, je mit dem nächsten

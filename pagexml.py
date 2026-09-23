@@ -33,7 +33,82 @@ def classify(lines, scale=1.0):
             if not nxt or statistics.median(nxt) < main_gap * 0.9:
                 for x in body[i:]: x['kind'] = 'fn'
                 break
+    # Zweispaltiger Haupttext wird spaltenweise gelesen. Erst nach den Fußnoten: Kurze Fußnoten stehen oft zu
+    # zweit nebeneinander und sind dann zeilenweise durchnummeriert (1) links, 2) rechts) – die bleiben, wie sie sind.
+    lines[:] = [d for d in lines if d['kind'] == 'head'] + columns([d for d in lines if d['kind'] == 'body'], scale) \
+        + [d for d in lines if d['kind'] == 'fn']
     return lines
+
+
+def columns(body, scale=1.0):
+    """Zweispaltiger Satz (Zeitungen, Lexika): die Zeilen des Haupttexts spaltenweise ordnen – linke Spalte von oben
+    nach unten, dann die rechte. Erwartet die Zeilen zeilenweise geordnet (wie classify sie sortiert) und liefert die
+    neue Reihenfolge; ohne Spalten dieselbe Liste unverändert.
+
+    Erkannt wird an den Zeilenkästen, nicht an Tesseract-Blöcken oder Transkribus-Regionen: Die Kästen gibt es auf
+    jedem Weg (PAGE-XML, hOCR, ALTO, Tesseract, PDF-Textebene, neu zugeordnete lines.json), und wo die Blöcke echte
+    Spalten sind, liegt zwischen den Kästen ohnehin eine Lücke. Eine Zeile, die die Mitte des Satzspiegels kreuzt
+    (Überschrift über beide Spalten, auch eine zentrierte), gehört keiner Spalte an und trennt Abschnitte, die je für
+    sich geprüft werden. Im Zweifel bleibt die alte Ordnung – einspaltige Seiten dürfen sich nicht ändern."""
+    if len(body) < 4:
+        return body
+    X0, X1 = min(d['x0'] for d in body), max(_x1(d) for d in body)
+    W, cx = X1 - X0, (X0 + X1) / 2
+    if W <= 0:
+        return body
+    out, run = [], []
+    for d in body + [None]:
+        if d is None or d['x0'] < cx < _x1(d):
+            out += _split_columns(run, W, scale)
+            run = []
+            if d is not None:
+                out.append(d)
+        else:
+            run.append(d)
+    return out
+
+
+def _x1(d):
+    return d.get('x1', d['x0'])
+
+
+def _gap(lines, lo, hi, min_gap):
+    """Die breiteste senkrechte Lücke zwischen lo und hi, die keine Zeile schneidet und beiderseits mindestens zwei
+    Zeilen hat: (links, rechts) oder None."""
+    best, end = None, None
+    for d in sorted(lines, key=lambda d: d['x0']):
+        if end is not None and d['x0'] - end >= min_gap and lo <= end and d['x0'] <= hi:
+            left = sum(1 for x in lines if _x1(x) <= end)
+            if left >= 2 and len(lines) - left >= 2 and (best is None or d['x0'] - end > best[1] - best[0]):
+                best = (end, d['x0'])
+        end = _x1(d) if end is None else max(end, _x1(d))
+    return best
+
+
+def _split_columns(run, W, scale):
+    """Ein Abschnitt aus lauter schmalen Zeilen: zwei Spalten, wenn eine Lücke im mittleren Bereich durchgeht, beide
+    Seiten nebeneinander stehen (die Grundlinien überlappen sich) und beide Seiten breit sind – ein Inhaltsverzeichnis
+    mit Seitenzahlen rechts ist keine Spalte (die Zahlen sind schmal), die Unterschrift unter einem Gedicht auch nicht
+    (eine Zeile, nicht daneben). Drei Spalten bleiben, wie sie sind: Was davon eine Tabelle ist, weiß niemand."""
+    if len(run) < 4:
+        return run
+    lo, hi = min(d['x0'] for d in run), max(_x1(d) for d in run)
+    w = hi - lo
+    gap = _gap(run, lo + 0.25 * w, hi - 0.25 * w, 15 * scale)
+    if not gap:
+        return run
+    left = [d for d in run if _x1(d) <= gap[0]]
+    right = [d for d in run if d['x0'] >= gap[1]]
+    for side in (left, right):
+        if statistics.median(_x1(d) - d['x0'] for d in side) < 0.3 * W:
+            return run
+        if _gap(side, min(d['x0'] for d in side), max(_x1(d) for d in side), 15 * scale):
+            return run  # noch eine Lücke: drei Spalten oder eine Tabelle
+    bl = lambda side: (min(d['bl'] for d in side), max(d['bl'] for d in side))
+    (l0, l1), (r0, r1) = bl(left), bl(right)
+    if min(l1 - l0, r1 - r0) <= 0 or min(l1, r1) - max(l0, r0) < 0.5 * min(l1 - l0, r1 - r0):
+        return run  # nicht nebeneinander, sondern untereinander
+    return left + right
 
 
 def parse_page(f):
