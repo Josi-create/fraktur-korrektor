@@ -24,11 +24,20 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Bilddatei oder eine PDF-Seite und erkennt nur diese Seite neu (Tesseract, ohne Tesseract die Textebene des PDF).
   Text, Zeilenlage und Bild der Seite kommen vorher in `vorher-<Datum>.zip`; *Frühere Fassung* holt auch das Bild
   zurück. Die Sicherungen enthalten jetzt außerdem Wortliste und Lesezeichen.
+- **Zwei Arbeitsstände zusammenführen** (#66): Wurde seit dem Sichern an beiden Rechnern korrigiert, empfiehlt
+  *Öffnen …* **Zusammenführen**. `merge.py` spielt die Einträge aus dem `korrekturen.log` des PDF, die hier fehlen,
+  auf das vorhandene Buch nach – Korrekturen, Serien, geteilte und verbundene Zeilen (samt `lines.json`),
+  Fußnotenstriche, neu erkannte Seiten –, vereinigt die Wortlisten und nimmt das weiter hinten liegende Lesezeichen;
+  Seitenbilder nur für Seiten ohne Bild. Nachgespielte Einträge kommen wortgleich ins Protokoll, darum reicht beim
+  nächsten Wechsel in die andere Richtung wieder das einfache Aktualisieren (der Vergleich der Protokolle ist jetzt
+  mengenweise statt als Präfix). Wurde dieselbe Zeile an beiden Stellen anders berichtigt, bleibt die hiesige
+  Fassung und die Zeile kommt nach `konflikte.json`: In der Leseansicht ist sie orange umrandet, `Z` springt hin und
+  zeigt beide Fassungen (`1` behalten, `2` übernehmen). Vorher wird der Stand wie beim Aktualisieren gesichert; der
+  Notizordner eines Rechners überlebt das Aktualisieren jetzt.
 - **Buch aus dem gesicherten PDF aktualisieren** (#66, einfacher Fall): Liegt dasselbe Buch schon in der Bibliothek und
-  ist hier seit dem Sichern nichts geschehen (das Protokoll des PDF beginnt mit dem hiesigen), empfiehlt *Öffnen …*
-  **Vorhandenes Buch aktualisieren** statt einer Kopie „(2)“; die bisherige Fassung wird gesichert. Wurde an beiden
-  Stellen korrigiert, sagt das Programm, wie viele Änderungen auf jeder Seite stehen, und legt wie bisher ein zweites
-  Buch an – das Zusammenführen bleibt offen.
+  ist hier seit dem Sichern nichts geschehen (alles, was hier im Protokoll steht, steht auch im PDF), empfiehlt
+  *Öffnen …* **Vorhandenes Buch aktualisieren** statt einer Kopie „(2)“; die bisherige Fassung wird gesichert. Wurde
+  an beiden Stellen korrigiert, wird zusammengeführt (siehe oben).
 - **Getrennte Wörter über die Seitengrenze** (`Ge¬` | `# 23` | `walt`) werden als Ganzes geprüft, Kopfzeile und Fußnoten
   dazwischen stören nicht. Ist das Wort unbekannt, sind beide Hälften rot, und der Hinweis nennt die andere Seite.
 - **Erste Schritte beim ersten Start** (#19): Die leere Bibliothek zeigt, ob Wörterbuch, Tesseract und ScanTailor da

@@ -50,10 +50,24 @@ feste Kennung, die im PDF mitreist), und sieht nach, ob hier seit dem Sichern et
   **Vorhandenes Buch aktualisieren**. Das Buch bekommt Text, Seitenbilder, Wortliste, Lesezeichen und Protokoll
   aus dem PDF; die bisherige Fassung wird vorher gesichert (`vorher-<Datum>.zip`, zurückzuholen über **Frühere
   Fassung**). Wer lieber ein zweites Buch möchte, wählt das daneben.
-- **An beiden Stellen weitergearbeitet** – hier wie dort neue Korrekturen: Das kann das Programm noch nicht
-  zusammenführen. Es sagt, wie viele Änderungen auf jeder Seite stehen, und legt das PDF als zweites Buch an;
-  nichts geht verloren. Am besten arbeitet man jeweils an einer Stelle weiter, sichert dort und liest das PDF am
-  anderen Rechner ein, bevor man dort etwas ändert.
+- **An beiden Stellen weitergearbeitet** – hier wie dort neue Korrekturen: Dann lautet die Empfehlung
+  **Zusammenführen**. Das Programm spielt die Änderungen aus dem PDF auf das vorhandene Buch nach, Zeile für Zeile –
+  Korrekturen, geteilte und verbundene Zeilen, Fußnotenstriche –, vereinigt die Wortlisten und übernimmt das
+  Lesezeichen, das weiter hinten liegt. Ihre hiesigen Korrekturen bleiben. Seitenbilder kommen nur für Seiten, die
+  hier keines haben. Auch hier wird die bisherige Fassung vorher gesichert. Am Ende sagt das Programm, wie viele
+  Änderungen es übernommen hat und wie viele Zeilen Sie ansehen müssen.
+
+  **Zeilen ansehen:** Wurde dieselbe Zeile an beiden Stellen anders berichtigt, entscheidet das Programm nicht
+  selbst. Die hiesige Fassung bleibt stehen, die Zeile ist in der Leseansicht orange umrandet, und oben in der
+  Kopfleiste steht, wie viele solcher Zeilen es gibt. Die Taste `Z` springt zur nächsten und zeigt beide Fassungen:
+  `1` behält die hiesige, `2` übernimmt die vom anderen Rechner, `Esc` verschiebt die Entscheidung. Wurde eine
+  Zeile dort geteilt oder verbunden, hier aber inzwischen anders berichtigt, zeigt das Programm, was dort geschah,
+  und Sie erledigen es bei Bedarf mit den gewohnten Tasten.
+
+  Zusammengeführt werden die Änderungen, die das Programm selbst festgehalten hat (Korrekturprotokoll). Was in einem
+  anderen Editor direkt in den Textdateien geändert wurde, kennt es nicht: Beim Aktualisieren ersetzt der Stand aus
+  dem PDF auch das (es liegt dann nur noch in der Sicherung), beim Zusammenführen bleibt es hier erhalten, kommt aber
+  vom anderen Rechner nicht mit.
 
 ## Was Sie wissen sollten
 
@@ -61,4 +75,6 @@ feste Kennung, die im PDF mitreist), und sieht nach, ob hier seit dem Sichern et
 - Der unsichtbare Text sitzt **zeilengenau**: Beim Suchen springt der Reader zur richtigen Zeile, die Markierung
   beim Ziehen mit der Maus trifft aber nicht jedes Wort genau.
 - Ein Buch ohne Seitenbilder (etwa aus einem EPUB) bekommt Seiten mit sichtbarem Text.
-- **Zusammenführen** zweier Arbeitsstände, die beide neue Korrekturen enthalten, gibt es noch nicht – siehe oben.
+- Nach dem Zusammenführen enthält das Korrekturprotokoll auch die Einträge vom anderen Rechner. Sichern Sie danach
+  wieder als PDF und lesen es dort ein, genügt dort das einfache Aktualisieren – so pendelt ein Buch beliebig oft
+  zwischen zwei Rechnern.

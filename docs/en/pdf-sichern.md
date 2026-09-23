@@ -50,9 +50,22 @@ fixed identifier that travels in the PDF) and checks whether anything has happen
   **Update the existing book**. The book receives text, page images, word list, bookmark and log from the PDF;
   the present version is backed up first (`vorher-<date>.zip`, brought back via **Earlier version**). If you would
   rather have a second book, choose that next to it.
-- **Work continued in both places** – new corrections here as well as there: the program cannot merge those yet. It
-  says how many changes are on each side and creates the PDF as a second book; nothing is lost. Best carry on in one
-  place at a time, save there, and read the PDF in on the other computer before changing anything there.
+- **Work continued in both places** – new corrections here as well as there: then the recommendation is **Merge**.
+  The program replays the changes from the PDF onto the existing book, line by line – corrections, split and joined
+  lines, footnote rules –, unites the word lists and takes the bookmark that lies further on. Your corrections made
+  here remain. Page images are taken only for pages that have none here. Here too, the present version is backed up
+  first. At the end the program says how many changes it took over and how many lines need your attention.
+
+  **Reviewing lines:** where the same line was corrected differently in both places, the program does not decide by
+  itself. The version from here stays, the line is outlined in orange in the reading view, and the header says how
+  many such lines there are. The `Z` key jumps to the next one and shows both versions: `1` keeps this one, `2` takes
+  the one from the other computer, `Esc` postpones the decision. If a line was split or joined there but has since
+  been corrected differently here, the program shows what happened there and you do it yourself with the usual keys
+  if needed.
+
+  Merged are the changes the program itself recorded (the correction log). Changes made directly in the text files
+  with another editor are unknown to it: an update replaces them with the state from the PDF (they then survive only
+  in the backup); a merge keeps those made here but does not bring along those from the other computer.
 
 ## Good to know
 
@@ -60,4 +73,5 @@ fixed identifier that travels in the PDF) and checks whether anything has happen
 - The invisible text is placed **per line**: when searching, the reader jumps to the right line, but a selection
   dragged with the mouse will not hit every word exactly.
 - A book without page images (from an EPUB, say) gets pages with visible text.
-- **Merging** two states that both contain new corrections does not exist yet – see above.
+- After merging, the correction log also contains the entries from the other computer. If you then save as PDF again
+  and read it in there, a simple update suffices there – so a book can travel back and forth as often as you like.

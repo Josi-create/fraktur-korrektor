@@ -234,7 +234,7 @@ function bindToolLinks(box, after) {
 let job = null, tools = null, found = [], sel = null;
 // Ein gesichertes PDF, dessen Buch schon in der Bibliothek liegt: die Kennung des Buchs, wenn es aktualisiert werden soll (#66)
 const updChoice = () => { const r = document.querySelector('input[name=upd]:checked'); return sel && sel.kind == 'pdfbuch' && sel.book && r ? r.value : ''; };
-const updInto = () => updChoice() == 'update' ? sel.book.id : null;
+const updInto = () => ['update', 'merge'].includes(updChoice()) ? sel.book.id : null;
 const AUTO = location.hash.startsWith('#auto=') || location.hash.split('|').length > 2;
 const AUTOPREP = location.hash.startsWith('#scans=');  // Selbsttest: gleich zur Vorschau »Scans vorbereiten«
 const ICON = { book: '📖', pdfbuch: '📕', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️' };
@@ -307,13 +307,13 @@ async function choose(n) {
   $('oImgBox').style.display = k == 'transkribus' && !sel.images ? '' : 'none'; $('oImages').value = sel.images_dir || '';
   $('pair').style.display = k == 'epub' ? '' : 'none';
   $('pair').innerHTML = k == 'epub' ? (sel.pdf ? t('pair_yes', { f: esc(base(sel.pdf)) }) : t('pair_no')) : '';
-  // Dasselbe Buch liegt schon hier: aktualisieren, wenn hier seit dem Sichern nichts geschah – sonst wird es ein zweites Buch
-  // Vier Fälle: nur im PDF Neues → aktualisieren; nichts Neues oder nur hier Neues → das vorhandene Buch öffnen;
-  // an beiden Stellen Neues → zweites Buch, mehr geht noch nicht
+  // Dasselbe Buch liegt schon hier: aktualisieren, wenn hier seit dem Sichern nichts geschah; wurde an beiden Stellen
+  // weitergearbeitet, die Änderungen aus dem PDF nachspielen (#66). Vier Fälle: nur im PDF Neues → aktualisieren;
+  // nichts Neues oder nur hier Neues → das vorhandene Buch öffnen; an beiden Stellen Neues → zusammenführen
   const upd = k == 'pdfbuch' && sel.book ? sel.update : null, conflict = upd && upd.here > 0 && upd.there > 0;
   const radio = (v, text, on) => '<label><input type="radio" name="upd" value="' + v + '"' + (on ? ' checked' : '') + '> ' + text + '</label>';
-  $('upd').style.display = upd ? '' : 'none'; $('upd').className = conflict ? 'warn' : '';
-  $('upd').innerHTML = !upd ? '' : conflict ? t('upd_conflict', { t: esc(sel.book.title), a: upd.here, b: upd.there })
+  $('upd').style.display = upd ? '' : 'none'; $('upd').className = '';
+  $('upd').innerHTML = !upd ? '' : conflict ? t('upd_merge', { t: esc(sel.book.title), a: upd.here, b: upd.there }) + radio('merge', t('upd_merge_yes'), true) + radio('', t('upd_new'))
     : upd.there > 0 ? t('upd_safe', { t: esc(sel.book.title), n: upd.there }) + radio('update', t('upd_yes'), true) + radio('', t('upd_new'))
     : t(upd.here > 0 ? 'upd_ahead' : 'upd_same', { t: esc(sel.book.title), n: upd.here }) + radio('open', t('upd_open'), true) + radio('', t('upd_new'));
   for (const el of $('upd').querySelectorAll('input')) el.onchange = update;
@@ -329,7 +329,7 @@ async function update() {
   $('oScriptBox').style.display = ocr ? '' : 'none'; $('tools').style.display = ocr || (sel && sel.kind == 'pdf') ? '' : 'none';
   const plain = !sel || sel.kind == 'book' || updChoice();  // kein neues Buch: kein Titel, kein Zielordner
   $('oTitleBox').style.display = plain ? 'none' : ''; $('target').textContent = plain ? '' : t('imp_target', { dir: booksdir });
-  $('oGo').textContent = t(!sel || sel.kind == 'book' || updChoice() == 'open' ? 'go_open' : updInto() ? 'go_update' : sel.kind == 'pdfbuch' ? 'go_pdfbuch' : ocr ? 'ocr_go' : 'ocr_go_text');
+  $('oGo').textContent = t(!sel || sel.kind == 'book' || updChoice() == 'open' ? 'go_open' : updChoice() == 'merge' ? 'go_merge' : updInto() ? 'go_update' : sel.kind == 'pdfbuch' ? 'go_pdfbuch' : ocr ? 'ocr_go' : 'ocr_go_text');
   if ($('tools').style.display != 'none') await showTools(ocr);
   $('oGo').disabled = !!job || (ocr && !(tools && tools.tesseract));
 }
@@ -372,23 +372,27 @@ function showDone(r) {
   const q = r.quality, fromPdf = q && q.conf == null, level = q ? q.level : 'gruen';
   // neu erkennen geht nur, wenn der Text aus der Textebene eines PDF stammt und Tesseract da ist
   const canRedo = fromPdf && r.matched == null && sel && sel.kind == 'pdf' && tools && tools.tesseract;
-  let h = '<h3>✔ ' + t(r.updated ? 'upd_done' : 'done_title', { n: r.pages, t: esc(r.title || '') }) + '</h3>';
+  let h = '<h3>✔ ' + t(r.merged ? 'merge_done' : r.updated ? 'upd_done' : 'done_title', { n: r.pages, t: esc(r.title || '') }) + '</h3>';
+  // Zusammengeführt: sagen, was übernommen wurde und was der Nutzer noch ansehen muss (Taste K in der Leseansicht)
+  if (r.merged) h += '<div class="verdict">' + t(r.merged.applied == 1 ? 'merge_detail_1' : 'merge_detail_n', { a: r.merged.applied, s: r.merged.already }) +
+    (r.merged.whitelist ? ' ' + t(r.merged.whitelist == 1 ? 'merge_words_1' : 'merge_words_n', { w: r.merged.whitelist }) : '') +
+    (r.conflicts ? '<br><b>' + t(r.conflicts == 1 ? 'merge_conflicts_1' : 'merge_conflicts_n', { k: r.conflicts }) + '</b> ' + t('merge_conflicts_how') : '<br>' + t('merge_clean')) + '</div>';
   if (r.updated && r.backup) h += '<div class="more">' + t('ed_backup', { f: esc(r.backup) }) + ' ' + t('upd_restore') + '</div>';
   if (r.warnings && r.warnings.length) h += r.warnings.map(w => '<div class="more">' + esc(t('warn_' + w)) +
     (w == 'bilder_fehlen' ? '<div style="margin-top:8px"><button type="button" id="addImgBtn" class="main">' + t('noimg_btn') + '</button></div>' : '') + '</div>').join('');
   if (r.matched != null) h += '<div class="verdict">' + t('epub_done', { m: Math.round(r.matched * 100) }) + '</div>';
   // Aus einem gesicherten PDF: sagen, welcher Arbeitsstand mitgekommen ist
-  if (r.saved != null) h += '<div class="verdict">' + t('pb_done', { n: r.corrections, d: esc(r.saved.slice(0, 16)) }) +
+  if (r.saved != null && !r.merged) h += '<div class="verdict">' + t('pb_done', { n: r.corrections, d: esc(r.saved.slice(0, 16)) }) +
     (r.bookmark ? ' ' + t('pb_bookmark', { p: esc(r.bookmark) }) : '') + (r.images < r.pages ? '<br>' + t('pb_noimg') : '') + '</div>';
   if (q) h += '<div class="verdict"><span class="amp ' + level + '"></span><b>' + t('q_' + level) + '</b></div><small>' +
     t(fromPdf ? 'q_values_text' : 'q_values', { n: r.pages, c: q.conf, d: Math.round(q.dict * 100) }) + '</small>';
   if (r.dics) h += '<div class="more">' + t(r.year ? 'done_dics_year' : 'done_dics', { y: r.year, d: r.dics.map(d => t('dic_name_' + d)).join(' + ') }) + '</div>';
   // Nach einem Transkribus-Import wäre »nimm Transkribus« ein schlechter Rat – da hilft nur eine bessere Vorlage
   const fromTk = sel && sel.kind == 'transkribus';
-  const rec = r.matched != null || !q || level == 'gruen' ? 'rec_gruen'
+  const rec = r.conflicts ? 'rec_konf' : r.matched != null || !q || level == 'gruen' ? 'rec_gruen'
     : fromTk ? 'rec_' + level + '_tk' : 'rec_' + level + (canRedo ? '_redo' : fromPdf ? '_pdf' : '_ocr');
-  h += '<div class="rec ' + (rec == 'rec_gruen' ? '' : level) + '"><b>' + t('rec') + '</b>' + t(rec) +
-    (rec != 'rec_gruen' && !canRedo && !fromTk ? ' ' + help('transkribus', t('q_advice_link')) : '') +
+  h += '<div class="rec ' + (rec == 'rec_gruen' || rec == 'rec_konf' ? '' : level) + '"><b>' + t('rec') + '</b>' + t(rec) +
+    (rec != 'rec_gruen' && rec != 'rec_konf' && !canRedo && !fromTk ? ' ' + help('transkribus', t('q_advice_link')) : '') +
     (fromTk && level != 'gruen' ? ' ' + help('pdf-import', t('q_ends_link')) : '') + '</div>';
   if (q && r.matched == null) {
     if (q.ends.length * 4 >= r.pages) h += '<div class="more">' + t('q_ends', { n: q.ends.length }) + ' ' + help('pdf-import', t('q_ends_link')) + '</div>';
@@ -445,7 +449,7 @@ $('form').onsubmit = async e => {
     if (sel.kind == 'book') return await openBook(sel);
     if (updChoice() == 'open') return location.href = '/buch/' + sel.book.id;  // das PDF bringt nichts Neues: das vorhandene Buch
     const r = sel.kind == 'transkribus' ? await runJob('/api/import_transkribus', { job: true, source: sel.path, title, images: $('oImages').value.trim() })
-      : sel.kind == 'pdfbuch' ? await runJob('/api/import_pdfbuch', { source: sel.path, title, into: updInto() })
+      : sel.kind == 'pdfbuch' ? await runJob('/api/import_pdfbuch', { source: sel.path, title, into: updInto(), merge: updChoice() == 'merge' })
       : sel.kind == 'epub' ? await runJob('/api/import_epub', { source: sel.path, pdf: sel.pdf, title, script, textlayer: useText() })
       : await runJob('/api/import_ocr', { source: sel.path, title, script, textlayer: useText() });
     showDone(r); load();

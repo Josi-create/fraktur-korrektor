@@ -6,7 +6,7 @@ Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
 import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse, collections
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-import korrlib, pagexml, ocr, epub, finder, pdfbuch, scans
+import korrlib, pagexml, ocr, epub, finder, pdfbuch, scans, merge
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
 
 HERE = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))  # gepackt liegen dict/, docs/ und die HTML-Dateien im Bundle
@@ -269,10 +269,12 @@ class Book:
                 out.append(c)
         return out[:6]
 
-    def klog(self, kind, pg, line, old, new):
-        """Korrekturprotokoll: Zeit, Art (edit | serie:ID | undo:ID), Seite, Zeile (1-basiert), alte Zeile, neue Zeile."""
+    def klog(self, kind, pg, line, old, new, when=None):
+        """Korrekturprotokoll: Zeit, Art (edit | serie:ID | undo:ID | teilen | verbinden | fnsep | seite | whitelist+/-),
+        Seite, Zeile (1-basiert), alte Zeile, neue Zeile. when: die Zeit eines nachgespielten Eintrags vom anderen
+        Rechner (merge.py) – der Eintrag wird dann wortgleich zu dem im PDF."""
         with open(self.klogpath, 'a', encoding='utf-8') as f:
-            f.write('\t'.join([time.strftime('%Y-%m-%d %H:%M:%S'), kind, pg, str(line + 1), old, new]) + '\n')
+            f.write('\t'.join([when or time.strftime('%Y-%m-%d %H:%M:%S'), kind, pg, str(line + 1), old, new]) + '\n')
 
     def write_page(self, pg, lines):
         write_atomic(os.path.join(self.folder, pg + '.txt'), '\n'.join(lines) + '\n')
@@ -445,7 +447,32 @@ class Book:
             self.refresh()
             lines = self.pages[pg]
             # size: damit der Reader die Nachbarseiten schon richtig platziert, bevor ihre Bilder geladen sind
-            return dict(page=pg, lines=lines, geo=self.geo_lines(pg, lines), flags=self.flags(pg), img=self.img_url(pg), size=self.img_size(pg))
+            return dict(page=pg, lines=lines, geo=self.geo_lines(pg, lines), flags=self.flags(pg), img=self.img_url(pg), size=self.img_size(pg),
+                        conflicts=self.conflicts(pg))
+
+    def conflicts(self, pg=None):
+        """Zeilen, an denen das Zusammenführen zweier Arbeitsstände (#66) nicht entscheiden konnte – bis der Nutzer sie
+        angesehen hat. Wurde die Zeile inzwischen verschoben (geteilt, verbunden), findet ihr Wortlaut sie wieder."""
+        out = []
+        for k in merge.load_conflicts(self.folder):
+            if pg and k.get('page') != pg:
+                continue
+            lines = self.pages.get(k.get('page'), [])
+            n = k.get('line', 0)
+            if not (0 <= n < len(lines) and lines[n] == k.get('hier')) and k.get('hier') in lines:
+                k = dict(k, line=lines.index(k['hier']))
+            out.append(k)
+        return out
+
+    def resolve_conflict(self, pg, n, action, old, dort):
+        """Der Nutzer hat entschieden: 'take' setzt die Fassung vom anderen Rechner ein (nur wenn die Zeile noch so
+        aussieht wie im Browser), 'done' lässt die hiesige stehen; beides trägt den Konflikt aus."""
+        with self.lock:
+            self.refresh()
+            if action == 'take' and not self.edit(pg, [dict(line=n, old=old, new=dort)]):
+                return None
+            merge.resolve(self.folder, [k for k in self.conflicts(pg) if k['line'] == n and (dort is None or k.get('dort') == dort)])
+            return self.page_data(pg)
 
     def overview(self):
         with self.lock:
@@ -585,7 +612,7 @@ class Book:
             self.refresh()
         return dict(id=sid, done=done, skipped=skipped)
 
-    def fnsep(self, pg, i, oldline):
+    def fnsep(self, pg, i, oldline, when=None):
         """Fußnotentrenner '---' vor die angegebene Zeile setzen/verschieben; steht er schon dort, entfernen."""
         with self.lock:
             self.refresh()
@@ -603,10 +630,10 @@ class Book:
             else:
                 act = 'entfernt'
             self.write_page(pg, lines)
-            self.klog('fnsep', pg, i, act, lines[i])
+            self.klog('fnsep', pg, i, act, lines[i], when=when)
             return dict(line=i, action=act, data=self.page_data(pg))
 
-    def edit(self, pg, edits):
+    def edit(self, pg, edits, kind='edit', when=None):
         with self.lock:
             self.refresh()
             lines = list(self.pages[pg])
@@ -618,7 +645,7 @@ class Book:
                 lines[e['line']] = e['new']
             self.write_page(pg, lines)
             for e in edits:
-                self.klog('edit', pg, e['line'], e['old'], e['new'])
+                self.klog(kind, pg, e['line'], e['old'], e['new'], when=when)
             return self.page_data(pg)
 
     def save_geo(self):
@@ -634,7 +661,7 @@ class Book:
             cols, head = korrlib.table_shape(lines[a:b + 1])
             lines[a:b + 1] = korrlib.make_table(lines[a:b + 1], cols, head)
 
-    def split_line(self, pg, n, old, text, pos):
+    def split_line(self, pg, n, old, text, pos, when=None):
         """Zeile n an der Stelle pos teilen (text = Inhalt des Eingabefelds, darf gegenüber old schon geändert sein). Der
         Bildausschnitt der Zeile wird anteilig mitgeteilt, damit jede Textzeile weiter ihre Bildzeile hat."""
         with self.lock:
@@ -660,10 +687,10 @@ class Book:
             lines[n:n + 1] = [left, right]
             self.retable(lines, n)
             self.write_page(pg, lines)
-            self.klog('teilen', pg, n, old, left + ' ⏎ ' + right)
+            self.klog('teilen', pg, n, old, left + ' ⏎ ' + right, when=when)
             return self.page_data(pg), None
 
-    def join_lines(self, pg, n, old):
+    def join_lines(self, pg, n, old, when=None):
         """Zeile n mit der folgenden verbinden; die Bildausschnitte werden vereinigt. Ein Trennzeichen ¬ fällt dabei weg."""
         with self.lock:
             self.refresh()
@@ -684,7 +711,7 @@ class Book:
             lines[n:n + 2] = [joined]
             self.retable(lines, n)
             self.write_page(pg, lines)
-            self.klog('verbinden', pg, n, old[0] + ' ⏎ ' + old[1], joined)
+            self.klog('verbinden', pg, n, old[0] + ' ⏎ ' + old[1], joined, when=when)
             return self.page_data(pg), None
 
     def markup(self, pg, body):
@@ -1069,34 +1096,66 @@ def export_pdf(bid, target, progress, cancelled):
 
 def update_check(folder, pdf):
     """Darf das Buch in folder durch den Stand im PDF ersetzt werden (#66)? Ja, wenn alles, was hier im Protokoll steht,
-    dort auch steht – das Protokoll des PDF beginnt dann mit dem hiesigen: Auf dem anderen Rechner wurde weitergemacht,
-    hier seit dem Sichern nichts. Liefert dict(safe, here, there): Änderungen, die nur hier bzw. nur im PDF stehen."""
+    dort auch steht (als Menge, nicht als Folge – merge.compare): Auf dem anderen Rechner wurde weitergemacht, hier seit
+    dem Sichern nichts. Liefert dict(safe, here, there): Änderungen, die nur hier bzw. nur im PDF stehen."""
     try:
-        mine = open(os.path.join(folder, 'korrekturen.log'), encoding='utf-8').read().splitlines()
+        mine = open(os.path.join(folder, 'korrekturen.log'), encoding='utf-8').read()
     except OSError:
-        mine = []
-    theirs = (pdfbuch.member(pdf, 'korrekturen.log') or b'').decode('utf-8', 'replace').splitlines()
-    k = 0
-    while k < min(len(mine), len(theirs)) and mine[k] == theirs[k]:
-        k += 1
-    return dict(safe=k == len(mine), here=len(mine) - k, there=len(theirs) - k)
+        mine = ''
+    theirs = (pdfbuch.member(pdf, 'korrekturen.log') or b'').decode('utf-8', 'replace')
+    c = merge.compare(mine, theirs)
+    return dict(safe=c['safe'], here=c['here'], there=c['there'])
 
 
-def import_pdfbuch(source, title, target, into, progress, cancelled):
+def merge_pdfbuch(source, into, m, progress, cancelled):
+    """An beiden Stellen wurde weitergearbeitet (#66): die Änderungen aus dem PDF auf das hiesige Buch nachspielen
+    (merge.py); Seitenbilder kommen nur für Seiten, die hier keines haben. Liefert das Ergebnis des Zusammenführens."""
+    folder, book = book_folder(into), get_book(into)
+    z = pdfbuch.members(source)
+    txt = lambda n: (z.get(n) or b'').decode('utf-8', 'replace')
+    theirs = dict(log=txt('korrekturen.log'), whitelist=txt('whitelist.txt'), bookmark=None, geo={}, pages={},
+                  image=lambda pg: pdfbuch.images(source, folder, [pg]))
+    try:
+        theirs['bookmark'] = json.loads(txt('lesezeichen.json') or '{}')
+        theirs['geo'] = json.loads(txt('lines.json') or '{}')
+    except ValueError:
+        pass
+    for name, data in z.items():
+        if re.fullmatch(r'\d{3}\.txt', name):
+            theirs['pages'][name[:3]] = data.decode('utf-8', 'replace').replace('\r\n', '\n').split('\n')[:-1]
+    progress(0, 1, 'merge')
+    r = merge.Merge(book, theirs).run()
+    missing = [pg for pg in pagexml.book_pages(folder) if m['seiten'].get(pg) and not book.img_file(pg)]
+    if missing:
+        r['images'] = pdfbuch.images(source, folder, missing, progress, cancelled)
+    return r
+
+
+def import_pdfbuch(source, title, target, into, merging, progress, cancelled):
     """Ein mit diesem Programm gesichertes PDF wieder als Buch anlegen (läuft als Auftrag im Hintergrund).
-    into: die Kennung eines Buchs der Bibliothek, das statt dessen auf den Stand des PDF gebracht wird (#66) – nur wenn
-    hier seit dem Sichern nichts geschehen ist; die bisherige Fassung kommt in eine Sicherung."""
+    into: die Kennung eines Buchs der Bibliothek, das statt dessen auf den Stand des PDF gebracht wird (#66). Ist hier
+    seit dem Sichern nichts geschehen, ersetzt das PDF den Stand; sonst werden – nur mit merging – die Änderungen aus dem
+    PDF nachgespielt (merge_pdfbuch). Die bisherige Fassung kommt vorher in eine Sicherung."""
     if not source or not os.path.isfile(source):
         raise ValueError('quelle_fehlt')
     m = pdfbuch.info(source)
     if not m:
         raise ValueError('kein_pdfbuch')
+    merged = None
     if into:
         out = book_folder(into)
-        if pagexml.load_json(out, 'buch.json', {}).get('kennung') != m.get('kennung') or not update_check(out, source)['safe']:
+        safe = update_check(out, source)['safe']
+        if not m.get('kennung') or pagexml.load_json(out, 'buch.json', {}).get('kennung') != m.get('kennung') or not (safe or merging):
             raise ValueError('nicht_aktualisierbar')
         backup = pagexml.backup(out, pagexml.book_pages(out))
-        r = pdfbuch.load(source, out, progress, cancelled)
+        if safe:
+            notizen = pagexml.load_json(out, 'buch.json', {}).get('notizen')  # der Notizordner gehört zu diesem Rechner, nicht zum Buch
+            r = pdfbuch.load(source, out, progress, cancelled)
+            if notizen:
+                Book(out).set_notes(notizen)
+        else:
+            merged = merge_pdfbuch(source, into, m, progress, cancelled)
+            r = dict(pages=len(pagexml.book_pages(out)), images=merged.get('images', 0), corrections=merged['applied'], saved=m.get('gesichert') or '')
         with LIBLOCK:
             BOOKS.pop(into, None)
         e, name = lib_touch(out), None
@@ -1114,7 +1173,9 @@ def import_pdfbuch(source, title, target, into, progress, cancelled):
     except (OSError, ValueError):
         bm = None
     return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], images=r['images'], corrections=r['corrections'],
-                saved=r['saved'], bookmark=bm, quality=None, year=st.get('year'), dics=st.get('dics'), updated=bool(into), backup=backup)
+                saved=r['saved'], bookmark=bm, quality=None, year=st.get('year'), dics=st.get('dics'), updated=bool(into), backup=backup,
+                merged=merged and dict(applied=merged['applied'], already=merged['already'], conflicts=merged['conflicts'], whitelist=merged['whitelist']),
+                conflicts=len(merge.load_conflicts(out)))
 
 
 def scan(path):
@@ -1494,7 +1555,7 @@ class H(BaseHTTPRequestHandler):
         if rest == '/api/overview':
             # images/local: die Leseansicht bietet an, Seitenbilder oder einen Transkribus-Text nachzulegen
             r = dict(title=book.title, pages=book.overview(), id=book.id, local=self.local(),
-                     images=len(glob.glob(os.path.join(book.imgdir, '*.*'))))
+                     images=len(glob.glob(os.path.join(book.imgdir, '*.*'))), conflicts=book.conflicts())
             korrlib.save_cache()
             return self.sendjson(r)
         if rest == '/api/progress':  # ohne Sperre: der Ladebalken fragt, während overview() die Sperre hält
@@ -1588,7 +1649,7 @@ class H(BaseHTTPRequestHandler):
                     return self.sendjson(dict(error='quelle_fehlt'), 400)
                 return self.sendjson(dict(job=start_job(export_pdf, body['id'], (body.get('target') or '').strip())))
             if u.path == '/api/import_pdfbuch':
-                return self.sendjson(dict(job=start_job(import_pdfbuch, body.get('source'), body.get('title'), body.get('target'), body.get('into'))))
+                return self.sendjson(dict(job=start_job(import_pdfbuch, body.get('source'), body.get('title'), body.get('target'), body.get('into'), bool(body.get('merge')))))
             if u.path == '/api/restore':
                 try:
                     return self.sendjson(restore(body.get('id'), body.get('name')))
@@ -1698,6 +1759,12 @@ class H(BaseHTTPRequestHandler):
                     f.write(body['word'] + '\n')
                 book.klog('whitelist+', '-', -1, body['word'], '')
             return self.send(200, '{}')
+        if rest == '/api/conflict':  # eine Zeile aus dem Zusammenführen (#66) ist angesehen
+            try:
+                r = book.resolve_conflict(str(body.get('page') or ''), int(body.get('line')), body.get('action'), body.get('old'), body.get('dort'))
+            except (KeyError, TypeError, ValueError):
+                return self.send(404, '{}')
+            return self.sendjson(r) if r else self.send(409, '{}')
         if rest == '/api/bookmark':
             with book.lock:
                 write_atomic(book.bmpath, json.dumps(dict(page=body.get('page'), line=body.get('line'))))

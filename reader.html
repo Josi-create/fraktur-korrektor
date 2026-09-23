@@ -11,6 +11,13 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #mode{padding:2px 10px;border-radius:10px;font-weight:bold;background:#3a6;color:#fff}
 #mode.fix{background:#c33}
 #mode.free{background:#c80}
+#mode.konf{background:#e08a00}
+#lines div.konf{outline:2px solid #e08a00;outline-offset:-2px;background:#fff1dc}  /* Zeile aus dem Zusammenführen, noch anzusehen (#66) */
+#konflink{color:#b35c00;font-weight:bold}
+#word .kbox{font-size:15px;line-height:1.5}
+#word .kbox b{color:#000;background:#fff1dc;padding:0 4px;border-radius:3px}
+#word .kbox b.dort{background:#dff3e0}
+#word .kbox button{margin:4px 6px 0 0;font-size:14px}
 #pos{color:#ccc;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #title{max-width:34vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #top>*{flex-shrink:0} #top>#pos,#top>#title{flex-shrink:1}
@@ -129,6 +136,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <a href="#" id="addImg" data-t="act_images" style="display:none"></a>
  <a href="#" id="replPage" data-t="act_page" style="display:none"></a>
  <a href="#" id="prepScans" data-t="act_prep_scans" style="display:none"></a>
+ <a href="#" id="konflink" data-t-title="konf_link_t" style="display:none"></a>
  <a id="helplink" data-help="usage" target="_blank" data-t="help_f1"></a>
  <span class="langsw"></span>
 </div>
@@ -201,6 +209,7 @@ const $ = id => document.getElementById(id);
 const BASE = (location.pathname.match(/^\/buch\/[0-9a-f]+/) || [''])[0];  // jedes Buch hat seine eigene Adresse
 applyI18n();
 let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null, nsel = null;
+let konf = [];  // Zeilen aus dem Zusammenführen zweier Arbeitsstände (#66), die der Nutzer noch ansehen muss: [{page, line, …}]
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
 let tzoom = 1; try { tzoom = parseFloat(localStorage.getItem('tzoom')) || 1; } catch (e) {}  // Schriftgröße des Textes, unabhängig vom Bild
 document.documentElement.style.setProperty('--tz', tzoom);
@@ -214,7 +223,7 @@ const WRE = /^[A-Za-zÄÖÜäöüß]+/;
 const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
-const HELP = { read: t('help_read'), fix: t('help_fix'), free: t('help_free'), table: t('help_table') };
+const HELP = { read: t('help_read'), fix: t('help_fix'), free: t('help_free'), table: t('help_table'), konf: t('help_konf') };
 
 function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 // Auszeichnung: dieselben Elemente wie der Server (korrlib.MARKUP)
@@ -247,7 +256,8 @@ async function loadOverview() {
       $('lprog').max = p.total; $('lprog').value = p.done; $('lprog').style.display = ''; $('lpage').textContent = t('loading_page', { n: p.done, total: p.total }); } catch (e) {}
   }, 300);
   let o; try { o = await (await fetch(BASE + '/api/overview')).json(); } finally { clearInterval(tick); }
-  ov = o.pages;
+  ov = o.pages; konf = o.conflicts || [];
+  $('konflink').style.display = konf.length ? '' : 'none'; $('konflink').textContent = t(konf.length == 1 ? 'konf_link_1' : 'konf_link_n', { n: konf.length });
   $('title').textContent = o.title; document.title = o.title + ' – Fraktur-Korrektor'; $('loading').style.display = 'none';
   // Was dem Buch noch fehlt, lässt sich von hier aus nachlegen – der Dialog dafür steht in der Bibliothek
   if (o.local && o.id) {
@@ -348,12 +358,12 @@ function renderText() {
 }
 function render() {
   // Textspalte
-  lineEls.forEach((d, i) => { if (!d.classList.contains('sep')) { d.innerHTML = mark(i); d.classList.toggle('cur', i == li); d.classList.toggle('tsel', tb ? i >= tb.a && i <= tb.b : nsel != null && i >= Math.min(nsel, li) && i <= Math.max(nsel, li)); } });
+  lineEls.forEach((d, i) => { if (!d.classList.contains('sep')) { d.innerHTML = mark(i); d.classList.toggle('cur', i == li); d.classList.toggle('tsel', tb ? i >= tb.a && i <= tb.b : nsel != null && i >= Math.min(nsel, li) && i <= Math.max(nsel, li)); } d.classList.toggle('konf', !!conflictAt(i)); });
   decorate(lineEls, data);
   layoutText(); layoutImage();
   // Kopf
   const m = $('mode'); m.className = mode == 'read' ? '' : mode == 'table' ? 'free' : mode;
-  m.textContent = t(mode == 'read' ? 'mode_read' : mode == 'fix' ? 'mode_fix' : mode == 'table' ? 'mode_table' : 'mode_free');
+  m.textContent = t(mode == 'read' ? 'mode_read' : mode == 'fix' ? 'mode_fix' : mode == 'table' ? 'mode_table' : mode == 'konf' ? 'mode_konf' : 'mode_free');
   const total = ov.reduce((a, o) => a + o.n, 0);
   $('pos').textContent = t('pos', { a: li + 1, b: data.lines.length, c: data.flags.length, d: total }) + (data.geo ? '' : t('nogeo'));
   // Korrekturfeld
@@ -363,9 +373,10 @@ function render() {
   const e1 = $('edit'), e2 = $('edit2');
   if (mode == 'read') {
     e1.style.display = 'none'; e2.style.display = 'none'; e1.blur(); e2.blur();
-    const n = data.flags.filter(f => f.line == li).length;
+    const n = data.flags.filter(f => f.line == li).length, k = conflictAt(li);
     $('word').innerHTML = n ? '<span style="color:#c00">' + t(n > 1 ? 'flags_n' : 'flags_1', { n }) + '</span>' : '<span style="color:#888">' + t('reading') + '</span>';
-  }
+    if (k) $('word').innerHTML += ' <span style="color:#b35c00">· ' + t('konf_hint') + '</span>';
+  } else if (mode == 'konf') { e1.style.display = 'none'; e2.style.display = 'none'; renderConflict(); }
   layoutText(); layoutImage();  // nochmal, falls das Korrekturfeld oben seine Höhe geändert hat
   renderSug();  // das Aufklappmenü hängt an der Lage des Eingabefelds
 }
@@ -974,6 +985,48 @@ function setTextZoom(z) {
   document.documentElement.style.setProperty('--tz', tzoom); layoutText(); layoutImage();
 }
 
+// ---- Zusammenführen zweier Arbeitsstände (#66): Zeilen, an denen beide Rechner etwas anderes gemacht haben.
+// Z springt zur nächsten solchen Zeile und zeigt beide Fassungen; 1 behält die hiesige, 2 nimmt die vom anderen Rechner.
+function conflictAt(i) { return data && data.conflicts ? data.conflicts.find(k => k.line == i) : null; }
+async function openConflict() {
+  if (!conflictAt(li)) {
+    if (!konf.length) { msg = t('konf_none'); render(); return; }
+    const n = konf.find(k => k.page > pg || (k.page == pg && k.line > li)) || konf[0];
+    if (n.page != pg) await loadPage(n.page, n.line); else li = n.line;
+    if (!conflictAt(li)) { await loadOverview(); render(); return; }  // die Übersicht war veraltet
+    bookmark();
+  }
+  mode = 'konf'; msg = ''; render();
+}
+function renderConflict() {
+  const k = conflictAt(li); if (!k) { mode = 'read'; return; }
+  const what = k.art == 'edit' ? t('konf_edit') : k.art == 'teilen' ? t('konf_teilen') : k.art == 'verbinden' ? t('konf_verbinden')
+    : k.art == 'fnsep' ? t(k.alt == 'gesetzt' ? 'konf_fn_set' : 'konf_fn_removed') : k.art == 'seite' ? t('konf_seite') : t('konf_sonst');
+  let h = '<div class="kbox">' + what + '<br>' + t('konf_here') + ' <b>' + esc(k.hier || data.lines[li]) + '</b>';
+  if (k.art == 'edit' || k.art == 'teilen' || k.art == 'verbinden') h += '<br>' + t('konf_there') + ' <b class="dort">' + esc(k.dort) + '</b>';
+  h += '<br><button type="button" id="kKeep">1 · ' + t('konf_keep') + '</button>';
+  if (k.art == 'edit') h += '<button type="button" id="kTake">2 · ' + t('konf_take') + '</button>';
+  h += '<button type="button" id="kLater">Esc · ' + t('konf_later') + '</button></div>';
+  $('word').innerHTML = h;
+  $('kKeep').onclick = guarded(() => resolveConflict('done')); $('kLater').onclick = guarded(async () => { mode = 'read'; render(); });
+  if ($('kTake')) $('kTake').onclick = guarded(() => resolveConflict('take'));
+}
+async function resolveConflict(action) {
+  const k = conflictAt(li); if (!k) return;
+  const r = await fetch(BASE + '/api/conflict', { method: 'POST', body: JSON.stringify({ page: pg, line: li, action, old: data.lines[li], dort: k.dort }) });
+  if (r.status == 409) { alert(t('conflict')); await loadPage(pg, li); return; }
+  data = await r.json(); updateCount(); mode = 'read'; msg = t(action == 'take' ? 'konf_taken' : 'konf_kept');
+  konf = konf.filter(x => !(x.page == pg && x.dort == k.dort && x.alt == k.alt));
+  $('konflink').style.display = konf.length ? '' : 'none'; $('konflink').textContent = t(konf.length == 1 ? 'konf_link_1' : 'konf_link_n', { n: konf.length });
+  renderText(); render();
+}
+async function konfKey(e) {
+  if (e.key == 'Escape') { e.preventDefault(); mode = 'read'; render(); }
+  else if (e.key == '1') { e.preventDefault(); await resolveConflict('done'); }
+  else if (e.key == '2' && conflictAt(li) && conflictAt(li).art == 'edit') { e.preventDefault(); await resolveConflict('take'); }
+}
+$('konflink').onclick = e => { e.preventDefault(); if (mode == 'read') guarded(openConflict)(); };
+
 async function onKey(e) {
   if (e.key == 'F1') { e.preventDefault(); window.open($('helplink').href, '_blank'); return; }
   // Strg+F (Mac: Cmd+F) ist die gewohnte Suche – beim Lesen unsere statt der des Browsers
@@ -988,6 +1041,7 @@ async function onKey(e) {
   if (mode == 'dics') return dicsKey(e);
   if (mode == 'notes') return notesKey(e);
   if (mode == 'repl') return replKey(e);
+  if (mode == 'konf') return konfKey(e);
   if (e.key == 'F9') { e.preventDefault(); await startSeries(); return; }
   if (e.key == 'F4') { e.preventDefault(); await makeNote(); return; }
   if (mode == 'read') {
@@ -1019,6 +1073,7 @@ async function onKey(e) {
     else if (k == 't' || k == 'T') await tableKey();
     else if (k == 'h' || k == 'H') await headingKey();
     else if (k == 'v' || k == 'V') await joinLine();
+    else if (k == 'z' || k == 'Z') await openConflict();  // K geht wie ↑ eine Zeile hoch (j/k)
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
     else if (k == 'g' || k == 'G') askOpen('goto');
     else if (k == 's' || k == 'S' || k == '/') askOpen('find');

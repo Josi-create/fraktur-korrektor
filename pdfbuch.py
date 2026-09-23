@@ -168,6 +168,40 @@ def member(pdf, name):
         return None
 
 
+def members(pdf):
+    """Der ganze Anhang als dict Name -> Bytes (nur Seitentexte und die bekannten Dateien) – leer, wenn es keinen gibt."""
+    try:
+        fitz = _fitz()
+        with fitz.open(pdf) as d:
+            if ANHANG not in d.embfile_names():
+                return {}
+            with zipfile.ZipFile(io.BytesIO(d.embfile_get(ANHANG))) as z:
+                return {n: z.read(n) for n in z.namelist() if re.fullmatch(r'\d{3}\.txt', n) or n in DATEIEN}
+    except Exception:
+        return {}
+
+
+def images(pdf, out, pages, progress=lambda done, total, msg: None, cancelled=lambda: False):
+    """Die Seitenbilder der genannten Seiten aus dem PDF in den Buchordner out holen (beim Zusammenführen, #66: nur
+    für Seiten, die hier keines haben). Liefert die Zahl der geholten Bilder."""
+    fitz = _fitz()
+    m = info(pdf)
+    if not m:
+        return 0
+    order = sorted(m['seiten'])
+    os.makedirs(os.path.join(out, 'img'), exist_ok=True)
+    n_img = 0
+    with fitz.open(pdf) as d:
+        for k, pg in enumerate(pages):
+            if cancelled():
+                raise ValueError('abgebrochen')
+            if pg in m['seiten'] and m['seiten'][pg] and order.index(pg) < d.page_count:
+                if ocr.pdf_page(d, order.index(pg), ocr.free_slot(out, pg))[0]:
+                    n_img += 1
+            progress(k + 1, len(pages), 'entpacken')
+    return n_img
+
+
 def load(pdf, out, progress=lambda done, total, msg: None, cancelled=lambda: False):
     """Aus einem gesicherten PDF wieder einen Buchordner machen. Liefert dict(pages, images, corrections, title, saved)."""
     fitz = _fitz()
