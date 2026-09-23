@@ -73,7 +73,7 @@ def test_pdf_zum_textbuch_nachreichen(lib, tmp_path):
     lib.lpost('/buch/%s/api/edit/001' % bid, dict(edits=[dict(line=1, old=old, new=old.replace('RUSSLAND', 'Rußland'))]))
     lib.lpost('/buch/%s/api/whitelist' % bid, dict(word='Kolonisten'))
     assert lib.lpost('/api/epub_pair', dict(id=bid, pdf=str(tmp_path / 'anderswo' / 'scan.pdf')))[1]['fit'] >= 0.4
-    j = wait(lib, lib.lpost('/api/add_pdf', dict(id=bid, source=str(tmp_path / 'anderswo' / 'scan.pdf')))[1]['job'])
+    j = wait(lib, lib.lpost('/api/add_pdf', dict(id=bid, source=str(tmp_path / 'anderswo' / 'scan.pdf'), target=str(tmp_path / 'neu')))[1]['job'])
     assert j['state'] == 'done', j
     n = j['result']
     assert n['neu'] and n['id'] != bid and n['pages'] == 3 and n['matched'] > 0.6 and n['title'] == 'Probe'

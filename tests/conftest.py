@@ -94,6 +94,9 @@ def start(tmp_path, folder=None):
         so.bind(('127.0.0.1', 0))
         port = so.getsockname()[1]
     home = str(tmp_path / 'home')  # eigene Bibliothek je Test
+    # Neue Bücher landen sonst in ~/Fraktur-Korrektor – auch wenn ein Auftrag ohne Ziel aufgerufen wird
+    os.makedirs(home, exist_ok=True)
+    json.dump(dict(buecher=str(tmp_path / 'buecher')), open(os.path.join(home, 'config.json'), 'w', encoding='utf-8'))
     env = dict(os.environ, PYTHONIOENCODING='utf-8', FRAKTUR_HOME=home)
     p = subprocess.Popen([sys.executable, os.path.join(ROOT, 'server.py')] + ([folder] if folder else []) + ['--port', str(port), '--no-browser'],
                          env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

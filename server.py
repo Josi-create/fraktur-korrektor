@@ -949,7 +949,7 @@ def add_images(bid, source, progress, cancelled):
     return dict(id=bid, folder=folder, **r)
 
 
-def add_pdf(bid, source, script, progress, cancelled):
+def add_pdf(bid, source, script, target, progress, cancelled):
     """Ein Textbuch (EPUB ohne PDF angelegt) nachträglich mit dem Scan zusammenbringen (#40): Seitenbilder und Zeilen
     kommen aus dem PDF, der Wortlaut aus dem Textbuch – samt allem, was darin schon korrigiert wurde. Es entsteht ein
     neues Buch daneben, denn die Seiten des Textbuchs sind willkürlich umbrochen; Protokoll und Lesezeichen gehören zu
@@ -959,7 +959,7 @@ def add_pdf(bid, source, script, progress, cancelled):
         raise ValueError('quelle_fehlt')
     e = next((x for x in lib_load() if book_id(x['folder']) == bid), None)
     title = (e.get('title') if e else None) or default_title(folder)
-    out = new_folder(title, source)[1]
+    out = new_folder(title, source, target)[1]
     try:
         textlayer = ocr.pdf_has_text(source)  # der Wortlaut kommt ohnehin aus dem Buch; die Textebene liefert nur die Zeilen
     except Exception:
@@ -1708,7 +1708,7 @@ class H(BaseHTTPRequestHandler):
             if u.path == '/api/add_images':
                 return self.sendjson(dict(job=start_job(add_images, body.get('id'), body.get('source'))))
             if u.path == '/api/add_pdf':
-                return self.sendjson(dict(job=start_job(add_pdf, body.get('id'), body.get('source'), body.get('script'))))
+                return self.sendjson(dict(job=start_job(add_pdf, body.get('id'), body.get('source'), body.get('script'), body.get('target'))))
             if u.path == '/api/epub_pair':
                 try:
                     return self.sendjson(pair_check(body.get('source'), body.get('id'), body.get('pdf')))
