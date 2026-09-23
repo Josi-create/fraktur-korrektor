@@ -224,7 +224,7 @@ def test_trennung_ueber_die_seitengrenze(lib, tmp_path):
     f = [x for x in lib.lget(b + '/api/page/037')[1]['flags'] if x['line'] == 1][0]
     assert (f['word'], f['start'], f['len'], f['cross']) == ('Ver¬qwxyz', 23, 3, 'next')
     f = lib.lget(b + '/api/page/038')[1]['flags'][0]
-    assert (f['word'], f['line'], f['start'], f['len'], f['cross']) == ('Ver¬qwxyz', 1, 0, 'prev')
+    assert (f['word'], f['line'], f['start'], f['len'], f['cross']) == ('Ver¬qwxyz', 1, 0, 5, 'prev')
     # die eine Hälfte berichtigt: die andere Seite merkt es (Zwischenspeicher hängt an beiden Seiten)
     lib.lpost(b + '/api/edit/038', dict(edits=[dict(line=1, old='qwxyz der Kolonisten.', new='mögen der Kolonisten.')]))
     assert words(lib.lget(b + '/api/page/037')[1]) == []
