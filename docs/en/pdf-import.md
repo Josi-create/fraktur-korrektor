@@ -45,7 +45,7 @@ dictionary counts – a PDF does not store how confident the recognition was.)
 |---|---|---|
 | 🟢 green | Good recognition, roughly as good as Transkribus. | Just read and correct. |
 | 🟡 yellow | Usable, but with many misreadings. | Fine for a few pages. For a whole book, [Transkribus](transkribus.md) is worth it. |
-| 🔴 red | Poor recognition. | Do not correct this by hand – improve the scan first (ScanTailor) or use [Transkribus](transkribus.md). |
+| 🔴 red | Poor recognition. | Do not correct this by hand – improve the scan first (*Prepare scans*, see below) or use [Transkribus](transkribus.md). |
 
 The coloured dot also appears in the library in front of the book title. The values for every single page
 are stored in the file `qualitaet.json` in the book folder.
@@ -53,18 +53,42 @@ are stored in the file `qualitaet.json` in the book folder.
 You can replace a book with a better version at any time: simply read it in again (a second folder is
 created) and remove the old entry from the library.
 
-## Cleaning up poor scans with ScanTailor
+## Double pages and crooked pages: preparing the scans
 
-Text recognition is only as good as the image. Typical problems: two book pages on one photo, skewed or
-curved pages, dark margins, fingers in the picture. If the program reports that **the line ends are much
-worse than the rest**, the page curves towards the gutter.
+Text recognition is only as good as the image. Anyone photographing a book in a reading room usually ends up
+with **two book pages on one picture**, and the pages are **crooked**. The program handles both itself before
+it recognises the text:
 
-The free program **ScanTailor Advanced** fixes all of this: it splits double pages, straightens them,
-flattens curvature and crops margins. ([Installation](install-tools.md))
+1. Via **Open …** point at the PDF or the folder of photos. The program looks at a few pages. If two pages sit
+   side by side or the pages are crooked, the recommendation **Prepare scans …** appears.
+2. Click it. You see the first double page with a **red line**. Is it in the middle of the gutter? If not, drag
+   it there with the mouse or move it with the arrow keys `←` `→` (with `Shift` in bigger steps). The line
+   applies to all pages; on each one the program looks for the gutter again nearby and adjusts the line. Two
+   check boxes say what is to happen: **Split double pages at the line** and **Straighten crooked pages** – the
+   measured angle is shown after it.
+3. **Apply.** A bar shows the progress; expect about a second per page. The prepared pages go into a folder of
+   their own, `aufbereitet`, inside the book folder; your original stays untouched. Every double page becomes
+   two pages, the left one first. Only pages more than 0.3° off are rotated.
+4. Afterwards the new folder is already selected: click **Start text recognition**. The program remembers that
+   the pages were prepared (tag *prepared* in the library).
 
-If the book is **already in your library**, there is a shorter way: it has a button
-**Prepare for ScanTailor** – the input and output folder are then settled, and ScanTailor starts right away.
-For a PDF that has not been read in yet:
+If the book is **already in your library** – say, because you had the double pages recognised as they were
+at first –, the book has a button **Prepare scans**. It prepares the book’s page images and then offers to
+have the text recognised afresh; a new book is created, the present one stays.
+
+**Easier still: do not photograph double pages at all.** A few tips: every page on its own, filling the picture;
+keep the book flat (with your free hand or a weight on the edge); camera parallel to the page; even light
+without the shadow of your own hand. Then the program has nothing to split and little to rotate.
+
+## Curved pages, stains, dark margins: ScanTailor
+
+What the program cannot do: flatten curved pages, remove stains and dark margins, even out uneven lighting. If
+it reports that **the line ends are much worse than the rest**, the page curves towards the gutter. For that
+there is the free program **ScanTailor Advanced** ([Installation](install-tools.md) – awkward on the Mac). It
+splits double pages and deskews too, just with more manual work.
+
+If the book is **already in your library**, it has a button **Prepare for ScanTailor** – the input and output
+folder are then settled, and ScanTailor starts right away. For a PDF that has not been read in yet:
 
 1. Choose the PDF via **Open …** and click **Prepare with ScanTailor first …** in the window.
    The program saves every PDF page as an image (ScanTailor cannot open PDFs) and starts ScanTailor.
@@ -84,7 +108,7 @@ For a PDF that has not been read in yet:
    again and all the effort was for nothing.
 
    If you would rather have [Transkribus](transkribus.md) read the text, upload the files from
-   `…/scantailor/out` there – Transkribus does not split double pages.
+   `…/scantailor/out` or `…/aufbereitet` there – Transkribus does not split double pages.
 
 ## Limitations
 

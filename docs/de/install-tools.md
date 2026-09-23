@@ -3,13 +3,15 @@
 **Haben Sie den Fraktur-Korrektor [installiert](install.md), ist alles Nötige schon dabei:** die Texterkennung
 Tesseract mit den Modellen für Fraktur und Antiqua wird mitgeliefert. Diese Seite brauchen Sie nur, wenn
 
-- Sie schwierige Scans mit **ScanTailor** aufbereiten möchten – das ist ein eigenes Programm, oder
+- Sie gewölbte oder fleckige Scans mit **ScanTailor** aufbereiten möchten – das ist ein eigenes Programm
+  (Doppelseiten teilen und schiefe Seiten geraderichten kann der Fraktur-Korrektor selbst:
+  [Scans vorbereiten](pdf-import.md)), oder
 - Sie den Fraktur-Korrektor aus dem Quelltext starten (`python server.py`); dann fehlt Tesseract.
 
 | Programm | Wozu | Nötig? |
 |---|---|---|
 | **Tesseract** | Texterkennung: [PDF oder Bilder einlesen](pdf-import.md) | im fertigen Programm enthalten |
-| **ScanTailor Advanced** | schlechte Scans aufbereiten (Doppelseiten trennen, geraderichten, entzerren) | nur bei schwierigen Vorlagen |
+| **ScanTailor Advanced** | schlechte Scans aufbereiten (Wölbung entzerren, Flecken und Ränder entfernen) | nur bei schwierigen Vorlagen; Doppelseiten und Schieflage erledigt das Programm selbst |
 
 Der Fraktur-Korrektor findet beide Programme von selbst, wenn sie am üblichen Ort installiert sind. Beim Öffnen
 eines PDF zeigt das Fenster, was gefunden wurde.
@@ -69,8 +71,9 @@ veröffentlicht das Projekt nur Dateien für Windows und Linux).
   (Älter und für den Notfall ebenfalls zu haben: *ScanTailor Universal 0.2.12* von 2021,
   <https://github.com/trufanov-nok/scantailor-universal/releases/tag/0.2.12>.)
 
-**Für ein einzelnes Buch lohnt der Aufwand selten.** Ist die Vorlage so schlecht, dass ScanTailor nötig wäre,
-kommen Sie mit [Transkribus](transkribus.md) meist schneller ans Ziel.
+**Für ein einzelnes Buch lohnt der Aufwand selten.** Doppelseiten und schiefe Seiten – der häufigste Fall – erledigt
+der Fraktur-Korrektor selbst ([Scans vorbereiten](pdf-import.md)). Ist die Vorlage darüber hinaus so schlecht, dass
+ScanTailor nötig wäre, kommen Sie mit [Transkribus](transkribus.md) meist schneller ans Ziel.
 
 **Linux:** `.deb`-Paket oder AppImage von der oben genannten Seite, oder das Paket Ihrer Distribution.
 

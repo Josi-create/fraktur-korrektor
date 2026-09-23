@@ -74,7 +74,8 @@ Buchdaten gehören **nicht** in dieses Repository.
 Was geöffnet wird, erkennt `finder.py`. Die Importwege stecken in `pagexml.py` (Transkribus), `epub.py` (EPUB, auch auf die Zeilen
 eines PDF gelegt) und `ocr.py` (PDF/Bilder → Tesseract bzw. vorhandene Textebene; auch als
 `py ocr.py <pdf-oder-bilderordner> <buchordner>` aufrufbar). `pdfbuch.py` sichert ein Buch als PDF mit dem Arbeitsstand
-im Anhang und liest es wieder ein.
+im Anhang und liest es wieder ein. `scans.py` bereitet abfotografierte Seiten vor (Doppelseiten teilen, geraderichten; auch als
+`py scans.py <pdf-oder-bilderordner> [<zielordner>]` aufrufbar).
 
 - `page2txt.py` – Text aus Transkribus-PAGE-XML
 - `build_text.py` – PAGE-XML → `NNN.txt` + `lines.json`, trennt Fußnoten (Grundlinienabstand, „N)“-Anfang); dasselbe macht der Import in der Bibliothek (`pagexml.py`)

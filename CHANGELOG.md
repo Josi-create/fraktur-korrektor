@@ -5,6 +5,15 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Scans vorbereiten** (#42): Doppelseiten teilen und schiefe Seiten geraderichten erledigt das Programm jetzt selbst,
+  nur mit PyMuPDF (`scans.py`). Beim Untersuchen eines PDF oder Bilderordners sieht es sich einige Seiten an
+  (Seitenverhältnis, helle Lücke oder Falzschatten in der Bundmitte, Neigung der Zeilen über das Projektionsprofil)
+  und empfiehlt *Scans vorbereiten …*; die Vorschau zeigt die erste Doppelseite mit einer Trennlinie, die sich mit
+  der Maus oder den Pfeiltasten verschieben lässt und auf jeder Seite noch einmal an der Falz feinjustiert wird.
+  Gedreht wird ab 0,3°. Das Ergebnis liegt in `<Buchordner>/aufbereitet`, wird beim Untersuchen wie ein
+  ScanTailor-Ergebnis bevorzugt und in der Bibliothek als *vorbereitet* gekennzeichnet. Für Bücher der
+  Bibliothek gibt es den Knopf *Scans vorbereiten* (auch in der Leseansicht). ScanTailor bleibt für gewölbte
+  Seiten, Flecken und dunkle Ränder; Hilfe und Oberflächentexte sagen das jetzt so, dazu Aufnahmetipps.
 - **Korrekturvorschläge** (#41): Ein kleines Menü unter dem roten Wort zeigt Vorschläge, `↓`/`↑` setzen sie ins
   Feld, Klick ebenso, `Enter` übernimmt. Zuerst, was in diesem Buch schon einmal aus dem Wort gemacht wurde
   (gelernt aus `korrekturen.log`: `Würllemberg` → `Württemberg`), dann typische Lesefehler der Fraktur-OCR rückgängig

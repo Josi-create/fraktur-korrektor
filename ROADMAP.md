@@ -38,8 +38,9 @@ Knopfdruck, Hilfe-Seite im Browser (rendert `docs/`), Oberfläche zweisprachig, 
 ### M3 – PDF-Import
 PDF → Seitenbilder (PyMuPDF), Texterkennung mit Tesseract (Fraktur-Modelle) → `NNN.txt` + `lines.json`,
 Fortschrittsanzeige, Qualitätsampel (Tesseract-Konfidenz + Wörterbuchquote + Zeilenend-Hapax) mit
-Empfehlung „besser mit Transkribus“ bzw. „vorher mit ScanTailor aufbereiten“, ScanTailor-Button
-(Bilder exportieren, ScanTailor starten, Ergebnis wieder einlesen).
+Empfehlung „besser mit Transkribus“ bzw. „vorher aufbereiten“, ScanTailor-Button
+(Bilder exportieren, ScanTailor starten, Ergebnis wieder einlesen). Doppelseiten teilen und schiefe Seiten
+geraderichten erledigt das Programm seit #42 selbst (ScanTailor gibt es für den Mac nicht fertig).
 
 ### M4 – Installation für alle
 Windows: `.exe` + Installer (PyInstaller, Inno Setup). Mac: signierte, notarisierte `.app` im `.dmg`.

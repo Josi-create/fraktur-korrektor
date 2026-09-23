@@ -128,6 +128,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <a href="#" id="addTrans" data-t="act_trans" style="display:none"></a>
  <a href="#" id="addImg" data-t="act_images" style="display:none"></a>
  <a href="#" id="replPage" data-t="act_page" style="display:none"></a>
+ <a href="#" id="prepScans" data-t="act_prep_scans" style="display:none"></a>
  <a id="helplink" data-help="usage" target="_blank" data-t="help_f1"></a>
  <span class="langsw"></span>
 </div>
@@ -256,7 +257,7 @@ async function loadOverview() {
     if (!o.images) {
       $('addImg').style.display = ''; $('addImg').onclick = weiter('images');
       $('noimg').style.display = 'flex'; $('noimgBtn').onclick = weiter('images');
-    }
+    } else { $('prepScans').style.display = ''; $('prepScans').onclick = weiter('prep_scans'); }
     $('replPage').style.display = ''; $('replPage').onclick = ev => { ev.preventDefault(); if (mode == 'read' && !busy) openReplace(); };
   }
   const s = $('pagesel'); s.innerHTML = '';

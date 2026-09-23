@@ -57,18 +57,19 @@ Nichts wird je überschrieben: Gibt es den Titel schon, entsteht ein zweiter Ord
 
 ## Ein Buch weiterbearbeiten
 
-Ein Buch entsteht selten in einem Zug: Erst lesen Sie ein PDF ein, dann bereiten Sie die Seiten mit ScanTailor
-auf, dann lassen Sie den Text bei Transkribus erkennen. **Dafür müssen Sie nicht jedes Mal von vorn anfangen.**
+Ein Buch entsteht selten in einem Zug: Erst lesen Sie ein PDF ein, dann lassen Sie die Seiten vorbereiten
+(Doppelseiten teilen, geraderichten), dann lassen Sie den Text bei Transkribus erkennen. **Dafür müssen Sie nicht jedes Mal von vorn anfangen.**
 
-In der Bibliothek steht unter jedem Buch eine Reihe von Knöpfen. Neben **Buch öffnen** stehen dort vier
-weitere Wege:
+In der Bibliothek steht unter jedem Buch eine Reihe von Knöpfen. Neben **Buch öffnen** stehen dort weitere
+Wege:
 
 | | Wozu |
 |---|---|
 | **Erkannten Text einlesen** | Der Text von Transkribus – oder der, den eine Bibliothek zu ihrem Digitalisat herausgibt – tritt an die Stelle des bisherigen. Ihre Seitenbilder, Ihre Wortliste und Ihr Lesezeichen bleiben, wo sie sind. Angeben können Sie die ZIP-Datei, den entpackten Ordner oder die Textdatei des Exports, oder einen Ordner mit hOCR- oder ALTO-Dateien (siehe unten). |
 | **Seitenbilder hinzufügen** | Für Bücher, die nur aus Text bestehen – etwa ein Transkribus-Export ohne Bilder. Zeigen Sie auf einen Bilderordner, auf das PDF, aus dem die Seiten stammen, oder auf ein anderes Buch, das die Bilder schon hat. |
 | **Für Transkribus vorbereiten** | Das Programm nennt Ihnen den Ordner, den Sie hochladen, legt ihn in die Zwischenablage und öffnet ihn im Dateifenster. |
-| **Für ScanTailor vorbereiten** | Startet ScanTailor und nennt Ein- und Ausgabeordner. |
+| **Scans vorbereiten** | Teilt Doppelseiten und richtet schiefe Seiten gerade – mit Vorschau der Trennlinie. Das Ergebnis lassen Sie danach als neues Buch erkennen. Siehe [PDF oder Bilder einlesen](pdf-import.md). |
+| **Für ScanTailor vorbereiten** | Startet ScanTailor und nennt Ein- und Ausgabeordner – für gewölbte Seiten, Flecken, dunkle Ränder. |
 | **Frühere Fassung** | Holt einen Text zurück, den ein späterer Import ersetzt hat. Erscheint nur, wenn es etwas zurückzuholen gibt. |
 
 So müssen Sie sich nie merken, wo die Bilder zu einem Buch liegen – das weiß das Programm.

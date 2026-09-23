@@ -56,17 +56,18 @@ Nothing is ever overwritten: if the title already exists, a second folder with t
 
 ## Continue working on a book
 
-A book is rarely finished in one go: first you read in a PDF, then you tidy up the pages with ScanTailor, then
-you have the text recognised by Transkribus. **You do not have to start over every time.**
+A book is rarely finished in one go: first you read in a PDF, then you have the pages prepared (double pages
+split, straightened), then you have the text recognised by Transkribus. **You do not have to start over every time.**
 
-In the library, every book has a row of buttons below it. Next to **Open book** there are four more ways:
+In the library, every book has a row of buttons below it. Next to **Open book** there are more ways:
 
 | | What for |
 |---|---|
 | **Take in recognised text** | The text from Transkribus – or the text a library publishes for its digitised copy – takes the place of the present one. Your page images, your word list and your bookmark stay where they are. You may point at the ZIP file, the unpacked folder or the text file of the export, or at a folder of hOCR or ALTO files (see below). |
 | **Add page images** | For books that are text only – a Transkribus export without images, say. Point at a folder of images, at the PDF the pages come from, or at another book that already has them. |
 | **Prepare for Transkribus** | The program names the folder you upload, puts it on the clipboard and opens it in a file window. |
-| **Prepare for ScanTailor** | Starts ScanTailor and names the input and output folder. |
+| **Prepare scans** | Splits double pages and straightens crooked pages – with a preview of the dividing line. Afterwards you have the result recognised as a new book. See [Reading in a PDF or images](pdf-import.md). |
+| **Prepare for ScanTailor** | Starts ScanTailor and names the input and output folder – for curved pages, stains, dark margins. |
 | **Earlier version** | Brings back a text that a later import replaced. Only shown when there is something to bring back. |
 
 That way you never need to remember where a book’s images are – the program knows.

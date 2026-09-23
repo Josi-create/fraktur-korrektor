@@ -455,7 +455,9 @@ def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda:
         raise ValueError('abgebrochen')
     with open(os.path.join(out, 'lines.json'), 'w', encoding='utf-8') as f:
         json.dump(geo, f, ensure_ascii=False)
-    quelle = ['scantailor'] if not is_pdf and os.path.basename(os.path.dirname(source.rstrip('/\\'))).lower() == 'scantailor' else []
+    src = source.rstrip('/\\')
+    quelle = ['scantailor'] if not is_pdf and os.path.basename(os.path.dirname(src)).lower() == 'scantailor' else \
+        ['aufbereitet'] if not is_pdf and os.path.isfile(os.path.join(src, 'aufbereitung.json')) else []
     q = dict(model=model, rating=rating(quality), quelle=quelle + ['textebene' if textlayer else 'tesseract'], pages=quality)
     with open(os.path.join(out, 'qualitaet.json'), 'w', encoding='utf-8') as f:
         json.dump(q, f, ensure_ascii=False, indent=1)

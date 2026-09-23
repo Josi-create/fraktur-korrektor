@@ -69,6 +69,17 @@ button:disabled{opacity:.5;cursor:default}
 #done .rec{margin:14px 0 4px;padding:10px 14px;border-left:5px solid #3a6;background:#eef7f1;border-radius:0 4px 4px 0;line-height:1.55}
 #done .rec.gelb{border-color:#e6a700;background:#fdf6e0} #done .rec.rot{border-color:#c33;background:#fdeaea} #done .rec b{display:block;margin-bottom:2px}
 #done .more{margin-top:10px;font-size:14px;color:#555;line-height:1.55} code{background:#eee;border-radius:3px;padding:0 4px;word-break:break-all}
+/* Scans vorbereiten (#42): Empfehlung und Vorschau mit verschiebbarer Trennlinie */
+#scanbox{margin-top:12px;padding:10px 14px;border-radius:4px;line-height:1.55;font-size:14.5px}
+#scanbox.rec{border-left:5px solid #e6a700;background:#fdf6e0} #scanbox.ok{color:#285;background:#eef7f1} #scanbox b.lbl{display:block;margin-bottom:2px}
+#scanbox button{margin-top:8px}
+#result .rec{margin-top:4px;padding:10px 14px;border-left:5px solid #3a6;background:#eef7f1;border-radius:0 4px 4px 0;line-height:1.55}
+.pv{position:relative;display:inline-block;max-width:100%;margin:10px 0 6px;border:1px solid #bbb;background:#888;cursor:col-resize;user-select:none;touch-action:none}
+.pv:focus{outline:2px solid #3a6;outline-offset:2px} .pv img{display:block;max-width:100%;max-height:420px}
+.pv .pvline{position:absolute;top:0;bottom:0;width:3px;margin-left:-1.5px;background:#e33;box-shadow:0 0 0 1px #fff;pointer-events:none}
+.pv .pvline::before,.pv .pvline::after{content:'';position:absolute;left:-7px;border:8px solid transparent;border-left-color:#e33;border-right-color:#e33;width:1px}
+.pv .pvline::before{top:-2px;border-top-color:#e33;border-bottom:0} .pv .pvline::after{bottom:-2px;border-bottom-color:#e33;border-top:0}
+#s4 label,#ebody label.pvopt{display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:4px}
 </style>
 <script src="/i18n.js"></script>
 </head>
@@ -107,10 +118,12 @@ button:disabled{opacity:.5;cursor:default}
    <div id="oScriptBox"><label class="f" data-t="ocr_script"></label>
     <div class="radio"><label><input type="radio" name="script" value="fraktur" checked> <span data-t="script_fraktur"></span></label><label><input type="radio" name="script" value="antiqua"> <span data-t="script_antiqua"></span></label></div></div>
    <div id="upd"></div>
+   <div id="scanbox" style="display:none"></div>
    <div id="tools" class="tools"></div>
    <div class="hint" id="target"></div>
   </div>
  </div>
+ <div id="s4" style="display:none"></div>
  <div id="prog"><div id="bar"><i></i></div><span id="ptext"></span></div>
  <div class="msg" id="omsg"></div>
  <div id="result"></div>
@@ -147,7 +160,7 @@ async function post(path, body) {
 let booksdir = '', entered = false;
 // Was mit einem Buch möglich ist – in der Reihenfolge, in der es auf der Zeile steht
 const BOOKACTS = [['open', b => true], ['pdf', b => true], ['trans', b => true], ['images', b => b.images < b.pages],
-                  ['prep_trans', b => b.images > 0], ['prep_st', b => b.images > 0],
+                  ['prep_scans', b => b.images > 0], ['prep_trans', b => b.images > 0], ['prep_st', b => b.images > 0],
                   ['restore', b => (b.backups || []).length]];
 async function load() {
   const lib = await (await fetch('/api/library')).json();
@@ -190,7 +203,8 @@ async function load() {
     if (edit[0] == b.id && !entered) {
       entered = true;
       openEdit(b, edit[1] || null);
-      if (edit[2]) { $('eSrc').value = edit[2]; $('eform').requestSubmit(); }
+      if (edit[2] && $('eSrc')) { $('eSrc').value = edit[2]; $('eform').requestSubmit(); }
+      else if (edit[2]) eauto = true;  // »Scans vorbereiten« holt erst die Vorschau und läuft dann durch
     }
   }
 }
@@ -222,6 +236,7 @@ let job = null, tools = null, found = [], sel = null;
 const updChoice = () => { const r = document.querySelector('input[name=upd]:checked'); return sel && sel.kind == 'pdfbuch' && sel.book && r ? r.value : ''; };
 const updInto = () => updChoice() == 'update' ? sel.book.id : null;
 const AUTO = location.hash.startsWith('#auto=') || location.hash.split('|').length > 2;
+const AUTOPREP = location.hash.startsWith('#scans=');  // Selbsttest: gleich zur Vorschau »Scans vorbereiten«
 const ICON = { book: '📖', pdfbuch: '📕', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️' };
 const usesPdf = f => f && (f.kind == 'pdf' || (f.kind == 'epub' && f.pdf));
 const pdfHasText = f => f && (f.kind == 'pdf' ? f.text : f.pdf_text);
@@ -229,9 +244,12 @@ const pdfHasText = f => f && (f.kind == 'pdf' ? f.text : f.pdf_text);
 const useText = () => usesPdf(sel) && pdfHasText(sel) && (sel.kind == 'epub' || document.querySelector('input[name=tl]:checked').value == '1');
 const needsOcr = () => sel && (sel.kind == 'images' || (usesPdf(sel) && !useText()));
 
-function step(n) {  // 1 zeigen · 2 Funde und Optionen · 3 fertig
+let stepNow = 1;
+function step(n) {  // 1 zeigen · 2 Funde und Optionen · 3 fertig · 4 Vorschau »Scans vorbereiten«
+  stepNow = n;
   $('s1').style.display = n == 1 ? '' : 'none'; $('s2').style.display = n == 2 ? '' : 'none'; $('done').style.display = n == 3 ? '' : 'none';
-  $('bBack').style.display = n == 2 ? '' : 'none'; $('oGo').style.display = n == 2 ? '' : 'none';
+  $('s4').style.display = n == 4 ? '' : 'none'; if (n != 4) $('s4').innerHTML = '';
+  $('bBack').style.display = n == 2 || n == 4 ? '' : 'none'; $('oGo').style.display = n == 2 || n == 4 ? '' : 'none'; $('oGo').className = 'main';
   $('bBook').style.display = $('bRedo').style.display = 'none';
   if (n != 2) { $('oST').style.display = 'none'; $('result').innerHTML = ''; }
   $('oCancel').textContent = t(n == 3 ? 'close' : 'cancel'); $('omsg').style.display = n == 3 ? 'none' : '';
@@ -263,6 +281,7 @@ function details(f, first) {
   if (f.kind == 'transkribus') d.push(t(f.images || f.images_dir ? 'det_images' : 'det_noimages'));
   if (f.kind == 'epub') d.push(f.pdf ? t('det_pair', { f: esc(base(f.pdf)) }) : t('det_nopair'));
   if (f.scantailor) d.push(t('det_scantailor'));
+  if (f.prepared) d.push(t('det_prepared'));
   return '<b>' + esc(f.name) + '</b><span class="tag">' + t('kind_' + f.kind) + '</span>' +
     (first ? '<span class="tag rec">' + t('recommended') + '</span>' : '') + (f.corrections ? '<span class="tag work">' + t('tag_work') + '</span>' : '') +
     (f.newer ? '<span class="tag new">' + t('det_newer') + '</span>' : '') + (f.known ? '<span class="tag">' + t('det_known') + '</span>' : '') +
@@ -302,8 +321,10 @@ async function choose(n) {
   $('target').textContent = isBook ? '' : t('imp_target', { dir: booksdir });
   $('oST').style.display = k == 'pdf' ? '' : 'none';
   await update();
+  checkScans();
 }
 async function update() {
+  if (stepNow == 4) return;  // die Vorschau hat ihren eigenen Knopf
   const ocr = needsOcr();
   $('oScriptBox').style.display = ocr ? '' : 'none'; $('tools').style.display = ocr || (sel && sel.kind == 'pdf') ? '' : 'none';
   const plain = !sel || sel.kind == 'book' || updChoice();  // kein neues Buch: kein Titel, kein Zielordner
@@ -402,7 +423,7 @@ $('cDir').onclick = () => pickAndScan('folder');
 $('bScan').onclick = doScan;
 $('iPath').addEventListener('keydown', e => { if (e.key == 'Enter') { e.preventDefault(); doScan(); } });
 $('cImg').onclick = async () => { const p = (await post('/api/choose', { kind: 'folder' })).path; if (p) $('oImages').value = p; };
-$('bBack').onclick = () => step(1);
+$('bBack').onclick = () => { if (stepNow == 4) { step(2); update(); } else step(1); };
 $('bBook').onclick = () => { if (last) location.href = '/buch/' + last.id; };
 $('bRedo').onclick = async () => {  // das eben Eingelesene verwerfen (es enthält noch keine Arbeit) und mit Tesseract neu erkennen
   const old = last; step(2); document.querySelector('input[name=tl][value=""]').checked = true; await update();
@@ -418,6 +439,7 @@ for (const el of document.querySelectorAll('input[name=tl]')) el.onchange = upda
 $('oCancel').onclick = () => { if (job) post('/api/job/' + job + '/cancel', {}); else $('dlg').classList.remove('on'); };
 $('form').onsubmit = async e => {
   e.preventDefault(); if (!sel || job) return;
+  if (stepNow == 4) return runPrepare();
   const title = $('oTitle').value.trim(), script = document.querySelector('input[name=script]:checked').value;
   try {
     if (sel.kind == 'book') return await openBook(sel);
@@ -429,6 +451,62 @@ $('form').onsubmit = async e => {
     showDone(r); load();
   } catch (err) { $('omsg').textContent = err.message; }
 };
+// ---- Scans vorbereiten (#42): Doppelseiten teilen, schiefe Seiten geraderichten – das Programm sieht sich beim
+// Untersuchen ein paar Seiten an und empfiehlt es, wenn nötig. Die Vorschau zeigt die erste Doppelseite mit der Trennlinie.
+const scanChecks = {};
+const fmtDeg = a => a.toFixed(1).replace('.', LANG == 'de' ? ',' : '.');
+let pv = null;  // Zustand der Vorschau im Öffnen-Dialog
+async function checkScans() {
+  const f = sel, box = $('scanbox');
+  const can = f && (f.kind == 'pdf' || f.kind == 'images') && !f.scantailor && !f.prepared && !(tools && !tools.pdf);
+  box.style.display = can ? '' : 'none'; if (!can) return;
+  box.className = ''; box.textContent = t('scans_checking');
+  try {
+    const r = scanChecks[f.path] || (scanChecks[f.path] = await post('/api/scans_check', { source: f.path }));
+    if (sel !== f) return;
+    box.className = r.needed ? 'rec' : 'ok';
+    box.innerHTML = r.needed ? '<b class="lbl">' + t('rec') + '</b>' + (r.double ? t('scans_rec_double') + ' ' : '') + (r.skew >= 0.3 ? t('scans_rec_skew', { a: fmtDeg(r.skew) }) + ' ' : '') +
+      t('scans_rec') + '<div><button type="button" id="oPrep" class="main">' + t('scans_btn') + '</button></div>'
+      : t('scans_ok') + ' <a href="#" id="oPrep">' + t('scans_anyway') + '</a>';
+    $('oGo').className = r.needed ? '' : 'main';  // hervorgehoben ist, was die Empfehlung sagt
+    $('oPrep').onclick = ev => { ev.preventDefault(); step(4); pv = scanPreview($('s4'), f.path, r, true); $('oGo').textContent = t('scans_go'); $('oGo').disabled = false; };
+    if (AUTOPREP) $('oPrep').click();
+  } catch (e) { if (sel === f) box.style.display = 'none'; }
+}
+function scanPreview(box, source, r, heading) {
+  // Bild der ersten Doppelseite mit Trennlinie: Maus ziehen oder Pfeiltasten. Liefert den Zustand (split, deskew).
+  const skew = r.skew >= 0.3;
+  box.innerHTML = (heading ? '<h3 style="margin:0 0 6px;font:19px Georgia,serif">' + t('scans_title') + '</h3>' : '') + '<div>' + t(r.double ? 'scans_intro' : 'scans_intro_single', { n: r.first + 1 }) + '</div>' +
+    '<div class="pv" tabindex="0"><img src="/api/scan_preview?source=' + encodeURIComponent(source) + '&n=' + r.first + '" alt=""><div class="pvline"></div></div>' +
+    '<label class="pvopt"><input type="checkbox" class="pvSplit"' + (r.double ? ' checked' : '') + '> ' + t('scans_split') + '</label>' +
+    '<label class="pvopt"><input type="checkbox" class="pvDeskew"' + (skew ? ' checked' : '') + '> ' + t('scans_deskew') + (skew ? t('scans_deskew_a', { a: fmtDeg(r.skew) }) : '') + '</label>' +
+    '<div class="hint">' + t('scans_pages', { n: r.pages }) + '</div>';
+  const area = box.querySelector('.pv'), line = box.querySelector('.pvline'), cbS = box.querySelector('.pvSplit'), cbD = box.querySelector('.pvDeskew');
+  const st = { pos: r.split || 0.5, get split() { return cbS.checked ? this.pos : null; }, get deskew() { return cbD.checked; } };
+  const draw = () => { line.style.left = (st.pos * 100) + '%'; line.style.display = cbS.checked ? '' : 'none'; };
+  const setPos = x => { st.pos = Math.min(0.9, Math.max(0.1, x)); draw(); };
+  const at = ev => { const b = area.getBoundingClientRect(); return (ev.clientX - b.left) / b.width; };
+  let down = false;
+  area.onpointerdown = ev => { if (!cbS.checked) return; down = true; area.setPointerCapture(ev.pointerId); setPos(at(ev)); area.focus(); };
+  area.onpointermove = ev => { if (down) setPos(at(ev)); };
+  area.onpointerup = area.onpointercancel = () => { down = false; };
+  area.onkeydown = ev => {
+    const d = ev.key == 'ArrowLeft' ? -1 : ev.key == 'ArrowRight' ? 1 : 0; if (!d || !cbS.checked) return;
+    ev.preventDefault(); setPos(st.pos + d * (ev.shiftKey ? 0.02 : 0.004));
+  };
+  cbS.onchange = draw; draw(); area.focus();
+  return st;
+}
+async function runPrepare() {
+  // Der Auftrag schreibt die vorbereiteten Seiten in einen eigenen Ordner; danach wird der gleich untersucht,
+  // damit »Texterkennung starten« als Nächstes bereitsteht – wie nach ScanTailor, nur ohne den Umweg.
+  const src = sel.path, title = $('oTitle').value.trim(), o = pv;
+  try {
+    const r = await runJob('/api/prepare_scans', { source: src, title, split: o.split, deskew: o.deskew });
+    $('iPath').value = r.folder; await doScan();
+    $('result').innerHTML = '<div class="rec">✔ ' + t('scans_done', { n: r.pages, s: r.split, r: r.rotated, folder: esc(r.folder) }) + '<br>' + t('scans_next') + '</div>';
+  } catch (err) { $('omsg').textContent = err.message; }
+}
 $('oST').onclick = async () => {
   try {
     const r = await runJob('/api/scantailor', { source: sel.path, title: $('oTitle').value.trim() });
@@ -439,13 +517,13 @@ $('oST').onclick = async () => {
 };
 // ---- Ein Buch weiterbearbeiten: Text aus Transkribus nachlegen, Bilder ergänzen, die anderen Programme vorbereiten.
 // Wer sein Buch schon einmal eingelesen hat, soll nicht wieder von vorn anfangen – und seine Seitenbilder nicht suchen müssen.
-let eb = null, eact = null, enext = null;
+let eb = null, eact = null, enext = null, enextOpen = null, epv = null, eauto = false;
 const ACTS = { pdf: ['📕', b => true], trans: ['🗂️', b => true], images: ['🖼️', b => b.images < b.pages],
-               prep_trans: ['⬆️', b => b.images > 0], prep_st: ['✂️', b => b.images > 0],
+               prep_scans: ['✂️', b => b.images > 0], prep_trans: ['⬆️', b => b.images > 0], prep_st: ['🧹', b => b.images > 0],
                restore: ['⏪', b => (b.backups || []).length] };
 
 function openEdit(b, act) {
-  eb = b; enext = null;
+  eb = b; enext = enextOpen = null;
   $('edlg').classList.add('on');
   $('etitle').textContent = b.title;
   const d = [t('ed_pages', { n: b.pages }),
@@ -467,6 +545,7 @@ function editPick() {
 function editAct(a) {
   eact = a; $('emsg').textContent = ''; $('eBack').style.display = ''; $('ehead').innerHTML = '<b>' + t('act_' + a) + '</b>';
   if (a == 'prep_trans' || a == 'prep_st') return editPrepare(a);
+  if (a == 'prep_scans') return editScans();
   if (a == 'restore') return editRestore();
   if (a == 'pdf') return editPdf();
   const img = a == 'images';
@@ -509,6 +588,18 @@ async function editRestore() {
     } catch (err) { $('emsg').textContent = err.message; }
   };
 }
+async function editScans() {
+  // Die Seitenbilder des Buchs vorbereiten; das Ergebnis wird danach als neues Buch erkannt
+  const src = eb.folder + '/img';
+  $('ebody').innerHTML = '<div>' + t('scans_checking') + '</div>'; $('eGo').style.display = 'none';
+  try {
+    const r = await post('/api/scans_check', { source: src });
+    if (eact != 'prep_scans') return;
+    epv = scanPreview($('ebody'), src, r);
+    $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t('scans_go');
+    if (eauto) { eauto = false; $('eform').requestSubmit(); }
+  } catch (err) { $('emsg').textContent = err.message; }
+}
 async function editChoose(kind) {
   try { const p = (await post('/api/choose', { kind })).path; if (p) $('eSrc').value = p; }
   catch (err) { $('emsg').textContent = err.message; }
@@ -541,15 +632,21 @@ function editDone(h) {
   $('ebody').style.display = 'none'; $('ehead').textContent = '';
   $('eGo').style.display = $('eBack').style.display = 'none';
   $('edone').style.display = ''; $('edone').innerHTML = h;
-  $('eBook').style.display = ''; $('eBook').className = 'main'; $('eClose').textContent = t('close');
+  $('eBook').style.display = ''; $('eBook').className = 'main'; $('eBook').textContent = t('btn_open_book'); $('eClose').textContent = t('close');
 }
 $('eform').onsubmit = async ev => {
   ev.preventDefault();
   const src = $('eSrc') ? $('eSrc').value.trim() : '';
-  if (!src && eact != 'pdf') return;
+  if (!src && eact != 'pdf' && eact != 'prep_scans') return;
   const mode = document.querySelector('input[name=emode]:checked');
   try {
-    if (eact == 'pdf') {
+    if (eact == 'prep_scans') {
+      const r = await editJob('/api/prepare_scans', { source: eb.folder + '/img', split: epv.split, deskew: epv.deskew });
+      enextOpen = r.folder;
+      editDone('<h3>✔ ' + t('act_prep_scans') + '</h3><p>' + t('scans_done', { n: r.pages, s: r.split, r: r.rotated, folder: esc(r.folder) }) + '</p>' +
+        '<div class="hint">' + t('scans_ed_next') + '</div>');
+      $('eBook').textContent = t('scans_ed_go');
+    } else if (eact == 'pdf') {
       const r = await editJob('/api/export_pdf', { id: eb.id, target: src });
       enext = eb.id;
       editDone('<h3>✔ ' + t('ed_pdf_done', { n: r.pages, s: r.size >= 1048576 ? (r.size / 1048576).toFixed(1) + ' MB' : Math.round(r.size / 1024) + ' KB' }) + '</h3><p><code>' + esc(r.file) + '</code> ' +
@@ -581,12 +678,16 @@ $('eform').onsubmit = async ev => {
   } catch (err) { $('emsg').textContent = err.message; }
 };
 $('eBack').onclick = () => editPick();
-$('eBook').onclick = () => { if (enext) location.href = '/buch/' + enext; };
+$('eBook').onclick = () => {
+  if (enextOpen) { $('edlg').classList.remove('on'); openDialog(enextOpen); }  // die vorbereiteten Seiten gleich erkennen lassen
+  else if (enext) location.href = '/buch/' + enext;
+};
 $('eClose').onclick = () => $('edlg').classList.remove('on');
 document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) { $('dlg').classList.remove('on'); $('edlg').classList.remove('on'); } if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
 load();
-// Einstieg aus der Hilfe: #open bzw. #open=<pfad>; #auto=<pfad> liest die Empfehlung gleich ein (Selbsttest, wie ?keys im Reader)
-if (location.hash.startsWith('#open') || AUTO) openDialog(location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');
+// Einstieg aus der Hilfe: #open bzw. #open=<pfad>; #auto=<pfad> liest die Empfehlung gleich ein, #scans=<pfad> zeigt die
+// Vorschau »Scans vorbereiten« (Selbsttest, wie ?keys im Reader)
+if (location.hash.startsWith('#open') || AUTO || AUTOPREP) openDialog(location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');
 </script>
 </body>
 </html>

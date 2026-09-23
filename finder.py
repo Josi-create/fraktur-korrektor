@@ -7,9 +7,10 @@ Fund = dict(kind, path, name, pages, mtime, …):
   epub         EPUB – pdf = gleichlautendes PDF (dann: links das PDF, rechts der EPUB-Text)
   pdfbuch      PDF, das dieses Programm gesichert hat (Arbeitsstand im Anhang) – corrections, saved, kennung
   pdf          PDF – text = durchsuchbar
-  images       Ordner mit Seitenbildern
+  images       Ordner mit Seitenbildern – scantailor = Ergebnis von ScanTailor, prepared = vom Programm aufbereitet
+               (Doppelseiten geteilt, geradegerichtet); beide gehen vor den unbearbeiteten Seiten
 Der erste Fund ist die Empfehlung: Wo schon Korrekturen stecken, geht nichts verloren; sonst der fertigste Text."""
-import os, re, glob, time, zipfile
+import os, re, glob, json, time, zipfile
 import xml.etree.ElementTree as ET
 
 IMG = ('.png', '.jpg', '.jpeg', '.tif', '.tiff')
@@ -196,7 +197,8 @@ def scan_dir(root):
         b = book_info(cur)
         if b:
             found.append(b)
-            dirs[:] = [d for d in dirs if d.lower() == 'scantailor']  # img/ gehört zum Buch; ein ScanTailor-Ergebnis ist ein eigener Fund
+            # img/ gehört zum Buch; ein ScanTailor-Ergebnis oder aufbereitete Seiten sind ein eigener Fund
+            dirs[:] = [d for d in dirs if d.lower() == 'scantailor' or d.lower().startswith('aufbereitet')]
             continue
         if os.path.basename(cur).lower() == 'page':
             t = transkribus_dir(cur)
@@ -224,15 +226,25 @@ def scan_dir(root):
         parent = os.path.basename(os.path.dirname(cur)).lower()
         if nimg >= 2 and not any(f['kind'] == 'transkribus' and f['path'] == cur for f in found):
             found.append(dict(kind='images', path=cur, name=os.path.relpath(cur, root) if cur != root else os.path.basename(cur), pages=nimg,
-                              mtime=_mtime(cur), scantailor=os.path.basename(cur).lower() == 'out' and parent == 'scantailor'))
+                              mtime=_mtime(cur), scantailor=os.path.basename(cur).lower() == 'out' and parent == 'scantailor',
+                              prepared=os.path.basename(cur).lower().startswith('aufbereitet') and os.path.isfile(os.path.join(cur, 'aufbereitung.json'))))
     # derselbe Export als ZIP und entpackt: einmal genügt (der entpackte Ordner)
     dirs_t = {(f['name'], f['pages']) for f in found if f['kind'] == 'transkribus' and os.path.isdir(f['path'])}
     found = [f for f in found if not (f['kind'] == 'transkribus' and os.path.isfile(f['path']) and (f['name'], f['pages']) in dirs_t)]
     # Seitenbilder, die zu einem Transkribus-Export gehören (liegen im Exportordner), sind kein eigener Fund
     troots = [f['path'] for f in found if f['kind'] == 'transkribus' and f['images']]
     found = [f for f in found if not (f['kind'] == 'images' and f['path'] in troots)]
-    # Liegt das Ergebnis von ScanTailor vor, ist sein Eingabeordner (die unbearbeiteten Seiten) keine Wahl mehr
+    # Liegt das Ergebnis von ScanTailor vor, ist sein Eingabeordner (die unbearbeiteten Seiten) keine Wahl mehr;
+    # ebenso die Seitenbilder, aus denen die aufbereiteten Seiten entstanden sind
     outs = [f['path'] for f in found if f.get('scantailor')]
+    for f in found:
+        if f.get('prepared'):
+            try:
+                q = json.load(open(os.path.join(f['path'], 'aufbereitung.json'), encoding='utf-8')).get('quelle') or ''
+                if os.path.isdir(q):
+                    outs.append(os.path.join(q, ''))
+            except (OSError, ValueError):
+                pass
     found = [f for f in found if not (f['kind'] == 'images' and any(o.startswith(f['path'] + os.sep) for o in outs))]
     _pair(found)
     _images_for(found)
@@ -248,9 +260,9 @@ def scan(path):
     # Empfehlung: Bücher mit Korrekturen zuerst (dort steckt Arbeit), dann nach Art, innerhalb der Art das Jüngste
     found.sort(key=lambda f: f['mtime'], reverse=True)
     found.sort(key=lambda f: (0 if f.get('corrections') else 1, RANK[f['kind']], 0 if f.get('pdf') or f.get('text') else 1))
-    # Wer eben ScanTailor hat laufen lassen, will dessen Ergebnis einlesen – die aufbereiteten Seiten sind der
-    # ganze Zweck der Übung. Ein schon vorhandenes Buch geht nur dann vor, wenn darin Arbeit steckt.
-    st = next((f for f in found if f.get('scantailor')), None)
+    # Wer eben ScanTailor hat laufen lassen oder die Scans hat aufbereiten lassen, will das Ergebnis einlesen – die
+    # aufbereiteten Seiten sind der ganze Zweck der Übung. Ein schon vorhandenes Buch geht nur dann vor, wenn darin Arbeit steckt.
+    st = next((f for f in found if f.get('scantailor') or f.get('prepared')), None)
     if st and found[0] is not st and not found[0].get('corrections') and st['mtime'] > found[0]['mtime']:
         found.remove(st)
         found.insert(0, st)

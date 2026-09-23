@@ -41,8 +41,9 @@ A *collection* is a drawer for your books; nothing works without one.
 2. Click **“Upload”** at the top right.
 3. Drag the files in, or pick them with **“Browse”**. **Which files?** Always upload the images you want to
    read in the end – Transkribus does not split double pages and does not straighten anything.
-   - If you cleaned the scan up with **ScanTailor**: the files from its output folder **`…/scantailor/out`**.
-     Those are the separated, straightened single pages (Transkribus accepts TIFF).
+   - If you had Fraktur-Korrektor **prepare** the scans (double pages split, straightened): the files from the
+     folder **`…/aufbereitet`** inside the book folder. After **ScanTailor**: the files from its output folder
+     **`…/scantailor/out`**. Those are the separated, straightened single pages (Transkribus accepts TIFF).
    - If you have already **read that result** into Fraktur-Korrektor: the images from the **`img`** folder of
      that book – the same content, just numbered. **No need to go looking for it:** in the library, click the
      button **Prepare for Transkribus** below the book. The program names the folder, puts

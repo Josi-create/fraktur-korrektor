@@ -41,8 +41,9 @@ Eine *Collection* ist eine Schublade für Ihre Bücher; ohne sie geht es nicht.
 2. Oben rechts auf **„Upload"**.
 3. Die Dateien hineinziehen oder über **„Browse"** auswählen. **Welche Dateien?** Laden Sie immer die
    Bilder hoch, die Sie am Ende lesen wollen – Transkribus trennt keine Doppelseiten und richtet nichts gerade.
-   - Haben Sie den Scan mit **ScanTailor** aufbereitet: die Dateien aus dessen Ausgabeordner
-     **`…/scantailor/out`**. Das sind die getrennten, geraden Einzelseiten (TIFF nimmt Transkribus an).
+   - Haben Sie die Scans im Fraktur-Korrektor **vorbereiten** lassen (Doppelseiten geteilt, geradegerichtet): die
+     Dateien aus dem Ordner **`…/aufbereitet`** im Buchordner. Nach **ScanTailor**: die Dateien aus dessen
+     Ausgabeordner **`…/scantailor/out`**. Das sind die getrennten, geraden Einzelseiten (TIFF nimmt Transkribus an).
    - Haben Sie dieses Ergebnis schon im Fraktur-Korrektor **eingelesen**: die Bilder aus dem Ordner **`img`**
      dieses Buchs – inhaltlich dasselbe, nur durchnummeriert. **Den Ordner müssen Sie nicht suchen:** In der
      Bibliothek steht beim Buch der Knopf **Für Transkribus vorbereiten**. Das

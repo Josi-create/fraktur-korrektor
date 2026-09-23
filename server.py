@@ -6,7 +6,7 @@ Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
 import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse, collections
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-import korrlib, pagexml, ocr, epub, finder, pdfbuch
+import korrlib, pagexml, ocr, epub, finder, pdfbuch, scans
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
 
 HERE = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))  # gepackt liegen dict/, docs/ und die HTML-Dateien im Bundle
@@ -978,6 +978,8 @@ def import_ocr(source, title, target, script, textlayer, progress, cancelled):
     src = source.rstrip('/\\')
     if os.path.isdir(src) and os.path.basename(src).lower() == 'out' and not title:
         title = os.path.basename(os.path.dirname(os.path.dirname(src)))  # …/<Titel>/scantailor/out
+    elif os.path.isdir(src) and os.path.basename(src).lower().startswith(scans.FOLDER) and not title:
+        title = os.path.basename(os.path.dirname(src))  # …/<Titel>/aufbereitet
     name, out = new_folder(title, source, target)
     try:
         r = ocr.build(source, out, progress, cancelled, 'antiqua' if script == 'antiqua' else 'fraktur', bool(textlayer))
@@ -1161,6 +1163,45 @@ def scantailor(source, title, progress, cancelled):
         ocr.reveal(folder)
     ocr.launch(exe)
     return dict(folder=folder, out=os.path.join(folder, 'out') if folder else None, clipboard=clip)
+
+
+def scans_folder(source, title, target=None):
+    """Wohin die aufbereiteten Seiten kommen: <Buchordner>/aufbereitet. Für die Seitenbilder eines Buchs der
+    Bibliothek (…/img) ist das dessen Ordner, sonst der künftige Buchordner (wie bei ScanTailor). Nie überschreiben."""
+    src = os.path.abspath(source.rstrip('/\\'))
+    parent = os.path.dirname(src)
+    book = parent if os.path.isdir(src) and os.path.basename(src).lower() == 'img' and page_files(parent) else new_folder(title, source, target)[1]
+    out, n = os.path.join(book, scans.FOLDER), 1
+    while os.path.isdir(out) and os.listdir(out):
+        n += 1
+        out = os.path.join(book, '%s (%d)' % (scans.FOLDER, n))
+    return out
+
+
+def check_scans(source):
+    """Stichprobe: Doppelseiten? Schief? – für die Empfehlung im Öffnen-Dialog."""
+    if not source or not os.path.exists(source):
+        raise ValueError('quelle_fehlt')
+    try:
+        return scans.inspect(source)
+    except ImportError:
+        raise ValueError('kein_pymupdf')
+
+
+def prepare_scans(source, title, split, deskew, target, progress, cancelled):
+    """Doppelseiten teilen und Seiten geraderichten (#42) – läuft als Auftrag. Das Ergebnis ist ein Bilderordner,
+    der danach wie ein ScanTailor-Ergebnis eingelesen wird."""
+    if not source or not os.path.exists(source):
+        raise ValueError('quelle_fehlt')
+    out = scans_folder(source, title, target)
+    try:
+        r = scans.prepare(source, out, split, bool(deskew), progress, cancelled)
+    except ImportError:
+        raise ValueError('kein_pymupdf')
+    except Exception:
+        shutil.rmtree(out, ignore_errors=True)  # nichts Halbfertiges stehen lassen
+        raise
+    return dict(r, book=os.path.dirname(out))
 
 
 def open_obsidian(path):
@@ -1413,6 +1454,17 @@ class H(BaseHTTPRequestHandler):
             return self.sendjson({k: v for k, v in j.items() if k != 'cancel'}) if j else self.send(404, '{}')
         if u.path == '/api/library':
             return self.sendjson(dict(books=lib_list(), local=self.local(), version=version(), donate=DONATE_URL, booksdir=books_dir()))
+        if u.path == '/api/scan_preview':  # liest eine Datei von der Platte, darum nur am Rechner selbst
+            if not self.local():
+                return self.sendjson(dict(error='nur_lokal'), 403)
+            src = q.get('source', [''])[0]
+            try:
+                n = max(0, int(q.get('n', ['0'])[0]))
+                if not os.path.exists(src):
+                    raise ValueError('quelle_fehlt')
+                return self.send(200, scans.preview(src, n), 'image/jpeg')
+            except (ValueError, IndexError, RuntimeError):
+                return self.send(404, '{}')
         if u.path in ('/hilfe', '/hilfe/', '/help'):
             return self.redirect('/hilfe/de/index')
         m = re.fullmatch(r'/hilfe/(de|en)/([\w-]+)', u.path)
@@ -1490,7 +1542,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/import_pdfbuch'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -1551,6 +1603,15 @@ class H(BaseHTTPRequestHandler):
                 return self.sendjson(dict(job=start_job(import_ocr, body.get('source'), body.get('title'), body.get('target'), body.get('script'), body.get('textlayer'))))
             if u.path == '/api/scantailor':
                 return self.sendjson(dict(job=start_job(scantailor, body.get('source'), body.get('title'))))
+            if u.path == '/api/scans_check':
+                try:
+                    return self.sendjson(check_scans(body.get('source') or ''))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
+            if u.path == '/api/prepare_scans':
+                split = body.get('split')
+                split = float(split) if isinstance(split, (int, float)) and 0.1 <= split <= 0.9 else None
+                return self.sendjson(dict(job=start_job(prepare_scans, body.get('source'), body.get('title'), split, body.get('deskew', True), body.get('target'))))
             if u.path == '/api/forget':
                 lib_forget(body.get('id'))
                 return self.sendjson({})

@@ -3,13 +3,15 @@
 **If you have [installed](install.md) Fraktur-Korrektor, everything you need is already there:** text
 recognition with Tesseract and the models for Fraktur and Antiqua come with it. You only need this page if
 
-- you want to clean up difficult scans with **ScanTailor** – that is a separate program, or
+- you want to clean up curved or stained scans with **ScanTailor** – that is a separate program
+  (splitting double pages and straightening crooked pages Fraktur-Korrektor does itself:
+  [Preparing the scans](pdf-import.md)), or
 - you start Fraktur-Korrektor from the source code (`python server.py`); then Tesseract is missing.
 
 | Program | What for | Needed? |
 |---|---|---|
 | **Tesseract** | text recognition: [Reading in a PDF or images](pdf-import.md) | included in the finished program |
-| **ScanTailor Advanced** | cleaning up poor scans (splitting double pages, deskewing, dewarping) | only for difficult scans |
+| **ScanTailor Advanced** | cleaning up poor scans (dewarping, removing stains and margins) | only for difficult scans; double pages and skew the program handles itself |
 
 Fraktur-Korrektor finds both programs by itself if they are installed in the usual place. When you open a PDF,
 the window shows what was found.
@@ -70,8 +72,9 @@ the project publishes files for Windows and Linux only).
   (Older, and also available if needed: *ScanTailor Universal 0.2.12* from 2021,
   <https://github.com/trufanov-nok/scantailor-universal/releases/tag/0.2.12>.)
 
-**For a single book the effort rarely pays off.** If your scans are so poor that ScanTailor would be needed,
-[Transkribus](transkribus.md) usually gets you there faster.
+**For a single book the effort rarely pays off.** Double pages and crooked pages – the most common case – Fraktur-Korrektor
+handles itself ([Preparing the scans](pdf-import.md)). If your scans are so poor beyond that that ScanTailor would be
+needed, [Transkribus](transkribus.md) usually gets you there faster.
 
 **Linux:** `.deb` package or AppImage from the page mentioned above, or your distribution's package.
 

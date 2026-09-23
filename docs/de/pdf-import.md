@@ -44,7 +44,7 @@ Wörterbuch – ein PDF speichert nicht, wie sicher die Erkennung war.)
 |---|---|---|
 | 🟢 grün | Gute Erkennung, etwa so gut wie Transkribus. | Einfach lesen und korrigieren. |
 | 🟡 gelb | Brauchbar, aber mit vielen Lesefehlern. | Für wenige Seiten in Ordnung. Für ein ganzes Buch lohnt sich [Transkribus](transkribus.md). |
-| 🔴 rot | Schlechte Erkennung. | Nicht von Hand korrigieren – erst die Vorlage verbessern (ScanTailor) oder [Transkribus](transkribus.md) benutzen. |
+| 🔴 rot | Schlechte Erkennung. | Nicht von Hand korrigieren – erst die Vorlage verbessern (*Scans vorbereiten*, siehe unten) oder [Transkribus](transkribus.md) benutzen. |
 
 Der farbige Punkt erscheint auch in der Bibliothek vor dem Buchtitel. Die Werte jeder einzelnen Seite stehen
 in der Datei `qualitaet.json` im Buchordner.
@@ -52,18 +52,41 @@ in der Datei `qualitaet.json` im Buchordner.
 Ein eingelesenes Buch können Sie jederzeit durch eine bessere Fassung ersetzen: Lesen Sie es einfach noch
 einmal ein (es entsteht ein zweiter Ordner) und entfernen Sie den alten Eintrag aus der Bibliothek.
 
-## Schlechte Vorlagen mit ScanTailor aufbereiten
+## Doppelseiten und schiefe Seiten: Scans vorbereiten
 
-Texterkennung ist nur so gut wie das Bild. Typische Probleme sind: zwei Buchseiten auf einem Foto, schiefe
-oder gewölbte Seiten, dunkle Ränder, Finger im Bild. Meldet das Programm, dass **die Zeilenenden viel
-schlechter sind als der Rest**, ist die Seite zum Bund hin gewölbt.
+Texterkennung ist nur so gut wie das Bild. Wer ein Buch im Lesesaal abfotografiert, hat meist **zwei Buchseiten
+auf einem Bild**, und die Seiten liegen **schief**. Beides erledigt das Programm selbst, bevor es den Text erkennt:
 
-Das freie Programm **ScanTailor Advanced** behebt all das: Es trennt Doppelseiten, richtet sie gerade,
-entzerrt Wölbungen und schneidet Ränder ab. ([Installation](install-tools.md))
+1. Über **Öffnen …** das PDF oder den Ordner mit den Fotos zeigen. Das Programm sieht sich einige Seiten an.
+   Stehen zwei Seiten nebeneinander oder liegen sie schief, erscheint die Empfehlung **Scans vorbereiten …**.
+2. Darauf klicken. Sie sehen die erste Doppelseite mit einer **roten Linie**. Steht sie in der Bundmitte? Sonst
+   ziehen Sie sie mit der Maus dorthin oder verschieben sie mit den Pfeiltasten `←` `→` (mit `Umschalt` in
+   größeren Schritten). Die Linie gilt für alle Seiten; auf jeder einzelnen sucht das Programm die Falz noch einmal
+   in der Nähe und passt die Linie an. Zwei Häkchen sagen, was geschehen soll: **Doppelseiten an der Linie
+   teilen** und **Schiefe Seiten geraderichten** – dahinter steht der gemessene Winkel.
+3. **Übernehmen.** Ein Balken zeigt den Fortschritt; rechnen Sie mit etwa einer Sekunde je Seite. Die
+   vorbereiteten Seiten kommen in einen eigenen Ordner `aufbereitet` im Buchordner; Ihre Vorlage bleibt unverändert.
+   Aus jeder Doppelseite werden zwei Seiten, linke zuerst. Gedreht wird nur, was mehr als 0,3° schief liegt.
+4. Danach ist der neue Ordner schon ausgewählt: auf **Texterkennung starten** klicken. Das Programm merkt sich,
+   dass die Seiten vorbereitet wurden (Kennzeichen *vorbereitet* in der Bibliothek).
 
-Liegt das Buch **schon in Ihrer Bibliothek**, geht es kürzer: dort steht beim Buch der Knopf
-**Für ScanTailor vorbereiten** – dann stehen Eingabe- und Ausgabeordner fest, und ScanTailor startet gleich mit.
-Für ein PDF, das noch nicht eingelesen ist:
+Liegt das Buch **schon in Ihrer Bibliothek** – etwa weil Sie die Doppelseiten erst einmal so haben erkennen
+lassen –, steht beim Buch der Knopf **Scans vorbereiten**. Er bereitet die Seitenbilder des Buchs auf und bietet
+anschließend an, den Text neu erkennen zu lassen; es entsteht ein neues Buch, das bisherige bleibt.
+
+**Einfacher ist es, gar keine Doppelseiten zu fotografieren.** Ein paar Aufnahmetipps: jede Seite einzeln und
+bildfüllend, das Buch flach halten (mit der freien Hand oder einem Gewicht am Rand), die Kamera parallel zur Seite,
+gleichmäßiges Licht ohne Schatten der eigenen Hand. Dann bleibt dem Programm nichts zu teilen und wenig zu drehen.
+
+## Gewölbte Seiten, Flecken, dunkle Ränder: ScanTailor
+
+Was das Programm nicht kann: gewölbte Seiten entzerren, Flecken und dunkle Ränder entfernen, ungleichmäßige
+Ausleuchtung ausgleichen. Meldet es, dass **die Zeilenenden viel schlechter sind als der Rest**, ist die Seite
+zum Bund hin gewölbt. Dafür gibt es das freie Programm **ScanTailor Advanced** ([Installation](install-tools.md)
+– auf dem Mac nur mit Umständen). Es trennt auch Doppelseiten und richtet gerade, nur eben mit mehr Handarbeit.
+
+Liegt das Buch **schon in Ihrer Bibliothek**, steht beim Buch der Knopf **Für ScanTailor vorbereiten** – dann
+stehen Eingabe- und Ausgabeordner fest, und ScanTailor startet gleich mit. Für ein PDF, das noch nicht eingelesen ist:
 
 1. Über **Öffnen …** das PDF wählen und im Fenster auf **Erst mit ScanTailor aufbereiten …** klicken.
    Das Programm speichert jede PDF-Seite als Bild (ScanTailor kann keine PDFs öffnen) und startet ScanTailor.
@@ -85,7 +108,7 @@ Für ein PDF, das noch nicht eingelesen ist:
    erneut das PDF ein, war die ganze Mühe umsonst.
 
    Wollen Sie den Text lieber von [Transkribus](transkribus.md) lesen lassen, laden Sie dort die Dateien aus
-   `…/scantailor/out` hoch – Transkribus trennt Doppelseiten nämlich nicht.
+   `…/scantailor/out` bzw. `…/aufbereitet` hoch – Transkribus trennt Doppelseiten nämlich nicht.
 
 ## Grenzen
 
