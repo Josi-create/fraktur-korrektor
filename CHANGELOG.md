@@ -5,6 +5,15 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **EPUB: das PDF von anderswo dazuholen** (#40): Liegt neben einem EPUB kein gleichnamiges PDF, bietet *Öffnen …*
+  den Knopf *Passendes PDF auswählen …* (Dateidialog, nur am Rechner selbst); danach läuft es wie bei EPUB und PDF im
+  selben Ordner. Vorher prüft eine Stichprobe (`epub.pdf_fit`: Vier-Wort-Folgen einiger Seiten der Textebene), ob
+  das PDF zu dem Text gehört; ohne Textebene entscheidet der Anteil zugeordneter Zeilen nach der Texterkennung.
+  Passt es nicht, wird nichts angelegt und die Meldung nennt den nächsten Schritt. Für ein schon angelegtes
+  Textbuch (EPUB ohne PDF) gibt es in der Bibliothek *PDF hinzufügen*: Es entsteht ein neues Buch mit Seitenbildern
+  und Zeilen aus dem PDF und dem Wortlaut des Textbuchs samt seinen Korrekturen und seiner Wortliste
+  (`epub.transplant_book`); das Textbuch bleibt unangetastet, weil Protokoll und Lesezeichen zu seinen Seiten
+  gehören. Selbsttest `#pair=<epub>|<pdf>`, Hilfe unter *Ein Buch öffnen*.
 - **Zweispaltiger Satz** (#37): Zeitungen und Lexika werden spaltenweise gelesen – linke Spalte von oben nach
   unten, dann die rechte – statt Zeile für Zeile verschränkt. `pagexml.columns` erkennt die Spalten an den
   Zeilenkästen (eine durchgehende Lücke in der Mitte, beide Seiten nebeneinander und breit), darum gilt es für

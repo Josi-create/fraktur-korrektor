@@ -11,6 +11,9 @@ BLOCK = {'p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'blockquote', 'tr
 SKIP = {'script', 'style', 'head', 'svg', 'nav'}
 NORM = re.compile(r'[^0-9a-zäöüß]+')
 JUNK = re.compile(r'[|\_{}~^]+')  # Reste mitgescannter Seitenränder – nie echter Text
+# Darunter gehört ein PDF nicht zu diesem Text: Anteil der Vier-Wort-Folgen aus der Stichprobe (pdf_fit) bzw. der Zeilen,
+# die nach dem Zuordnen den Wortlaut tragen (transplant). Lieber abbrechen als Scan und fremden Text nebeneinanderlegen.
+MINFIT, MINMATCH = 0.1, 0.05
 
 
 class _Text(HTMLParser):
@@ -94,12 +97,72 @@ def norm(w):
     return NORM.sub('', w.lower().replace('ſ', 's'))
 
 
+def words(path):
+    """Der Wortlaut eines EPUB als Wortfolge."""
+    title, chapters = read(path)
+    return title, [w for paras in chapters for p in paras for w in p.split() if not JUNK.fullmatch(w)]
+
+
+def book_words(folder):
+    """Der Wortlaut eines Textbuchs (aus einem EPUB ohne PDF angelegt, vielleicht schon korrigiert) als Wortfolge –
+    ohne Kopfzeilen, Fußnotenstriche und Auszeichnung; ein am Zeilenende getrenntes Wort wird wieder eines."""
+    import korrlib
+    out = []
+    for f in sorted(glob.glob(os.path.join(folder, '[0-9][0-9][0-9].txt'))):
+        for l in open(f, encoding='utf-8').read().split('\n'):
+            if l.startswith('#') or l == '---':
+                continue
+            for w in korrlib.mask(l).split():
+                if out and out[-1].endswith('¬'):
+                    out[-1] = out[-1][:-1] + w
+                elif not JUNK.fullmatch(w):
+                    out.append(w)
+    return out
+
+
+def pdf_fit(E, pdf, sample=8):
+    """Gehört das PDF zu diesem Wortlaut? Stichprobe über die Textebene des PDF: Vier-Wort-Folgen einiger Seiten, wie
+    viele davon im Wortlaut vorkommen (0–1). None, wenn das PDF keine brauchbare Textebene hat – dann zeigt es sich
+    erst nach der Texterkennung (matched von transplant)."""
+    import fitz
+    marks = set()
+    En = [norm(w) for w in E]
+    for i in range(len(En) - 3):
+        key = tuple(En[i:i + 4])
+        if all(key):
+            marks.add(key)
+    tot = hit = 0
+    with fitz.open(pdf) as d:
+        ns = sorted({int(k * (d.page_count - 1) / max(1, sample - 1)) for k in range(sample)}) if d.page_count else []
+        for n in ns:
+            raw = []
+            for w in d[n].get_text('words'):  # am Zeilenende getrennte Wörter (Zu- / kunft) zusammensetzen wie im EPUB
+                if raw and raw[-1][-1:] in '-¬' and len(raw[-1]) > 1:
+                    raw[-1] = raw[-1][:-1] + w[4]
+                else:
+                    raw.append(w[4])
+            ws = [x for x in map(norm, raw) if x]
+            for i in range(len(ws) - 3):
+                tot += 1
+                hit += tuple(ws[i:i + 4]) in marks
+    return round(hit / tot, 3) if tot >= 20 else None
+
+
 def transplant(path, book, progress=lambda done, total, msg: None):
     """Ersetzt im Buchordner book (aus dem PDF gebaut) den Wortlaut der Zeilen durch den des EPUB.
     Zeilen, zu denen das EPUB nichts Passendes hat (Kopfzeilen, Fußnoten, die im EPUB anderswo stehen), behalten
     ihren Text aus dem PDF. Liefert dict(title, matched = Anteil der Zeilen mit EPUB-Text)."""
-    title, chapters = read(path)
-    E = [w for paras in chapters for p in paras for w in p.split() if not JUNK.fullmatch(w)]
+    title, E = words(path)
+    return _transplant(E, title, os.path.basename(path), book, progress)
+
+
+def transplant_book(src, book, progress=lambda done, total, msg: None):
+    """Wie transplant, nur kommt der Wortlaut aus einem Textbuch (#40): Wer sein EPUB ohne PDF angelegt und darin schon
+    korrigiert hat, bekommt den korrigierten Text auf die Zeilen des nachgereichten Scans gelegt."""
+    return _transplant(book_words(src), None, os.path.basename(src), book, progress)
+
+
+def _transplant(E, title, source, book, progress):
     En = [norm(w) for w in E]
     if not E:
         raise ValueError('keine_seiten')
@@ -188,7 +251,7 @@ def transplant(path, book, progress=lambda done, total, msg: None):
     q = os.path.join(book, 'qualitaet.json')
     try:
         d = json.load(open(q, encoding='utf-8'))
-        d['epub'] = dict(file=os.path.basename(path), matched=matched)
+        d['epub'] = dict(file=source, matched=matched)
         json.dump(d, open(q, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     except (OSError, ValueError):
         pass

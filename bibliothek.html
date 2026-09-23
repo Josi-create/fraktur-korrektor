@@ -237,8 +237,10 @@ let job = null, tools = null, found = [], sel = null;
 // Ein gesichertes PDF, dessen Buch schon in der Bibliothek liegt: die Kennung des Buchs, wenn es aktualisiert werden soll (#66)
 const updChoice = () => { const r = document.querySelector('input[name=upd]:checked'); return sel && sel.kind == 'pdfbuch' && sel.book && r ? r.value : ''; };
 const updInto = () => ['update', 'merge'].includes(updChoice()) ? sel.book.id : null;
-const AUTO = location.hash.startsWith('#auto=') || location.hash.split('|').length > 2;
+const AUTO = location.hash.startsWith('#auto=') || location.hash.startsWith('#pair=') || location.hash.split('|').length > 2;
 const AUTOPREP = location.hash.startsWith('#scans=');  // Selbsttest: gleich zur Vorschau »Scans vorbereiten«
+// Selbsttest #pair=<epub>|<pdf>: das EPUB untersuchen, das PDF dazuholen (wie über den Dateidialog) und einlesen (#40)
+const PAIR = location.hash.startsWith('#pair=') ? decodeURIComponent(location.hash.slice(6)).split('|') : null;
 const ICON = { book: '📖', pdfbuch: '📕', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️' };
 const usesPdf = f => f && (f.kind == 'pdf' || (f.kind == 'epub' && f.pdf));
 const pdfHasText = f => f && (f.kind == 'pdf' ? f.text : f.pdf_text);
@@ -289,8 +291,9 @@ function details(f, first) {
     (f.newer ? '<span class="tag new">' + t('det_newer') + '</span>' : '') + (f.known ? '<span class="tag">' + t('det_known') + '</span>' : '') +
     '<small>' + d.filter(x => x).join(' · ') + '</small><small>' + esc(f.path) + '</small>';
 }
-function showFound() {
-  step(2);
+function showFound(keep) {  // keep: den gewählten Fund neu zeichnen (er hat sich geändert), ohne den Selbsttest erneut loszuschicken
+  const cur = keep ? Math.max(0, found.indexOf(sel)) : 0;
+  if (!keep) step(2);
   $('foundhead').innerHTML = t(found.length == 1 ? 'found_one' : 'found_many', { n: found.length });
   const card = (f, n) => '<label class="cand" data-n="' + n + '"><input type="radio" name="cand" value="' + n + '"><span class="ic">' + ICON[f.kind] + '</span><span>' + details(f, n == 0 && found.length > 1) + '</span></label>';
   const top = Math.min(found.length, 3);
@@ -299,7 +302,10 @@ function showFound() {
   $('rest').style.display = 'none'; $('more').style.display = found.length > top ? '' : 'none';
   $('moreLink').textContent = t('more_found', { n: found.length - top });
   for (const el of document.querySelectorAll('input[name=cand]')) el.onchange = () => choose(+el.value);
-  choose(0).then(() => { if (AUTO) $('form').requestSubmit(); });
+  choose(cur).then(() => {
+    if (PAIR && !keep) pairPdf(PAIR[1]).then(ok => { if (ok) $('form').requestSubmit(); });  // passt das PDF nicht, bleibt die Meldung stehen
+    else if (AUTO && !keep) $('form').requestSubmit();
+  });
 }
 async function choose(n) {
   sel = found[n];
@@ -307,8 +313,7 @@ async function choose(n) {
   const k = sel.kind, isBook = k == 'book';
   $('oTitleBox').style.display = isBook ? 'none' : ''; $('oTitle').value = ''; $('oTitle').placeholder = t('title_ph', { n: sel.name });
   $('oImgBox').style.display = k == 'transkribus' && !sel.images ? '' : 'none'; $('oImages').value = sel.images_dir || '';
-  $('pair').style.display = k == 'epub' ? '' : 'none';
-  $('pair').innerHTML = k == 'epub' ? (sel.pdf ? t('pair_yes', { f: esc(base(sel.pdf)) }) : t('pair_no')) : '';
+  showPair();
   // Dasselbe Buch liegt schon hier: aktualisieren, wenn hier seit dem Sichern nichts geschah; wurde an beiden Stellen
   // weitergearbeitet, die Änderungen aus dem PDF nachspielen (#66). Vier Fälle: nur im PDF Neues → aktualisieren;
   // nichts Neues oder nur hier Neues → das vorhandene Buch öffnen; an beiden Stellen Neues → zusammenführen
@@ -324,6 +329,34 @@ async function choose(n) {
   $('oST').style.display = k == 'pdf' ? '' : 'none';
   await update();
   checkScans();
+}
+// EPUB: liegt kein gleichnamiges PDF daneben, lässt sich der Scan von anderswo dazuholen (#40). Das Programm prüft an einer
+// Stichprobe, ob das PDF zu diesem Text gehört – wer sich vergreift, bekommt es gesagt, statt Scan und fremden Text nebeneinander
+function showPair() {
+  const k = sel && sel.kind;
+  $('pair').style.display = k == 'epub' ? '' : 'none';
+  if (k != 'epub') { $('pair').innerHTML = ''; return; }
+  let h = sel.pdf ? t('pair_yes', { f: esc(base(sel.pdf)) }) : t('pair_no');
+  if (sel.pdf && sel.pdf_chosen) h += '<div class="hint">' + (sel.pdf_fit == null ? t('pair_fit_unknown') : t('pair_fit_ok', { p: Math.round(sel.pdf_fit * 100) })) + '</div>';
+  h += '<div class="row" style="margin-top:8px"><input type="text" id="oPair" spellcheck="false" placeholder="' + esc(t('pair_ph')) + '">' +
+    '<button type="button" id="cPair">📄 ' + t(sel.pdf ? 'pair_other' : 'pair_pick') + '</button></div><div class="msg" id="pairmsg"></div>';
+  $('pair').innerHTML = h;
+  $('cPair').onclick = async () => {
+    try { const p = (await post('/api/choose', { kind: 'pdf' })).path; if (p) { $('oPair').value = p; await pairPdf(p); } }
+    catch (err) { fail('pairmsg', err); }
+  };
+  $('oPair').addEventListener('keydown', e => { if (e.key == 'Enter') { e.preventDefault(); pairPdf($('oPair').value.trim()); } });
+  $('oPair').addEventListener('change', () => pairPdf($('oPair').value.trim()));
+}
+async function pairPdf(p) {
+  if (!p || !sel || sel.kind != 'epub') return;
+  $('pairmsg').textContent = t('scanning');
+  try {
+    const r = await post('/api/epub_pair', { source: sel.path, pdf: p });
+    Object.assign(sel, { pdf: r.pdf, pdf_text: r.text, pages: r.pages, pdf_fit: r.fit, pdf_chosen: true });
+    showFound(true);  // Karte und Optionen neu zeichnen: jetzt EPUB + PDF
+    return true;
+  } catch (err) { fail('pairmsg', err); return false; }
 }
 async function update() {
   if (stepNow == 4) return;  // die Vorschau hat ihren eigenen Knopf
@@ -524,7 +557,7 @@ $('oST').onclick = async () => {
 // ---- Ein Buch weiterbearbeiten: Text aus Transkribus nachlegen, Bilder ergänzen, die anderen Programme vorbereiten.
 // Wer sein Buch schon einmal eingelesen hat, soll nicht wieder von vorn anfangen – und seine Seitenbilder nicht suchen müssen.
 let eb = null, eact = null, enext = null, enextOpen = null, epv = null, eauto = false;
-const ACTS = { pdf: ['📕', b => true], trans: ['🗂️', b => true], images: ['🖼️', b => b.images < b.pages],
+const ACTS = { pdf: ['📕', b => true], trans: ['🗂️', b => true], addpdf: ['📄', b => b.textbook], images: ['🖼️', b => b.images < b.pages && !b.textbook],
                prep_scans: ['✂️', b => b.images > 0], prep_trans: ['⬆️', b => b.images > 0], prep_st: ['🧹', b => b.images > 0],
                restore: ['⏪', b => (b.backups || []).length] };
 
@@ -554,6 +587,7 @@ function editAct(a) {
   if (a == 'prep_scans') return editScans();
   if (a == 'restore') return editRestore();
   if (a == 'pdf') return editPdf();
+  if (a == 'addpdf') return editAddPdf();
   const img = a == 'images';
   $('ebody').innerHTML = '<label class="f">' + t(img ? 'ed_imgsource' : 'ed_source') + '</label>' +
     '<div class="row"><input type="text" id="eSrc" spellcheck="false">' +
@@ -575,6 +609,27 @@ function editPdf() {
   $('eSrc').value = eb.pdfdir || '';
   $('eDir').onclick = () => editChoose('folder');
   $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t('ed_pdf_go');
+}
+function editAddPdf() {
+  // Textbuch aus einem EPUB ohne PDF (#40): der Scan kommt nachträglich dazu. Es entsteht ein neues Buch – die Seiten des
+  // Textbuchs sind willkürlich umbrochen, Protokoll und Lesezeichen gehören zu ihnen –, der korrigierte Text kommt mit
+  $('ebody').innerHTML = '<div>' + t('ed_addpdf_intro') + '</div><label class="f">' + t('ed_addpdf_source') + '</label>' +
+    '<div class="row"><input type="text" id="eSrc" spellcheck="false"><button type="button" id="eFile">📄 ' + t('choose_pdf') + '</button></div>' +
+    '<div class="msg" id="efit"></div>' +
+    '<label class="f">' + t('ocr_script') + '</label><div class="radio"><label><input type="radio" name="script" value="fraktur" checked> ' + t('script_fraktur') +
+    '</label><label><input type="radio" name="script" value="antiqua"> ' + t('script_antiqua') + '</label></div>' +
+    '<div class="hint">' + t('ed_addpdf_hint') + '</div>';
+  const check = async () => {  // gleich nachsehen, ob das PDF zu diesem Text gehört
+    const p = $('eSrc').value.trim(); $('efit').textContent = ''; $('eGo').disabled = !p; if (!p) return;
+    try {
+      const r = await post('/api/epub_pair', { id: eb.id, pdf: p });
+      $('efit').innerHTML = r.fit == null ? t('pair_fit_unknown') : t('pair_fit_ok', { p: Math.round(r.fit * 100) });
+    } catch (err) { fail('efit', err); $('eGo').disabled = true; }
+  };
+  $('eFile').onclick = async () => { await editChoose('pdf'); check(); };
+  $('eSrc').addEventListener('change', check);
+  $('eGo').style.display = ''; $('eGo').disabled = true; $('eGo').textContent = t('ed_addpdf_go');
+  $('eSrc').focus();
 }
 async function editRestore() {
   // Jede ersetzte Fassung liegt als vorher-<Datum>.zip im Buchordner – von hier aus lässt sie sich zurückholen
@@ -663,6 +718,12 @@ $('eform').onsubmit = async ev => {
         try { await post('/api/reveal', { path: r.folder }); $('shownPdf').textContent = t('shown_clip'); }
         catch (err) { fail('shownPdf', err); }
       };
+    } else if (eact == 'addpdf') {
+      const script = document.querySelector('#ebody input[name=script]:checked');
+      const r = await editJob('/api/add_pdf', { id: eb.id, source: src, script: script ? script.value : 'fraktur' });
+      enext = r.id;
+      editDone('<h3>✔ ' + t('ed_addpdf_done', { n: r.pages, m: Math.round(r.matched * 100) }) + '</h3>' +
+        '<div class="hint">' + t('ed_addpdf_new', { f: esc(r.folder) }) + '</div>');
     } else if (eact == 'images') {
       const r = await editJob('/api/add_images', { id: eb.id, source: src });
       enext = eb.id;
@@ -693,7 +754,7 @@ document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) { $('
 load();
 // Einstieg aus der Hilfe: #open bzw. #open=<pfad>; #auto=<pfad> liest die Empfehlung gleich ein, #scans=<pfad> zeigt die
 // Vorschau »Scans vorbereiten« (Selbsttest, wie ?keys im Reader)
-if (location.hash.startsWith('#open') || AUTO || AUTOPREP) openDialog(location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');
+if (location.hash.startsWith('#open') || AUTO || AUTOPREP) openDialog(PAIR ? PAIR[0] : location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');
 </script>
 </body>
 </html>

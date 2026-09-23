@@ -13,7 +13,7 @@ You do not need to know in which form your book exists. Click **Open …** and s
 | 📖 **Book** – a folder you have already worked on with Fraktur-Korrektor | is opened immediately |
 | 📕 **Saved book (PDF)** – a PDF written by Fraktur-Korrektor, on another computer too | is created as a book with everything in it. See [Saving a book as PDF](pdf-sichern.md) |
 | 📄 **PDF** | If it is already searchable, its text is taken over within seconds; otherwise Tesseract recognises the text. See [Reading in a PDF or images](pdf-import.md) |
-| 📗 **EPUB** | If a **PDF of the same name** lies next to it, the scan appears on the left and the EPUB text on the right. Without a PDF the book is opened without page images |
+| 📗 **EPUB** | If a **PDF of the same name** lies next to it, the scan appears on the left and the EPUB text on the right. If it lies elsewhere, fetch it with **Choose the matching PDF …**. Without a PDF the book is opened without page images |
 | 🖼️ **Page images** – a folder with JPG, PNG or TIF | Tesseract recognises the text |
 | 🗂️ **Export from Transkribus** – ZIP file or unpacked folder | is imported. See [Working with Transkribus](transkribus.md) |
 
@@ -45,6 +45,27 @@ there are several matching PDFs, the searchable one with the better image qualit
 
 The EPUB itself is not changed; your corrections go into the text files of the new book folder.
 
+### The PDF lies elsewhere
+
+If the PDF has a different name or lies in another folder, the program cannot find it by itself. Then the EPUB is
+marked “no PDF of the same name next to it”, with the button **Choose the matching PDF …** below. Pick the PDF
+with it – or paste its path into the field. From there on it works just like EPUB and PDF in the same folder.
+
+The program takes a sample to check whether the PDF really belongs to this EPUB: if the PDF already contains
+text, it compares word sequences from a few pages with the EPUB and tells you right away whether it fits. If the
+PDF contains only images, this shows after text recognition. If the PDF does not belong to this text, **no book is
+created** – you choose another PDF or create the EPUB without page images. So a foreign scan never ends up next to
+your text.
+
+### The PDF arrives later
+
+If you have already opened the EPUB without a PDF and perhaps corrected in it, you need not start over: in the
+library such a text-only book has the button **Add PDF** (see [Continue working on a book](#continue-working-on-a-book)).
+A **new book** is created next to it: page images and lines from the PDF, the wording from the text-only book –
+with all corrections you have made there and with your word list. The text-only book itself stays as it was; if
+you no longer need it, remove it from the list with the ✕. It has to be a new book because the pages of the
+text-only book have nothing to do with the pages of the scan – log and bookmark belong to the text-only book.
+
 ## Export from Transkribus
 
 During import the program detects running heads (page numbers) and separates footnotes from the main text.
@@ -65,6 +86,7 @@ In the library, every book has a row of buttons below it. Next to **Open book** 
 |---|---|
 | **Take in recognised text** | The text from Transkribus – or the text a library publishes for its digitised copy – takes the place of the present one. Your page images, your word list and your bookmark stay where they are. You may point at the ZIP file, the unpacked folder or the text file of the export, or at a folder of hOCR or ALTO files (see below). |
 | **Add page images** | For books that are text only – a Transkribus export without images, say. Point at a folder of images, at the PDF the pages come from, or at another book that already has them. |
+| **Add PDF** | For a text-only book from an EPUB that was opened without a PDF. Point at the PDF of the scan: a new book is created with the pages of the scan and your text including corrections (see [EPUB and PDF together](#epub-and-pdf-together)). |
 | **Prepare for Transkribus** | The program names the folder you upload, puts it on the clipboard and opens it in a file window. |
 | **Prepare scans** | Splits double pages and straightens crooked pages – with a preview of the dividing line. Afterwards you have the result recognised as a new book. See [Reading in a PDF or images](pdf-import.md). |
 | **Prepare for ScanTailor** | Starts ScanTailor and names the input and output folder – for curved pages, stains, dark margins. |

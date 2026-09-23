@@ -98,6 +98,11 @@ das die Bilder schon hat – siehe [Ein Buch öffnen](add-book.md).
 Sie lesen über das Heimnetz von einem anderen Gerät aus mit. Bücher öffnen, einlesen oder vorbereiten kann man nur an
 dem Rechner, auf dem das Programm gestartet wurde. Lesen und korrigieren geht überall.
 
+**„Dieses PDF scheint nicht zu diesem Text zu gehören.“**
+Sie haben zu einem EPUB oder Textbuch ein PDF gewählt, dessen Wortlaut kaum mit dem Text übereinstimmt – vermutlich ein
+anderes Buch oder eine andere Ausgabe. Angelegt wurde nichts. Wählen Sie das richtige PDF, oder legen Sie das EPUB ohne
+Seitenbilder an – siehe [Ein Buch öffnen](add-book.md).
+
 **„Dieses PDF wurde nicht mit dem Fraktur-Korrektor gesichert.“**
 Das PDF enthält keinen Arbeitsstand. Lesen Sie es mit **Öffnen …** ein wie jedes andere PDF.
 

@@ -14,7 +14,7 @@ Programm eine **Datei** oder einen **Ordner**. Es sieht nach, was darin steckt, 
 | 📖 **Buch** – ein Ordner, an dem Sie mit dem Fraktur-Korrektor schon gearbeitet haben | wird sofort geöffnet |
 | 📕 **Gesichertes Buch (PDF)** – ein PDF, das der Fraktur-Korrektor geschrieben hat, auch auf einem anderen Rechner | wird mit allem, was darin steckt, als Buch angelegt. Siehe [Ein Buch als PDF sichern](pdf-sichern.md) |
 | 📄 **PDF** | Ist es schon durchsuchbar, wird der Text in Sekunden übernommen; sonst erkennt Tesseract den Text. Siehe [PDF oder Bilder einlesen](pdf-import.md) |
-| 📗 **EPUB** | Liegt ein **gleichnamiges PDF** daneben, erscheint links der Scan und rechts der Text des EPUB. Ohne PDF wird das Buch ohne Seitenbilder geöffnet |
+| 📗 **EPUB** | Liegt ein **gleichnamiges PDF** daneben, erscheint links der Scan und rechts der Text des EPUB. Liegt es woanders, holen Sie es mit **Passendes PDF auswählen …** dazu. Ohne PDF wird das Buch ohne Seitenbilder geöffnet |
 | 🖼️ **Seitenbilder** – ein Ordner mit JPG, PNG oder TIF | Tesseract erkennt den Text |
 | 🗂️ **Export aus Transkribus** – ZIP-Datei oder entpackter Ordner | wird importiert. Siehe [Mit Transkribus arbeiten](transkribus.md) |
 
@@ -46,6 +46,29 @@ Gibt es mehrere passende PDFs, wird das durchsuchbare mit der besseren Bildquali
 
 Das EPUB selbst wird dabei nicht verändert; Ihre Korrekturen landen in den Textdateien des neuen Buchordners.
 
+### Das PDF liegt woanders
+
+Heißt das PDF anders oder liegt es in einem anderen Ordner, findet das Programm es nicht von selbst. Dann steht
+unter dem EPUB „kein gleichnamiges PDF daneben“ und darunter der Knopf **Passendes PDF auswählen …**. Wählen Sie
+das PDF damit aus – oder fügen Sie seinen Pfad in das Feld ein. Danach geht es weiter wie bei EPUB und PDF im
+selben Ordner.
+
+Das Programm prüft dabei an einer Stichprobe, ob das PDF wirklich zu diesem EPUB gehört: Enthält das PDF schon
+Text, vergleicht es Wortfolgen von einigen Seiten mit dem EPUB und sagt gleich, ob es passt. Enthält das PDF nur
+Bilder, zeigt sich das erst nach der Texterkennung. Gehört das PDF nicht zu diesem Text, wird **kein Buch
+angelegt** – Sie wählen ein anderes PDF oder legen das EPUB ohne Seitenbilder an. So kommt nie ein fremder Scan
+neben Ihren Text.
+
+### Das PDF kommt später
+
+Haben Sie das EPUB schon ohne PDF geöffnet und vielleicht darin korrigiert, müssen Sie nicht von vorn anfangen: In
+der Bibliothek steht bei einem solchen Textbuch der Knopf **PDF hinzufügen** (siehe [Ein Buch weiterbearbeiten](#ein-buch-weiterbearbeiten)).
+Es entsteht ein **neues Buch** daneben: Seitenbilder und Zeilen aus dem PDF, der Wortlaut aus dem Textbuch – mit
+allen Korrekturen, die Sie dort schon gemacht haben, und mit Ihrer Wortliste. Das Textbuch selbst bleibt, wie es
+war; wenn Sie es nicht mehr brauchen, nehmen Sie es mit dem ✕ aus der Liste. Ein neues Buch muss es sein, weil die
+Seiten des Textbuchs nichts mit den Seiten des Scans zu tun haben – Protokoll und Lesezeichen gehören zum
+Textbuch.
+
 ## Export aus Transkribus
 
 Beim Import erkennt das Programm Kopfzeilen (Seitenzahlen) und trennt Fußnoten vom Haupttext. Wo das nicht
@@ -67,6 +90,7 @@ Wege:
 |---|---|
 | **Erkannten Text einlesen** | Der Text von Transkribus – oder der, den eine Bibliothek zu ihrem Digitalisat herausgibt – tritt an die Stelle des bisherigen. Ihre Seitenbilder, Ihre Wortliste und Ihr Lesezeichen bleiben, wo sie sind. Angeben können Sie die ZIP-Datei, den entpackten Ordner oder die Textdatei des Exports, oder einen Ordner mit hOCR- oder ALTO-Dateien (siehe unten). |
 | **Seitenbilder hinzufügen** | Für Bücher, die nur aus Text bestehen – etwa ein Transkribus-Export ohne Bilder. Zeigen Sie auf einen Bilderordner, auf das PDF, aus dem die Seiten stammen, oder auf ein anderes Buch, das die Bilder schon hat. |
+| **PDF hinzufügen** | Für ein Textbuch aus einem EPUB, das ohne PDF geöffnet wurde. Zeigen Sie auf das PDF des Scans: Es entsteht ein neues Buch mit den Seiten des Scans und Ihrem Text samt Korrekturen (siehe [EPUB und PDF zusammen](#epub-und-pdf-zusammen)). |
 | **Für Transkribus vorbereiten** | Das Programm nennt Ihnen den Ordner, den Sie hochladen, legt ihn in die Zwischenablage und öffnet ihn im Dateifenster. |
 | **Scans vorbereiten** | Teilt Doppelseiten und richtet schiefe Seiten gerade – mit Vorschau der Trennlinie. Das Ergebnis lassen Sie danach als neues Buch erkennen. Siehe [PDF oder Bilder einlesen](pdf-import.md). |
 | **Für ScanTailor vorbereiten** | Startet ScanTailor und nennt Ein- und Ausgabeordner – für gewölbte Seiten, Flecken, dunkle Ränder. |

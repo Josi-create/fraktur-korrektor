@@ -96,6 +96,11 @@ images – see [Opening a book](add-book.md).
 You are reading along from another device on the home network. Opening, reading in or preparing books is only possible
 on the computer where the program was started. Reading and correcting works everywhere.
 
+**“This PDF does not seem to belong to this text.”**
+You chose a PDF for an EPUB or text-only book whose wording hardly matches the text – probably another book or another
+edition. Nothing was created. Choose the right PDF, or create the EPUB without page images – see
+[Opening a book](add-book.md).
+
 **“This PDF was not saved by Fraktur-Korrektor.”**
 The PDF holds no work in progress. Read it in with **Open …** like any other PDF.
 

@@ -842,7 +842,9 @@ def lib_list():
                         pages=n, bookmark=bm, last=e.get('last', ''), quality=q, corrections=corr, quelle=quelle,
                         pending=bool(qj.get('pending')), backups=pagexml.backups(e['folder']) if n else [],
                         unknown=None if unbekannt is None else round(100 * (1 - unbekannt)),
-                        images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*'))), pdfdir=pdf_target(e['folder'])))
+                        images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*'))), pdfdir=pdf_target(e['folder']),
+                        # Textbuch aus einem EPUB ohne PDF: Seiten ohne Bild und ohne Zeilenlage – dazu lässt sich das PDF nachreichen (#40)
+                        textbook=bool(n) and not os.path.exists(os.path.join(e['folder'], 'lines.json')) and not os.path.isdir(os.path.join(e['folder'], 'img'))))
     out.sort(key=lambda b: b['last'], reverse=True)
     return out
 
@@ -947,6 +949,64 @@ def add_images(bid, source, progress, cancelled):
     return dict(id=bid, folder=folder, **r)
 
 
+def add_pdf(bid, source, script, progress, cancelled):
+    """Ein Textbuch (EPUB ohne PDF angelegt) nachträglich mit dem Scan zusammenbringen (#40): Seitenbilder und Zeilen
+    kommen aus dem PDF, der Wortlaut aus dem Textbuch – samt allem, was darin schon korrigiert wurde. Es entsteht ein
+    neues Buch daneben, denn die Seiten des Textbuchs sind willkürlich umbrochen; Protokoll und Lesezeichen gehören zu
+    ihnen und nicht zu den Seiten des Scans. Das Textbuch bleibt, wie es ist; Wortliste und Einstellungen kommen mit."""
+    folder = book_folder(bid)
+    if not source or not os.path.isfile(source) or not source.lower().endswith('.pdf'):
+        raise ValueError('quelle_fehlt')
+    e = next((x for x in lib_load() if book_id(x['folder']) == bid), None)
+    title = (e.get('title') if e else None) or default_title(folder)
+    out = new_folder(title, source)[1]
+    try:
+        textlayer = ocr.pdf_has_text(source)  # der Wortlaut kommt ohnehin aus dem Buch; die Textebene liefert nur die Zeilen
+    except Exception:
+        textlayer = False
+    try:
+        r = ocr.build(source, out, progress, cancelled, 'antiqua' if script == 'antiqua' else 'fraktur', textlayer)
+        m = epub.transplant_book(folder, out, progress)
+        if m['matched'] < epub.MINMATCH:
+            raise ValueError('pdf_passt_nicht')
+    except Exception:
+        ocr.cleanup(out)  # nimmt nur, was eben erzeugt wurde
+        raise
+    for n in ('whitelist.txt', 'buch.json'):
+        if os.path.isfile(os.path.join(folder, n)):
+            shutil.copyfile(os.path.join(folder, n), os.path.join(out, n))
+    e = lib_touch(out, title)
+    st = propose_settings(out) if not os.path.isfile(os.path.join(out, 'buch.json')) else pagexml.load_json(out, 'buch.json', {})
+    return dict(id=book_id(out), folder=out, title=e['title'], pages=r['pages'], quality=r['quality'], matched=m['matched'], neu=True,
+                year=st.get('year'), dics=st.get('dics'))
+
+
+def pair_check(source, bid, pdf):
+    """Passt das PDF zu einem EPUB (source) oder einem Textbuch der Bibliothek (bid)? Liefert dict(pdf, pages, text, fit);
+    fit None, wenn das PDF keine Textebene hat. Fehler pdf_passt_nicht, wenn die Stichprobe dagegen spricht (#40)."""
+    if not pdf or not os.path.isfile(pdf) or not pdf.lower().endswith('.pdf'):
+        raise ValueError('quelle_fehlt')
+    if bid:
+        E = epub.book_words(book_folder(bid))
+    else:
+        if not source or not os.path.isfile(source):
+            raise ValueError('quelle_fehlt')
+        try:
+            E = epub.words(source)[1]
+        except Exception:
+            raise ValueError('kein_epub')
+    try:
+        pages, text = ocr.pdf_count(pdf), ocr.pdf_has_text(pdf)
+        fit = epub.pdf_fit(E, pdf) if text else None
+    except ImportError:
+        raise ValueError('kein_pymupdf')
+    except Exception:
+        raise ValueError('quelle_fehlt')
+    if fit is not None and fit < epub.MINFIT:
+        raise ValueError('pdf_passt_nicht')
+    return dict(pdf=os.path.abspath(pdf), pages=pages, text=text, fit=fit)
+
+
 def restore(bid, name):
     """Eine frühere Fassung eines Buchs zurückholen – das Gegenstück zum Ersetzen des Textes."""
     folder = book_folder(bid)
@@ -1035,6 +1095,9 @@ def import_epub(source, pdf, title, target, script, textlayer, progress, cancell
         if pdf and os.path.isfile(pdf):
             r = ocr.build(pdf, out, progress, cancelled, 'antiqua' if script == 'antiqua' else 'fraktur', bool(textlayer))
             m = epub.transplant(source, out, progress)
+            if m['matched'] < epub.MINMATCH:  # das PDF gehört nicht zu diesem EPUB (#40): nichts Falsches nebeneinanderlegen
+                ocr.cleanup(out)
+                raise ValueError('pdf_passt_nicht')
             r = dict(pages=r['pages'], quality=r['quality'], matched=m['matched'])
         else:
             r = epub.text_book(source, out)
@@ -1603,7 +1666,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -1644,6 +1707,13 @@ class H(BaseHTTPRequestHandler):
                 return self.sendjson(dict(job=start_job(add_transkribus, body.get('id'), body.get('source'), body.get('mode'))))
             if u.path == '/api/add_images':
                 return self.sendjson(dict(job=start_job(add_images, body.get('id'), body.get('source'))))
+            if u.path == '/api/add_pdf':
+                return self.sendjson(dict(job=start_job(add_pdf, body.get('id'), body.get('source'), body.get('script'))))
+            if u.path == '/api/epub_pair':
+                try:
+                    return self.sendjson(pair_check(body.get('source'), body.get('id'), body.get('pdf')))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
             if u.path == '/api/export_pdf':
                 if not get_book(body.get('id') or ''):
                     return self.sendjson(dict(error='quelle_fehlt'), 400)
