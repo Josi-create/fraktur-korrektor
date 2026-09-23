@@ -5,6 +5,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Häufige Fragen und Fehlerbehebung** (#26): neue Hilfeseite `faq` in beiden Sprachen – Firewall-Nachfrage, belegter
+  Port, SmartScreen und Gatekeeper, fehlendes Wörterbuch, verlorene Bildzuordnung, 409-Konflikt nach dem Bearbeiten in
+  einem Editor, orange Zeilen nach dem Zusammenführen und die übrigen Fehlermeldungen des Programms, je mit dem nächsten
+  Schritt. Verlinkt aus der Hilfeübersicht, der Kopfleiste des Readers, der Fußzeile der Bibliothek und aus jeder
+  Fehlermeldung der Bibliothek.
 - **Scans vorbereiten** (#42): Doppelseiten teilen und schiefe Seiten geraderichten erledigt das Programm jetzt selbst,
   nur mit PyMuPDF (`scans.py`). Beim Untersuchen eines PDF oder Bilderordners sieht es sich einige Seiten an
   (Seitenverhältnis, helle Lücke oder Falzschatten in der Bundmitte, Neigung der Zeilen über das Projektionsprofil)

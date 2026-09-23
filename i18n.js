@@ -7,7 +7,7 @@ if (!LANGS.includes(LANG)) LANG = 'de';
 
 const T = {
 de: {
-  library: 'Bibliothek', help: 'Hilfe', help_f1: 'Hilfe (F1)', page: 'Seite', p_abbr: 'S.',
+  library: 'Bibliothek', help: 'Hilfe', help_f1: 'Hilfe (F1)', faq_link: 'Häufige Fragen', page: 'Seite', p_abbr: 'S.',
   loading: 'Buch wird geladen … Beim ersten Öffnen prüft das Programm jedes Wort gegen das Wörterbuch – das kann bis zu einer Minute dauern. Danach geht es schnell.',
   loading_page: 'Seite {n} von {total} geprüft',
   mode_read: 'Lesen', mode_fix: 'Korrektur', mode_free: 'Zeile bearbeiten',
@@ -284,7 +284,7 @@ de: {
   donate: 'Gefällt Ihnen das Programm? Kaffee spendieren ☕', source: 'Quelltext und Mitarbeit auf GitHub',
 },
 en: {
-  library: 'Library', help: 'Help', help_f1: 'Help (F1)', page: 'Page', p_abbr: 'p.',
+  library: 'Library', help: 'Help', help_f1: 'Help (F1)', faq_link: 'FAQ', page: 'Page', p_abbr: 'p.',
   loading: 'Loading book … The first time a book is opened, every word is checked against the dictionary – this can take up to a minute. After that it is fast.',
   loading_page: 'Page {n} of {total} checked',
   mode_read: 'Reading', mode_fix: 'Correction', mode_free: 'Edit line',

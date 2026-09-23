@@ -22,6 +22,11 @@ as its window.
 4. **Take it along** – [Saving a book as PDF](pdf-sichern.md): one file with page images, searchable text and all
    your work, readable in any PDF reader and a book again on another computer.
 
+## If something does not work
+
+[FAQ and troubleshooting](faq.md): firewall question, port in use, warnings at the first start, lost image
+alignment, red words everywhere – the most common messages with the next step to take.
+
 ## Good to know
 
 - **Every correction is saved immediately**, straight into the text files of the book folder. There is no

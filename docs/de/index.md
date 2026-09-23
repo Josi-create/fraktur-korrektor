@@ -22,6 +22,11 @@ lediglich als Fenster.
 4. **Mitnehmen** – [Ein Buch als PDF sichern](pdf-sichern.md): eine Datei mit Seitenbildern, durchsuchbarem Text und
    Ihrem ganzen Arbeitsstand, lesbar in jedem PDF-Reader und auf einem anderen Rechner wieder ein Buch.
 
+## Wenn etwas nicht klappt
+
+[Häufige Fragen und Fehlerbehebung](faq.md): Firewall-Nachfrage, belegter Port, Warnungen beim ersten Start,
+fehlende Bildzuordnung, rote Wörter zuhauf – die häufigsten Meldungen mit dem nächsten Schritt.
+
 ## Gut zu wissen
 
 - **Jede Korrektur wird sofort gespeichert**, direkt in den Textdateien des Buchordners. Es gibt kein

@@ -91,7 +91,7 @@ button:disabled{opacity:.5;cursor:default}
  <div id="actions"><button id="bOpen" class="main" data-t="open_btn"></button><span data-t="open_what"></span></div>
  <div id="note"></div>
  <div id="books"></div>
- <div id="foot"><span id="ver"></span><a data-help="index" target="_blank" data-t="help"></a><a href="https://github.com/Josi-create/fraktur-korrektor" target="_blank" data-t="source"></a><a id="donate" target="_blank" style="display:none" data-t="donate"></a></div>
+ <div id="foot"><span id="ver"></span><a data-help="index" target="_blank" data-t="help"></a><a data-help="faq" target="_blank" data-t="faq_link"></a><a href="https://github.com/Josi-create/fraktur-korrektor" target="_blank" data-t="source"></a><a id="donate" target="_blank" style="display:none" data-t="donate"></a></div>
 </div>
 <div id="dlg" class="dlg"><form id="form">
  <h2 data-t="open_title"></h2>
@@ -150,6 +150,8 @@ const $ = id => document.getElementById(id);
 applyI18n();
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
 const help = (page, text) => '<a target="_blank" href="/hilfe/' + LANG + '/' + page + '">' + text + '</a>';
+// Jede Fehlermeldung endet mit dem Weg zur FAQ – dort stehen die Meldungen mit dem nächsten Schritt (#26)
+const fail = (id, err) => { $(id).innerHTML = esc(err.message) + ' ' + help('faq', t('faq_link')); };
 const base = p => String(p).split(/[\\/]/).pop();
 async function post(path, body) {
   const r = await fetch(path, { method: 'POST', body: JSON.stringify(body) });
@@ -226,7 +228,7 @@ function bindToolLinks(box, after) {
   for (const a of box.querySelectorAll('a[data-tool]')) a.onclick = async e => {
     e.preventDefault();
     try { const p = (await post('/api/choose', { kind: 'exe' })).path; if (p) { await post('/api/set_tool', { tool: a.dataset.tool, path: p }); await after(); } }
-    catch (err) { $('omsg').textContent = err.message; }
+    catch (err) { fail('omsg', err); }
   };
 }
 
@@ -260,7 +262,7 @@ function openDialog(path) {
 }
 async function pickAndScan(kind) {
   try { const p = (await post('/api/choose', { kind })).path; if (p) { $('iPath').value = p; await doScan(); } }
-  catch (e) { $('omsg').textContent = e.message; }
+  catch (e) { fail('omsg', e); }
 }
 async function doScan() {
   const p = $('iPath').value.trim(); if (!p) return;
@@ -271,7 +273,7 @@ async function doScan() {
     if (!found.length) { $('omsg').innerHTML = t('found_none') + ' ' + help('add-book', t('help')); return; }
     if (found.length == 1 && found[0].kind == 'book') return openBook(found[0]);  // eindeutig: nicht nachfragen
     showFound();
-  } catch (e) { $('omsg').textContent = e.message; }
+  } catch (e) { fail('omsg', e); }
 }
 function details(f, first) {
   const d = [f.pages ? t('det_pages', { n: f.pages }) : '', f.mtime];
@@ -414,7 +416,7 @@ function showDone(r) {
     try {
       await post('/api/reveal', { path: r.images });
       $('shownMsg').textContent = t('shown_clip');
-    } catch (err) { $('shownMsg').textContent = err.message; }
+    } catch (err) { fail('shownMsg', err); }
   };
   // Hervorgehoben ist, was die Empfehlung sagt: bei schlechtem PDF-Text das Neuerkennen, sonst das Öffnen
   const redoFirst = canRedo && level == 'rot';
@@ -435,7 +437,7 @@ $('bRedo').onclick = async () => {  // das eben Eingelesene verwerfen (es enthä
     await post('/api/discard', { id: old.id });
     const r = await runJob('/api/import_ocr', { source: sel.path, title: old.title, script: document.querySelector('input[name=script]:checked').value, textlayer: false });
     showDone(r);
-  } catch (err) { $('omsg').textContent = err.message; }
+  } catch (err) { fail('omsg', err); }
   load();
 };
 $('moreLink').onclick = e => { e.preventDefault(); $('rest').style.display = ''; $('more').style.display = 'none'; };
@@ -453,7 +455,7 @@ $('form').onsubmit = async e => {
       : sel.kind == 'epub' ? await runJob('/api/import_epub', { source: sel.path, pdf: sel.pdf, title, script, textlayer: useText() })
       : await runJob('/api/import_ocr', { source: sel.path, title, script, textlayer: useText() });
     showDone(r); load();
-  } catch (err) { $('omsg').textContent = err.message; }
+  } catch (err) { fail('omsg', err); }
 };
 // ---- Scans vorbereiten (#42): Doppelseiten teilen, schiefe Seiten geraderichten – das Programm sieht sich beim
 // Untersuchen ein paar Seiten an und empfiehlt es, wenn nötig. Die Vorschau zeigt die erste Doppelseite mit der Trennlinie.
@@ -509,7 +511,7 @@ async function runPrepare() {
     const r = await runJob('/api/prepare_scans', { source: src, title, split: o.split, deskew: o.deskew });
     $('iPath').value = r.folder; await doScan();
     $('result').innerHTML = '<div class="rec">✔ ' + t('scans_done', { n: r.pages, s: r.split, r: r.rotated, folder: esc(r.folder) }) + '<br>' + t('scans_next') + '</div>';
-  } catch (err) { $('omsg').textContent = err.message; }
+  } catch (err) { fail('omsg', err); }
 }
 $('oST').onclick = async () => {
   try {
@@ -517,7 +519,7 @@ $('oST').onclick = async () => {
     const clip = r.clipboard ? '<p>' + t('st_clip', { keys: t(/Mac/i.test(navigator.platform) ? 'paste_mac' : 'paste') }) + '</p>' : '';
     $('result').innerHTML = r.folder ? t('st_done', { folder: esc(r.folder), out: esc(r.out) }) + clip + ' ' + help('pdf-import', t('q_ends_link')) : t('st_started');
     if (r.out) $('iPath').value = r.out;
-  } catch (err) { $('omsg').textContent = err.message; }
+  } catch (err) { fail('omsg', err); }
 };
 // ---- Ein Buch weiterbearbeiten: Text aus Transkribus nachlegen, Bilder ergänzen, die anderen Programme vorbereiten.
 // Wer sein Buch schon einmal eingelesen hat, soll nicht wieder von vorn anfangen – und seine Seitenbilder nicht suchen müssen.
@@ -589,7 +591,7 @@ async function editRestore() {
       editDone('<h3>✔ ' + t('ed_restore_done', { d: esc(b.zeit), n: r.back }) + '</h3>' +
         (r.backup ? '<div class="hint">' + t('ed_backup', { f: esc(r.backup) }) + '</div>' : ''));
       load();
-    } catch (err) { $('emsg').textContent = err.message; }
+    } catch (err) { fail('emsg', err); }
   };
 }
 async function editScans() {
@@ -602,11 +604,11 @@ async function editScans() {
     epv = scanPreview($('ebody'), src, r);
     $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t('scans_go');
     if (eauto) { eauto = false; $('eform').requestSubmit(); }
-  } catch (err) { $('emsg').textContent = err.message; }
+  } catch (err) { fail('emsg', err); }
 }
 async function editChoose(kind) {
   try { const p = (await post('/api/choose', { kind })).path; if (p) $('eSrc').value = p; }
-  catch (err) { $('emsg').textContent = err.message; }
+  catch (err) { fail('emsg', err); }
 }
 async function editPrepare(a) {
   $('ebody').innerHTML = ''; $('eGo').style.display = 'none';
@@ -616,7 +618,7 @@ async function editPrepare(a) {
     if (r.out) h += '<p>' + t('ed_prep_st_out') + '</p><p><code>' + esc(r.out) + '</code></p>';
     if (r.clipboard) h += '<div class="hint">' + t('ed_clip', { keys: t(/Mac/i.test(navigator.platform) ? 'paste_mac' : 'paste') }) + '</div>';
     $('ebody').innerHTML = h + '<div class="hint">' + (a == 'prep_st' ? t('ed_prep_after') : help('transkribus', t('q_advice_link'))) + '</div>';
-  } catch (err) { $('emsg').textContent = err.message; }
+  } catch (err) { fail('emsg', err); }
 }
 async function editJob(path, body) {
   $('eprog').style.display = 'block'; $('eGo').disabled = true; $('ebar').firstChild.style.width = '0';
@@ -659,7 +661,7 @@ $('eform').onsubmit = async ev => {
       $('showPdf').onclick = async ev => {
         ev.preventDefault();
         try { await post('/api/reveal', { path: r.folder }); $('shownPdf').textContent = t('shown_clip'); }
-        catch (err) { $('shownPdf').textContent = err.message; }
+        catch (err) { fail('shownPdf', err); }
       };
     } else if (eact == 'images') {
       const r = await editJob('/api/add_images', { id: eb.id, source: src });
@@ -679,7 +681,7 @@ $('eform').onsubmit = async ev => {
       editDone(h);
     }
     load();
-  } catch (err) { $('emsg').textContent = err.message; }
+  } catch (err) { fail('emsg', err); }
 };
 $('eBack').onclick = () => editPick();
 $('eBook').onclick = () => {
