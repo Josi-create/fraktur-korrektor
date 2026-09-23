@@ -70,17 +70,26 @@ and `↑` do the same as long as there are no suggestions; otherwise they pick a
 
 ## Suggested corrections
 
-For every red word the program shows suggestions below the input field, the most likely first:
+As soon as you open a red word for correction – with `Space`, with `Enter` on a line containing a red word, with `Tab`
+to the next one, by clicking the word, or because after `Enter` another red word remains in the same line – the program
+shows suggestions below the input field, the most likely first (at most six):
 
 1. **What you have already made of it in this book.** Once you have corrected `Würllemberg` to `Württemberg`, the next
-   `Würllemberg` gets that as its first suggestion – the program learns from your correction log.
+   `Würllemberg` gets that as its first suggestion – the program learns from your correction log, batch corrections
+   included. What you made of it most often comes first.
 2. **Typical misreadings of Fraktur OCR**, undone: `b`/`d`, `f`/`s`, `n`/`u`, `r`/`t`, `ll`/`tt`, missing umlaut dots.
    `ber` becomes `der`, `Bolk` becomes `Volk`, `Zutunft` becomes `Zukunft` – but only if the result is a known word
    (dictionary, whitelist, or frequent in the book). Words frequent in the book come first.
-3. **The dictionary** (Hunspell). These take a second or two and appear a little later.
+3. **The dictionary** (Hunspell). These take a second or two and appear a little later; the first two groups are there
+   at once. If you have already picked a suggestion by then, it stays – the dictionary suggestions are only appended.
+   For words of just two letters the program does not ask the dictionary.
 
 `↓` puts the first suggestion into the field, each further `↓` the next, `↑` goes back (down to the word as it was
 recognised); clicking a suggestion does the same. `Enter` applies as always. If none of the suggestions fits, just type.
+
+If the program finds nothing for a word, the line below the input field simply stays empty. There are no suggestions
+when editing a line freely (`F2`) or in a table, nor for a red page number in the header – there the expected number is
+already in the hint above the field.
 
 ## Batch correction (F9)
 

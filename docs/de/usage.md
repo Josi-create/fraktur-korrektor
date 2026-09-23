@@ -72,18 +72,28 @@ erreichen).
 
 ## Korrekturvorschläge
 
-Zu jedem roten Wort zeigt das Programm unter dem Eingabefeld Vorschläge, das Wahrscheinlichste zuerst:
+Sobald Sie ein rotes Wort zur Korrektur öffnen – mit der `Leertaste`, mit `Enter` auf einer Zeile mit rotem Wort,
+mit `Tab` zum nächsten, per Klick auf das Wort oder weil nach `Enter` in derselben Zeile noch eines steht –, zeigt das
+Programm unter dem Eingabefeld Vorschläge, das Wahrscheinlichste zuerst (höchstens sechs):
 
 1. **Was Sie in diesem Buch schon einmal daraus gemacht haben.** Wer `Würllemberg` einmal zu `Württemberg` berichtigt
-   hat, bekommt das beim nächsten `Würllemberg` als ersten Vorschlag – das Programm lernt aus Ihrem Korrekturprotokoll.
+   hat, bekommt das beim nächsten `Würllemberg` als ersten Vorschlag – das Programm lernt aus Ihrem Korrekturprotokoll,
+   auch aus Serienkorrekturen. Was Sie am häufigsten daraus gemacht haben, steht vorn.
 2. **Typische Lesefehler der Fraktur-Erkennung**, rückgängig gemacht: `b`/`d`, `f`/`s`, `n`/`u`, `r`/`t`, `ll`/`tt`,
    fehlende Umlautpunkte. Aus `ber` wird `der`, aus `Bolk` `Volk`, aus `Zutunft` `Zukunft` – aber nur, wenn das Ergebnis
    ein bekanntes Wort ist (Wörterbuch, Whitelist oder häufig im Buch). Was im Buch oft vorkommt, steht vorn.
-3. **Das Wörterbuch** (Hunspell). Diese Vorschläge brauchen ein, zwei Sekunden und erscheinen etwas später.
+3. **Das Wörterbuch** (Hunspell). Diese Vorschläge brauchen ein, zwei Sekunden und erscheinen etwas später; die ersten
+   beiden Gruppen stehen sofort da. Haben Sie inzwischen schon einen Vorschlag gewählt, bleibt der stehen – die
+   Wörterbuchvorschläge werden nur hinten angefügt. Für Wörter mit nur zwei Buchstaben fragt das Programm das
+   Wörterbuch nicht.
 
 `↓` setzt den ersten Vorschlag ins Feld, jedes weitere `↓` den nächsten, `↑` geht zurück (bis zum Wort, wie es erkannt
 wurde); ein Klick auf einen Vorschlag tut dasselbe. `Enter` übernimmt wie immer. Wollen Sie keinen der Vorschläge,
 tippen Sie einfach.
+
+Findet das Programm zu einem Wort nichts, bleibt die Zeile unter dem Eingabefeld einfach leer. Beim freien Bearbeiten
+einer Zeile (`F2`) und in der Tabelle gibt es keine Vorschläge, ebenso nicht bei einer rot markierten Seitenzahl in der
+Kopfzeile – dort steht die erwartete Zahl schon im Hinweis über dem Feld.
 
 ## Serienkorrektur (F9)
 
