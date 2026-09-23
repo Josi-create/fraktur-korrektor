@@ -73,9 +73,10 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 #tprev{border-collapse:collapse;font:14px Georgia,serif;margin-top:6px;color:#222} #tprev td,#tprev th{border:1px solid #9bc;padding:1px 9px} #tprev th{background:#e3eefa}
 #centerline{position:absolute;left:0;width:5px;top:25%;height:30px;margin-top:-15px;background:#c90;border-radius:0 3px 3px 0}
 #shint{margin-top:2px;font-size:14px;color:#a40} #shint:empty{display:none}
-/* Korrekturvorschläge zum roten Wort: ↓ ↑ wählt, Klick übernimmt */
-.sug{display:inline-block;margin:0 5px 2px 0;padding:0 8px;border:1px solid #c90;border-radius:9px;background:#fff8d8;color:#000;cursor:pointer;font-family:Georgia,'Times New Roman',serif;font-size:15px}
-.sug.on{background:#c90;color:#fff}
+/* Korrekturvorschläge: kleines Aufklappmenü unter dem roten Wort; ↓ ↑ wählt, Klick übernimmt */
+#sugbox{position:absolute;z-index:4;display:none;background:#fff;border:1px solid #c90;border-radius:4px;box-shadow:0 3px 10px rgba(0,0,0,.25);font-family:Georgia,'Times New Roman',serif;font-size:calc(17px * var(--tz, 1));min-width:110px;max-width:60%;overflow:hidden}
+#sugbox div{padding:2px 12px;cursor:pointer;white-space:nowrap;color:#000} #sugbox div:hover{background:#fff3b8} #sugbox div.on{background:#c90;color:#fff}
+#sugbox small{display:block;padding:3px 12px;color:#888;font:12px Segoe UI,Arial,sans-serif;border-top:1px solid #eee;white-space:nowrap}
 #serie{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
 #serie.on{display:flex}
 #shead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
@@ -145,6 +146,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
   <div class="pane" id="text"><div id="centerline"></div><div id="lines"></div>
    <input id="edit" type="text" spellcheck="false" style="display:none">
    <input id="edit2" type="text" spellcheck="false" style="display:none" data-t-title="edit2_title">
+   <div id="sugbox"></div>
   </div>
  </div>
  <div id="dics">
@@ -232,7 +234,8 @@ function rawPos(l, v) {
 const STRUCT = '(?:</?(?:table|tr|td|th|h[1-6]|p|blockquote)>)*';
 function parts(l) { const m = l.match(new RegExp('^(' + STRUCT + ')([\\s\\S]*?)(' + STRUCT + ')$')); return { pre: m[1], core: m[2], post: m[3] }; }
 let ed = { pre: '', post: '' }, ed2 = { pre: '', post: '' };
-function isJoin(f) { return f && f.word.indexOf('¬') >= 0; }
+// Getrenntes Wort mit der zweiten Hälfte in der Folgezeile; über die Seitengrenze (cross) steht sie auf der anderen Seite
+function isJoin(f) { return f && f.word.indexOf('¬') >= 0 && !f.cross; }
 function part2len(f) { return f.word.length - f.len - 1; }
 function skippable(i) { const l = data.lines[i]; return l.trim() === '' || l === '---'; }
 
@@ -354,8 +357,7 @@ function render() {
   $('pos').textContent = t('pos', { a: li + 1, b: data.lines.length, c: data.flags.length, d: total }) + (data.geo ? '' : t('nogeo'));
   // Korrekturfeld
   $('help').innerHTML = HELP[mode] || '';
-  $('shint').innerHTML = mode == 'table' ? tbPreview() : mode == 'fix' && sug && sug.items.length ? sugHtml() : pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
-  if (mode == 'fix' && sug) renderSug();
+  $('shint').innerHTML = mode == 'table' ? tbPreview() : pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
   if (mode == 'table') { const c = tbCells().length; $('word').innerHTML = t('tbl_word', { n: c, r: Math.ceil(c / tb.cols), c: tb.cols }); }
   const e1 = $('edit'), e2 = $('edit2');
   if (mode == 'read') {
@@ -364,6 +366,7 @@ function render() {
     $('word').innerHTML = n ? '<span style="color:#c00">' + t(n > 1 ? 'flags_n' : 'flags_1', { n }) + '</span>' : '<span style="color:#888">' + t('reading') + '</span>';
   }
   layoutText(); layoutImage();  // nochmal, falls das Korrekturfeld oben seine Höhe geändert hat
+  renderSug();  // das Aufklappmenü hängt an der Lage des Eingabefelds
 }
 function layoutText() {
   const el = lineEls[li]; if (!el) return;
@@ -496,7 +499,7 @@ $('fnext').onclick = guarded(() => nextHit(1)); $('fprev').onclick = guarded(() 
 
 function enterFix(f) {
   mode = 'fix'; cf = f; li = f.line;
-  $('word').innerHTML = (f.kind == 'page' ? t('kind_page', { n: f.expect }) : t(f.kind == 'auto' ? 'kind_auto' : 'kind_oov')) + '<b>' + esc(f.word) + '</b>';
+  $('word').innerHTML = (f.kind == 'page' ? t('kind_page', { n: f.expect }) : t(f.kind == 'auto' ? 'kind_auto' : 'kind_oov')) + '<b>' + esc(f.word) + '</b>' + (f.cross ? t('cross_' + f.cross) : '');
   const e1 = $('edit'), e2 = $('edit2');
   ed = parts(data.lines[f.line]); e1.style.display = ''; e1.value = ed.core;
   const j = isJoin(f); e2.style.display = j ? '' : 'none'; if (j) { ed2 = parts(data.lines[f.line + 1]); e2.value = ed2.core; }
@@ -505,16 +508,21 @@ function enterFix(f) {
 }
 // ---- Korrekturvorschläge zum roten Wort (#41): erst, was in diesem Buch schon einmal daraus gemacht wurde, dann typische
 // Lesefehler der Fraktur-OCR, zuletzt das Wörterbuch. Zwei Anfragen: die schnelle zeigt sofort etwas, die vollständige
-// (Hunspell, dauert Sekunden) ergänzt. ↓ ↑ wählt und setzt den Vorschlag ins Feld, Klick ebenso.
+// (Hunspell, dauert Sekunden) ergänzt. Sie stehen als Aufklappmenü unter dem Wort; ↓ ↑ wählt und setzt den Vorschlag
+// ins Feld, Klick ebenso.
 let sug = null, sugSeq = 0;  // word, items, i (gewählt, -1 = wie erkannt), orig
-function sugHtml() {
-  return '<span style="color:#666">' + t('sug_label') + '</span> ' + sug.items.map((s, k) => '<span class="sug' + (k == sug.i ? ' on' : '') + '" data-k="' + k + '">' + esc(s) + '</span>').join('') +
-    '<span style="color:#888">' + t('sug_keys') + '</span>';
-}
 function renderSug() {
-  if (mode != 'fix' || !sug) return;
-  $('shint').innerHTML = sug.items.length ? sugHtml() : '';
-  for (const el of $('shint').querySelectorAll('.sug')) el.onclick = () => { applySug(+el.dataset.k); $('edit').focus(); };
+  const box = $('sugbox');
+  if (mode != 'fix' || !sug || !sug.items.length || !cf) { box.style.display = 'none'; return; }
+  const f = cf, e1 = $('edit'), fs = f.start - ed.pre.length;
+  // unter dem Wort: die Breite des Textes davor im Feld messen (Rahmen und Innenabstand des Felds: 7 px)
+  const c = document.createElement('canvas').getContext('2d'); c.font = getComputedStyle(e1).font;
+  const x = e1.offsetLeft + 7 + c.measureText(e1.value.slice(0, fs)).width, under = isJoin(f) ? $('edit2') : e1;
+  box.innerHTML = sug.items.map((s, k) => '<div class="' + (k == sug.i ? 'on' : '') + '" data-k="' + k + '">' + esc(s) + '</div>').join('') + '<small>' + t('sug_keys') + '</small>';
+  for (const el of box.querySelectorAll('div[data-k]')) el.onmousedown = ev => { ev.preventDefault(); applySug(+el.dataset.k); };  // mousedown: das Feld behält den Fokus
+  box.style.display = 'block';
+  box.style.left = Math.max(0, Math.min(x, $('text').clientWidth - box.offsetWidth - 8)) + 'px';
+  box.style.top = (under.offsetTop + under.offsetHeight + 2) + 'px';
 }
 async function loadSuggestions(f) {
   const w = f.word.replace('¬', ''), my = ++sugSeq;
@@ -529,12 +537,15 @@ async function loadSuggestions(f) {
 function applySug(k) {
   const f = cf, e1 = $('edit'); if (!sug || !f || mode != 'fix') return;
   sug.i = Math.max(-1, Math.min(sug.items.length - 1, k));
-  const nw = sug.i < 0 ? sug.orig : sug.items[sug.i], fs = f.start - ed.pre.length;
+  let nw = sug.i < 0 ? sug.orig : sug.items[sug.i]; const fs = f.start - ed.pre.length;
   const cur = (e1.value.slice(fs).match(WRE) || [''])[0];  // das Wort, das dort gerade steht (der Nutzer kann schon getippt haben)
   if (isJoin(f)) {  // getrenntes Wort: die erste Hälfte bleibt so lang wie bisher, der Rest kommt in die Folgezeile
     const e2 = $('edit2'), cur2 = (e2.value.match(WRE) || [''])[0];
     e1.setRangeText(nw.slice(0, f.len), fs, fs + cur.length, 'select'); e2.setRangeText(nw.slice(f.len), 0, cur2.length, 'select');
-  } else e1.setRangeText(nw, fs, fs + cur.length, 'select');
+  } else {
+    if (f.cross) nw = f.cross == 'next' ? nw.slice(0, f.word.indexOf('¬')) : nw.slice(f.word.indexOf('¬'));  // nur die Hälfte auf dieser Seite
+    e1.setRangeText(nw, fs, fs + cur.length, 'select');
+  }
   renderSug();
 }
 function enterFree(sel) {
@@ -578,7 +589,7 @@ async function commit() {
   const v = $('edit').value, full = ed.pre + v + ed.post; if (full !== data.lines[line]) edits.push({ line, old: data.lines[line], new: full });
   if (mode == 'fix' && isJoin(f)) { const v2 = ed2.pre + $('edit2').value + ed2.post; if (v2 !== data.lines[line + 1]) edits.push({ line: line + 1, old: data.lines[line + 1], new: v2 }); }
   let oldW = '', newW = '';
-  if (mode == 'fix' && f.kind != 'page') {  // eine Seitenzahl ist kein Wort für die Serienkorrektur
+  if (mode == 'fix' && f.kind != 'page' && !f.cross) {  // eine Seitenzahl ist kein Wort für die Serienkorrektur, eine halbe Seite auch nicht
     oldW = f.word.replace('¬', '');
     const fs = f.start - ed.pre.length, a = (v.slice(fs).match(WRE) || [''])[0];
     newW = isJoin(f) && v.trimEnd().endsWith('¬') && v.trimEnd().length - 1 == fs + a.length ? a + (($('edit2').value.match(WRE) || [''])[0]) : a;
@@ -1046,7 +1057,7 @@ $('notelink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !
 for (const [id, d] of [['pprev', -1], ['pnext', 1]]) $(id).onclick = e => { e.currentTarget.blur(); guarded(() => gotoPage(d))(); };
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
 $('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });
-window.addEventListener('resize', () => { layoutText(); layoutImage(); });
+window.addEventListener('resize', () => { layoutText(); layoutImage(); renderSug(); });
 let lastClick = null;
 function charOffset(d, x, y) {
   // Zeichenposition in der Zeile unter dem Mauszeiger

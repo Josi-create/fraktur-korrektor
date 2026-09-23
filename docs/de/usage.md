@@ -70,9 +70,13 @@ zurück mit `Umschalt`+`Tab` oder `←` am Zeilenanfang (`↓` und `↑` tun es 
 gibt; sonst wählen sie den Vorschlag). `Enter` übernimmt beide Zeilen. `F7` fügt das Zeichen ein, am Zeilenende auch `-` (auf dem MacBook ohne `fn` zu
 erreichen).
 
+Auch ein Wort, das **über die Seitengrenze** getrennt ist (`Ge¬` am Ende der einen Seite, `walt` am Anfang der nächsten,
+die Seitenzahl dazwischen), wird als Ganzes geprüft. Ist es unbekannt, sind beide Hälften rot; der Hinweis sagt dann, dass
+das Wort auf der anderen Seite weitergeht, und Sie ändern auf jeder Seite ihre Hälfte.
+
 ## Korrekturvorschläge
 
-Zu jedem roten Wort zeigt das Programm unter dem Eingabefeld Vorschläge, das Wahrscheinlichste zuerst:
+Zu jedem roten Wort zeigt das Programm in einem kleinen Menü unter dem Wort Vorschläge, das Wahrscheinlichste zuerst:
 
 1. **Was Sie in diesem Buch schon einmal daraus gemacht haben.** Wer `Würllemberg` einmal zu `Württemberg` berichtigt
    hat, bekommt das beim nächsten `Würllemberg` als ersten Vorschlag – das Programm lernt aus Ihrem Korrekturprotokoll.

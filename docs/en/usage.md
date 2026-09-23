@@ -68,9 +68,13 @@ press `Tab` or move past the end of the line with `→` – back with `Shift`+`T
 and `↑` do the same as long as there are no suggestions; otherwise they pick a suggestion). `Enter` applies both lines.
 `F7` inserts the mark, at the end of the line so does `-` (reachable on a MacBook without `fn`).
 
+A word split **across the page break** (`Ge¬` at the end of one page, `walt` at the start of the next, the page number in
+between) is checked as a whole, too. If it is unknown, both halves are red; the hint then says that the word continues on
+the other page, and you change each half on its own page.
+
 ## Suggested corrections
 
-For every red word the program shows suggestions below the input field, the most likely first:
+For every red word the program shows suggestions in a small menu below the word, the most likely first:
 
 1. **What you have already made of it in this book.** Once you have corrected `Würllemberg` to `Württemberg`, the next
    `Würllemberg` gets that as its first suggestion – the program learns from your correction log.

@@ -5,7 +5,7 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
-- **Korrekturvorschläge** (#41): Unter dem Eingabefeld stehen zu jedem roten Wort Vorschläge, `↓`/`↑` setzen sie ins
+- **Korrekturvorschläge** (#41): Ein kleines Menü unter dem roten Wort zeigt Vorschläge, `↓`/`↑` setzen sie ins
   Feld, Klick ebenso, `Enter` übernimmt. Zuerst, was in diesem Buch schon einmal aus dem Wort gemacht wurde
   (gelernt aus `korrekturen.log`: `Würllemberg` → `Württemberg`), dann typische Lesefehler der Fraktur-OCR rückgängig
   gemacht (`b`/`d`, `f`/`s`, `n`/`u`, `r`/`t`, `ll`/`tt`, Umlautpunkte – nur wenn ein bekanntes Wort herauskommt, häufige
@@ -20,6 +20,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   **Vorhandenes Buch aktualisieren** statt einer Kopie „(2)“; die bisherige Fassung wird gesichert. Wurde an beiden
   Stellen korrigiert, sagt das Programm, wie viele Änderungen auf jeder Seite stehen, und legt wie bisher ein zweites
   Buch an – das Zusammenführen bleibt offen.
+- **Getrennte Wörter über die Seitengrenze** (`Ge¬` | `# 23` | `walt`) werden als Ganzes geprüft, Kopfzeile und Fußnoten
+  dazwischen stören nicht. Ist das Wort unbekannt, sind beide Hälften rot, und der Hinweis nennt die andere Seite.
 - **Erste Schritte beim ersten Start** (#19): Die leere Bibliothek zeigt, ob Wörterbuch, Tesseract und ScanTailor da
   sind – Haken oder Kreuz, dahinter *So installieren* und *Programm zeigen …* –, und was als Nächstes zu tun ist.
 - **Ein Buch als PDF sichern und auf einem anderen Rechner weiterlesen** (#58): *Als PDF sichern* (Bibliothek oder

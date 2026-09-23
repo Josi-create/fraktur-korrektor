@@ -209,3 +209,22 @@ def test_korrekturvorschlaege(app):
     assert app.get('/api/suggest?fast=1&word=Zu%C2%ACkunft')[1]['items'] == []  # getrenntes Wort: als Ganzes, und das ist richtig
     assert 'Zukunft' in app.get('/api/suggest?word=Zutunft')[1]['items']  # mit Hunspell
     assert app.get('/api/suggest?word=')[1]['items'] == []
+
+
+def test_trennung_ueber_die_seitengrenze(lib, tmp_path):
+    """Ge¬ | # 23 | walt: als ein Wort geprüft – Kopfzeile und Fußnoten dazwischen stören nicht."""
+    folder = tmp_path / 'Buch'
+    folder.mkdir()
+    (folder / '035.txt').write_text('# 22\nfalls lediglich in Ceremonien, ohne durch die Ge¬\n---\n1) Fußnote.\n', encoding='utf-8')
+    (folder / '036.txt').write_text('# 23\nwalt der Musik und des Glanzes gehoben zu\n', encoding='utf-8')
+    (folder / '037.txt').write_text('# 24\nsein. Und dann kam das Ver¬\n', encoding='utf-8')
+    (folder / '038.txt').write_text('# 25\nqwxyz der Kolonisten.\n', encoding='utf-8')
+    b = '/buch/' + lib.lpost('/api/open', dict(folder=str(folder)))[1]['id']
+    assert words(lib.lget(b + '/api/page/035')[1]) == ['Ceremonien'] and words(lib.lget(b + '/api/page/036')[1]) == []
+    f = [x for x in lib.lget(b + '/api/page/037')[1]['flags'] if x['line'] == 1][0]
+    assert (f['word'], f['start'], f['len'], f['cross']) == ('Ver¬qwxyz', 23, 3, 'next')
+    f = lib.lget(b + '/api/page/038')[1]['flags'][0]
+    assert (f['word'], f['line'], f['start'], f['len'], f['cross']) == ('Ver¬qwxyz', 1, 0, 'prev')
+    # die eine Hälfte berichtigt: die andere Seite merkt es (Zwischenspeicher hängt an beiden Seiten)
+    lib.lpost(b + '/api/edit/038', dict(edits=[dict(line=1, old='qwxyz der Kolonisten.', new='mögen der Kolonisten.')]))
+    assert words(lib.lget(b + '/api/page/037')[1]) == []

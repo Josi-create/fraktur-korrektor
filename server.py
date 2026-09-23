@@ -300,10 +300,50 @@ class Book:
             self.wlmt = wlmt
             self.fcache.clear()
 
+    def edge_word(self, pg, last):
+        """(zeile, start, wort) des letzten Worts im Haupttext einer Seite, wenn die Zeile mit ¬ endet – bzw. des ersten,
+        wenn es am Zeilenanfang steht. Kopfzeile und Fußnoten zählen nicht: Ein Wort, das über die Seitengrenze getrennt
+        ist, endet vor den Fußnoten und beginnt hinter der Seitenzahl. Sonst None."""
+        lines = self.pages[pg]
+        end = lines.index('---') if '---' in lines else len(lines)
+        for i in (range(end - 1, -1, -1) if last else range(end)):
+            if i == 0 and lines[0].startswith('#'):
+                continue
+            m = korrlib.mask(lines[i])
+            toks = [(x.start(), x.group()) for x in korrlib.WORD.finditer(m)]
+            if not toks:
+                if m.strip():
+                    return None
+                continue
+            s, w = toks[-1] if last else toks[0]
+            ok = (m.rstrip().endswith('¬') and s + len(w) == len(m.rstrip()) - 1) if last else not m[:s].strip()
+            return (i, s, w) if ok else None
+        return None
+
+    def cross_joins(self, pg, prev, nxt, wl, freq, dics):
+        """Wörter, die über die Seitengrenze getrennt sind (Ge¬ | # 23 | walt): {(zeile, start): flag oder None}.
+        None heißt: zusammen bekannt, die Hälfte wird nicht rot. Das Flag trägt cross = prev | next, weil die andere
+        Hälfte nicht in der Folgezeile steht, sondern auf der anderen Seite."""
+        out = {}
+        for a, b, here, side in ((self.edge_word(prev, True) if prev else None, None, 1, 'prev'), (self.edge_word(pg, True), None, 0, 'next')):
+            if not a:
+                continue
+            b = self.edge_word(pg, False) if side == 'prev' else (self.edge_word(nxt, False) if nxt else None)
+            if not b:
+                continue
+            mine = b if side == 'prev' else a
+            w = a[2] + b[2]
+            out[(mine[0], mine[1])] = None if known(w, freq, dics) or w in wl else \
+                dict(line=mine[0], start=mine[1], len=len(mine[2]), word=a[2] + '¬' + b[2], kind='oov', cross=side)
+        return out
+
     def flags(self, pg):
         dics = tuple(self.settings['dics'])
         n, exp = self.page_number(pg), self.expected_page(pg)
-        key = (self.mt[pg], self.wlmt, dics, exp)  # exp hängt an den Nachbarseiten, nicht an dieser Datei
+        keys = list(self.pages)
+        k = keys.index(pg)
+        prev, nxt = keys[k - 1] if k else None, keys[k + 1] if k + 1 < len(keys) else None
+        key = (self.mt[pg], self.wlmt, dics, exp, self.mt.get(prev), self.mt.get(nxt))  # exp und Trennungen hängen an den Nachbarseiten
         c = self.fcache.get(pg)
         if c and c[0] == key:
             return c[1]
@@ -314,6 +354,7 @@ class Book:
         toks, joined = joined_tokens(lines)
         jstart = {(i, s1) for i, s1, w1, j, w2 in joined}
         jend = {(j, toks[j][0][0]) for i, s1, w1, j, w2 in joined}  # der zweite Teil beginnt hinter etwaiger Auszeichnung (<td>)
+        cross = self.cross_joins(pg, prev, nxt, wl, freq, dics)
         for i, s1, w1, j, w2 in joined:
             if not (known(w1 + w2, freq, dics) or (w1 + w2) in wl):
                 out.append(dict(line=i, start=s1, len=len(w1), word=w1 + '¬' + w2, kind='oov', start2=toks[j][0][0]))
@@ -321,6 +362,10 @@ class Book:
             if lines[i].startswith('#'):
                 continue
             for s, w in tl:
+                if (i, s) in cross:  # über die Seitengrenze getrennt: als Ganzes geprüft
+                    if cross[i, s]:
+                        out.append(cross[i, s])
+                    continue
                 if (i, s) in jstart or (i, s) in jend or len(w) < 2:
                     continue
                 if not (known(w, freq, dics) or w in wl):
