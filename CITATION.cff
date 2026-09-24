@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "Wenn Sie den Fraktur-Korrektor in einer Arbeit verwenden, zitieren Sie ihn bitte so. / If you use Fraktur-Korrektor in your work, please cite it as below."
+type: software
+title: "Fraktur-Korrektor"
+abstract: "Lesen und Korrekturlesen in einem: OCR-Text gescannter (Fraktur-)Bücher neben dem Seitenbild, tastaturgesteuert, lokal. / Reading and proofreading in one: OCR text of scanned (Fraktur) books next to the page image, keyboard-driven, local."
+authors:
+  - family-names: Wack
+    given-names: Johannes
+version: 0.11.0
+date-released: 2026-09-24
+license: GPL-3.0-or-later
+repository-code: "https://github.com/Josi-create/fraktur-korrektor"
+url: "https://github.com/Josi-create/fraktur-korrektor"
+keywords:
+  - OCR
+  - Fraktur
+  - proofreading
+  - Transkribus
+  - Tesseract
+  - digital humanities

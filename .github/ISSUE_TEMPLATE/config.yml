@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Häufige Fragen und Fehlerbehebung
+    url: https://github.com/Josi-create/fraktur-korrektor/blob/main/docs/de/faq.md
+    about: Firewall-Nachfrage, belegter Port, SmartScreen und Gatekeeper, fehlendes Wörterbuch, verlorene Bildzuordnung – bitte zuerst hier nachsehen.
+  - name: FAQ and troubleshooting (English)
+    url: https://github.com/Josi-create/fraktur-korrektor/blob/main/docs/en/faq.md
+    about: Firewall prompt, port in use, SmartScreen and Gatekeeper, missing dictionary, lost image mapping – please check here first.
+  - name: Sicherheitslücke melden / Report a vulnerability
+    url: https://github.com/Josi-create/fraktur-korrektor/blob/main/SECURITY.md
+    about: Bitte nicht als öffentliches Issue – der Weg steht in SECURITY.md. / Not as a public issue – see SECURITY.md.

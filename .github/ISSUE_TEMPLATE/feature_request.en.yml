@@ -1,0 +1,28 @@
+name: Suggestion (English)
+description: An idea for what the program should do better or in addition
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Suggestions from practice are welcome – most helpful when they come from working on a real book.
+        What the program does not want to be is in the [ROADMAP](https://github.com/Josi-create/fraktur-korrektor/blob/main/ROADMAP.md) (German): it does not replace text recognition.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What gets in your way today?
+      description: The situation while reading or correcting in which something is missing or in the way.
+    validations:
+      required: true
+  - type: textarea
+    id: idee
+    attributes:
+      label: What do you suggest?
+      description: How it should behave from your point of view – keys, buttons, messages, if you already have an idea.
+    validations:
+      required: true
+  - type: textarea
+    id: alternativen
+    attributes:
+      label: How do you cope so far?
+      description: Another program, a workaround, a text editor – or not at all.

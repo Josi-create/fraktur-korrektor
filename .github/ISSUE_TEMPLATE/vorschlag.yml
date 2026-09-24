@@ -1,0 +1,28 @@
+name: Vorschlag
+description: Eine Idee, was das Programm besser oder zusätzlich können sollte
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Vorschläge aus der Praxis sind willkommen – am hilfreichsten, wenn sie von der Arbeit an einem echten Buch ausgehen.
+        Was das Programm nicht sein will, steht in der [ROADMAP](https://github.com/Josi-create/fraktur-korrektor/blob/main/ROADMAP.md): Es ersetzt keine Texterkennung.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Woran hakt es heute?
+      description: Die Situation beim Lesen oder Korrigieren, in der Ihnen etwas fehlt oder im Weg ist.
+    validations:
+      required: true
+  - type: textarea
+    id: idee
+    attributes:
+      label: Was schlagen Sie vor?
+      description: Wie es sich aus Ihrer Sicht verhalten sollte – Tasten, Knöpfe, Meldungen, wenn Sie schon eine Vorstellung haben.
+    validations:
+      required: true
+  - type: textarea
+    id: alternativen
+    attributes:
+      label: Wie behelfen Sie sich bisher?
+      description: Ein anderes Programm, ein Umweg, ein Texteditor – oder gar nicht.

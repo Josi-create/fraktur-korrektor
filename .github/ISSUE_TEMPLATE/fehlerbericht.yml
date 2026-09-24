@@ -1,0 +1,76 @@
+name: Fehlerbericht
+description: Etwas funktioniert nicht oder anders als erwartet
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für den Bericht. Sie müssen nichts davon verstehen, was das Programm innen tut – beschreiben Sie einfach,
+        was Sie getan haben und was passiert ist.
+
+        **Bitte keine Seitenbilder oder Texte aus Ihrem Buch anhängen**, außer das Werk ist gemeinfrei: Scans und Texte
+        unterliegen dem Urheberrecht. Ein kurzer Ausschnitt in eigenen Worten reicht meist.
+  - type: dropdown
+    id: system
+    attributes:
+      label: Betriebssystem
+      options:
+        - Windows
+        - Mac (Apple Silicon)
+        - Mac (Intel)
+        - Linux
+        - Weiß ich nicht
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Programmversion
+      description: Steht unten in der Bibliothek (z. B. „0.11.0“). Bei Start aus dem Quelltext der Stand von `git log -1`.
+      placeholder: 0.11.0
+    validations:
+      required: true
+  - type: dropdown
+    id: weg
+    attributes:
+      label: Wie kam das Buch ins Programm?
+      options:
+        - PDF (Texterkennung mit Tesseract)
+        - PDF mit vorhandener Textebene
+        - Bilderordner
+        - Transkribus-Export
+        - EPUB (mit oder ohne PDF)
+        - Erkannter Text einer Bibliothek (hOCR, ALTO)
+        - Gesichertes PDF (Als PDF sichern / Aktualisieren / Zusammenführen)
+        - Vorhandener Buchordner
+        - Betrifft kein Buch
+    validations:
+      required: true
+  - type: textarea
+    id: was
+    attributes:
+      label: Was haben Sie getan, und was ist passiert?
+      description: Schritt für Schritt, mit den Tasten oder Knöpfen, die Sie benutzt haben.
+      placeholder: |
+        1. Bibliothek → Öffnen … → PDF ausgewählt
+        2. Fraktur gewählt, Einlesen gestartet
+        3. Nach etwa 30 Seiten erscheint …
+    validations:
+      required: true
+  - type: textarea
+    id: erwartet
+    attributes:
+      label: Was hätten Sie erwartet?
+    validations:
+      required: true
+  - type: textarea
+    id: meldung
+    attributes:
+      label: Fehlermeldung
+      description: Der genaue Wortlaut der Meldung, falls eine erschien; beim Start aus dem Quelltext auch die Ausgabe im Terminal.
+      render: text
+  - type: textarea
+    id: sonst
+    attributes:
+      label: Sonstiges
+      description: Wie groß das Buch ist (Seiten), ob es mit anderen Büchern auch passiert, ob `--lan` benutzt wird – was Ihnen sonst auffällt.

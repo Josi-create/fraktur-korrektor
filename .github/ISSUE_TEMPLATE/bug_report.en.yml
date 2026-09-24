@@ -1,0 +1,76 @@
+name: Bug report (English)
+description: Something does not work, or works differently than expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the report. You do not need to understand what the program does inside – just describe what you
+        did and what happened.
+
+        **Please do not attach page images or text from your book** unless the work is in the public domain: scans and
+        texts are subject to copyright. A short excerpt in your own words is usually enough.
+  - type: dropdown
+    id: system
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Mac (Apple Silicon)
+        - Mac (Intel)
+        - Linux
+        - Don't know
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Program version
+      description: Shown at the bottom of the library (e.g. "0.11.0"). When running from source, the commit from `git log -1`.
+      placeholder: 0.11.0
+    validations:
+      required: true
+  - type: dropdown
+    id: weg
+    attributes:
+      label: How did the book get into the program?
+      options:
+        - PDF (text recognition with Tesseract)
+        - PDF with existing text layer
+        - Folder of images
+        - Transkribus export
+        - EPUB (with or without PDF)
+        - Recognised text from a library (hOCR, ALTO)
+        - Saved PDF (Save as PDF / Update / Merge)
+        - Existing book folder
+        - Not about a book
+    validations:
+      required: true
+  - type: textarea
+    id: was
+    attributes:
+      label: What did you do, and what happened?
+      description: Step by step, with the keys or buttons you used.
+      placeholder: |
+        1. Library → Open … → chose a PDF
+        2. Selected Fraktur, started reading in
+        3. After about 30 pages, … appears
+    validations:
+      required: true
+  - type: textarea
+    id: erwartet
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: meldung
+    attributes:
+      label: Error message
+      description: The exact wording of the message, if one appeared; when running from source, the terminal output as well.
+      render: text
+  - type: textarea
+    id: sonst
+    attributes:
+      label: Anything else
+      description: How large the book is (pages), whether it happens with other books too, whether `--lan` is in use – whatever else you notice.

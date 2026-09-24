@@ -98,13 +98,20 @@ Auf dem Mac nimmt `./mac_lesen.sh` einem das ab: Es legt beim ersten Mal `.venv`
 (`./mac_lesen.sh <buchordner> --lan`), baut mit `./mac_lesen.sh build` die App samt DMG lokal und lässt mit
 `./mac_lesen.sh test` die Tests laufen.
 
+## Mitmachen
+
+Fehlerberichte und Vorschläge bitte über die [Issue-Vorlagen](../../issues/new/choose) – ohne Seitenbilder oder Texte aus
+dem Buch (Urheberrecht). Wie man mitarbeitet, auch ohne zu programmieren (Wörterbücher, Hilfetexte, Übersetzung,
+Probelesen), und was im Code nicht brechen darf, steht in [CONTRIBUTING.md](CONTRIBUTING.md)
+([English](CONTRIBUTING.en.md)). Für alle gilt der [Verhaltenskodex](CODE_OF_CONDUCT.md); Sicherheitslücken bitte
+nach [SECURITY.md](SECURITY.md) melden, nicht als öffentliches Issue. Zitieren: [CITATION.cff](CITATION.cff).
+
 ## Unterstützen
 
 Das Programm entsteht in der Freizeit. Wer mag, spendiert einen Kaffee: <https://buymeacoffee.com/josicreate> ☕
-Genauso willkommen sind Fehlerberichte, Wünsche und Mitarbeit.
+Genauso willkommen sind Fehlerberichte, Wünsche und Mitarbeit (siehe oben).
 
 ## Lizenz
 
 [GPL-3.0-or-later](LICENSE). Das mitgelieferte Wörterbuch hat eigene Lizenzangaben, siehe [dict/](dict/README.md).
-Für PDF-Dateien wird PyMuPDF benutzt (AGPL-3.0, mit der GPL-3.0 verträglich).
-Mitarbeit ist willkommen.
+Für PDF-Dateien wird PyMuPDF benutzt (AGPL-3.0, mit der GPL-3.0 verträglich). Die Hilfetexte stehen unter CC BY-SA 4.0.

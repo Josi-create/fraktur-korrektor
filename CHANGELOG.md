@@ -5,6 +5,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Community-Dateien** (#28): `CONTRIBUTING.md` (Einrichtung, Aufbau, was nicht brechen darf, Stil, Testumgebung,
+  Hilfe auch ohne Programmieren), `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 im offiziellen Wortlaut),
+  `SECURITY.md` (was lokal bleibt, was `--lan` öffnet, wie man Lücken meldet), `CITATION.cff`; jeweils deutsch mit
+  englischer Fassung `*.en.md`. Issue-Vorlagen für Fehlerbericht und Vorschlag in beiden Sprachen (ohne Buchinhalte
+  hochzuladen – Urheberrecht), `config.yml` verweist auf die Häufigen Fragen, Pull-Request-Vorlage mit Checkliste.
+  README-Abschnitt *Mitmachen*. Ein Test prüft, dass jede Datei ihr Gegenstück in der anderen Sprache hat und die
+  Version in `CITATION.cff` mit `pyproject.toml` übereinstimmt.
 - **EPUB: das PDF von anderswo dazuholen** (#40): Liegt neben einem EPUB kein gleichnamiges PDF, bietet *Öffnen …*
   den Knopf *Passendes PDF auswählen …* (Dateidialog, nur am Rechner selbst); danach läuft es wie bei EPUB und PDF im
   selben Ordner. Vorher prüft eine Stichprobe (`epub.pdf_fit`: Vier-Wort-Folgen einiger Seiten der Textebene), ob
