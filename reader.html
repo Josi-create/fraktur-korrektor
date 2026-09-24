@@ -369,7 +369,7 @@ function render() {
   $('pos').textContent = t('pos', { a: li + 1, b: data.lines.length, c: data.flags.length, d: total }) + (data.geo ? '' : t('nogeo'));
   // Korrekturfeld
   $('help').innerHTML = HELP[mode] || '';
-  $('shint').innerHTML = mode == 'table' ? tbPreview() : pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
+  $('shint').innerHTML = mode == 'table' ? tbPreview() : pending && seriesStart() === pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
   if (mode == 'table') { const c = tbCells().length; $('word').innerHTML = t('tbl_word', { n: c, r: Math.ceil(c / tb.cols), c: tb.cols }); }
   const e1 = $('edit'), e2 = $('edit2');
   if (mode == 'read') {
@@ -612,7 +612,7 @@ async function commit() {
   const line = mode == 'fix' ? cf.line : li, f = cf, edits = [];
   const v = $('edit').value, full = ed.pre + v + ed.post; if (full !== data.lines[line]) edits.push({ line, old: data.lines[line], new: full });
   if (mode == 'fix' && isJoin(f)) { const v2 = ed2.pre + $('edit2').value + ed2.post; if (v2 !== data.lines[line + 1]) edits.push({ line: line + 1, old: data.lines[line + 1], new: v2 }); }
-  let oldW = '', newW = '';
+  let oldW = '', newW = '', neu = false;
   if (mode == 'fix' && f.kind != 'page' && !f.cross) {  // eine Seitenzahl ist kein Wort für die Serienkorrektur, eine halbe Seite auch nicht
     oldW = f.word.replace('¬', '');
     const fs = f.start - ed.pre.length, a = (v.slice(fs).match(WRE) || [''])[0];
@@ -626,10 +626,11 @@ async function commit() {
     pending = null; msg = '';
     if (oldW && newW && oldW != newW) {
       const c = await (await fetch(BASE + '/api/occurrences?count=1&word=' + encodeURIComponent(oldW))).json();
-      if (c.n > 0) pending = { old: oldW, new: newW, n: c.n };
+      if (c.n > 0) { pending = { old: oldW, new: newW, n: c.n }; neu = true; }
     }
   }
   if (mode == 'fix') afterFix(f.line, f.start); else toRead(line);
+  if (neu) { pending.pg = pg; pending.line = li; pending.auto = mode == 'fix' ? cf : null; render(); }  // wo das Angebot für F9 gilt
 }
 async function whitelist() {
   const f = cf; if (!f || f.kind == 'page') return;  // eine falsche Seitenzahl lässt sich nur berichtigen
@@ -965,9 +966,22 @@ async function wlKey(e) {
   e.preventDefault(); wl.sel = Math.max(0, Math.min(items.length - 1, wl.sel)); renderWl();
 }
 function startSeries() {
-  if (pending) return openSeries(pending.old, pending.new);
-  if (mode == 'fix' && cf) { li = cf.line; return openSeries(cf.word.replace('¬', ''), ''); }
-  return openSeries('', '');
+  const s = seriesStart(); if (mode == 'fix' && cf) li = cf.line;
+  return openSeries(s.old, s.new);
+}
+// Was F9 in die Serienkorrektur übernimmt. Direkt nach einer Korrektur das Angebot aus der Hinweiszeile – auch wenn das
+// Programm schon zum nächsten roten Wort derselben Zeile gesprungen ist. Ist der Nutzer selbst weitergegangen, das rote
+// Wort, auf dem er steht (beim Lesen das der Lesezeile), und was er schon ins Feld getippt hat, als Ersetzung.
+function seriesStart() {
+  if (pending && pg == pending.pg && (mode == 'fix' ? cf == pending.auto : mode == 'read' && li == pending.line)) return pending;
+  if (mode == 'fix' && cf && cf.kind != 'page') {
+    const old = cf.word.replace('¬', ''), a = isJoin(cf) || cf.cross ? '' : ($('edit').value.slice(cf.start - ed.pre.length).match(WRE) || [''])[0];
+    return { old, new: a != old ? a : '' };
+  }
+  const own = x => x.line == li && x.kind != 'page';
+  const f = mode == 'read' && (data.flags.find(x => own(x) && !(passed && passed.line == li && x.start <= passed.start)) || data.flags.find(own));
+  if (f) return { old: f.word.replace('¬', ''), new: '' };
+  return pending || { old: '', new: '' };
 }
 async function whitelistRead() {
   // Lesemodus: erstes rotes Wort der Lesezeile bestätigen (nochmal F8 = nächstes)

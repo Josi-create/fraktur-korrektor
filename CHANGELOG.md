@@ -246,6 +246,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Schwelle von 30 %, und der obere Teil der Seite wurde Zeile für Zeile gelesen. Die Schwelle liegt jetzt bei 20 %;
   die Seitenzahlen eines Inhaltsverzeichnisses bleiben mit unter 10 % weiter außen vor. Bereits eingelesene Seiten
   ändern sich dadurch nicht, erst beim Neuerkennen.
+- **F9 nimmt das rote Wort, auf dem man steht**: Beim Lesen das rote Wort der Lesezeile, in der Korrektur das offene
+  Wort samt der schon getippten Verbesserung als Ersetzung. Vorher gewann das Angebot zur letzten Korrektur („‚ber‘
+  kommt noch 74× vor“), auch wenn man längst beim nächsten Wort war, und beim Lesen blieben beide Felder leer. Das
+  Angebot gilt jetzt, bis man selbst weitergeht (auch wenn das Programm schon zum nächsten roten Wort derselben
+  Zeile gesprungen ist), und die Hinweiszeile zeigt es nur, solange F9 ihm gilt.
 - **Return beim Korrigieren reagierte träge** (#68), seit es Korrekturvorschläge gibt: Die Wörterbuchvorschläge
   rechnete spylls im Thread der Anfrage, sekundenlang in reinem Python; das Speichern musste sich den Interpreter mit
   ihm teilen und wartete nach jedem Dateizugriff bis zu 5 ms – bei einem Buch mit 361 Seiten 1–3 s statt 0,07 s.

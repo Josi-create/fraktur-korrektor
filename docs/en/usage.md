@@ -106,9 +106,12 @@ correction lists every occurrence of a word at once and replaces them after a qu
 snippets.
 
 - After correcting, say, `ber` → `der`, you see the hint “‘ber’ occurs 74 more times in the book – F9 lists
-  them all”.
-- In correction mode `F9` takes the current red word; you type the replacement.
-- In reading mode you enter both words yourself.
+  them all”. This holds until you move on yourself – even if the program has already jumped to the next red word
+  in the same line.
+- If you are on a red word, `F9` takes that word – when correcting as well as when reading (the red word of the
+  reading line). If you have already typed the correction into the field, it is filled in as the replacement;
+  otherwise you type it.
+- Otherwise you enter both words yourself.
 
 Each occurrence shows page and line, the image snippet with a red frame, and the text. All occurrences are
 ticked to begin with; words split across line ends are found as well.

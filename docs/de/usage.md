@@ -109,9 +109,12 @@ Serienkorrektur zeigt alle Fundstellen eines Wortes auf einmal und ersetzt sie n
 die Bildausschnitte.
 
 - Wer zum Beispiel `ber` → `der` korrigiert, sieht danach den Hinweis „‚ber‘ kommt noch 74× im Buch vor –
-  F9 zeigt alle Stellen“.
-- In der Korrektur nimmt `F9` das aktuelle rote Wort; die Ersetzung tippen Sie ein.
-- Beim Lesen geben Sie beide Wörter frei ein.
+  F9 zeigt alle Stellen“. Das gilt, bis Sie selbst weitergehen – auch wenn das Programm schon zum nächsten roten
+  Wort derselben Zeile gesprungen ist.
+- Stehen Sie auf einem roten Wort, nimmt `F9` dieses Wort – in der Korrektur ebenso wie beim Lesen (das rote Wort
+  der Lesezeile). Haben Sie die Verbesserung schon ins Feld getippt, steht sie gleich als Ersetzung da, sonst tippen
+  Sie sie ein.
+- Sonst geben Sie beide Wörter frei ein.
 
 Jede Fundstelle zeigt Seite und Zeile, den Bildausschnitt mit rotem Rahmen und den Text. Alle Stellen sind
 vorab angehakt; auch über das Zeilenende getrennte Wörter werden gefunden.
