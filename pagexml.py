@@ -100,7 +100,10 @@ def _split_columns(run, W, scale):
     left = [d for d in run if _x1(d) <= gap[0]]
     right = [d for d in run if d['x0'] >= gap[1]]
     for side in (left, right):
-        if statistics.median(_x1(d) - d['x0'] for d in side) < 0.3 * W:
+        # Breit heißt: mindestens ein Fünftel des Satzspiegels. Neben einem Bild wird eine Spalte schmaler – in einem
+        # Zeitschriftenartikel lag die linke Spalte mit 29,7 % knapp unter den früheren 30 % und wurde verschränkt.
+        # Die Seitenzahlen eines Inhaltsverzeichnisses bleiben mit unter 10 % weit darunter.
+        if statistics.median(_x1(d) - d['x0'] for d in side) < 0.2 * W:
             return run
         if _gap(side, min(d['x0'] for d in side), max(_x1(d) for d in side), 15 * scale):
             return run  # noch eine Lücke: drei Spalten oder eine Tabelle

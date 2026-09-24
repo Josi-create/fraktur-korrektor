@@ -46,6 +46,19 @@ def test_rechte_spalte_endet_frueher():
     assert texte(lines) == ['L%d' % k for k in range(8)] + ['R0', 'R1', 'R2']
 
 
+def test_spalte_wird_neben_einem_bild_schmaler():
+    # Zeitschriftenseite: oben zwei Spalten, darunter läuft links eine schmale Spalte neben zwei Fotos weiter, unten die
+    # Bildunterschrift quer über die Mitte. Die linke Seite ist im Median nur noch 27 % breit – trotzdem eine Spalte.
+    li, re = spalten(5)
+    re[0]['x0'] = 1350  # Absatzeinzug
+    schmal = [L('S%d' % k, 200, 760, 400 + 52 * (5 + k)) for k in range(20)]
+    unter = L('Bildunterschrift', 850, 1900, 400 + 52 * 25 + 60)
+    lines = li + re + schmal + [unter]
+    random.Random(4).shuffle(lines)
+    pagexml.classify(lines)
+    assert texte(lines) == ['L%d' % k for k in range(5)] + ['S%d' % k for k in range(20)] + ['R%d' % k for k in range(5)] + ['Bildunterschrift']
+
+
 def test_einspaltig_unveraendert():
     lines = [L('Zeile %d' % k, 200, 2280 if k % 3 else 1500, 400 + 52 * k) for k in range(8)]
     lines[3]['bl'] += 4  # ein wenig schief
