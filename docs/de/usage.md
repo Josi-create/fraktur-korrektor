@@ -258,6 +258,8 @@ seine vollständige Quelle. Das Zitat liegt außerdem in der Zwischenablage.
 Ist Obsidian installiert, öffnet es den neuen Zettel sofort und kommt unter Windows in den Vordergrund (der Ordner muss in einem Vault liegen, den Obsidian kennt).
 Ohne Obsidian bleibt die Datei einfach im Ordner – es ist gewöhnliches Markdown.
 
+Markierungen, die Sie auf dem Kindle gemacht haben, werden auf dieselbe Weise zu Zetteln: [Markierungen vom Kindle](kindle.md).
+
 ## Eine Seite ersetzen
 
 Eine Seite war schief eingescannt, abgeschnitten oder unscharf, und das Buch ist sonst in Ordnung? Dann muss nicht das

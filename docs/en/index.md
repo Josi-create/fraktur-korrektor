@@ -22,6 +22,12 @@ as its window.
 4. **Take it along** – [Saving a book as PDF](pdf-sichern.md): one file with page images, searchable text and all
    your work, readable in any PDF reader and a book again on another computer.
 
+## Notes for Obsidian
+
+If you take excerpts while reading, `F4` creates notes for Obsidian, each with page and source
+([Usage](usage.md)). The same works for the highlights you made on your Kindle:
+[Highlights from the Kindle](kindle.md).
+
 ## Other programs
 
 What ABBYY FineReader, Transkribus, Tesseract, OCR4all, eScriptorium, OCR-D, gImageReader and PoCoTo can do,

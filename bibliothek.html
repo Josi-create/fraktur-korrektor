@@ -82,6 +82,8 @@ button:disabled{opacity:.5;cursor:default}
 .pv .pvline::before{top:-2px;border-top-color:#e33;border-bottom:0} .pv .pvline::after{bottom:-2px;border-bottom-color:#e33;border-top:0}
 .pv .pvbox{position:absolute;border:2px dashed #2a8;box-sizing:border-box;pointer-events:none}
 #s4 label,#ebody label.pvopt{display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:4px}
+#extra{margin-top:14px;font-size:14.5px} #extra a{color:#456}
+#kdone h3{margin:0 0 10px;font:19px Georgia,serif;color:#285}
 </style>
 <script src="/i18n.js"></script>
 </head>
@@ -93,6 +95,7 @@ button:disabled{opacity:.5;cursor:default}
  <div id="actions"><button id="bOpen" class="main" data-t="open_btn"></button><span data-t="open_what"></span></div>
  <div id="note"></div>
  <div id="books"></div>
+ <div id="extra" style="display:none"><a href="#" id="kindleLink">🔖 <span data-t="kindle_link"></span></a></div>
  <div id="foot"><span id="ver"></span><a data-help="index" target="_blank" data-t="help"></a><a data-help="faq" target="_blank" data-t="faq_link"></a><a href="https://github.com/Josi-create/fraktur-korrektor" target="_blank" data-t="source"></a><a id="donate" target="_blank" style="display:none" data-t="donate"></a></div>
 </div>
 <div id="dlg" class="dlg"><form id="form">
@@ -147,6 +150,22 @@ button:disabled{opacity:.5;cursor:default}
   <button type="button" id="eClose" data-t="cancel"></button><button type="submit" id="eGo" class="main" style="display:none"></button>
   <button type="button" id="eBook" data-t="btn_open_book" style="display:none"></button></div>
 </form></div>
+<div id="kdlg" class="dlg"><form id="kform">
+ <h2 data-t="kindle_title"></h2>
+ <div id="kstep">
+  <div data-t="kindle_intro"></div>
+  <label class="f" data-t="kindle_file"></label>
+  <div class="row"><input type="text" id="kSrc" spellcheck="false"><button type="button" id="kFile">📄 <span data-t="pick_file"></span></button></div>
+  <div class="hint" id="kHow"></div>
+  <div id="kBooks"></div>
+  <div id="kDirBox" style="display:none"><label class="f" data-t="kindle_folder"></label>
+   <div class="row"><input type="text" id="kDir" spellcheck="false"><button type="button" id="kDirBtn">📁 <span data-t="pick_folder"></span></button></div>
+   <div class="hint" data-t="kindle_folder_hint"></div></div>
+ </div>
+ <div id="kdone" style="display:none"></div>
+ <div class="msg" id="kmsg"></div>
+ <div class="btns"><span class="sp"></span><button type="button" id="kClose" data-t="cancel"></button><button type="submit" id="kGo" class="main" data-t="kindle_go"></button></div>
+</form></div>
 <script>
 const $ = id => document.getElementById(id);
 applyI18n();
@@ -183,6 +202,7 @@ async function load() {
   if (lib.donate) { $('donate').href = lib.donate; $('donate').style.display = ''; }
   booksdir = lib.booksdir;
   if (!lib.local) { $('bOpen').disabled = true; $('note').textContent = t('remote'); }
+  $('extra').style.display = lib.local ? '' : 'none';  // Zettel landen im Vault auf diesem Rechner
   const edit = (location.hash.startsWith('#edit=') ? location.hash.slice(6) : '').split('|').map(decodeURIComponent);
   const box = $('books'); box.innerHTML = '';
   if (!lib.books.length) { box.innerHTML = '<div id="empty">' + t('empty') + '</div>'; showStart(); return; }
@@ -256,7 +276,7 @@ const AUTO = location.hash.startsWith('#auto=') || location.hash.startsWith('#pa
 const AUTOPREP = location.hash.startsWith('#scans=');  // Selbsttest: gleich zur Vorschau »Scans vorbereiten«
 // Selbsttest #pair=<epub>|<pdf>: das EPUB untersuchen, das PDF dazuholen (wie über den Dateidialog) und einlesen (#40)
 const PAIR = location.hash.startsWith('#pair=') ? decodeURIComponent(location.hash.slice(6)).split('|') : null;
-const ICON = { book: '📖', pdfbuch: '📕', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️' };
+const ICON = { book: '📖', pdfbuch: '📕', transkribus: '🗂️', epub: '📗', pdf: '📄', images: '🖼️', kindle: '🔖' };
 const usesPdf = f => f && (f.kind == 'pdf' || (f.kind == 'epub' && f.pdf));
 const pdfHasText = f => f && (f.kind == 'pdf' ? f.text : f.pdf_text);
 // EPUB + PDF: der Wortlaut kommt ohnehin aus dem EPUB – die Textebene des PDF dient nur den Zeilenpositionen, also nicht nachfragen
@@ -289,6 +309,7 @@ async function doScan() {
     $('omsg').textContent = '';
     if (!found.length) { $('omsg').innerHTML = t('found_none') + ' ' + help('add-book', t('help')); return; }
     if (found.length == 1 && found[0].kind == 'book') return openBook(found[0]);  // eindeutig: nicht nachfragen
+    if (found.length == 1 && found[0].kind == 'kindle') { $('dlg').classList.remove('on'); return openKindle(found[0].path); }
     showFound();
   } catch (e) { fail('omsg', e); }
 }
@@ -301,6 +322,7 @@ function details(f, first) {
   if (f.kind == 'epub') d.push(f.pdf ? t('det_pair', { f: esc(base(f.pdf)) }) : t('det_nopair'));
   if (f.scantailor) d.push(t('det_scantailor'));
   if (f.prepared) d.push(t('det_prepared'));
+  if (f.kind == 'kindle') d.push(kcount('det_kindle', f.books) + ', ' + kcount('kindle_h', f.highlights));
   return '<b>' + esc(f.name) + '</b><span class="tag">' + t('kind_' + f.kind) + '</span>' +
     (first ? '<span class="tag rec">' + t('recommended') + '</span>' : '') + (f.corrections ? '<span class="tag work">' + t('tag_work') + '</span>' : '') +
     (f.newer ? '<span class="tag new">' + t('det_newer') + '</span>' : '') + (f.known ? '<span class="tag">' + t('det_known') + '</span>' : '') +
@@ -377,9 +399,9 @@ async function update() {
   if (stepNow == 4) return;  // die Vorschau hat ihren eigenen Knopf
   const ocr = needsOcr();
   $('oScriptBox').style.display = ocr ? '' : 'none'; $('tools').style.display = ocr || (sel && sel.kind == 'pdf') ? '' : 'none';
-  const plain = !sel || sel.kind == 'book' || updChoice();  // kein neues Buch: kein Titel, kein Zielordner
+  const plain = !sel || sel.kind == 'book' || sel.kind == 'kindle' || updChoice();  // kein neues Buch: kein Titel, kein Zielordner
   $('oTitleBox').style.display = plain ? 'none' : ''; $('target').textContent = plain ? '' : t('imp_target', { dir: booksdir });
-  $('oGo').textContent = t(!sel || sel.kind == 'book' || updChoice() == 'open' ? 'go_open' : updChoice() == 'merge' ? 'go_merge' : updInto() ? 'go_update' : sel.kind == 'pdfbuch' ? 'go_pdfbuch' : ocr ? 'ocr_go' : 'ocr_go_text');
+  $('oGo').textContent = t(sel && sel.kind == 'kindle' ? 'go_kindle' : !sel || sel.kind == 'book' || updChoice() == 'open' ? 'go_open' : updChoice() == 'merge' ? 'go_merge' : updInto() ? 'go_update' : sel.kind == 'pdfbuch' ? 'go_pdfbuch' : ocr ? 'ocr_go' : 'ocr_go_text');
   if ($('tools').style.display != 'none') await showTools(ocr);
   $('oGo').disabled = !!job || (ocr && !(tools && tools.tesseract));
 }
@@ -497,6 +519,7 @@ $('form').onsubmit = async e => {
   const title = $('oTitle').value.trim(), script = document.querySelector('input[name=script]:checked').value;
   try {
     if (sel.kind == 'book') return await openBook(sel);
+    if (sel.kind == 'kindle') { $('dlg').classList.remove('on'); return await openKindle(sel.path); }
     if (updChoice() == 'open') return location.href = '/buch/' + sel.book.id;  // das PDF bringt nichts Neues: das vorhandene Buch
     const r = sel.kind == 'transkribus' ? await runJob('/api/import_transkribus', { job: true, source: sel.path, title, images: $('oImages').value.trim() })
       : sel.kind == 'pdfbuch' ? await runJob('/api/import_pdfbuch', { source: sel.path, title, into: updInto(), merge: updChoice() == 'merge' })
@@ -788,10 +811,86 @@ $('eBook').onclick = () => {
   else if (enext) location.href = '/buch/' + enext;
 };
 $('eClose').onclick = () => $('edlg').classList.remove('on');
-document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) { $('dlg').classList.remove('on'); $('edlg').classList.remove('on'); } if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
+
+// ---- Markierungen vom Kindle als Zettel für Obsidian (#61): Datei finden, Buch wählen, Ordner im Vault – wie F4 beim Lesen
+let kb = null, kSuggested = '';  // die Bücher in der Datei; der zuletzt vorgeschlagene Notizordner
+const kcount = (k, n) => t(k + (n == 1 ? '_1' : '_n'), { n });  // »1 Markierung«, »3 Markierungen«
+function kindleStep(done) {
+  $('kstep').style.display = done ? 'none' : ''; $('kdone').style.display = done ? '' : 'none';
+  $('kGo').style.display = done ? 'none' : ''; $('kClose').textContent = t(done ? 'close' : 'cancel');
+}
+async function openKindle(path) {
+  $('kdlg').classList.add('on'); kindleStep(false);
+  $('kmsg').textContent = ''; $('kBooks').innerHTML = ''; $('kDirBox').style.display = 'none'; $('kGo').disabled = true;
+  $('kSrc').value = path || ''; kb = null; kSuggested = '';
+  await kindleScan(true);
+}
+async function kindleScan(first) {
+  // Ohne Pfad sucht der Server einen angeschlossenen Kindle; findet er keinen, erklärt der Hinweis, woher die Datei kommt
+  const p = $('kSrc').value.trim(); if (!p && !first) return;
+  $('kmsg').textContent = t('scanning'); $('kGo').disabled = true;
+  try {
+    const r = await post('/api/kindle_scan', { path: p });
+    $('kmsg').textContent = '';
+    $('kHow').innerHTML = r.path && !p ? t('kindle_found') : t('kindle_how') + ' ' + help('kindle', t('help'));
+    if (!r.path) { $('kSrc').focus(); return; }
+    $('kSrc').value = r.path; kb = r.books;
+    $('kBooks').innerHTML = '<label class="f">' + t('kindle_book') + '</label>' + kb.map((b, n) =>
+      '<label class="cand" data-n="' + n + '"><input type="radio" name="kbook" value="' + n + '"><span class="ic">🔖</span><span><b>' + esc(b.title) + '</b>' +
+      '<small>' + esc(b.author) + '</small><small>' + [b.highlights ? kcount('kindle_h', b.highlights) : '', b.notes ? kcount('kindle_n', b.notes) : ''].filter(x => x).join(', ') +
+      '</small></span></label>').join('');
+    for (const el of document.querySelectorAll('input[name=kbook]')) el.onchange = () => kindlePick(+el.value);
+    kindlePick(0);
+  } catch (err) { fail('kmsg', err); }
+}
+function kindlePick(n) {
+  for (const el of document.querySelectorAll('#kBooks .cand')) { const on = +el.dataset.n == n; el.classList.toggle('sel', on); el.querySelector('input').checked = on; }
+  // Den Vorschlag des Servers übernehmen – außer der Nutzer hat selbst einen anderen Ordner eingetragen
+  const cur = $('kDir').value.trim(); if (!cur || cur == kSuggested) $('kDir').value = kb[n].folder || '';
+  kSuggested = kb[n].folder || '';
+  $('kDirBox').style.display = ''; $('kGo').disabled = !$('kDir').value.trim();
+}
+$('kindleLink').onclick = e => { e.preventDefault(); openKindle(''); };
+$('kFile').onclick = async () => {
+  try { const p = (await post('/api/choose', { kind: 'any' })).path; if (p) { $('kSrc').value = p; await kindleScan(); } }
+  catch (err) { fail('kmsg', err); }
+};
+$('kSrc').addEventListener('keydown', e => { if (e.key == 'Enter') { e.preventDefault(); kindleScan(); } });
+$('kSrc').addEventListener('change', () => kindleScan());
+$('kDirBtn').onclick = async () => {
+  try { const p = (await post('/api/choose', { kind: 'folder' })).path; if (p) { $('kDir').value = p; $('kGo').disabled = !kb; } }
+  catch (err) { fail('kmsg', err); }
+};
+$('kDir').oninput = () => { $('kGo').disabled = !kb || !$('kDir').value.trim(); };
+$('kClose').onclick = () => $('kdlg').classList.remove('on');
+$('kform').onsubmit = async ev => {
+  ev.preventDefault();
+  const pick = document.querySelector('input[name=kbook]:checked'), folder = $('kDir').value.trim();
+  if (!kb || !pick || !folder) return;
+  $('kGo').disabled = true; $('kmsg').textContent = '';
+  try {
+    const r = await post('/api/kindle_notes', { path: $('kSrc').value.trim(), key: kb[+pick.value].key, folder, lang: LANG });
+    kindleStep(true);
+    $('kdone').innerHTML = '<h3>✔ ' + t(r.created == 0 ? 'kindle_done_0' : r.created == 1 ? 'kindle_done_1' : 'kindle_done_n', { n: r.created, t: esc(r.title) }) + '</h3>' +
+      '<p><code>' + esc(r.folder) + '</code> <a href="#" id="kShow">' + t('btn_show_folder') + '</a> <span id="kShown"></span></p>' +
+      (r.skipped ? '<div class="hint">' + kcount('kindle_skipped', r.skipped) + '</div>' : '') +
+      (r.cut ? '<div class="hint">' + kcount('kindle_cut', r.cut) + '</div>' : '') +
+      (r.created ? '<div class="hint">' + t('kindle_after') + '</div>' : '');
+    $('kShow').onclick = async e => {
+      e.preventDefault();
+      try { await post('/api/reveal', { path: r.folder }); $('kShown').textContent = t('shown_clip'); } catch (err) { fail('kShown', err); }
+    };
+  } catch (err) { fail('kmsg', err); $('kGo').disabled = false; }
+};
+document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) { $('dlg').classList.remove('on'); $('edlg').classList.remove('on'); $('kdlg').classList.remove('on'); } if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
 load();
 // Einstieg aus der Hilfe: #open bzw. #open=<pfad>; #auto=<pfad> liest die Empfehlung gleich ein, #scans=<pfad> zeigt die
 // Vorschau »Scans vorbereiten« (Selbsttest, wie ?keys im Reader)
+// #kindle=<datei> öffnet den Kindle-Dialog mit dieser Datei, #kindle=<datei>|<ordner> legt die Zettel zum ersten Buch gleich an
+if (location.hash.startsWith('#kindle')) {
+  const [kp, kf] = decodeURIComponent(location.hash.slice(8)).split('|');
+  openKindle(kp).then(() => { if (kf && kb) { $('kDir').value = kf; $('kform').requestSubmit(); } });
+}
 if (location.hash.startsWith('#open') || AUTO || AUTOPREP) openDialog(PAIR ? PAIR[0] : location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');
 </script>
 </body>

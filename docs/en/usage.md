@@ -253,6 +253,8 @@ from its full source. The quotation is also placed on the clipboard.
 If Obsidian is installed, it opens the new note immediately and, on Windows, comes to the front (the folder has to be inside a vault Obsidian knows).
 Without Obsidian the file simply stays in the folder – it is plain Markdown.
 
+Highlights you made on your Kindle become notes in the same way: [Highlights from the Kindle](kindle.md).
+
 ## Replacing a page
 
 One page was scanned crooked, cut off or blurred, and the book is otherwise fine? Then the whole book need not be

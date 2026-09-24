@@ -5,6 +5,20 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Kindle-Markierungen nach Obsidian** (#61): Aus jeder Markierung auf dem Kindle wird ein Zettel wie mit `F4` –
+  fortlaufend nummeriert, das Zitat mit Seite und Position, Verweis auf `0 Quellenangabe` (beim ersten Mal mit Titel,
+  Autor und »Kindle-Ausgabe« angelegt); eine eigene Notiz vom Kindle wird die Anmerkung über dem Zitat, eine Notiz
+  ohne Markierung ein Zettel ohne Zitat. Einstieg in der Bibliothek unter der Bücherliste; »Öffnen …« erkennt
+  `My Clippings.txt` (auch umbenannt, am Inhalt) und das Kindle-Laufwerk und führt dorthin. Ein als Laufwerk
+  angeschlossener Kindle wird von selbst gefunden (nur Wechseldatenträger, damit ein getrenntes Netzlaufwerk nicht
+  bremst); Kindles ab 2024 melden sich als Mediengerät, der Hinweis im Fenster und die neue Hilfeseite *Markierungen
+  vom Kindle* (DE/EN) erklären den Weg. Neues Modul `kindle.py`: Kennzeilen deutsch und englisch, BOM und CRLF,
+  abgekürzte Positionen älterer Geräte; eine erweiterte Markierung ersetzt den kürzeren Eintrag davor, die
+  Kopiergrenze des Verlags wird gezählt statt als Zitat übernommen. Vorgeschlagen wird der Notizordner eines
+  gleichnamigen Buchs der Bibliothek, sonst ein neuer Ordner neben dem zuletzt benutzten Notizordner. Schon
+  vorhandene Zettel erkennt das Programm am Zitat – die Datei lässt sich nach jedem Lesen wieder einlesen.
+  `/api/kindle_scan`, `/api/kindle_notes` (nur lokal); die Zettel-Helfer (`notes_ready`, `note_source`,
+  `note_number`) teilt sich `F4` jetzt mit dem Kindle. Selbsttest: `/bibliothek#kindle=<datei>|<ordner>`.
 - **Vorbereiten-Knöpfe nach Ampel und Herkunft** (#69): *Scans vorbereiten*, *Für Transkribus vorbereiten* und *Für
   ScanTailor vorbereiten* treten in der Bibliothek grau zurück, wenn sie wenig bringen – bei grüner Ampel, wenn der
   Text schon aus Transkribus stammt (dann auch die beiden Bildvorbereitungen: sie bräuchten eine neue Erkennung, die

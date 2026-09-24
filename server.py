@@ -6,7 +6,7 @@ Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
 import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse, collections
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-import korrlib, pagexml, ocr, epub, finder, pdfbuch, scans, merge
+import korrlib, pagexml, ocr, epub, finder, pdfbuch, scans, merge, kindle
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
 
 HERE = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))  # gepackt liegen dict/, docs/ und die HTML-Dateien im Bundle
@@ -18,10 +18,37 @@ DEFAULT = None  # id des Buchs von der Kommandozeile
 IMGTYPES = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg'}
 # Wörter in den Zetteln für Obsidian (Dateinamen und Quellenzeile) in der Sprache der Oberfläche
 NOTE_WORDS = dict(
-    de=dict(page='Seite', line='Zeile', note='Anmerkung', src='0 Quellenangabe',
-            template='# %s\n\nHerkunft: (z. B. Universitätsbibliothek Münster, Fernleihe)\n\nZitierweise (Zotero):\n'),
-    en=dict(page='Page', line='Line', note='Note', src='0 Source',
-            template='# %s\n\nProvenance: (e.g. university library, interlibrary loan)\n\nCitation (Zotero):\n'))
+    de=dict(page='Seite', line='Zeile', note='Anmerkung', src='0 Quellenangabe', pos='Position',
+            template='# %s\n\nHerkunft: (z. B. Universitätsbibliothek Münster, Fernleihe)\n\nZitierweise (Zotero):\n',
+            kindle='# %s\n\nAutor: %s\n\nHerkunft: Kindle-Ausgabe\n\nZitierweise (Zotero):\n'),
+    en=dict(page='Page', line='Line', note='Note', src='0 Source', pos='Location',
+            template='# %s\n\nProvenance: (e.g. university library, interlibrary loan)\n\nCitation (Zotero):\n',
+            kindle='# %s\n\nAuthor: %s\n\nProvenance: Kindle edition\n\nCitation (Zotero):\n'))
+
+
+def notes_ready(folder):
+    """Den Notizordner bereitstellen; liefert einen Fehlerschlüssel oder None. Der Ordner des Buchs im Vault darf neu sein,
+    sein Elternordner muss stehen (sonst ist der Pfad vertippt)."""
+    if not folder:
+        return 'kein_notizordner'
+    if not os.path.isdir(folder):
+        if not os.path.isdir(os.path.dirname(folder)):
+            return 'notizordner_fehlt'
+        os.makedirs(folder)
+    return None
+
+
+def note_source(folder, W, template):
+    """Die Quellenangabe des Buchs (»0 Quellenangabe«), auf die jeder Zettel verweist – beim ersten Zettel als Vorlage angelegt."""
+    if not os.path.exists(os.path.join(folder, W['src'] + '.md')):
+        with open(os.path.join(folder, W['src'] + '.md'), 'w', encoding='utf-8', newline='\n') as f:
+            f.write(template)
+    return W['src']
+
+
+def note_number(folder):
+    """Nächste Nummer im Notizordner: fortlaufend, auch über Zettel hinweg, die der Nutzer selbst angelegt hat."""
+    return max((int(m.group(1)) for n in os.listdir(folder) for m in [re.match(r'(\d+)(?:\D|$)', n)] if m), default=0) + 1
 
 
 def version():
@@ -189,12 +216,9 @@ class Book:
         Zotero-Zitierweise ein). Liefert (ergebnis, fehler)."""
         W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
         folder = self.settings.get('notizen')
-        if not folder:
-            return None, 'kein_notizordner'
-        if not os.path.isdir(folder):
-            if not os.path.isdir(os.path.dirname(folder)):
-                return None, 'notizordner_fehlt'
-            os.makedirs(folder)  # der Ordner des Buchs im Vault darf neu sein, sein Elternordner muss stehen (sonst ist der Pfad vertippt)
+        err = notes_ready(folder)
+        if err:
+            return None, err
         text = korrlib.TAG.sub('', text)
         text = re.sub(r'¬\s*\n\s*', '', text)  # getrennte Wörter zusammenziehen, Zeilen zu einem Absatz
         text = ' '.join(text.split()).strip()
@@ -205,12 +229,8 @@ class Book:
             if pg not in self.pages:
                 return None, 'quelle_fehlt'
             page = self.printed_page(pg)
-        src = W['src']
-        if not os.path.exists(os.path.join(folder, src + '.md')):
-            with open(os.path.join(folder, src + '.md'), 'w', encoding='utf-8', newline='\n') as f:
-                f.write(W['template'] % self.title)
-        nums = [int(m.group(1)) for n in os.listdir(folder) for m in [re.match(r'(\d+)(?:\D|$)', n)] if m]
-        n = max(nums, default=0) + 1
+        src = note_source(folder, W, W['template'] % self.title)
+        n = note_number(folder)
         name = '%02d %s %s' % (n, W['page'], page)
         path = os.path.join(folder, name + '.md')
         where = '%s %s' % (W['page'], page)
@@ -1350,6 +1370,93 @@ def prepare_scans(source, title, split, deskew, target, trim, progress, cancelle
     return dict(r, book=os.path.dirname(out))
 
 
+# ---- Markierungen vom Kindle als Zettel für Obsidian (#61)
+
+def same_title(a, b):
+    return re.sub(r'[^0-9a-zäöüß]+', '', (a or '').lower()) == re.sub(r'[^0-9a-zäöüß]+', '', (b or '').lower())
+
+
+def notes_suggestion(title):
+    """Wohin die Zettel zu einem Kindle-Buch gehören: der Notizordner eines gleichnamigen Buchs der Bibliothek (dann liegen
+    Kindle- und Lesezettel beisammen), sonst ein neuer Ordner neben dem Notizordner des zuletzt geöffneten Buchs – dort
+    liegt der Vault des Nutzers. Ohne Notizordner irgendwo: leer, der Nutzer wählt."""
+    near = None
+    for e in sorted(lib_load(), key=lambda e: e.get('last', ''), reverse=True):
+        n = pagexml.load_json(e['folder'], 'buch.json', {}).get('notizen')
+        if not n:
+            continue
+        if same_title(e.get('title') or default_title(e['folder']), title):
+            return n
+        near = near or n
+    name = re.sub(r'[\\/:*?"<>|]+', ' ', title).strip()[:80].rstrip(' .') or 'Kindle'
+    return os.path.join(os.path.dirname(near), name) if near else ''
+
+
+def kindle_scan(path):
+    """Die Bücher in »My Clippings.txt«, je mit Vorschlag für den Notizordner. Ohne Pfad sucht das Programm einen
+    angeschlossenen Kindle."""
+    found = kindle.find()
+    path = path or (found[0] if found else '')
+    if not path:
+        return dict(path='', found=[], books=[])
+    if not os.path.isfile(path):
+        raise ValueError('quelle_fehlt')
+    try:
+        books = kindle.books(kindle.read(path))
+    except OSError:
+        raise ValueError('quelle_fehlt')
+    if not books:
+        raise ValueError('keine_markierungen')
+    for b in books:
+        b['folder'] = notes_suggestion(b['title'])
+    return dict(path=path, found=found, books=books)
+
+
+def kindle_notes(path, key, folder, lang='de'):
+    """Je Markierung eines Kindle-Buchs ein Zettel wie mit F4: fortlaufend nummeriert, die eigene Notiz vom Kindle als
+    Anmerkung, das Zitat, Seite und Position, Verweis auf die Quellenangabe. Was schon als Zettel im Ordner steht, kommt
+    nicht noch einmal – man darf die Datei nach jedem Lesen wieder einlesen."""
+    W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
+    try:
+        entries = kindle.read(path or '')
+    except OSError:
+        raise ValueError('quelle_fehlt')
+    b = next((b for b in kindle.books(entries) if b['key'] == key), None)
+    if not b:
+        raise ValueError('keine_markierungen')
+    folder = os.path.abspath(folder) if folder else ''
+    err = notes_ready(folder)
+    if err:  # eigene Meldungen: die für F4 verweisen auf die Taste O der Leseansicht
+        raise ValueError(dict(kein_notizordner='kindle_ordner_leer', notizordner_fehlt='kindle_ordner_fehlt')[err])
+    its, cut = kindle.items(entries, key)
+    have = []  # Inhalt der vorhandenen Zettel, Leerraum zusammengezogen – so wie die Zitate unten geschrieben werden
+    for p in glob.glob(os.path.join(folder, '*.md')):
+        try:
+            have.append(' '.join(open(p, encoding='utf-8').read().split()))
+        except (OSError, UnicodeDecodeError):
+            pass
+    have = ' \n'.join(have) + ' \n'  # jedes Zitat endet mit Leerraum, auch am Dateiende
+    title = b['title'].replace('|', '/').replace('[', '(').replace(']', ')')  # sonst zerbricht der Verweis [[…|…]]
+    src = note_source(folder, W, W['kindle'] % (b['title'], b['author'] or '–'))
+    n, made, skipped = note_number(folder), [], 0
+    for it in its:
+        probe = '> %s ' % it['text'] if it['text'] else ' '.join(it['note'].split())
+        if probe in have:
+            skipped += 1
+            continue
+        where = ([('%s %s' % (W['page'], it['page']))] if it['page'] else []) + \
+                ([('%s %s' % (W['pos'], it['loc'][0] if it['loc'][0] == it['loc'][1] else '%d–%d' % it['loc']))] if it['loc'] else [])
+        name = '%02d %s' % (n, where[0] if where else W['note'])
+        body = '**%s**\n\n%s\n\n---\n\n%s%s\n' % (W['note'], it['note'], '> %s\n\n' % it['text'] if it['text'] else '',
+                                                 ', '.join(where + ['[[%s|%s]]' % (src, title)]))
+        path_n = os.path.join(folder, name + '.md')
+        with open(path_n, 'x', encoding='utf-8', newline='\n') as f:  # 'x': nie überschreiben
+            f.write(body)
+        made.append(path_n)
+        n += 1
+    return dict(created=len(made), skipped=skipped, cut=cut, folder=folder, title=b['title'], files=made)
+
+
 def open_obsidian(path):
     """Die neue Notiz in Obsidian zeigen. Obsidian meldet beim System die Adresse obsidian://…; liegt die Datei in einem
     Vault, den Obsidian kennt, öffnet es sie dort. Ohne Obsidian bleibt die Datei einfach im Ordner."""
@@ -1518,7 +1625,7 @@ pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} 
 <div id="wrap"><nav>%(nav)s</nav><main>%(body)s</main></div></body></html>'''
 
 
-HELP_ORDER = ['index', 'add-book', 'pdf-import', 'transkribus', 'usage', 'pdf-sichern', 'install', 'install-tools', 'vergleich', 'faq']
+HELP_ORDER = ['index', 'add-book', 'pdf-import', 'transkribus', 'usage', 'kindle', 'pdf-sichern', 'install', 'install-tools', 'vergleich', 'faq']
 
 
 def help_pages(lang):
@@ -1714,7 +1821,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/rename'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/rename', '/api/kindle_scan', '/api/kindle_notes'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -1797,6 +1904,14 @@ class H(BaseHTTPRequestHandler):
             if u.path == '/api/rename':
                 try:
                     return self.sendjson(lib_rename(body.get('id'), body.get('title')))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
+            if u.path in ('/api/kindle_scan', '/api/kindle_notes'):  # schreibt in den Vault des Nutzers: nur am Rechner selbst
+                try:
+                    if u.path == '/api/kindle_scan':
+                        return self.sendjson(kindle_scan((body.get('path') or '').strip()))
+                    return self.sendjson(kindle_notes((body.get('path') or '').strip(), body.get('key') or '', (body.get('folder') or '').strip(),
+                                                      body.get('lang') or 'de'))
                 except ValueError as e:
                     return self.sendjson(dict(error=str(e)), 400)
             if u.path == '/api/open':

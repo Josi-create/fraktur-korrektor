@@ -9,6 +9,7 @@ Fund = dict(kind, path, name, pages, mtime, …):
   pdf          PDF – text = durchsuchbar
   images       Ordner mit Seitenbildern – scantailor = Ergebnis von ScanTailor, prepared = vom Programm aufbereitet
                (Doppelseiten geteilt, geradegerichtet); beide gehen vor den unbearbeiteten Seiten
+  kindle       »My Clippings.txt« vom Kindle – kein Buch, sondern Markierungen: books, highlights; daraus werden Zettel (#61)
 Der erste Fund ist die Empfehlung: Wo schon Korrekturen stecken, geht nichts verloren; sonst der fertigste Text."""
 import os, re, glob, json, time, zipfile
 import xml.etree.ElementTree as ET
@@ -16,7 +17,7 @@ import xml.etree.ElementTree as ET
 IMG = ('.png', '.jpg', '.jpeg', '.tif', '.tiff')
 PRUNE = {'venv', '.venv', 'node_modules', '__pycache__', 'build', 'dist', 'site-packages', '$recycle.bin', 'system volume information',
          'cache'}  # ScanTailor legt in out/cache Miniaturbilder und Zwischenschritte ab – die sind keine Buchseiten
-RANK = dict(book=0, pdfbuch=1, transkribus=2, epub=3, pdf=4, images=5)
+RANK = dict(book=0, pdfbuch=1, transkribus=2, epub=3, pdf=4, images=5, kindle=6)
 MAXDEPTH, MAXFILES, MAXTIME = 4, 40000, 6.0
 
 
@@ -136,6 +137,19 @@ def epub_info(path):
     return d
 
 
+def kindle_info(path):
+    """Markierungen vom Kindle: wie viele Bücher und Markierungen darin stehen – oder None, wenn es keine solche Datei ist."""
+    try:
+        import kindle
+        books = kindle.books(kindle.read(path))
+    except (OSError, ValueError):
+        return None
+    if not books:
+        return None
+    return dict(kind='kindle', path=path, name=os.path.basename(path), pages=0, books=len(books),
+                highlights=sum(b['highlights'] for b in books), mtime=_mtime(path))
+
+
 def _pair(found):
     """EPUB und gleichlautendes PDF gehören zusammen: bevorzugt das durchsuchbare, dann das größere (bessere Bilder).
     Das gepaarte PDF bleibt in der Liste, rückt aber hinter das EPUB."""
@@ -183,6 +197,9 @@ def scan_file(path):
     if ext in IMG:
         n = sum(1 for f in os.listdir(folder) if f.lower().endswith(IMG))
         return [dict(kind='images', path=folder, name=os.path.basename(folder), pages=n, mtime=_mtime(path))]
+    if ext == '.txt':  # auch umbenannt (»My Clippings (1).txt« aus dem Download-Ordner): am Inhalt erkennen
+        k = kindle_info(path)
+        return [k] if k else []
     return []
 
 
@@ -223,6 +240,10 @@ def scan_dir(root):
                     found.append(t)
             elif ext in IMG:
                 nimg += 1
+            elif f.lower() == 'my clippings.txt':  # das Kindle-Laufwerk oder ein Ordner, in den die Datei kopiert wurde
+                k = kindle_info(p)
+                if k:
+                    found.append(k)
         parent = os.path.basename(os.path.dirname(cur)).lower()
         if nimg >= 2 and not any(f['kind'] == 'transkribus' and f['path'] == cur for f in found):
             found.append(dict(kind='images', path=cur, name=os.path.relpath(cur, root) if cur != root else os.path.basename(cur), pages=nimg,

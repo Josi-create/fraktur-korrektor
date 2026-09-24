@@ -22,6 +22,12 @@ lediglich als Fenster.
 4. **Mitnehmen** – [Ein Buch als PDF sichern](pdf-sichern.md): eine Datei mit Seitenbildern, durchsuchbarem Text und
    Ihrem ganzen Arbeitsstand, lesbar in jedem PDF-Reader und auf einem anderen Rechner wieder ein Buch.
 
+## Zettel für Obsidian
+
+Wer beim Lesen exzerpiert, legt mit `F4` Zettel für Obsidian an, jeder mit Seite und Quellenangabe
+([Bedienung](usage.md)). Dasselbe geht mit den Markierungen, die Sie auf dem Kindle gemacht haben:
+[Markierungen vom Kindle](kindle.md).
+
 ## Andere Programme
 
 Was ABBYY FineReader, Transkribus, Tesseract, OCR4all, eScriptorium, OCR-D, gImageReader und PoCoTo können, was
