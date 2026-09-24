@@ -15,6 +15,9 @@ as its window.
      everything stays on your computer. Afterwards a traffic light shows how good the result is.
    - *for difficult scans:* [Transkribus](transkribus.md), an internet service that usually recognises
      Fraktur better.
+
+   Do you photograph the books yourself, in an archive perhaps? [Photographing books yourself](fotografieren.md)
+   says what matters – a good picture saves all the after-work.
 2. **Open** – a single button: you show the program a file or a folder, and it works out by itself whether it is
    a PDF, an EPUB, page images, a Transkribus export or a book you have already worked on: [Opening a book](add-book.md).
 3. **Read and correct** – [Usage](usage.md). Everything works from the keyboard; the most important keys

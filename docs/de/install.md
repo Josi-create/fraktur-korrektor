@@ -2,7 +2,9 @@
 
 Der Fraktur-Korrektor ist ein fertiges Programm: herunterladen, doppelklicken, loslegen. Sie brauchen **nichts
 weiter zu installieren** – die Texterkennung (Tesseract) und die Wörterbücher sind schon dabei (unter Linux
-kommt Tesseract aus dem Paketmanager, siehe unten).
+kommt Tesseract aus dem Paketmanager, siehe unten), und Doppelseiten teilen oder schiefe Seiten geraderichten kann
+das Programm selbst. Nur für besonders schwierige Vorlagen gibt es das freie Zusatzprogramm ScanTailor, das Sie
+bei Bedarf dazuholen: [Werkzeuge installieren](install-tools.md).
 
 Alle Fassungen liegen auf der [Seite der Veröffentlichungen](https://github.com/Josi-create/fraktur-korrektor/releases/latest).
 

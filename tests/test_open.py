@@ -112,6 +112,19 @@ def test_datei_untersuchen(tmp_path):
         finder.scan(str(tmp_path / 'gibtsnicht'))
 
 
+def test_fotos_vom_iphone_als_heic(tmp_path):
+    # HEIC kann das Programm nicht lesen – statt »nichts gefunden« sagt es, woran es liegt (#43)
+    os.makedirs(tmp_path / 'Lesesaal')
+    for n in (1, 2):
+        (tmp_path / 'Lesesaal' / ('IMG_%04d.HEIC' % n)).write_bytes(b'x')
+    for p in (tmp_path / 'Lesesaal', tmp_path / 'Lesesaal' / 'IMG_0001.HEIC'):
+        with pytest.raises(ValueError, match='nur_heic'):
+            finder.scan(str(p))
+    (tmp_path / 'Lesesaal' / 'IMG_0003.jpg').write_bytes(png(10, 10))
+    (tmp_path / 'Lesesaal' / 'IMG_0004.jpg').write_bytes(png(10, 10))
+    assert [f['kind'] for f in finder.scan(str(tmp_path / 'Lesesaal'))['found']] == ['images']  # es gibt etwas zu öffnen
+
+
 def test_epub_lesen_und_textbuch(tmp_path):
     make_epub(str(tmp_path / 'x.epub'), [PARAS, ['Zweites Kapitel.'] * 40], title='Mein Titel')
     title, chapters = epub.read(str(tmp_path / 'x.epub'))

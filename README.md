@@ -25,8 +25,10 @@ Jede Korrektur wird sofort in die Textdatei geschrieben und in `korrekturen.log`
 
 ## Installieren
 
-Fertige Programme, in denen alles steckt – auch die Texterkennung, es muss nichts nachinstalliert werden
-(Linux: Tesseract aus dem Paketmanager):
+Fertige Programme mit allem, was man zum Einlesen, Vorbereiten der Scans und Korrigieren braucht – auch der
+Texterkennung samt Frakturmodell; es muss nichts nachinstalliert werden (Linux: Tesseract aus dem Paketmanager).
+Nur für besonders schwierige Vorlagen – zum Bund hin gewölbte Seiten, Flecken, ungleichmäßiges Licht – lässt sich
+zusätzlich das freie Programm ScanTailor einbinden ([Werkzeuge installieren](docs/de/install-tools.md)):
 
 | | |
 |---|---|

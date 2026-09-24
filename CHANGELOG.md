@@ -5,6 +5,18 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Hilfeseite »Bücher selbst fotografieren«** (#43, DE/EN): jede Seite einzeln, Kamera parallel, Seite bildfüllend
+  (Faustregel 1800 Bildpunkte für 15 cm), Licht, Reihenfolge und Dateinamen, eine Probe vor dem Archivbesuch, was
+  bei Doppelseiten hilft, Buch-Scan-Apps wie vFlat mit Preis (Stand September 2026) und dem Hinweis, dass die
+  Fotos durch eine fremde App laufen. In der Hilfe nach *Ein Buch öffnen*, verlinkt aus der Übersicht, *PDF oder
+  Bilder einlesen* und den *Häufigen Fragen*. Beispielfotos fehlen noch (es gibt keine gemeinfreie Vorlage im
+  Repository).
+- **iPhone-Fotos im Format HEIC**: Das Programm kann sie nicht lesen, sagt das jetzt aber beim Öffnen, statt
+  »nichts gefunden« zu melden, und nennt den Ausweg (per Kabel übertragen oder das iPhone auf *Maximale
+  Kompatibilität* stellen) – auch in der Hilfeseite und den Häufigen Fragen.
+- **README und *Programm installieren*** (#57, Teil): Der Satz »es muss nichts nachinstalliert werden« stimmt jetzt
+  genauer – Doppelseiten und Schieflage erledigt das Programm selbst, ScanTailor ist ein Zusatz für schwierige
+  Vorlagen. Ob ScanTailor enger eingebunden wird, ist offen.
 - **Kindle-Markierungen nach Obsidian** (#61): Aus jeder Markierung auf dem Kindle wird ein Zettel wie mit `F4` –
   fortlaufend nummeriert, das Zitat mit Seite und Position, Verweis auf `0 Quellenangabe` (beim ersten Mal mit Titel,
   Autor und »Kindle-Ausgabe« angelegt); eine eigene Notiz vom Kindle wird die Anmerkung über dem Zitat, eine Notiz

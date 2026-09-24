@@ -56,6 +56,12 @@ untouched.
 The folder is not a book folder of the program. Use **Open …** on the PDF, the images or the Transkribus export
 instead; the program recognises what it is and creates a book from it – see [Opening a book](add-book.md).
 
+**“The photos are in the iPhone format HEIC …”**
+The iPhone usually saves photos as HEIC, and Fraktur-Korrektor cannot read that. Transfer the photos to the
+computer by cable – with its default setting the iPhone converts them to JPEG on the way – or switch the iPhone
+before photographing next time: *Settings* → *Camera* → *Formats* → *Most Compatible*. More under
+[Photographing books yourself](fotografieren.md).
+
 **“Neither PAGE XML, hOCR, ALTO nor text was found in there.”**
 The export contains nothing the program can read. From Transkribus, download the result as **PAGE XML** (only then will
 the lines sit next to the image later) – see [Working with Transkribus](transkribus.md).

@@ -272,12 +272,23 @@ def scan_dir(root):
     return found
 
 
+def _heic(path):
+    try:
+        names = [path] if os.path.isfile(path) else os.listdir(path)
+    except OSError:
+        return False
+    return any(n.lower().endswith(('.heic', '.heif')) for n in names)
+
+
 def scan(path):
     """Liefert dict(path, found=[…]); der erste Fund ist die Empfehlung, 'newer' markiert Funde, die jünger sind als sie."""
     path = os.path.abspath(path)
     if not os.path.exists(path):
         raise ValueError('quelle_fehlt')
     found = scan_file(path) if os.path.isfile(path) else scan_dir(path)
+    if not found and _heic(path):
+        # Fotos vom iPhone im Format HEIC: das kann das Programm nicht lesen – aber sagen, woran es liegt und was hilft
+        raise ValueError('nur_heic')
     # Empfehlung: Bücher mit Korrekturen zuerst (dort steckt Arbeit), dann nach Art, innerhalb der Art das Jüngste
     found.sort(key=lambda f: f['mtime'], reverse=True)
     found.sort(key=lambda f: (0 if f.get('corrections') else 1, RANK[f['kind']], 0 if f.get('pdf') or f.get('text') else 1))

@@ -58,6 +58,12 @@ Der Ordner ist kein Buchordner des Programms. Zeigen Sie mit **Öffnen …** sta
 Transkribus-Export; das Programm erkennt selbst, was es ist, und legt daraus ein Buch an – siehe
 [Ein Buch öffnen](add-book.md).
 
+**„Die Fotos liegen im iPhone-Format HEIC vor …“**
+Das iPhone speichert Fotos gewöhnlich als HEIC, und das kann der Fraktur-Korrektor nicht lesen. Übertragen Sie die
+Fotos per Kabel auf den Rechner – in der Grundeinstellung wandelt das iPhone sie dabei in JPEG um – oder stellen
+Sie das iPhone vor dem nächsten Fotografieren um: *Einstellungen* → *Kamera* → *Formate* → *Maximale
+Kompatibilität*. Mehr dazu unter [Bücher selbst fotografieren](fotografieren.md).
+
 **„Darin war weder PAGE-XML noch hOCR, ALTO oder Text zu finden.“**
 Der Export enthält nichts, was das Programm lesen kann. Aus Transkribus laden Sie das Ergebnis als **PAGE XML**
 herunter (nur damit stehen die Zeilen später neben dem Bild) – siehe [Mit Transkribus arbeiten](transkribus.md).

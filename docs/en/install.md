@@ -2,7 +2,9 @@
 
 Fraktur-Korrektor is a finished program: download it, double-click, start working. There is **nothing else to
 install** – text recognition (Tesseract) and the dictionaries come with it (on Linux, Tesseract comes from the
-package manager, see below).
+package manager, see below), and the program splits double pages and straightens crooked pages by itself. Only for
+particularly difficult scans is there the free add-on program ScanTailor, which you fetch if needed:
+[Installing the tools](install-tools.md).
 
 All versions are on the [releases page](https://github.com/Josi-create/fraktur-korrektor/releases/latest).
 

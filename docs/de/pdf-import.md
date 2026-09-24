@@ -113,9 +113,9 @@ Liegt das Buch **schon in Ihrer Bibliothek** – etwa weil Sie die Doppelseiten 
 lassen –, steht beim Buch der Knopf **Scans vorbereiten**. Er bereitet die Seitenbilder des Buchs auf und bietet
 anschließend an, den Text neu erkennen zu lassen; es entsteht ein neues Buch, das bisherige bleibt.
 
-**Einfacher ist es, gar keine Doppelseiten zu fotografieren.** Ein paar Aufnahmetipps: jede Seite einzeln und
-bildfüllend, das Buch flach halten (mit der freien Hand oder einem Gewicht am Rand), die Kamera parallel zur Seite,
-gleichmäßiges Licht ohne Schatten der eigenen Hand. Dann bleibt dem Programm nichts zu teilen und wenig zu drehen.
+**Einfacher ist es, gar keine Doppelseiten zu fotografieren.** Jede Seite einzeln und bildfüllend, die Kamera
+parallel zur Seite, gleichmäßiges Licht – dann bleibt dem Programm nichts zu teilen und wenig zu drehen. Wie das im
+Lesesaal gelingt, auch mit dem iPhone: [Bücher selbst fotografieren](fotografieren.md).
 
 ## Gewölbte Seiten, Flecken, dunkle Ränder: ScanTailor
 

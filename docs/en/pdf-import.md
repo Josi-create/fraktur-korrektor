@@ -111,9 +111,9 @@ If the book is **already in your library** – say, because you had the double p
 at first –, the book has a button **Prepare scans**. It prepares the book’s page images and then offers to
 have the text recognised afresh; a new book is created, the present one stays.
 
-**Easier still: do not photograph double pages at all.** A few tips: every page on its own, filling the picture;
-keep the book flat (with your free hand or a weight on the edge); camera parallel to the page; even light
-without the shadow of your own hand. Then the program has nothing to split and little to rotate.
+**Easier still: do not photograph double pages at all.** Every page on its own and filling the picture, the camera
+parallel to the page, even light – then the program has nothing to split and little to rotate. How to manage that
+in a reading room, iPhone included: [Photographing books yourself](fotografieren.md).
 
 ## Curved pages, stains, dark margins: ScanTailor
 
