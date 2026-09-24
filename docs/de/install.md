@@ -1,7 +1,8 @@
 # Programm installieren
 
 Der Fraktur-Korrektor ist ein fertiges Programm: herunterladen, doppelklicken, loslegen. Sie brauchen **nichts
-weiter zu installieren** – die Texterkennung (Tesseract) und die Wörterbücher sind schon dabei.
+weiter zu installieren** – die Texterkennung (Tesseract) und die Wörterbücher sind schon dabei (unter Linux
+kommt Tesseract aus dem Paketmanager, siehe unten).
 
 Alle Fassungen liegen auf der [Seite der Veröffentlichungen](https://github.com/Josi-create/fraktur-korrektor/releases/latest).
 
@@ -38,6 +39,32 @@ Es gibt auch eine Fassung ohne Installation: die Datei `Fraktur-Korrektor-v….-
 
 Der Mac braucht macOS 15 (Sequoia) oder neuer.
 
+## Linux
+
+Stand September 2026. Die Linux-Fassung ist ein **AppImage**: eine einzige Datei, die ohne Installation läuft.
+Sie ist für gewöhnliche PCs (x86_64) gebaut und braucht eine Distribution ab Ubuntu 22.04, Debian 12 oder Fedora 36.
+
+1. **Herunterladen:**
+   [Fraktur-Korrektor-linux-x86_64.AppImage](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-linux-x86_64.AppImage)
+2. Die Datei **ausführbar machen**: im Dateimanager rechte Maustaste → *Eigenschaften* → Reiter *Berechtigungen*
+   → Haken bei *Datei als Programm ausführen* (die Bezeichnungen weichen je nach Oberfläche etwas ab). Im
+   Terminal geht es mit `chmod +x Fraktur-Korrektor-linux-x86_64.AppImage`.
+3. Die Datei doppelklicken. Es öffnet sich ein kleines Fenster mit den Knöpfen *Im Browser öffnen* und
+   *Beenden*, und der Browser zeigt die Bibliothek.
+4. **Texterkennung nachrüsten** – nur nötig, wenn Sie PDFs oder Bilder einlesen wollen, für die es noch keinen
+   Text gibt. Sie kommt aus dem Paketmanager Ihrer Distribution, im Terminal:
+
+       sudo apt install tesseract-ocr tesseract-ocr-deu      # Ubuntu, Debian, Mint
+       sudo dnf install tesseract tesseract-langpack-deu     # Fedora
+
+   Das Frakturmodell lädt das Programm beim ersten Einlesen selbst nach (rund 10 MB, in Ihren Benutzerordner).
+   Ob alles da ist, zeigt *Öffnen … → Werkzeuge* in der Bibliothek.
+
+**Es startet nicht?** Auf manchen Systemen fehlt die Unterstützung für das Einhängen von AppImages (FUSE). Dann
+hilft im Terminal `./Fraktur-Korrektor-linux-x86_64.AppImage --appimage-extract-and-run`, oder Sie nehmen die
+Fassung `Fraktur-Korrektor-v….-linux-x86_64.tar.gz` von der Seite der Veröffentlichungen: entpacken und darin
+`Fraktur-Korrektor` doppelklicken.
+
 ## Der erste Start
 
 Es geht ein Fenster Ihres Browsers auf, und darin steht die Bibliothek – der Browser ist das Fenster des
@@ -48,7 +75,8 @@ Das Programm läuft nur auf Ihrem Rechner und überträgt nichts ins Internet.
 
 **Beenden:** auf dem Mac über das Symbol im Dock (rechte Maustaste → *Beenden*) oder das kleine Buchsymbol
 oben in der Menüleiste; unter Windows über das Symbol im Infobereich der Taskleiste (unten rechts, gegebenenfalls
-hinter dem Pfeil `^`). Das Fenster im Browser zu schließen genügt nicht – das Programm läuft dann weiter.
+hinter dem Pfeil `^`); unter Linux über den Knopf *Beenden* in dem kleinen Fenster. Das Fenster im Browser zu
+schließen genügt nicht – das Programm läuft dann weiter.
 
 **Es geht kein Fenster auf?** Öffnen Sie Ihren Browser und geben Sie <http://localhost:8765> ein.
 
@@ -63,7 +91,7 @@ und das Ersetzen bestätigen. Ihre Bücher und Einstellungen bleiben unangetaste
 |---|---|
 | eingelesene Bücher | Ordner `Fraktur-Korrektor` in Ihrem Benutzerordner |
 | Einstellungen, Liste der Bücher | Ordner `.fraktur-korrektor` in Ihrem Benutzerordner (versteckt) |
-| das Programm selbst | Windows: `Programme\Fraktur-Korrektor` · Mac: `Programme/Fraktur-Korrektor.app` |
+| das Programm selbst | Windows: `Programme\Fraktur-Korrektor` · Mac: `Programme/Fraktur-Korrektor.app` · Linux: die AppImage-Datei, wo Sie sie abgelegt haben |
 
 Sichern Sie von Zeit zu Zeit den Ordner `Fraktur-Korrektor` – darin steckt Ihre ganze Arbeit.
 
@@ -71,6 +99,7 @@ Sichern Sie von Zeit zu Zeit den Ordner `Fraktur-Korrektor` – darin steckt Ihr
 
 **Windows:** *Einstellungen → Apps → Installierte Apps → Fraktur-Korrektor → Deinstallieren*.
 **Mac:** die `Fraktur-Korrektor.app` aus dem Ordner *Programme* in den Papierkorb ziehen.
+**Linux:** die AppImage-Datei löschen.
 
 Ihre Bücher bleiben dabei erhalten; löschen Sie die beiden oben genannten Ordner von Hand, wenn Sie auch die
 loswerden möchten.

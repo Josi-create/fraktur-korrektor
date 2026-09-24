@@ -1,0 +1,6 @@
+#!/bin/sh
+# Einstiegspunkt des AppImage: startet das PyInstaller-Programm aus usr/bin.
+# Ein Skript statt eines Symlinks, damit der Pfad zum Bundle (_internal) auch dann stimmt,
+# wenn das AppImage über einen Link oder von einem anderen Ordner aus aufgerufen wird.
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/usr/bin/Fraktur-Korrektor" "$@"

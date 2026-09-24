@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller-Spec fuer den Fraktur-Korrektor (Windows und macOS).
+"""PyInstaller-Spec fuer den Fraktur-Korrektor (Windows, macOS und Linux).
 
 Einstiegspunkt ist starter.py (Server im Hintergrund, Browser als Fenster, Symbol zum Beenden), nicht
 server.py - von der Kommandozeile bleibt server.py unveraendert benutzbar. onedir, weil onefile bei jedem
@@ -7,7 +7,9 @@ Start erst entpacken muesste.
 
 Mitgeliefert werden die Woerterbuecher (dict/), die Hilfeseiten (docs/), die Oberflaeche (*.html, i18n.js),
 pyproject.toml fuer die Versionsnummer und - wenn scripts/prepare_tesseract*.py gelaufen ist - Tesseract
-mit den Modellen frak2021 und deu. Damit muss niemand mehr etwas nachinstallieren.
+mit den Modellen frak2021 und deu. Damit muss niemand mehr etwas nachinstallieren. Unter Linux wird Tesseract
+nicht mitgeliefert (dort kommt es aus dem Paketmanager, siehe scripts/build_appimage.sh); die Spec baut den
+onedir-Ordner, aus dem das AppImage entsteht.
 
 Aufruf: pyinstaller fraktur_korrektor.spec --clean --noconfirm
 """
@@ -17,6 +19,7 @@ import sys
 from pathlib import Path
 
 IS_MAC = sys.platform == "darwin"
+IS_LINUX = sys.platform.startswith("linux")
 ROOT = Path(SPECPATH)
 NAME = "Fraktur-Korrektor"
 ICON = ROOT / ("icon.icns" if IS_MAC else "icon.ico")
@@ -34,6 +37,8 @@ TESSERACT = ROOT / "vendor" / "tesseract"
 if (TESSERACT / ("tesseract" if IS_MAC else "tesseract.exe")).exists():
     binaries += [(str(p), "tesseract") for p in sorted(TESSERACT.iterdir()) if p.is_file()]
     datas.append((str(TESSERACT / "tessdata"), "tesseract/tessdata"))
+elif IS_LINUX:
+    print("HINWEIS: Linux-Build ohne Tesseract - es kommt aus dem Paketmanager (tesseract-ocr, tesseract-ocr-deu).")
 else:
     print("HINWEIS: vendor/tesseract fehlt - Build ohne mitgelieferte Texterkennung "
           "(scripts/prepare_tesseract_mac.py bzw. prepare_tesseract.py ausfuehren).")
@@ -44,6 +49,8 @@ hiddenimports = [
 ]
 if IS_MAC:
     hiddenimports += ["AppKit", "PyObjCTools.AppHelper"]   # Dock- und Menueleistensymbol
+elif IS_LINUX:
+    hiddenimports += ["tkinter"]                           # Fenster mit Beenden-Knopf, Dateidialoge
 else:
     hiddenimports += ["pystray", "PIL.Image", "tkinter"]   # Symbol im Infobereich, Dateidialoge
 
@@ -78,7 +85,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,   # signiert wird nach dem Build (scripts/macos/sign_app.sh)
     entitlements_file=None,
-    icon=str(ICON) if ICON.exists() else None,
+    icon=str(ICON) if ICON.exists() and not IS_LINUX else None,   # Linux kennt kein Symbol in der Datei
 )
 
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name=NAME)

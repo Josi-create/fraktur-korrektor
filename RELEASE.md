@@ -4,8 +4,9 @@ Diese Seite richtet sich an die Betreuung des Projekts, nicht an die Benutzer (f
 [Programm installieren](docs/de/install.md)).
 
 Gebaut wird von GitHub Actions: [.github/workflows/release.yml](.github/workflows/release.yml). Ein Versions-Tag
-`v*` baut den Windows-Installer, das portable ZIP und je ein DMG für Apple Silicon und Intel und hängt alles an
-ein Entwurfs-Release. **Run workflow** auf der Actions-Seite baut dieselben Dateien nur zum Prüfen.
+`v*` baut den Windows-Installer, das portable ZIP, je ein DMG für Apple Silicon und Intel sowie AppImage und
+tar.gz für Linux und hängt alles an ein Entwurfs-Release. **Run workflow** auf der Actions-Seite baut dieselben
+Dateien nur zum Prüfen; mit dem Haken **nur_linux** nur den Linux-Teil (`gh workflow run release.yml -f nur_linux=true`).
 
 Ohne die unten beschriebenen Secrets entsteht ein **unsignierter** Mac-Build: Er funktioniert, aber macOS
 verweigert beim Doppelklick den Start („kann nicht geöffnet werden, da der Entwickler nicht verifiziert werden
@@ -104,6 +105,29 @@ Die Notarisierung dauert meist wenige Minuten (`xcrun notarytool … --wait`). E
 Unter Windows macht `build.bat` dasselbe (Installer nur, wenn Inno Setup 6 installiert ist). Der Windows-Build
 bleibt unsigniert; SmartScreen warnt darum beim ersten Start, siehe [docs/de/install.md](docs/de/install.md).
 
+### Linux
+
+Stand September 2026. Unter Linux wird Tesseract **nicht** mitgeliefert – jede Distribution hat es im
+Paketmanager, und ein mitgebrachtes Tesseract müsste zu deren Bibliotheken passen. Das Programm findet das
+installierte (`/usr/bin/tesseract`) und lädt das Frakturmodell selbst nach. Auf dem Build-Rechner ist Tesseract
+nur für den Rauchtest nötig.
+
+    sudo apt install tesseract-ocr tesseract-ocr-deu
+    pip install -e ".[build]"
+    pyinstaller fraktur_korrektor.spec --clean --noconfirm
+    python scripts/smoke_test.py dist/Fraktur-Korrektor/Fraktur-Korrektor
+    scripts/build_appimage.sh                                   # dist/installer/…-linux-x86_64.AppImage und …-linux-x86_64.tar.gz
+    python scripts/smoke_test.py dist/installer/Fraktur-Korrektor-linux-x86_64.AppImage
+
+`build_appimage.sh` legt aus `dist/Fraktur-Korrektor`, `packaging/linux/AppRun` und
+`packaging/linux/fraktur-korrektor.desktop` ein AppDir an und packt es mit
+[appimagetool](https://github.com/AppImage/appimagetool/releases) (Version im Skript festgenagelt; läuft dort mit
+`--appimage-extract-and-run`, braucht also kein FUSE). Das AppImage bekommt die statische Laufzeit aus
+`AppImage/type2-runtime`, die auf dem Zielrechner kein `libfuse2` mehr braucht. Der Workflow baut auf
+`ubuntu-22.04`, absichtlich die älteste angebotene Version: Das Programm läuft nur auf Systemen mit mindestens der
+glibc des Build-Rechners. Der Starter zeigt unter Linux ein kleines tkinter-Fenster mit *Im Browser öffnen* und
+*Beenden* (`starter.linux_ui`); ohne Display fällt er auf die Konsole zurück.
+
 ## Die Hilfe als Website
 
 Die Seiten unter `docs/de` und `docs/en` – im Programm die Hilfe unter `/hilfe/…` – stehen als Website unter
@@ -132,5 +156,7 @@ Die Dateinamen bleiben von Version zu Version gleich, darum funktionieren diese 
     https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor_Setup.exe
     https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-arm64.dmg
     https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-x86_64.dmg
+    https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-linux-x86_64.AppImage
 
-Das portable ZIP trägt die Versionsnummer im Namen und ist darum nur über die Releases-Seite erreichbar.
+Das portable ZIP und das Linux-tar.gz tragen die Versionsnummer im Namen und sind darum nur über die
+Releases-Seite erreichbar.

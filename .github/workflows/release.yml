@@ -1,9 +1,10 @@
 name: Installer bauen
 
-# Baut die fertigen Programme: Windows-Installer, portables ZIP und je ein DMG
-# für Apple Silicon und Intel. Bei einem Versions-Tag (v*) hängt der letzte
-# Auftrag sie an ein Draft-Release; »Run workflow« (workflow_dispatch) baut sie
-# nur zum Prüfen.
+# Baut die fertigen Programme: Windows-Installer, portables ZIP, je ein DMG
+# für Apple Silicon und Intel sowie AppImage und tar.gz für Linux (x86_64).
+# Bei einem Versions-Tag (v*) hängt der letzte Auftrag sie an ein Draft-Release;
+# »Run workflow« (workflow_dispatch) baut sie nur zum Prüfen – mit dem Haken
+# »nur_linux« nur den Linux-Teil (schneller, keine Mac-Minuten).
 #
 # Ohne Secrets entsteht ein unsignierter Mac-Build (Gatekeeper warnt dann beim
 # ersten Start). Für signierte und notarisierte Builds werden gebraucht:
@@ -17,9 +18,15 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      nur_linux:
+        description: "Nur den Linux-Build (AppImage, tar.gz) bauen"
+        type: boolean
+        default: false
 
 jobs:
   windows:
+    if: ${{ !inputs.nur_linux }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -75,6 +82,7 @@ jobs:
             arch: arm64
           - os: macos-15-intel    # Intel-Macs
             arch: x86_64
+    if: ${{ !inputs.nur_linux }}
     runs-on: ${{ matrix.os }}
     env:
       MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
@@ -126,9 +134,51 @@ jobs:
           path: dist/installer/Fraktur-Korrektor-macos-${{ matrix.arch }}.dmg
           if-no-files-found: error
 
+  linux:
+    # Absichtlich die älteste noch angebotene Ubuntu-Version: Das Programm braucht auf dem Zielrechner
+    # mindestens die glibc des Build-Rechners (22.04: glibc 2.35, also Ubuntu 22.04+, Debian 12+, Fedora 36+).
+    # Tesseract wird nicht mitgeliefert, sondern kommt beim Benutzer aus dem Paketmanager; hier ist es nur
+    # für den Rauchtest installiert.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Tesseract für den Rauchtest
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-deu
+
+      - name: Abhängigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[build]"
+          python -c "import tkinter" || echo "::warning::tkinter fehlt - das AppImage bekommt kein Fenster zum Beenden (Konsole)"
+
+      - name: PyInstaller
+        run: pyinstaller fraktur_korrektor.spec --clean --noconfirm
+
+      - name: Rauchtest des PyInstaller-Ordners
+        run: python scripts/smoke_test.py dist/Fraktur-Korrektor/Fraktur-Korrektor
+
+      - name: AppImage und tar.gz packen
+        run: scripts/build_appimage.sh
+
+      - name: Rauchtest des AppImage (ohne FUSE, entpackt)
+        run: python scripts/smoke_test.py dist/installer/Fraktur-Korrektor-linux-x86_64.AppImage
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux
+          path: |
+            dist/installer/Fraktur-Korrektor-linux-x86_64.AppImage
+            dist/installer/Fraktur-Korrektor-v*-linux-x86_64.tar.gz
+          if-no-files-found: error
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [windows, macos]
+    needs: [windows, macos, linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write

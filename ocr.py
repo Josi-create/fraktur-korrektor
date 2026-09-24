@@ -60,7 +60,8 @@ def _find(conf_key, names, places, first=None):
 def find_tesseract():
     return _find('tesseract', ['tesseract'], [
         r'%ProgramFiles%\Tesseract-OCR\tesseract.exe', r'%ProgramFiles(x86)%\Tesseract-OCR\tesseract.exe',
-        r'%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe', '/opt/homebrew/bin/tesseract', '/usr/local/bin/tesseract'],
+        r'%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe', '/opt/homebrew/bin/tesseract', '/usr/local/bin/tesseract',
+        '/usr/bin/tesseract'],  # Linux-Paket (apt/dnf); auch wenn das AppImage vom Schreibtisch aus ohne vollen PATH startet
         bundled('tesseract', 'tesseract.exe' if os.name == 'nt' else 'tesseract'))
 
 

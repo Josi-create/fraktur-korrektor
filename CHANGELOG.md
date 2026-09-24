@@ -5,6 +5,16 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Linux-Fassung als AppImage** (#45, noch ohne Probelauf auf einem Linux-Rechner): Der Release-Workflow bekommt
+  einen Auftrag auf `ubuntu-22.04`, der mit derselben PyInstaller-Spec baut und mit `scripts/build_appimage.sh`
+  ein `Fraktur-Korrektor-linux-x86_64.AppImage` (fester Name, Dauerlink) und ein `…-linux-x86_64.tar.gz` als
+  Rückfall packt; beides läuft vorher durch `scripts/smoke_test.py`. »Run workflow« hat den Haken `nur_linux`.
+  Tesseract wird unter Linux nicht mitgeliefert, sondern aus dem Paketmanager erwartet (`/usr/bin/tesseract`
+  jetzt auch ohne vollen PATH gefunden); das Frakturmodell lädt das Programm wie bisher nach. Der Starter zeigt
+  unter Linux ein kleines Fenster mit *Im Browser öffnen* und *Beenden* (tkinter, ohne Display die Konsole) und
+  setzt `LD_LIBRARY_PATH` für Kindprozesse auf den Wert des Systems zurück, damit Tesseract und der Browser
+  nicht die Bibliotheken aus dem Bundle laden. `packaging/linux/` mit `AppRun` und `.desktop`-Eintrag;
+  Anleitung in *Programm installieren* (DE/EN), Bauschritte in `RELEASE.md`.
 - **Hilfe als Website** (#27): `tools/build_site.py` schreibt die Seiten aus `docs/de` und `docs/en` mit derselben
   Vorlage und Navigation wie im Programm (`server.help_html`, jetzt ohne laufenden Server aufrufbar) nach `site/`,
   dazu eine Startseite mit Sprachwahl und dem Überblick aus der README; Links zwischen den Seiten sind relativ,

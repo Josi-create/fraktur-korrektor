@@ -1,8 +1,10 @@
-"""Startprogramm der gepackten App (Windows .exe, Mac .app) – Doppelklick statt Kommandozeile.
+"""Startprogramm der gepackten App (Windows .exe, Mac .app, Linux AppImage) – Doppelklick statt Kommandozeile.
 
 Der Fraktur-Korrektor hat kein eigenes Fenster; der Browser ist das Fenster. Ohne ein sichtbares Symbol liefe der
 Server unbemerkt weiter, darum zeigt der Starter eines: auf dem Mac im Dock und in der Menüleiste, unter Windows
-im Infobereich der Taskleiste. Darüber wird das Programm auch wieder beendet.
+im Infobereich der Taskleiste. Darüber wird das Programm auch wieder beendet. Unter Linux gibt es keinen
+Infobereich, auf den man sich verlassen könnte (GNOME hat ohne Erweiterung keinen), darum steht dort ein kleines
+Fenster mit zwei Knöpfen – tkinter ist im Bundle sowieso dabei, für die Dateidialoge.
 
 Ein zweiter Doppelklick startet kein zweites Programm, sondern öffnet den Browser auf die laufende Instanz
 (auf dem Mac über das Reopen-Ereignis, sonst über die Anfrage an /api/ping).
@@ -27,6 +29,29 @@ def alert(text):
     elif os.name == 'nt':
         import ctypes
         ctypes.windll.user32.MessageBoxW(None, text, APP, 0x10)
+    else:
+        try:  # Linux: ohne Terminal gestartet wäre die Meldung sonst weg
+            import tkinter
+            from tkinter import messagebox
+            root = tkinter.Tk()
+            root.withdraw()
+            messagebox.showerror(APP, text, parent=root)
+            root.destroy()
+        except Exception:  # kein tkinter, kein Display – dann bleibt es beim print
+            pass
+
+
+def unbundle_env():
+    """Linux: Der PyInstaller-Bootloader stellt LD_LIBRARY_PATH auf das Bundle. Kindprozesse (Tesseract, xdg-open,
+    der Browser) lüden damit unsere Bibliotheken statt ihrer eigenen – darum zurück auf den Wert des Systems, wie
+    die PyInstaller-Doku es rät. Das eigene Programm hat seine Bibliotheken da schon geladen."""
+    if not (sys.platform.startswith('linux') and getattr(sys, 'frozen', False)):
+        return
+    orig = os.environ.pop('LD_LIBRARY_PATH_ORIG', None)
+    if orig:
+        os.environ['LD_LIBRARY_PATH'] = orig
+    else:
+        os.environ.pop('LD_LIBRARY_PATH', None)
 
 
 # Den schon offenen Tab wiederfinden: »Im Browser öffnen« soll das Fenster zeigen und nicht ein weiteres
@@ -176,6 +201,34 @@ def win_ui(url, on_quit):
     on_quit()
 
 
+def linux_ui(url, on_quit):
+    """Kleines Fenster mit »Im Browser öffnen« und »Beenden« (tkinter); Schließen des Fensters beendet auch."""
+    import tkinter
+    from tkinter import ttk
+
+    try:
+        root = tkinter.Tk()
+    except tkinter.TclError:  # kein Display (etwa per SSH gestartet): dann wie auf der Konsole
+        return console_ui(url, on_quit)
+    root.title(APP)
+    root.resizable(False, False)
+    try:
+        root.iconphoto(True, tkinter.PhotoImage(file=os.path.join(server.HERE, 'icon.png')))
+    except tkinter.TclError:
+        pass
+    frame = ttk.Frame(root, padding=16)
+    frame.pack()
+    ttk.Label(frame, text='%s läuft – das Fenster des Programms ist Ihr Browser:' % APP).pack(anchor='w')
+    ttk.Label(frame, text=url).pack(anchor='w', pady=(0, 12))
+    row = ttk.Frame(frame)
+    row.pack()
+    ttk.Button(row, text='Im Browser öffnen', command=lambda: show(url)).pack(side='left', padx=(0, 8))
+    ttk.Button(row, text=APP + ' beenden', command=root.destroy).pack(side='left')
+    root.protocol('WM_DELETE_WINDOW', root.destroy)
+    root.mainloop()
+    on_quit()
+
+
 def console_ui(url, on_quit):
     """Ohne die Bibliothek für das Symbol: wie server.py – Strg+C beendet."""
     print('%s: %s  (Strg+C beendet)' % (APP, url))
@@ -193,6 +246,9 @@ def pick_ui(noui):
         if sys.platform == 'darwin':
             import AppKit  # noqa: F401
             return mac_ui
+        if sys.platform.startswith('linux'):
+            import tkinter  # noqa: F401
+            return linux_ui
         import pystray  # noqa: F401
         from PIL import Image  # noqa: F401
         return win_ui
@@ -204,6 +260,7 @@ def main(argv=None):
     if sys.stdout is None:  # gepackt ohne Konsole (Windows) – sonst scheitert schon das erste print
         sys.stdout = sys.stderr = open(os.devnull, 'w')
     argv = [a for a in (sys.argv[1:] if argv is None else argv) if not a.startswith('-psn_')]  # der Finder hängt eine Prozessnummer an
+    unbundle_env()
     noui = '--no-ui' in argv
     A = server.parse_args([a for a in argv if a != '--no-ui'])
     url = 'http://localhost:%d' % A.port

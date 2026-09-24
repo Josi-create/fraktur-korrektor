@@ -251,3 +251,52 @@ def test_ressourcen_liegen_beim_programm():
         assert os.path.exists(os.path.join(server.HERE, name))
     assert os.path.isdir(os.path.join(server.HERE, 'docs', 'de'))
     assert os.path.isdir(os.path.join(ocr.korrlib.HERE, 'dict'))
+
+
+# ---- Linux: Tesseract aus dem Paketmanager, Umgebung der Kindprozesse, Fenster des Starters
+
+def test_linux_findet_tesseract_aus_dem_paket(monkeypatch):
+    """Vom Schreibtisch gestartet hat das AppImage nicht immer den vollen PATH – /usr/bin wird darum auch so probiert."""
+    monkeypatch.setattr(ocr.korrlib, 'config', dict)
+    monkeypatch.setattr(ocr, 'BUNDLE', None)
+    monkeypatch.setattr(ocr.shutil, 'which', lambda n: None)
+    monkeypatch.setattr(ocr.glob, 'glob', lambda pat: [pat] if pat == '/usr/bin/tesseract' else [])
+    assert ocr.find_tesseract() == '/usr/bin/tesseract'
+    monkeypatch.setattr(ocr.glob, 'glob', lambda pat: [])
+    assert ocr.find_tesseract() is None
+
+
+def test_linux_gibt_kindprozessen_den_bibliothekspfad_des_systems(monkeypatch):
+    """PyInstaller biegt LD_LIBRARY_PATH auf das Bundle; Tesseract und der Browser sollen ihre eigenen Bibliotheken laden."""
+    monkeypatch.setattr(starter.sys, 'platform', 'linux')
+    monkeypatch.setattr(starter.sys, 'frozen', True, raising=False)
+    monkeypatch.setenv('LD_LIBRARY_PATH', '/tmp/bundle/_internal:/opt/lib')
+    monkeypatch.setenv('LD_LIBRARY_PATH_ORIG', '/opt/lib')
+    starter.unbundle_env()
+    assert os.environ['LD_LIBRARY_PATH'] == '/opt/lib' and 'LD_LIBRARY_PATH_ORIG' not in os.environ
+    monkeypatch.setenv('LD_LIBRARY_PATH', '/tmp/bundle/_internal')
+    monkeypatch.delenv('LD_LIBRARY_PATH_ORIG', raising=False)
+    starter.unbundle_env()
+    assert 'LD_LIBRARY_PATH' not in os.environ
+    # nicht gepackt (python starter.py) bleibt alles, wie es ist
+    monkeypatch.setattr(starter.sys, 'frozen', False, raising=False)
+    monkeypatch.setenv('LD_LIBRARY_PATH', '/tmp/bundle/_internal')
+    starter.unbundle_env()
+    assert os.environ['LD_LIBRARY_PATH'] == '/tmp/bundle/_internal'
+
+
+def test_linux_starter_nimmt_tkinter_oder_die_konsole(monkeypatch):
+    monkeypatch.setattr(starter.sys, 'platform', 'linux')
+    monkeypatch.setitem(sys.modules, 'tkinter', types.ModuleType('tkinter'))
+    assert starter.pick_ui(False) is starter.linux_ui
+    monkeypatch.setitem(sys.modules, 'tkinter', None)  # nicht installiert
+    assert starter.pick_ui(False) is starter.console_ui
+    assert starter.pick_ui(True) is starter.console_ui
+
+
+def test_linux_alert_ohne_display_stuerzt_nicht(monkeypatch, capsys):
+    monkeypatch.setattr(starter.sys, 'platform', 'linux')
+    monkeypatch.setattr(starter.os, 'name', 'posix')
+    monkeypatch.setitem(sys.modules, 'tkinter', None)
+    starter.alert('Der Port 8765 ist belegt')
+    assert 'belegt' in capsys.readouterr().out

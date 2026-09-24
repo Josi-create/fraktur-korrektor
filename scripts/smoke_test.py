@@ -6,6 +6,11 @@ eigener freier Port, FRAKTUR_HOME in einem Wegwerf-Ordner.
 
     python scripts/smoke_test.py "dist/Fraktur-Korrektor.app"
     python scripts/smoke_test.py "dist\\Fraktur-Korrektor\\Fraktur-Korrektor.exe"
+    python scripts/smoke_test.py "dist/Fraktur-Korrektor/Fraktur-Korrektor"                  # Linux, PyInstaller-Ordner
+    python scripts/smoke_test.py "dist/installer/Fraktur-Korrektor-linux-x86_64.AppImage"   # Linux, fertiges AppImage
+
+Unter Linux wird Tesseract nicht mitgeliefert, sondern aus dem Paketmanager erwartet (tesseract-ocr,
+tesseract-ocr-deu); das Fraktur-Modell frak2021 laedt das Programm erst beim ersten Fraktur-Import nach.
 """
 import json
 import os
@@ -16,6 +21,9 @@ import tempfile
 import time
 import urllib.request
 from pathlib import Path
+
+
+LINUX = sys.platform.startswith("linux")
 
 
 def binary(path: Path) -> Path:
@@ -74,6 +82,8 @@ def main() -> int:
     port = free_port()
     tmp = Path(tempfile.mkdtemp(prefix="fraktur-rauchtest-"))
     env = dict(os.environ, FRAKTUR_HOME=str(tmp / "home"), PYTHONIOENCODING="utf-8")
+    if exe.suffix == ".AppImage":
+        env["APPIMAGE_EXTRACT_AND_RUN"] = "1"  # die AppImage-Laufzeit entpackt dann, statt per FUSE zu mounten
     print(f"Starte {exe} auf Port {port} (FRAKTUR_HOME={tmp / 'home'})")
     proc = subprocess.Popen([str(exe), "--port", str(port), "--no-browser", "--no-ui"],
                             env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -111,14 +121,19 @@ def main() -> int:
         tools = json.loads(get(port, "/api/tools")[1].decode("utf-8"))
         print(f"  Werkzeuge: {tools}")
         if not tools.get("tesseract"):
-            return fail("Tesseract wurde nicht gefunden - ist vendor/tesseract mitgebaut?")
+            return fail("Tesseract wurde nicht gefunden - ist vendor/tesseract mitgebaut?" if not LINUX else
+                        "Tesseract wurde nicht gefunden - ist das Paket tesseract-ocr installiert?")
         app_root = Path(sys.argv[1]).resolve()
         app_root = app_root if app_root.is_dir() else app_root.parent
-        if app_root not in Path(tools["tesseract"]).resolve().parents:
+        if LINUX:
+            print(f"  Tesseract aus dem System: {tools['tesseract']} (unter Linux nicht mitgeliefert)")
+        elif app_root not in Path(tools["tesseract"]).resolve().parents:
             return fail(f"Das gefundene Tesseract liegt nicht in der App, sondern unter {tools['tesseract']} - "
                         "mitgeliefert wurde es also nicht.")
         if tools.get("model") != "frak2021":
-            return fail(f"Das Fraktur-Modell fehlt (gefunden: {tools.get('model')}).")
+            if not LINUX:
+                return fail(f"Das Fraktur-Modell fehlt (gefunden: {tools.get('model')}).")
+            print(f"  Fraktur-Modell: {tools.get('model')} (frak2021 laedt das Programm beim ersten Fraktur-Import nach)")
         if tools.get("antiqua") != "deu":
             return fail(f"Das Modell deu fehlt (gefunden: {tools.get('antiqua')}).")
         if not tools.get("pdf"):

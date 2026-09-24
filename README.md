@@ -25,13 +25,15 @@ Jede Korrektur wird sofort in die Textdatei geschrieben und in `korrekturen.log`
 
 ## Installieren
 
-Fertige Programme, in denen alles steckt – auch die Texterkennung, es muss nichts nachinstalliert werden:
+Fertige Programme, in denen alles steckt – auch die Texterkennung, es muss nichts nachinstalliert werden
+(Linux: Tesseract aus dem Paketmanager):
 
 | | |
 |---|---|
 | Windows | [Fraktur-Korrektor_Setup.exe](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor_Setup.exe) |
 | Mac, Apple Silicon | [Fraktur-Korrektor-macos-arm64.dmg](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-arm64.dmg) |
 | Mac, Intel | [Fraktur-Korrektor-macos-x86_64.dmg](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-x86_64.dmg) |
+| Linux (x86_64) | [Fraktur-Korrektor-linux-x86_64.AppImage](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-linux-x86_64.AppImage) |
 
 Schritt für Schritt, auch zum Beenden und Aktualisieren: [Programm installieren](docs/de/install.md) ·
 [Installing the program](docs/en/install.md). Alle Fassungen samt portablem ZIP stehen auf der
@@ -85,8 +87,8 @@ im Anhang und liest es wieder ein. `scans.py` bereitet abfotografierte Seiten vo
 
 ## Geplant
 
-Siehe [ROADMAP.md](ROADMAP.md): Installer für Windows
-und Mac, zweisprachige Dokumentation; später Epub-Export.
+Siehe [ROADMAP.md](ROADMAP.md): Installer für Windows,
+Mac und Linux, zweisprachige Dokumentation; später Epub-Export.
 
 ## Entwicklung
 

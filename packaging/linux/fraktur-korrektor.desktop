@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Fraktur-Korrektor
+Comment=Gescannte Bücher lesen und den erkannten Text korrigieren – vor allem Fraktur
+Comment[en]=Read scanned books and correct the recognized text – especially Fraktur
+Exec=Fraktur-Korrektor %F
+Icon=fraktur-korrektor
+Terminal=false
+Categories=Office;Education;
+Keywords=OCR;Fraktur;Korrektur;Transkribus;Tesseract;
