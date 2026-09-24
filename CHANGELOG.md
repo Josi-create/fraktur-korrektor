@@ -209,7 +209,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   und eine Anfrage des Browsers gleichzeitig den Zwischenspeicher der Wortprüfung, schrieben beide über dieselbe
   Zwischendatei, und der zweite fand sie beim Umbenennen nicht mehr (`FileNotFoundError`). Der Text war dann schon
   übernommen, nur die Rückmeldung fehlte. Das Speichern ist jetzt gegen gleichzeitige Zugriffe gesperrt; aufgefallen war
-  es als wackelnder Test.
+  es als wackelnder Test. Unter Windows schlug das Umbenennen außerdem fehl, solange Virenscanner oder Suche die frisch
+  geschriebene Datei gerade offen hatten (`PermissionError`) – das Speichern wartet das jetzt ab.
 
 ## [0.5.0] – 2026-09-18
 

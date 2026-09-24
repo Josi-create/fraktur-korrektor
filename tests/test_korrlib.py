@@ -117,3 +117,25 @@ def test_page_lines_ohne_zeilenumbruch_am_ende():
     assert korrlib.page_lines('# 5\nZeile 1\nZeile 2') == ['# 5', 'Zeile 1', 'Zeile 2']
     assert korrlib.page_lines('# 5\r\nZeile 1\r\n') == ['# 5', 'Zeile 1']
     assert korrlib.page_lines('') == ['']
+
+
+def test_cache_speichern_waehrend_die_datei_offen_ist():
+    """Unter Windows lässt sich eine Datei nicht ersetzen, solange ein anderer sie offen hat – der Virenscanner oder die
+    Suche sehen sich jede frisch geschriebene Datei kurz an. Das Speichern wartet das ab, statt einen Auftrag mit einem
+    unbekannten Fehler enden zu lassen."""
+    import threading, time
+    c = korrlib.Checker(korrlib.checker('1901').path)
+    c.cache['probe-offen'] = False
+    c.save()
+    halten = threading.Event()
+
+    def offen_halten():
+        with open(c.cache_path, encoding='utf-8'):
+            halten.set()
+            time.sleep(0.3)
+    th = threading.Thread(target=offen_halten)
+    th.start(); halten.wait()
+    c.cache['probe-offen-2'] = False
+    c.save()  # darf keine Ausnahme werfen und muss den neuen Stand geschrieben haben
+    th.join()
+    assert 'probe-offen-2' in korrlib.Checker(c.path).cache and not os.path.exists(c.cache_path + '.tmp')

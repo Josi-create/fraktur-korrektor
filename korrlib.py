@@ -6,7 +6,7 @@ Welche Rechtschreibung gilt, ist je Buch wählbar (DICS):
   neu      neue Rechtschreibung ab 1996 (dass, Schifffahrt) – mitgeliefert: dict/de_DE_frami
   vor1901  kein Wörterbuch, sondern Regeln: Thür, seyn, Noth, civilisiren gelten, wenn die heutige Form bekannt ist
 dict/zusatz.txt: zusätzlich gültige Wörter (Abkürzungen); dict/fallen.txt: nie gültig, weil fast immer OCR-Fehler (baß)."""
-import os, re, sys, glob, json, atexit, hashlib, collections, functools, itertools, threading
+import os, re, sys, glob, json, time, atexit, hashlib, collections, functools, itertools, threading
 from spylls.hunspell import Dictionary
 HERE = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))  # gepackt liegt dict/ im Bundle
 HOME = os.environ.get('FRAKTUR_HOME') or os.path.join(os.path.expanduser('~'), '.fraktur-korrektor')
@@ -67,10 +67,22 @@ class Checker:
             if self.cache_path and len(self.cache) > self.n:
                 os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
                 stand = dict(self.cache)  # lookup() trägt währenddessen weiter ein
-                with open(self.cache_path + '.tmp', 'w', encoding='utf-8') as f:
+                tmp = self.cache_path + '.tmp'
+                with open(tmp, 'w', encoding='utf-8') as f:
                     json.dump(stand, f, ensure_ascii=False)
-                os.replace(self.cache_path + '.tmp', self.cache_path)
-                self.n = len(stand)
+                # Unter Windows schlägt das Umbenennen fehl, solange ein anderer die Datei gerade offen hat – der Virenscanner
+                # oder die Suche sehen sich jede frisch geschriebene Datei kurz an. Darum ein paar Anläufe; klappt es dann
+                # immer noch nicht, bleibt der alte Stand auf der Platte (nur ein Zwischenspeicher, nichts geht verloren).
+                for versuch in range(20):
+                    try:
+                        os.replace(tmp, self.cache_path)
+                        self.n = len(stand)
+                        break
+                    except PermissionError:
+                        time.sleep(0.05)
+                else:
+                    try: os.remove(tmp)
+                    except OSError: pass
 _checkers, _savelock, _newlock = {}, threading.Lock(), threading.Lock()
 def checker(name='1901'):
     if name not in _checkers:
