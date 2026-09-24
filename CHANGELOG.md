@@ -49,6 +49,15 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   ScanTailor-Ergebnis bevorzugt und in der Bibliothek als *vorbereitet* gekennzeichnet. Für Bücher der
   Bibliothek gibt es den Knopf *Scans vorbereiten* (auch in der Leseansicht). ScanTailor bleibt für gewölbte
   Seiten, Flecken und dunkle Ränder; Hilfe und Oberflächentexte sagen das jetzt so, dazu Aufnahmetipps.
+  **Ränder und Finger** (Punkt 3 des Issues): drittes Häkchen *Dunkle Ränder und Finger entfernen*, nach dem
+  Teilen und Drehen. `scans.paper_box` sucht auf dem Messbild zusammenhängende Flächen, die deutlich dunkler als
+  das Papier sind (auch Schatten und Haut, nicht nur Druckerschwärze), den Bildrand berühren und dick sind –
+  Textzeilen sind dünn. Was eine Kante fast ganz entlangläuft (Tischplatte, Buchkante, Schatten), wird
+  abgeschnitten, ein Fleck (Finger, Klammer) weiß übermalt – beides nur außerhalb des Textblocks mit
+  Sicherheitsabstand; was in den Text ragt, bleibt, und eine dunkle Fläche über der halben Seite wird in Ruhe
+  gelassen. Die Vorschau zeigt den Schnittkasten grün gestrichelt, die Empfehlung nennt dunkle Ränder, wenn sie
+  auf mindestens der Hälfte der Stichprobe vorkommen. `aufbereitung.json` bekommt `raender`, `beschnitten` und je
+  Seite `schnitt`; alte Dateien ohne diese Angaben gelten als unbeschnitten.
 - **Korrekturvorschläge** (#41): Ein kleines Menü unter dem roten Wort zeigt Vorschläge, `↓`/`↑` setzen sie ins
   Feld, Klick ebenso, `Enter` übernimmt. Zuerst, was in diesem Buch schon einmal aus dem Wort gemacht wurde
   (gelernt aus `korrekturen.log`: `Würllemberg` → `Württemberg`), dann typische Lesefehler der Fraktur-OCR rückgängig

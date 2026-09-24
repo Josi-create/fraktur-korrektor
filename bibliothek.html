@@ -79,6 +79,7 @@ button:disabled{opacity:.5;cursor:default}
 .pv .pvline{position:absolute;top:0;bottom:0;width:3px;margin-left:-1.5px;background:#e33;box-shadow:0 0 0 1px #fff;pointer-events:none}
 .pv .pvline::before,.pv .pvline::after{content:'';position:absolute;left:-7px;border:8px solid transparent;border-left-color:#e33;border-right-color:#e33;width:1px}
 .pv .pvline::before{top:-2px;border-top-color:#e33;border-bottom:0} .pv .pvline::after{bottom:-2px;border-bottom-color:#e33;border-top:0}
+.pv .pvbox{position:absolute;border:2px dashed #2a8;box-sizing:border-box;pointer-events:none}
 #s4 label,#ebody label.pvopt{display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:4px}
 </style>
 <script src="/i18n.js"></script>
@@ -504,7 +505,7 @@ async function checkScans() {
     const r = scanChecks[f.path] || (scanChecks[f.path] = await post('/api/scans_check', { source: f.path }));
     if (sel !== f) return;
     box.className = r.needed ? 'rec' : 'ok';
-    box.innerHTML = r.needed ? '<b class="lbl">' + t('rec') + '</b>' + (r.double ? t('scans_rec_double') + ' ' : '') + (r.skew >= 0.3 ? t('scans_rec_skew', { a: fmtDeg(r.skew) }) + ' ' : '') +
+    box.innerHTML = r.needed ? '<b class="lbl">' + t('rec') + '</b>' + (r.double ? t('scans_rec_double') + ' ' : '') + (r.skew >= 0.3 ? t('scans_rec_skew', { a: fmtDeg(r.skew) }) + ' ' : '') + (r.margins ? t('scans_rec_margins') + ' ' : '') +
       t('scans_rec') + '<div><button type="button" id="oPrep" class="main">' + t('scans_btn') + '</button></div>'
       : t('scans_ok') + ' <a href="#" id="oPrep">' + t('scans_anyway') + '</a>';
     $('oGo').className = r.needed ? '' : 'main';  // hervorgehoben ist, was die Empfehlung sagt
@@ -513,16 +514,22 @@ async function checkScans() {
   } catch (e) { if (sel === f) box.style.display = 'none'; }
 }
 function scanPreview(box, source, r, heading) {
-  // Bild der ersten Doppelseite mit Trennlinie: Maus ziehen oder Pfeiltasten. Liefert den Zustand (split, deskew).
-  const skew = r.skew >= 0.3;
+  // Bild der ersten Doppelseite mit Trennlinie: Maus ziehen oder Pfeiltasten. Grün gestrichelt, was nach dem Abschneiden
+  // der Ränder bleibt (gemessen an der gezeigten Seite). Liefert den Zustand (split, deskew, crop).
+  const skew = r.skew >= 0.3, sample = (r.samples || []).find(s => s.n == r.first), boxes = sample && sample.boxes || [];
   box.innerHTML = (heading ? '<h3 style="margin:0 0 6px;font:19px Georgia,serif">' + t('scans_title') + '</h3>' : '') + '<div>' + t(r.double ? 'scans_intro' : 'scans_intro_single', { n: r.first + 1 }) + '</div>' +
-    '<div class="pv" tabindex="0"><img src="/api/scan_preview?source=' + encodeURIComponent(source) + '&n=' + r.first + '" alt=""><div class="pvline"></div></div>' +
+    '<div class="pv" tabindex="0"><img src="/api/scan_preview?source=' + encodeURIComponent(source) + '&n=' + r.first + '" alt="">' +
+    boxes.map(b => '<div class="pvbox" style="left:' + b[0] * 100 + '%;top:' + b[1] * 100 + '%;width:' + (b[2] - b[0]) * 100 + '%;height:' + (b[3] - b[1]) * 100 + '%"></div>').join('') + '<div class="pvline"></div></div>' +
     '<label class="pvopt"><input type="checkbox" class="pvSplit"' + (r.double ? ' checked' : '') + '> ' + t('scans_split') + '</label>' +
     '<label class="pvopt"><input type="checkbox" class="pvDeskew"' + (skew ? ' checked' : '') + '> ' + t('scans_deskew') + (skew ? t('scans_deskew_a', { a: fmtDeg(r.skew) }) : '') + '</label>' +
+    '<label class="pvopt"><input type="checkbox" class="pvCrop"' + (r.margins ? ' checked' : '') + '> ' + t('scans_crop') + (boxes.length ? t('scans_crop_box') : '') + '</label>' +
     '<div class="hint">' + t('scans_pages', { n: r.pages }) + '</div>';
-  const area = box.querySelector('.pv'), line = box.querySelector('.pvline'), cbS = box.querySelector('.pvSplit'), cbD = box.querySelector('.pvDeskew');
-  const st = { pos: r.split || 0.5, get split() { return cbS.checked ? this.pos : null; }, get deskew() { return cbD.checked; } };
-  const draw = () => { line.style.left = (st.pos * 100) + '%'; line.style.display = cbS.checked ? '' : 'none'; };
+  const area = box.querySelector('.pv'), line = box.querySelector('.pvline'), cbS = box.querySelector('.pvSplit'), cbD = box.querySelector('.pvDeskew'), cbC = box.querySelector('.pvCrop');
+  const st = { pos: r.split || 0.5, get split() { return cbS.checked ? this.pos : null; }, get deskew() { return cbD.checked; }, get crop() { return cbC.checked; } };
+  const draw = () => {
+    line.style.left = (st.pos * 100) + '%'; line.style.display = cbS.checked ? '' : 'none';
+    for (const b of box.querySelectorAll('.pvbox')) b.style.display = cbC.checked ? '' : 'none';
+  };
   const setPos = x => { st.pos = Math.min(0.9, Math.max(0.1, x)); draw(); };
   const at = ev => { const b = area.getBoundingClientRect(); return (ev.clientX - b.left) / b.width; };
   let down = false;
@@ -533,7 +540,7 @@ function scanPreview(box, source, r, heading) {
     const d = ev.key == 'ArrowLeft' ? -1 : ev.key == 'ArrowRight' ? 1 : 0; if (!d || !cbS.checked) return;
     ev.preventDefault(); setPos(st.pos + d * (ev.shiftKey ? 0.02 : 0.004));
   };
-  cbS.onchange = draw; draw(); area.focus();
+  cbS.onchange = cbC.onchange = draw; draw(); area.focus();
   return st;
 }
 async function runPrepare() {
@@ -541,9 +548,9 @@ async function runPrepare() {
   // damit »Texterkennung starten« als Nächstes bereitsteht – wie nach ScanTailor, nur ohne den Umweg.
   const src = sel.path, title = $('oTitle').value.trim(), o = pv;
   try {
-    const r = await runJob('/api/prepare_scans', { source: src, title, split: o.split, deskew: o.deskew });
+    const r = await runJob('/api/prepare_scans', { source: src, title, split: o.split, deskew: o.deskew, crop: o.crop });
     $('iPath').value = r.folder; await doScan();
-    $('result').innerHTML = '<div class="rec">✔ ' + t('scans_done', { n: r.pages, s: r.split, r: r.rotated, folder: esc(r.folder) }) + '<br>' + t('scans_next') + '</div>';
+    $('result').innerHTML = '<div class="rec">✔ ' + t('scans_done', { n: r.pages, s: r.split, r: r.rotated, c: r.trimmed, folder: esc(r.folder) }) + '<br>' + t('scans_next') + '</div>';
   } catch (err) { fail('omsg', err); }
 }
 $('oST').onclick = async () => {
@@ -702,9 +709,9 @@ $('eform').onsubmit = async ev => {
   const mode = document.querySelector('input[name=emode]:checked');
   try {
     if (eact == 'prep_scans') {
-      const r = await editJob('/api/prepare_scans', { source: eb.folder + '/img', split: epv.split, deskew: epv.deskew });
+      const r = await editJob('/api/prepare_scans', { source: eb.folder + '/img', split: epv.split, deskew: epv.deskew, crop: epv.crop });
       enextOpen = r.folder;
-      editDone('<h3>✔ ' + t('act_prep_scans') + '</h3><p>' + t('scans_done', { n: r.pages, s: r.split, r: r.rotated, folder: esc(r.folder) }) + '</p>' +
+      editDone('<h3>✔ ' + t('act_prep_scans') + '</h3><p>' + t('scans_done', { n: r.pages, s: r.split, r: r.rotated, c: r.trimmed, folder: esc(r.folder) }) + '</p>' +
         '<div class="hint">' + t('scans_ed_next') + '</div>');
       $('eBook').textContent = t('scans_ed_go');
     } else if (eact == 'pdf') {

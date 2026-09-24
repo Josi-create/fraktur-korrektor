@@ -52,21 +52,31 @@ in der Datei `qualitaet.json` im Buchordner.
 Ein eingelesenes Buch können Sie jederzeit durch eine bessere Fassung ersetzen: Lesen Sie es einfach noch
 einmal ein (es entsteht ein zweiter Ordner) und entfernen Sie den alten Eintrag aus der Bibliothek.
 
-## Doppelseiten und schiefe Seiten: Scans vorbereiten
+## Doppelseiten, schiefe Seiten, dunkle Ränder: Scans vorbereiten
 
 Texterkennung ist nur so gut wie das Bild. Wer ein Buch im Lesesaal abfotografiert, hat meist **zwei Buchseiten
-auf einem Bild**, und die Seiten liegen **schief**. Beides erledigt das Programm selbst, bevor es den Text erkennt:
+auf einem Bild**, die Seiten liegen **schief**, und am Rand sind **Tischplatte, Buchkante oder ein Finger** mit
+im Bild. Alles drei erledigt das Programm selbst, bevor es den Text erkennt:
 
 1. Über **Öffnen …** das PDF oder den Ordner mit den Fotos zeigen. Das Programm sieht sich einige Seiten an.
-   Stehen zwei Seiten nebeneinander oder liegen sie schief, erscheint die Empfehlung **Scans vorbereiten …**.
+   Stehen zwei Seiten nebeneinander, liegen sie schief oder läuft ein dunkler Rand an der Seite entlang, erscheint
+   die Empfehlung **Scans vorbereiten …**.
 2. Darauf klicken. Sie sehen die erste Doppelseite mit einer **roten Linie**. Steht sie in der Bundmitte? Sonst
    ziehen Sie sie mit der Maus dorthin oder verschieben sie mit den Pfeiltasten `←` `→` (mit `Umschalt` in
    größeren Schritten). Die Linie gilt für alle Seiten; auf jeder einzelnen sucht das Programm die Falz noch einmal
-   in der Nähe und passt die Linie an. Zwei Häkchen sagen, was geschehen soll: **Doppelseiten an der Linie
-   teilen** und **Schiefe Seiten geraderichten** – dahinter steht der gemessene Winkel.
+   in der Nähe und passt die Linie an. Drei Häkchen sagen, was geschehen soll: **Doppelseiten an der Linie
+   teilen**, **Schiefe Seiten geraderichten** – dahinter steht der gemessene Winkel – und **Dunkle Ränder und
+   Finger entfernen**. Bei diesem Häkchen zeigt ein **grün gestrichelter Kasten** auf der Vorschau, was von der
+   gezeigten Seite bleibt; auf jeder anderen Seite misst das Programm neu.
 3. **Übernehmen.** Ein Balken zeigt den Fortschritt; rechnen Sie mit etwa einer Sekunde je Seite. Die
    vorbereiteten Seiten kommen in einen eigenen Ordner `aufbereitet` im Buchordner; Ihre Vorlage bleibt unverändert.
    Aus jeder Doppelseite werden zwei Seiten, linke zuerst. Gedreht wird nur, was mehr als 0,3° schief liegt.
+   Abgeschnitten wird nur, was deutlich dunkler als das Papier ist und am Bildrand liegt – nie der Text selbst:
+   Um den Textblock bleibt immer ein Sicherheitsabstand. Ein Finger, der von unten oder von der Seite hereinragt,
+   wird weiß übermalt; ragt er bis an den Text, bleibt dieses Stück stehen, damit keine Buchstaben verloren
+   gehen. Ein Schatten, der über die halbe Seite reicht, wird in Ruhe gelassen. Bei Fotos vom Lesesaal-Tisch lohnt
+   sich ein Blick auf ein paar vorbereitete Seiten; ist der Schnitt zu knapp oder zu großzügig, lassen Sie die
+   Vorlage ohne das Häkchen noch einmal vorbereiten.
 4. Danach ist der neue Ordner schon ausgewählt: auf **Texterkennung starten** klicken. Das Programm merkt sich,
    dass die Seiten vorbereitet wurden (Kennzeichen *vorbereitet* in der Bibliothek).
 
@@ -80,7 +90,7 @@ gleichmäßiges Licht ohne Schatten der eigenen Hand. Dann bleibt dem Programm n
 
 ## Gewölbte Seiten, Flecken, dunkle Ränder: ScanTailor
 
-Was das Programm nicht kann: gewölbte Seiten entzerren, Flecken und dunkle Ränder entfernen, ungleichmäßige
+Was das Programm nicht kann: gewölbte Seiten entzerren, Flecken mitten auf der Seite entfernen, ungleichmäßige
 Ausleuchtung ausgleichen. Meldet es, dass **die Zeilenenden viel schlechter sind als der Rest**, ist die Seite
 zum Bund hin gewölbt. Dafür gibt es das freie Programm **ScanTailor Advanced** ([Installation](install-tools.md)
 – auf dem Mac nur mit Umständen). Es trennt auch Doppelseiten und richtet gerade, nur eben mit mehr Handarbeit.

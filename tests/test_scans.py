@@ -1,5 +1,6 @@
-"""Scans vorbereiten (#42): Doppelseiten erkennen und teilen, Schieflage messen und geraderichten – mit synthetischen
-Seiten (schwarze Zeilenbalken auf Weiß, mit PyMuPDF gezeichnet), nie mit echten Buchdaten."""
+"""Scans vorbereiten (#42): Doppelseiten erkennen und teilen, Schieflage messen und geraderichten, dunkle Ränder und
+Finger entfernen – mit synthetischen Seiten (schwarze Zeilenbalken auf Weiß, mit PyMuPDF gezeichnet), nie mit echten
+Buchdaten."""
 import os, json
 import pytest
 import scans
@@ -7,8 +8,9 @@ import scans
 fitz = pytest.importorskip('fitz')
 
 
-def page(w, h, blocks, gutter=None):
-    """Weiße Seite mit Textblöcken (x0, x1) aus Zeilenbalken; gutter = (x0, x1) eines dunklen Falzschattens."""
+def page(w, h, blocks, gutter=None, dark=()):
+    """Weiße Seite mit Textblöcken (x0, x1) aus Zeilenbalken; gutter = (x0, x1) eines dunklen Falzschattens;
+    dark = [((x0, y0, x1, y1), grau), …] für Tischplatte, Buchkante, Finger."""
     d = fitz.open()
     p = d.new_page(width=w, height=h)
     for x0, x1 in blocks:
@@ -16,7 +18,14 @@ def page(w, h, blocks, gutter=None):
             p.draw_rect(fitz.Rect(x0, y, x1 - (90 if k % 3 == 0 else 0), y + 18), color=0, fill=0)
     if gutter:
         p.draw_rect(fitz.Rect(gutter[0], 0, gutter[1], h), color=0, fill=0)
+    for r, g in dark:
+        p.draw_rect(fitz.Rect(*r), color=g, fill=g)
     return p.get_pixmap(colorspace=fitz.csGRAY)
+
+
+def ink(pix, x0, y0, x1, y1, thr=128):
+    """Zahl der dunklen Pixel (< thr) im Rechteck."""
+    return sum(1 for y in range(y0, y1) for v in pix.samples[y * pix.stride + x0:y * pix.stride + x1] if v < thr)
 
 
 SINGLE = lambda: page(1200, 1600, [(150, 1050)])
@@ -61,6 +70,90 @@ def test_schieflage_messen_und_geraderichten():
 
 def test_leere_seite_ist_gerade():
     assert scans.skew_angle(page(1200, 1600, [])) == 0.0
+
+
+# ---- Ränder und Finger (#42, Punkt 3)
+
+TEXT = (150, 192, 1050, 1420)  # wo auf SINGLE() die Zeilenbalken liegen (x0, y0, x1, y1)
+CLEAN = lambda blocks=((150, 1050),), thr=128: ink(page(1200, 1600, list(blocks)), 0, 0, 1200, 1600, thr)  # Tinte der sauberen Seite
+
+
+def test_weisses_blatt_bleibt_unveraendert():
+    assert scans.paper_box(SINGLE()) is None
+    assert scans.paper_box(page(1200, 1600, [])) is None
+    assert scans.trim(SINGLE(), None).width == 1200
+
+
+def test_dunkler_rand_wird_abgeschnitten():
+    # Tischplatte links (70 px) und unten (80 px) – eine zusammenhängende L-förmige Fläche
+    pix = page(1200, 1600, [(150, 1050)], dark=[((0, 0, 70, 1600), 0.15), ((0, 1520, 1200, 1600), 0.1)])
+    b = scans.paper_box(pix)
+    assert b['margins'] == 2
+    x0, y0, x1, y1 = b['crop']
+    assert 70 < x0 <= 120 and y0 == 0 and x1 == 1200 and 1443 <= y1 < 1520  # Rand weg, Sicherheitsabstand zum Text bleibt
+    out = scans.trim(pix, b)
+    assert (out.width, out.height) == (x1 - x0, y1)
+    # alle Zeilenbalken vollständig: gleich viele Tintenpixel wie auf der sauberen Seite
+    assert ink(out, TEXT[0] - x0, TEXT[1], TEXT[2] - x0, TEXT[3]) == ink(SINGLE(), *TEXT)
+    assert ink(out, 0, 0, out.width, out.height) == CLEAN()  # und sonst nichts Dunkles mehr
+
+
+def test_schraege_buchkante():
+    pix = page(1200, 1600, [(250, 1050)], dark=[((0, 0, 60, 1600), 0.1), ((60, 0, 100, 800), 0.2)])
+    b = scans.paper_box(pix)
+    assert b['margins'] == 1 and 100 < b['crop'][0] <= 220
+    out = scans.trim(pix, b)
+    assert ink(out, 0, 0, out.width, out.height) == CLEAN([(250, 1050)])
+
+
+def test_finger_am_rand_wird_uebermalt():
+    # hautfarbener Fleck, der links hereinragt und den Text nicht berührt: weiß, Seite behält ihre Größe
+    pix = page(1200, 1600, [(250, 1050)], dark=[((0, 700, 120, 900), 0.55)])
+    b = scans.paper_box(pix)
+    assert b['margins'] == 0 and b['crop'] == (0, 0, 1200, 1600) and b['fill']
+    out = scans.trim(pix, b)
+    assert (out.width, out.height) == (1200, 1600)
+    assert ink(out, 0, 0, 1200, 1600, 200) == CLEAN([(250, 1050)], 200)  # Haut ist nur mittelgrau: hier zählt alles unter 200
+    assert ink(pix, 0, 0, 1200, 1600, 200) > CLEAN([(250, 1050)], 200)   # das Original hatte den Fleck
+    # Daumen von unten
+    pix = page(1200, 1600, [(150, 1050)], dark=[((500, 1450, 700, 1600), 0.6)])
+    out = scans.trim(pix, scans.paper_box(pix))
+    assert (out.width, out.height) == (1200, 1600) and ink(out, 0, 0, 1200, 1600) == CLEAN()
+
+
+def test_finger_im_text_laesst_den_text_unversehrt():
+    pix = page(1200, 1600, [(150, 1050)], dark=[((0, 700, 200, 900), 0.55)])
+    b = scans.paper_box(pix)
+    assert b['crop'] == (0, 0, 1200, 1600)
+    out = scans.trim(pix, b)
+    assert ink(out, *TEXT) == ink(pix, *TEXT)  # im Textblock ändert sich nichts
+    assert ink(out, 0, 700, 110, 900) == 0     # außerhalb ist der Fleck weg
+
+
+def test_schatten_ueber_dem_text_bleibt():
+    # eine dunkle Fläche über der halben Seite ist kein Rand: nichts tun, statt Text zu verlieren
+    assert scans.paper_box(page(1200, 1600, [(150, 1050)], dark=[((0, 0, 1200, 900), 0.6)])) is None
+
+
+def test_aufbereiten_mit_raendern(tmp_path):
+    src = tmp_path / 'fotos'
+    src.mkdir()
+    page(1200, 1600, [(150, 1050)], dark=[((0, 0, 70, 1600), 0.15)]).save(str(src / 'a.png'))
+    SINGLE().save(str(src / 'b.png'))
+    r = scans.inspect(str(src))
+    assert r['margins'] and r['needed'] and not r['double']
+    s = [x for x in r['samples'] if x['n'] == 0][0]
+    assert s['margins'] == 1 and len(s['boxes']) == 1 and 0.05 < s['boxes'][0][0] < 0.1 and s['boxes'][0][2] == 1.0
+    p = scans.prepare(str(src), str(tmp_path / 'out'), split=None, deskew=True, trim_edges=True)
+    assert (p['pages'], p['split'], p['rotated'], p['trimmed']) == (2, 0, 0, 1)
+    a = scans.load_gray(str(tmp_path / 'out' / 'seite_001.jpg'))
+    assert 1080 <= a.width <= 1130 and a.height == 1600
+    assert os.path.exists(tmp_path / 'out' / 'seite_002.png')  # unverändert kopiert
+    j = json.load(open(tmp_path / 'out' / 'aufbereitung.json', encoding='utf-8'))
+    assert j['raender'] is True and j['beschnitten'] == 1 and j['seiten'][0]['schnitt'][0] > 70 and j['seiten'][1]['schnitt'] is None
+    # ohne die Option bleibt alles wie bisher, auch die Datei
+    p = scans.prepare(str(src), str(tmp_path / 'out2'), split=None, deskew=True)
+    assert p['trimmed'] == 0 and json.load(open(tmp_path / 'out2' / 'aufbereitung.json', encoding='utf-8'))['raender'] is False
 
 
 def _bilder(folder, n=4, angle=2.0):
@@ -142,7 +235,7 @@ def test_server_pruefen_vorschau_und_auftrag(lib, tmp_path):
     j = wait(lib, lib.lpost('/api/prepare_scans', dict(source=src, title='Fotos', split=r['split'], deskew=True, target=str(tmp_path / 'ziel')))[1]['job'])
     assert j['state'] == 'done', j
     out = j['result']
-    assert (out['pages'], out['split'], out['rotated']) == (6, 3, 6)
+    assert (out['pages'], out['split'], out['rotated'], out['trimmed']) == (6, 3, 6, 0)
     assert out['folder'] == str(tmp_path / 'ziel' / 'aufbereitet') and out['book'] == str(tmp_path / 'ziel')
     # Untersuchen des künftigen Buchordners: die vorbereiteten Seiten sind der Fund
     found = lib.lpost('/api/scan', dict(path=out['book']))[1]['found']
@@ -152,6 +245,18 @@ def test_server_pruefen_vorschau_und_auftrag(lib, tmp_path):
     assert j['state'] == 'done' and os.path.basename(j['result']['folder']) == 'aufbereitet (2)'
     j = wait(lib, lib.lpost('/api/prepare_scans', dict(source=str(tmp_path / 'fehlt')))[1]['job'])
     assert (j['state'], j['error']) == ('error', 'quelle_fehlt')
+
+
+def test_server_raender_abschneiden(lib, tmp_path):
+    src = tmp_path / 'fotos'
+    src.mkdir()
+    for k in range(2):
+        page(1200, 1600, [(150, 1050)], dark=[((0, 0, 70, 1600), 0.15)]).save(str(src / ('s%d.png' % k)))
+    r = lib.lpost('/api/scans_check', dict(source=str(src)))[1]
+    assert r['margins'] and r['needed'] and r['samples'][0]['boxes']
+    j = wait(lib, lib.lpost('/api/prepare_scans', dict(source=str(src), title='Fotos', split=None, deskew=True, crop=True, target=str(tmp_path / 'ziel')))[1]['job'])
+    assert j['state'] == 'done' and j['result']['trimmed'] == 2 and j['result']['pages'] == 2
+    assert scans.load_gray(os.path.join(j['result']['folder'], 'seite_001.jpg')).width < 1130
 
 
 def test_server_seitenbilder_eines_buchs(app):

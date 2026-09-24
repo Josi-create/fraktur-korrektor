@@ -7,6 +7,9 @@ Gemessen wird auf einem verkleinerten Graustufenbild (rund 320 Pixel breit), gea
                 oder ein dunkler Schatten der Falz (Spaltenprofil der dunklen Pixel im mittleren Drittel).
   Schieflage    Projektionsprofil: Für Winkel zwischen -5° und +5° werden die dunklen Pixel zeilenweise gezählt, als
                 wäre das Bild um diesen Winkel gedreht; bei geraden Zeilen ist die Streuung der Zeilensummen am größten.
+  Ränder/Finger Zusammenhängende dunkle Flächen, die den Bildrand berühren und dick sind (Textzeilen sind dünn):
+                Was eine ganze Seite entlangläuft (Tischplatte, Buchkante, Schatten), wird abgeschnitten, ein Fleck
+                (Finger, Klammer) weiß übermalt – immer nur außerhalb des Textblocks mit Sicherheitsabstand.
 Alle Funktionen sind ohne Server nutzbar; prepare() schreibt einen neuen Bilderordner, der danach wie ein
 ScanTailor-Ergebnis als Quelle für die Erkennung dient."""
 import os, json, math, shutil, statistics, tempfile
@@ -17,6 +20,13 @@ MIN_ANGLE = 0.3      # darunter wird nicht gedreht: unsichtbar, und jedes Drehen
 MAX_ANGLE = 5.0      # was schiefer liegt, ist kein Scanfehler, sondern falsch fotografiert
 LANDSCAPE = 1.15     # Breite/Höhe, ab der ein Bild als Doppelseite in Frage kommt
 FOLDER = 'aufbereitet'
+# Ränder und Finger (Maße als Anteil der kürzeren Bildseite des Messbilds)
+BLOB_MIN = 0.03      # so dick muss eine dunkle Randfläche mindestens sein – Textzeilen sind dünner
+BLOB_MAX = 0.5       # Anteil der Bildfläche, ab dem eine »Randfläche« eher der Text selbst ist: dann lieber nichts tun
+EDGE_SPAN = 0.6      # läuft eine Fläche über so viel einer Bildkante, ist es ein Rand (schneiden), sonst ein Fleck (übermalen)
+TEXT_PAD = 0.025     # Sicherheitsabstand um den Textblock, in den weder Schnitt noch Übermalung hineinreichen
+HALO = 0.01          # Saum um eine dunkle Fläche, der mit weggenommen wird (Schatten, unscharfe Kante)
+NOT_PAPER = 60       # so viel dunkler als das Papier gilt als »nicht Papier« (Schatten, Haut, unscharfe Schrift)
 
 
 def load_gray(path):
@@ -202,6 +212,186 @@ def split_page(pix, frac, refine=True):
     return crop(pix, 0, x), crop(pix, x, pix.width)
 
 
+# ---- Ränder und Finger (#42, Punkt 3)
+
+def paper_level(data):
+    """Grauwert des Papiers: der häufigste Wert oberhalb der Otsu-Schwelle."""
+    thr = otsu(data[::7])
+    hist = [0] * 256
+    for v in data[::7]:
+        if v >= thr:
+            hist[v] += 1
+    return max(range(thr, 256), key=hist.__getitem__) if any(hist) else 255
+
+
+def components(w, h, rows):
+    """Zusammenhängende dunkle Flächen (4er-Nachbarschaft) über Lauflängen und Union-Find – schnell genug in reinem
+    Python. Liefert (flächen, label): je Fläche dict(id, x0, y0, x1, y1, area) mit ausschließlichen Enden, und je
+    Bildzeile eine Liste mit der Flächennummer je Pixel (0 = Papier)."""
+    parent = []
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    runs_by_row, prev = [], []
+    for y in range(h):
+        cur = []
+        for a, b in _runs(list(rows[y])):
+            k = len(parent)
+            parent.append(k)
+            cur.append((a, b, k))
+            for pa, pb, pk in prev:
+                if pa < b and a < pb:
+                    ra, rb = find(k), find(pk)
+                    if ra != rb:
+                        parent[ra] = rb
+        runs_by_row.append(cur)
+        prev = cur
+    comps, label = {}, []
+    for y, cur in enumerate(runs_by_row):
+        line = [0] * w
+        for a, b, k in cur:
+            r = find(k)
+            c = comps.get(r)
+            if c is None:
+                c = comps[r] = dict(id=len(comps) + 1, x0=a, y0=y, x1=b, y1=y + 1, area=0)
+            c['x0'], c['x1'], c['y1'] = min(c['x0'], a), max(c['x1'], b), y + 1
+            c['area'] += b - a
+            line[a:b] = [c['id']] * (b - a)
+        label.append(line)
+    return list(comps.values()), label
+
+
+def edge_contact(label, w, h, cid, side):
+    """Wie eine Fläche eine Bildkante berührt: (lo, hi, depth, deepest) – Bereich entlang der Kante (hi
+    ausschließlich), die Tiefe von der Kante her, die 90 % der berührenden Zeilen nicht überschreiten, und die größte
+    Tiefe; oder None. So zählt eine Ecke aus Tischplatte links und unten je Kante für sich: Die paar Zeilen der
+    unteren Kante reichen zwar bis ganz nach rechts, bestimmen aber nicht, wie weit links geschnitten wird."""
+    lo, hi, depths = None, None, []
+    for i in (range(h) if side in 'lr' else range(w)):
+        if side == 'l':
+            px = label[i]
+        elif side == 'r':
+            px = label[i][::-1]
+        elif side == 't':
+            px = (label[y][i] for y in range(h))
+        else:
+            px = (label[y][i] for y in range(h - 1, -1, -1))
+        d = 0
+        for v in px:
+            if v != cid:
+                break
+            d += 1
+        if d:
+            lo, hi = i if lo is None else lo, i + 1
+            depths.append(d)
+    if not depths:
+        return None
+    depths.sort()
+    return lo, hi, depths[min(len(depths) - 1, int(len(depths) * 0.9))], depths[-1]
+
+
+def paper_box(pix):
+    """Papierbereich eines (geteilten, geradegerichteten) Seitenbilds: dict(crop=(x0, y0, x1, y1) in Pixeln des
+    Originals, fill=[Rechtecke, die weiß werden], margins=Zahl der Ränder, text=(x0, y0, x1, y1)) – oder None,
+    wenn nichts zu tun ist (weißer Hintergrund, keine Ränder).
+
+    Gemessen wird auf dem Messbild: »nicht Papier« ist, was deutlich dunkler als der Papierton ist (NOT_PAPER),
+    damit auch Schatten und Haut zählen, nicht nur Druckerschwärze. Eine dunkle Fläche, die den Bildrand berührt und
+    dick ist (BLOB_MIN – Textzeilen sind dünn), ist Rand oder Fleck; alles andere ist Text, und dessen Kasten samt
+    Sicherheitsabstand (TEXT_PAD) bleibt unangetastet. Ein Rand, der eine Kante fast ganz entlangläuft (EDGE_SPAN),
+    wird abgeschnitten, bis zu seiner größten Tiefe samt Saum; ein Fleck (Finger) wird nur außerhalb des Textkastens
+    weiß übermalt – was in den Text hineinragt, bleibt, wie es ist. Ist eine »Randfläche« größer als die halbe
+    Seite (BLOB_MAX), ist sie eher der Text selbst (Schatten über dem Textblock): dann wird nichts getan."""
+    sm = small(pix)
+    assert sm.n == 1, 'Graustufen ohne Alpha erwartet'
+    w, h, stride, data = sm.width, sm.height, sm.stride, sm.samples
+    thr = max(otsu(data[::7]), paper_level(data) - NOT_PAPER)
+    table = bytes(1 if v < thr else 0 for v in range(256))
+    rows = [data[y * stride:y * stride + w].translate(table) for y in range(h)]
+    unit = min(w, h)
+    thick, pad, halo = max(4, unit * BLOB_MIN), max(2, round(unit * TEXT_PAD)), max(1, round(unit * HALO))
+    comps, label = components(w, h, rows)
+    blobs = []
+    for c in comps:
+        edge = c['x0'] == 0 or c['y0'] == 0 or c['x1'] == w or c['y1'] == h
+        if edge and min(c['x1'] - c['x0'], c['y1'] - c['y0']) >= thick:
+            if c['area'] > BLOB_MAX * w * h:
+                return None  # zu groß, um ein Rand zu sein – lieber nichts anfassen
+            blobs.append(c)
+    if not blobs:
+        return None
+    # Textkasten: alle dunklen Pixel, die nicht zu einer Randfläche gehören
+    ids = {c['id'] for c in blobs}
+    keep = [[1 if v and v not in ids else 0 for v in line] for line in label]
+    ys = [y for y in range(h) if sum(keep[y]) >= 2]
+    if ys:
+        cols = [sum(keep[y][x] for y in ys) for x in range(w)]
+        xs = [x for x in range(w) if cols[x] >= 2]
+        tx0, ty0, tx1, ty1 = max(0, xs[0] - pad), max(0, ys[0] - pad), min(w, xs[-1] + 1 + pad), min(h, ys[-1] + 1 + pad)
+    else:  # leere Seite: alles darf weg, was dunkel ist
+        tx0, ty0, tx1, ty1 = w // 2, h // 2, w // 2, h // 2
+    cx0, cy0, cx1, cy1 = 0, 0, w, h  # Schnittkasten im Messbild
+    fills, margins = [], 0
+    for c in blobs:
+        for side in 'lrtb':
+            hit = edge_contact(label, w, h, c['id'], side)
+            if not hit:
+                continue
+            lo, hi, depth, deepest = hit
+            along = h if side in 'lr' else w
+            if hi - lo >= EDGE_SPAN * along:  # Rand: abschneiden, aber nicht in den Textkasten hinein
+                margins += 1
+                if side == 'l':
+                    cx0 = max(cx0, min(depth + halo, tx0))
+                elif side == 'r':
+                    cx1 = min(cx1, max(w - depth - halo, tx1))
+                elif side == 't':
+                    cy0 = max(cy0, min(depth + halo, ty0))
+                else:
+                    cy1 = min(cy1, max(h - depth - halo, ty1))
+            # Fleck (oder der Teil eines Rands, der über die Schnittlinie hinausreicht – schräge Buchkante):
+            # außerhalb des Textkastens weißen, der Streifen zwischen Kante und Textkasten, so breit wie die Berührung
+            lo, hi = max(0, lo - halo), min(along, hi + halo)
+            if side == 'l' and tx0 > 0:
+                fills.append((0, lo, min(deepest + halo, tx0), hi))
+            elif side == 'r' and tx1 < w:
+                fills.append((max(w - deepest - halo, tx1), lo, w, hi))
+            elif side == 't' and ty0 > 0:
+                fills.append((lo, 0, hi, min(deepest + halo, ty0)))
+            elif side == 'b' and ty1 < h:
+                fills.append((lo, max(h - deepest - halo, ty1), hi, h))
+    if cx1 - cx0 < w * 0.3 or cy1 - cy0 < h * 0.3:
+        return None  # da bliebe kaum etwas übrig: eher ein Bild als eine Seite
+    s = pix.width / w  # zurück auf das Original; Ränder rund um die Flächen großzügig (ganze Messpixel)
+    up = lambda x0, y0, x1, y1: (int(x0 * s), int(y0 * s), min(pix.width, math.ceil(x1 * s)), min(pix.height, math.ceil(y1 * s)))
+    crop_box = (math.ceil(cx0 * s), math.ceil(cy0 * s), min(pix.width, int(cx1 * s)), min(pix.height, int(cy1 * s)))
+    fills = [f for f in (up(*f) for f in fills) if f[0] < crop_box[2] and f[2] > crop_box[0] and f[1] < crop_box[3] and f[3] > crop_box[1]]
+    if crop_box == (0, 0, pix.width, pix.height) and not fills:
+        return None
+    return dict(crop=crop_box, fill=fills, margins=margins, text=up(tx0, ty0, tx1, ty1))
+
+
+def trim(pix, box):
+    """paper_box-Ergebnis anwenden: Flecken weiß übermalen, dann auf den Schnittkasten beschneiden."""
+    import fitz
+    if box is None:
+        return pix
+    if box['fill']:
+        pix = fitz.Pixmap(pix, 0) if pix.alpha else fitz.Pixmap(pix, pix.width, pix.height)  # Kopie, das Original bleibt
+        for f in box['fill']:
+            pix.set_rect(fitz.IRect(*f), (255,))
+    x0, y0, x1, y1 = box['crop']
+    if (x0, y0, x1, y1) == (0, 0, pix.width, pix.height):
+        return pix
+    cut = fitz.Pixmap(pix, pix.width, pix.height, fitz.IRect(x0, y0, x1, y1))
+    cut.set_origin(0, 0)
+    return cut
+
+
 # ---- Quellen: Bilderordner oder PDF
 
 def image_files(folder):
@@ -236,19 +426,26 @@ def measure(source, n, tmp):
     try:
         pix = load_gray(f)
         d = detect_double(pix)
-        if d['double']:
-            halves = split_page(pix, d['split'])
-            angle = statistics.median(skew_angle(x) for x in halves)
-        else:
-            angle = skew_angle(pix)
-        return dict(n=n, double=d['double'], split=d['split'], angle=angle, w=pix.width, h=pix.height)
+        parts = split_page(pix, d['split']) if d['double'] else [pix]
+        angle = statistics.median(skew_angle(x) for x in parts)
+        # Ränder je Teil, für die Vorschau als Anteile des ganzen Bildes (ungedreht gemessen – fürs Bild genau genug)
+        boxes, margins, x = [], 0, 0
+        for part in parts:
+            b = paper_box(part)
+            if b:
+                margins += b['margins']
+                boxes.append([round(v, 4) for v in ((x + b['crop'][0]) / pix.width, b['crop'][1] / pix.height,
+                                                    (x + b['crop'][2]) / pix.width, b['crop'][3] / pix.height)])
+            x += part.width
+        return dict(n=n, double=d['double'], split=d['split'], angle=angle, w=pix.width, h=pix.height, margins=margins, boxes=boxes)
     finally:
         os.remove(f)
 
 
 def inspect(source, max_pages=6, progress=lambda done, total, msg: None):
-    """Stichprobe über das Buch: Sind es Doppelseiten, liegen die Seiten schief? Liefert dict(pages, double, split,
-    skew, first, samples, needed). first = erste geprüfte Doppelseite (für die Vorschau), skew = mittlere Neigung."""
+    """Stichprobe über das Buch: Sind es Doppelseiten, liegen die Seiten schief, haben sie dunkle Ränder? Liefert
+    dict(pages, double, split, skew, margins, first, samples, needed). first = erste geprüfte Doppelseite (für die
+    Vorschau), skew = mittlere Neigung, margins = auf mindestens der Hälfte der Seiten läuft ein dunkler Rand entlang."""
     total = page_count(source)
     if not total:
         raise ValueError('keine_seiten')
@@ -263,9 +460,10 @@ def inspect(source, max_pages=6, progress=lambda done, total, msg: None):
     double = len(doubles) * 2 >= len(samples)
     split = statistics.median(s['split'] for s in doubles) if doubles else None
     skew = statistics.median(abs(s['angle']) for s in samples)
+    margins = sum(1 for s in samples if s['margins']) * 2 >= len(samples)
     first = doubles[0]['n'] if doubles else samples[0]['n']
-    return dict(pages=total, double=double, split=split, skew=skew, first=first, samples=samples,
-                needed=double or skew >= MIN_ANGLE)
+    return dict(pages=total, double=double, split=split, skew=skew, margins=margins, first=first, samples=samples,
+                needed=double or skew >= MIN_ANGLE or margins)
 
 
 def preview(source, n, width=900):
@@ -280,17 +478,18 @@ def preview(source, n, width=900):
     return pix.tobytes('jpeg', jpg_quality=80)
 
 
-def prepare(source, out, split=None, deskew=True, progress=lambda done, total, msg: None, cancelled=lambda: False):
+def prepare(source, out, split=None, deskew=True, progress=lambda done, total, msg: None, cancelled=lambda: False, trim_edges=False):
     """Alle Seiten der Quelle aufbereitet nach out schreiben (seite_001.jpg …): split = Trennposition als Anteil der
-    Breite (None: nicht teilen; geteilt werden nur querliegende Bilder), deskew = geraderichten ab MIN_ANGLE.
-    Unveränderte Seiten werden unverändert kopiert. Schreibt aufbereitung.json; liefert dict(pages, split, rotated)."""
+    Breite (None: nicht teilen; geteilt werden nur querliegende Bilder), deskew = geraderichten ab MIN_ANGLE,
+    trim_edges = dunkle Ränder abschneiden und Finger übermalen (paper_box) – nach dem Teilen und Drehen.
+    Unveränderte Seiten werden unverändert kopiert. Schreibt aufbereitung.json; liefert dict(pages, split, rotated, trimmed)."""
     total = page_count(source)
     if not total:
         raise ValueError('keine_seiten')
     if total > 999:
         raise ValueError('zu_viele_seiten')
     os.makedirs(out, exist_ok=True)
-    pages, nsplit, nrot = [], 0, 0
+    pages, nsplit, nrot, ntrim = [], 0, 0, 0
     with tempfile.TemporaryDirectory(prefix='fk-scans-') as tmp:
         for n in range(total):
             if cancelled():
@@ -309,8 +508,12 @@ def prepare(source, out, split=None, deskew=True, progress=lambda done, total, m
                     nrot += 1
                 else:
                     angle = 0.0
+                box = paper_box(part) if trim_edges else None
+                if box:
+                    part = trim(part, box)
+                    ntrim += 1
                 name = 'seite_%03d' % (len(pages) + 1)
-                if side is None and not angle:
+                if side is None and not angle and not box:
                     ext = os.path.splitext(src)[1].lower()
                     ext = '.png' if ext in ('.tif', '.tiff') else ext
                     if ext == '.png':
@@ -320,13 +523,13 @@ def prepare(source, out, split=None, deskew=True, progress=lambda done, total, m
                 else:
                     ext = '.jpg'
                     part.save(os.path.join(out, name + ext), jpg_quality=88)
-                pages.append(dict(datei=name + ext, seite=n + 1, teil=side, winkel=angle))
+                pages.append(dict(datei=name + ext, seite=n + 1, teil=side, winkel=angle, schnitt=list(box['crop']) if box else None))
             os.remove(src)
             progress(n + 1, total, 'scans')
     with open(os.path.join(out, 'aufbereitung.json'), 'w', encoding='utf-8') as f:
-        json.dump(dict(quelle=os.path.abspath(source), teilen=split, geraderichten=deskew, geteilt=nsplit, gedreht=nrot, seiten=pages),
-                  f, ensure_ascii=False, indent=1)
-    return dict(pages=len(pages), split=nsplit, rotated=nrot, folder=out)
+        json.dump(dict(quelle=os.path.abspath(source), teilen=split, geraderichten=deskew, raender=trim_edges,
+                       geteilt=nsplit, gedreht=nrot, beschnitten=ntrim, seiten=pages), f, ensure_ascii=False, indent=1)
+    return dict(pages=len(pages), split=nsplit, rotated=nrot, trimmed=ntrim, folder=out)
 
 
 if __name__ == '__main__':  # py scans.py <pdf-oder-bilderordner> [<zielordner>]
@@ -334,5 +537,5 @@ if __name__ == '__main__':  # py scans.py <pdf-oder-bilderordner> [<zielordner>]
     r = inspect(sys.argv[1])
     print(json.dumps(r, indent=1))
     if len(sys.argv) > 2:
-        print(prepare(sys.argv[1], sys.argv[2], r['split'] if r['double'] else None,
+        print(prepare(sys.argv[1], sys.argv[2], r['split'] if r['double'] else None, trim_edges=r['margins'],
                       progress=lambda d, t, m: print('\r%s %d/%d' % (m, d, t), end='', flush=True)))

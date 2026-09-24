@@ -1312,14 +1312,14 @@ def check_scans(source):
         raise ValueError('kein_pymupdf')
 
 
-def prepare_scans(source, title, split, deskew, target, progress, cancelled):
-    """Doppelseiten teilen und Seiten geraderichten (#42) – läuft als Auftrag. Das Ergebnis ist ein Bilderordner,
-    der danach wie ein ScanTailor-Ergebnis eingelesen wird."""
+def prepare_scans(source, title, split, deskew, target, trim, progress, cancelled):
+    """Doppelseiten teilen, Seiten geraderichten, Ränder abschneiden (#42) – läuft als Auftrag. Das Ergebnis ist ein
+    Bilderordner, der danach wie ein ScanTailor-Ergebnis eingelesen wird."""
     if not source or not os.path.exists(source):
         raise ValueError('quelle_fehlt')
     out = scans_folder(source, title, target)
     try:
-        r = scans.prepare(source, out, split, bool(deskew), progress, cancelled)
+        r = scans.prepare(source, out, split, bool(deskew), progress, cancelled, trim_edges=bool(trim))
     except ImportError:
         raise ValueError('kein_pymupdf')
     except Exception:
@@ -1748,7 +1748,7 @@ class H(BaseHTTPRequestHandler):
             if u.path == '/api/prepare_scans':
                 split = body.get('split')
                 split = float(split) if isinstance(split, (int, float)) and 0.1 <= split <= 0.9 else None
-                return self.sendjson(dict(job=start_job(prepare_scans, body.get('source'), body.get('title'), split, body.get('deskew', True), body.get('target'))))
+                return self.sendjson(dict(job=start_job(prepare_scans, body.get('source'), body.get('title'), split, body.get('deskew', True), body.get('target'), body.get('crop', False))))
             if u.path == '/api/forget':
                 lib_forget(body.get('id'))
                 return self.sendjson({})

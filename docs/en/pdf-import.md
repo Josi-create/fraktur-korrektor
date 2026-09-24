@@ -53,22 +53,29 @@ are stored in the file `qualitaet.json` in the book folder.
 You can replace a book with a better version at any time: simply read it in again (a second folder is
 created) and remove the old entry from the library.
 
-## Double pages and crooked pages: preparing the scans
+## Double pages, crooked pages, dark margins: preparing the scans
 
 Text recognition is only as good as the image. Anyone photographing a book in a reading room usually ends up
-with **two book pages on one picture**, and the pages are **crooked**. The program handles both itself before
-it recognises the text:
+with **two book pages on one picture**, the pages are **crooked**, and **the table top, the book’s edge or a
+finger** is in the picture at the margin. The program handles all three itself before it recognises the text:
 
 1. Via **Open …** point at the PDF or the folder of photos. The program looks at a few pages. If two pages sit
-   side by side or the pages are crooked, the recommendation **Prepare scans …** appears.
+   side by side, the pages are crooked or a dark margin runs along the page, the recommendation **Prepare
+   scans …** appears.
 2. Click it. You see the first double page with a **red line**. Is it in the middle of the gutter? If not, drag
    it there with the mouse or move it with the arrow keys `←` `→` (with `Shift` in bigger steps). The line
-   applies to all pages; on each one the program looks for the gutter again nearby and adjusts the line. Two
-   check boxes say what is to happen: **Split double pages at the line** and **Straighten crooked pages** – the
-   measured angle is shown after it.
+   applies to all pages; on each one the program looks for the gutter again nearby and adjusts the line. Three
+   check boxes say what is to happen: **Split double pages at the line**, **Straighten crooked pages** – the
+   measured angle is shown after it – and **Remove dark margins and fingers**. With this box ticked, a **green
+   dashed box** on the preview shows what remains of the page shown; every other page is measured afresh.
 3. **Apply.** A bar shows the progress; expect about a second per page. The prepared pages go into a folder of
    their own, `aufbereitet`, inside the book folder; your original stays untouched. Every double page becomes
    two pages, the left one first. Only pages more than 0.3° off are rotated.
+   Only what is clearly darker than the paper and lies at the edge of the picture is cut off – never the text
+   itself: a safety margin always remains around the text block. A finger reaching in from below or from the side
+   is painted white; if it reaches the text, that part is left as it is so that no letters are lost. A shadow
+   covering half the page is left alone. With photos taken on a reading-room table it is worth looking at a few
+   prepared pages; if the cut is too tight or too generous, prepare the original again without the tick.
 4. Afterwards the new folder is already selected: click **Start text recognition**. The program remembers that
    the pages were prepared (tag *prepared* in the library).
 
@@ -82,7 +89,7 @@ without the shadow of your own hand. Then the program has nothing to split and l
 
 ## Curved pages, stains, dark margins: ScanTailor
 
-What the program cannot do: flatten curved pages, remove stains and dark margins, even out uneven lighting. If
+What the program cannot do: flatten curved pages, remove stains in the middle of the page, even out uneven lighting. If
 it reports that **the line ends are much worse than the rest**, the page curves towards the gutter. For that
 there is the free program **ScanTailor Advanced** ([Installation](install-tools.md) – awkward on the Mac). It
 splits double pages and deskews too, just with more manual work.
