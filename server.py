@@ -781,6 +781,24 @@ def lib_touch(folder, title=None):
         return e
 
 
+def lib_rename(bid, title):
+    """Anderer Name in der Bibliothek (#71) – oft heißt ein Buch sonst wie die Datei, aus der es kam. Nur der Eintrag
+    ändert sich: Der Ordner bleibt, sonst stimmten die Adresse /buch/<id>, offene Tabs und Lesezeichen nicht mehr."""
+    title = ' '.join((title or '').split())[:200]  # Zeilenumbrüche und doppelte Leerzeichen aus dem Eingabefeld weg
+    if not title:
+        raise ValueError('titel_leer')
+    with LIBLOCK:
+        lib = lib_load()
+        e = next((x for x in lib if book_id(x['folder']) == bid), None)
+        if e is None:
+            raise ValueError('quelle_fehlt')
+        e['title'] = title
+        write_atomic(LIBFILE, json.dumps(lib, ensure_ascii=False, indent=1))
+        if bid in BOOKS:  # ein schon geöffnetes Buch: Kopfzeile, Notizen für Obsidian und das gesicherte PDF nehmen den neuen Namen
+            BOOKS[bid].title = title
+    return dict(title=title)
+
+
 def lib_forget(bid):
     with LIBLOCK:
         write_atomic(LIBFILE, json.dumps([x for x in lib_load() if book_id(x['folder']) != bid], ensure_ascii=False, indent=1))
@@ -1696,7 +1714,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/rename'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -1776,6 +1794,11 @@ class H(BaseHTTPRequestHandler):
             if u.path == '/api/forget':
                 lib_forget(body.get('id'))
                 return self.sendjson({})
+            if u.path == '/api/rename':
+                try:
+                    return self.sendjson(lib_rename(body.get('id'), body.get('title')))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
             if u.path == '/api/open':
                 f = find_book_folder(body.get('folder') or '')
                 if not f:

@@ -180,7 +180,7 @@ async function load() {
     // Jede Möglichkeit bekommt einen beschrifteten Knopf: niemand soll erraten müssen, was hinter einem Zeichen steckt
     const acts = lib.local && b.pages ? BOOKACTS.filter(([k, when]) => when(b)).map(([k]) =>
       '<button class="' + (k == 'open' ? 'main' : '') + '" data-a="' + k + '">' + t(k == 'open' ? 'open_now' : 'act_' + k) + '</button>').join('') +
-      '<span class="sp"></span><button class="weg" data-a="forget">' + t('act_forget') + '</button>' : '';
+      '<span class="sp"></span><button data-a="rename">' + t('act_rename') + '</button><button class="weg" data-a="forget">' + t('act_forget') + '</button>' : '';
     // Kennzeichen: woher der Text stammt und wie viele Wörter das Wörterbuch nicht kennt
     const tags = (b.quelle || []).map(q => '<span class="tag" title="' + t('src_' + q + '_t') + '">' + t('src_' + q) + '</span>').join('') +
       (b.unknown == null ? '' : '<span class="tag ' + (b.quality || '') + '" title="' + t('tag_unknown_t') + '">' + t('tag_unknown', { n: b.unknown }) + '</span>');
@@ -206,7 +206,8 @@ async function load() {
     if (edit[0] == b.id && !entered) {
       entered = true;
       openEdit(b, edit[1] || null);
-      if (edit[2] && $('eSrc')) { $('eSrc').value = edit[2]; $('eform').requestSubmit(); }
+      const field = $('eSrc') || $('eName');
+      if (edit[2] && field) { field.value = edit[2]; $('eform').requestSubmit(); }
       else if (edit[2]) eauto = true;  // »Scans vorbereiten« holt erst die Vorschau und läuft dann durch
     }
   }
@@ -566,7 +567,7 @@ $('oST').onclick = async () => {
 let eb = null, eact = null, enext = null, enextOpen = null, epv = null, eauto = false;
 const ACTS = { pdf: ['📕', b => true], trans: ['🗂️', b => true], addpdf: ['📄', b => b.textbook], images: ['🖼️', b => b.images < b.pages && !b.textbook],
                prep_scans: ['✂️', b => b.images > 0], prep_trans: ['⬆️', b => b.images > 0], prep_st: ['🧹', b => b.images > 0],
-               restore: ['⏪', b => (b.backups || []).length] };
+               restore: ['⏪', b => (b.backups || []).length], rename: ['✏️', b => true] };
 
 function openEdit(b, act) {
   eb = b; enext = enextOpen = null;
@@ -595,6 +596,7 @@ function editAct(a) {
   if (a == 'restore') return editRestore();
   if (a == 'pdf') return editPdf();
   if (a == 'addpdf') return editAddPdf();
+  if (a == 'rename') return editRename();
   const img = a == 'images';
   $('ebody').innerHTML = '<label class="f">' + t(img ? 'ed_imgsource' : 'ed_source') + '</label>' +
     '<div class="row"><input type="text" id="eSrc" spellcheck="false">' +
@@ -637,6 +639,15 @@ function editAddPdf() {
   $('eSrc').addEventListener('change', check);
   $('eGo').style.display = ''; $('eGo').disabled = true; $('eGo').textContent = t('ed_addpdf_go');
   $('eSrc').focus();
+}
+function editRename() {
+  // Nur der Name in der Bibliothek (#71); der Ordner bleibt, damit Adresse und offene Tabs weiter stimmen
+  $('ebody').innerHTML = '<label class="f">' + t('ed_rename_label') + '</label><input type="text" id="eName" spellcheck="false">' +
+    '<div class="hint">' + t('ed_rename_hint') + '</div>';
+  const inp = $('eName'); inp.value = eb.title;
+  inp.oninput = () => { $('eGo').disabled = !inp.value.trim(); };
+  $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t('ed_rename_go');
+  inp.focus(); inp.select();
 }
 async function editRestore() {
   // Jede ersetzte Fassung liegt als vorher-<Datum>.zip im Buchordner – von hier aus lässt sie sich zurückholen
@@ -704,6 +715,12 @@ function editDone(h) {
 }
 $('eform').onsubmit = async ev => {
   ev.preventDefault();
+  if (eact == 'rename') {  // der neue Name steht gleich in der Liste – dafür braucht es keine Erfolgsmeldung
+    const name = $('eName').value.trim(); if (!name) return;
+    try { await post('/api/rename', { id: eb.id, title: name }); $('edlg').classList.remove('on'); load(); }
+    catch (err) { fail('emsg', err); }
+    return;
+  }
   const src = $('eSrc') ? $('eSrc').value.trim() : '';
   if (!src && eact != 'pdf' && eact != 'prep_scans') return;
   const mode = document.querySelector('input[name=emode]:checked');

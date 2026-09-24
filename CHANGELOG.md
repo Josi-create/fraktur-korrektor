@@ -5,6 +5,10 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Buch umbenennen** (#71): Knopf *Umbenennen* in der Bibliothek, auch im Dialog *Weiterbearbeiten*. Ein Buch, das
+  noch wie seine Datei heißt (`asjflkasjdfl.pdf`), bekommt einen richtigen Namen – in der Bibliothek, oben in der
+  Leseansicht, in Notizen für Obsidian und als Dateiname beim Sichern als PDF. Der Ordner bleibt, wie er ist, damit
+  die Adresse `/buch/<id>`, offene Tabs und das Lesezeichen weiter stimmen (`/api/rename`, nur lokal).
 - **Doppelklick ins Seitenbild** (#70): Die Zeile unter dem Mauszeiger wird Lesezeile, links wie rechts – auch auf
   der vorigen oder nächsten Seite im Bildstapel und bei zweispaltigem Satz. Ein Doppelklick auf eine Abbildung oder den
   leeren Rand (weiter als eine Zeilenhöhe von jeder Zeile entfernt) verstellt nichts. Selbsttest: `keys=imgdbl:002:1`.

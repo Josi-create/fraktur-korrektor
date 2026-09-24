@@ -48,6 +48,22 @@ def test_bibliothek_oeffnen_und_vergessen(lib, tmp_path):
     assert os.path.exists(tmp_path / 'Mein Buch' / 'ocr' / 'korr' / '001.txt')  # Dateien bleiben
 
 
+def test_buch_umbenennen(lib, tmp_path):
+    # Nur der Name in der Bibliothek ändert sich (#71) – Ordner und Adresse bleiben
+    make_book(str(tmp_path / 'asjflkasjdfl'))
+    bid = lib.lpost('/api/open', dict(folder=str(tmp_path / 'asjflkasjdfl')))[1]['id']
+    assert lib.lget('/buch/%s/api/overview' % bid)[1]['title'] == 'asjflkasjdfl'  # schon geöffnet: der Server hält das Buch
+    assert lib.lpost('/api/rename', dict(id=bid, title='  Reise nach\n Rußland  ')) == (200, dict(title='Reise nach Rußland'))
+    b = lib.lget('/api/library')[1]['books'][0]
+    assert (b['id'], b['title'], b['folder']) == (bid, 'Reise nach Rußland', str(tmp_path / 'asjflkasjdfl'))
+    assert lib.lget('/buch/%s/api/overview' % bid)[1]['title'] == 'Reise nach Rußland'
+    assert lib.lpost('/api/rename', dict(id=bid, title='  ')) == (400, dict(error='titel_leer'))
+    assert lib.lpost('/api/rename', dict(id='00000000', title='X')) == (400, dict(error='quelle_fehlt'))
+    # Erneutes Öffnen über den Ordner stellt den alten Namen nicht wieder her
+    lib.lpost('/api/open', dict(folder=str(tmp_path / 'asjflkasjdfl')))
+    assert lib.lget('/api/library')[1]['books'][0]['title'] == 'Reise nach Rußland'
+
+
 def test_zwei_buecher_nebeneinander(app, tmp_path):
     make_book(str(tmp_path / 'zweites'))
     other = '/buch/' + app.lpost('/api/open', dict(folder=str(tmp_path / 'zweites')))[1]['id']
