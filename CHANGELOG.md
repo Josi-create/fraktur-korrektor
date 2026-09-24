@@ -17,6 +17,15 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - **README und *Programm installieren*** (#57, Teil): Der Satz »es muss nichts nachinstalliert werden« stimmt jetzt
   genauer – Doppelseiten und Schieflage erledigt das Programm selbst, ScanTailor ist ein Zusatz für schwierige
   Vorlagen. Ob ScanTailor enger eingebunden wird, ist offen.
+- **Nachbesserungen aus der Durchsicht** (#61, #71): Der Kindle-Dialog vergisst beim erneuten Öffnen den Ordner des
+  vorigen Buchs (sonst landeten Zettel beim falschen Buch). Schon übernommene Zettel erkennt das Programm am ganzen
+  Zitat samt Quellenzeile – ein kurzes Zitat, das wie ein längeres anfängt, und eine Notiz aus einem Wort, das in
+  einem Zitat vorkommt, gelten nicht mehr fälschlich als vorhanden; eckige Klammern im Ordnernamen verdoppeln die
+  Zettel nicht mehr (`os.listdir` statt `glob`). Eine erst nach dem Übernehmen auf dem Kindle geschriebene Notiz kommt
+  als eigener Zettel. Eine Textdatei gilt nur als Kindle-Datei, wenn ihre Kennzeilen danach aussehen (eine
+  unterstrichene Überschrift genügt nicht mehr). Ist der Zielordner eine Datei oder schreibgeschützt, erscheint eine
+  Meldung statt »Failed to fetch« – beim Kindle wie bei `F4`. Gleiche Titel werden in jeder Schrift erkannt (zwei
+  kyrillische Titel galten als gleich). Ein Titel mit `[ ] |` zerbricht den Obsidian-Verweis der `F4`-Zettel nicht mehr.
 - **Kindle-Markierungen nach Obsidian** (#61): Aus jeder Markierung auf dem Kindle wird ein Zettel wie mit `F4` –
   fortlaufend nummeriert, das Zitat mit Seite und Position, Verweis auf `0 Quellenangabe` (beim ersten Mal mit Titel,
   Autor und »Kindle-Ausgabe« angelegt); eine eigene Notiz vom Kindle wird die Anmerkung über dem Zitat, eine Notiz

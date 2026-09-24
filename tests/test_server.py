@@ -147,6 +147,19 @@ def test_notizen_fuer_obsidian(app, tmp_path):
     assert app.post('/api/settings', dict(notizen=''))[1]['notizen'] is None
 
 
+def test_notiz_titel_mit_klammern_und_ordner_als_datei(app, tmp_path):
+    # Umbenennen lässt [ ] | im Titel zu – der Verweis im Zettel bleibt trotzdem ein gültiger Obsidian-Link (#71)
+    app.lpost('/api/rename', dict(id=app.book[6:], title='Reise [Band 2]'))
+    (tmp_path / 'Vault').mkdir()
+    app.post('/api/settings', dict(notizen=str(tmp_path / 'Vault' / 'Reise')))
+    assert app.post('/api/notiz', dict(page='001', text='Die Kolonisten', lines=[2, 2]))[0] == 200
+    assert open(tmp_path / 'Vault' / 'Reise' / '01 Seite 5.md', encoding='utf-8').read().endswith(', [[0 Quellenangabe|Reise (Band 2)]]\n')
+    # Ist der Notizordner in Wahrheit eine Datei: Meldung statt abgerissener Verbindung
+    (tmp_path / 'Vault' / 'Datei').write_text('x')
+    app.post('/api/settings', dict(notizen=str(tmp_path / 'Vault' / 'Datei')))
+    assert app.post('/api/notiz', dict(page='001', text='x')) == (400, dict(error='notiz_schreiben'))
+
+
 def test_suche_im_ganzen_buch(app):
     """Suchen (S im Reader): ohne Rücksicht auf Groß-/Kleinschreibung, auch über die Zeilentrennung ¬ hinweg."""
     r = app.get('/api/search?q=ber')[1]

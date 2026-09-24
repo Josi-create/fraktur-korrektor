@@ -99,6 +99,46 @@ def test_zettel_anlegen_und_nicht_doppelt(lib, tmp_path):
     assert '04 Seite 60.md' in os.listdir(folder)
 
 
+def test_wiedererkennen_genau(lib, tmp_path):
+    # Wiedererkannt wird am ganzen Zitat samt Stelle – auch in einem Ordner mit eckigen Klammern im Namen. Ein kurzes Zitat,
+    # das wie ein längeres anfängt, ist neu; eine Notiz »Osten« ist neu, obwohl ein Zitat das Wort enthält; eine Notiz, die
+    # erst nach dem Übernehmen auf dem Kindle entstand, kommt als eigener Zettel, ohne den alten zu verändern
+    vault = tmp_path / 'Vault [Entwurf]'
+    os.makedirs(vault)
+    src, folder = write(tmp_path), str(vault / 'Reise')
+    key = kindle.books(kindle.read(src))[1]['key']
+    assert lib.lpost('/api/kindle_notes', dict(path=src, key=key, folder=folder))[1]['created'] == 3
+    first = {n: open(os.path.join(folder, n), encoding='utf-8').read() for n in os.listdir(folder)}
+    later = lambda meta, text: ['Die Reise nach Rußland (Muster, Hans)', meta, '', text, '==========']
+    write(tmp_path, CLIPPINGS + '\r\n'.join(
+        later('- Ihre Markierung auf Seite 90 | bei Position 5000-5000 | Hinzugefügt am Freitag, 7. März 2025 10:00:00', 'Die Kolonisten') +
+        later('- Ihre Notiz auf Seite 91 | bei Position 5100 | Hinzugefügt am Freitag, 7. März 2025 10:01:00', 'Osten') +
+        later('- Ihre Notiz bei Position 91 | Hinzugefügt am Freitag, 7. März 2025 10:02:00', 'Später dazu geschrieben.') + ['']))
+    r = lib.lpost('/api/kindle_notes', dict(path=src, key=key, folder=folder))[1]
+    assert (r['created'], r['skipped']) == (3, 2)
+    assert open(os.path.join(folder, '04 Position 90–91.md'), encoding='utf-8').read() == (
+        '**Anmerkung**\n\nSpäter dazu geschrieben.\n\n---\n\nPosition 90–91, [[0 Quellenangabe|Die Reise nach Rußland]]\n')
+    assert all(open(os.path.join(folder, n), encoding='utf-8').read() == t for n, t in first.items())  # nichts verändert
+    r = lib.lpost('/api/kindle_notes', dict(path=src, key=key, folder=folder))[1]
+    assert (r['created'], r['skipped']) == (0, 5) and len(os.listdir(folder)) == 7
+
+
+def test_keine_kindle_datei_und_ordner_als_datei(lib, tmp_path):
+    import server
+    # Eine Transkription mit unterstrichenem Titel oder eine Liste mit Spiegelstrichen ist keine Kindle-Datei
+    for text in ('Die Reise nach Rußland\n----------------------\nDie Kolonisten zogen nach Osten.\n', 'Einkauf\n- Brot\n- Milch\n'):
+        assert kindle.read(write(tmp_path, text, 'notiz.txt')) == [] and finder.scan(str(tmp_path / 'notiz.txt'))['found'] == []
+    # Ist der Zielordner in Wahrheit eine Datei, sagt das Programm es, statt die Verbindung abzubrechen
+    (tmp_path / 'Vault').mkdir()
+    (tmp_path / 'Vault' / 'Reise').write_text('x')
+    key = kindle.books(kindle.read(write(tmp_path)))[0]['key']
+    assert lib.lpost('/api/kindle_notes', dict(path=write(tmp_path), key=key, folder=str(tmp_path / 'Vault' / 'Reise'))) == \
+        (400, dict(error='kindle_schreiben'))
+    # Gleicher Titel in jeder Schrift – zwei verschiedene kyrillische Titel sind nicht »gleich«
+    assert server.same_title('Война и мир', 'война и мир!') and not server.same_title('Война и мир', 'Путешествие')
+    assert not server.same_title('', '')
+
+
 def test_vorschlag_ordner_und_fehler(lib, tmp_path):
     # Ein Buch der Bibliothek hat schon einen Notizordner: der Kindle-Zettel kommt daneben, ein gleichnamiges Buch direkt hinein
     make_book(str(tmp_path / 'Die Reise nach Rußland'))

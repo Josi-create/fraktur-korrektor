@@ -63,7 +63,9 @@ Jede Markierung wird ein Zettel, fortlaufend nummeriert wie die Zettel aus `F4`,
 ## Nach dem Weiterlesen
 
 Lesen Sie die Datei einfach wieder ein. Markierungen, die schon als Zettel im Ordner stehen, übergeht das Programm
-– es erkennt sie am Zitat. Neue Zettel bekommen die nächsten Nummern. Haben Sie das Zitat in einem Zettel von Hand
-geändert, erkennt das Programm ihn nicht wieder und legt die Markierung noch einmal an.
+– es erkennt sie am Zitat und an der Stelle (Seite, Position). Neue Zettel bekommen die nächsten Nummern. Haben Sie
+auf dem Kindle später eine Notiz zu einer schon übernommenen Markierung geschrieben, kommt sie als eigener Zettel mit
+derselben Stelle dazu; den vorhandenen Zettel ändert das Programm nicht. Haben Sie das Zitat oder die Quellenzeile in
+einem Zettel von Hand geändert, erkennt das Programm ihn nicht wieder und legt die Markierung noch einmal an.
 
 Das Programm verändert nichts auf dem Kindle und überschreibt keinen Zettel.

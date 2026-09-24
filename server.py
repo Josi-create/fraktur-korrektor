@@ -46,6 +46,11 @@ def note_source(folder, W, template):
     return W['src']
 
 
+def link_title(title):
+    """Titel als Beschriftung eines Obsidian-Verweises [[…|titel]]: | [ ] würden ihn zerbrechen (Umbenennen lässt sie zu)."""
+    return ' '.join(title.replace('|', '/').replace('[', '(').replace(']', ')').split())
+
+
 def note_number(folder):
     """Nächste Nummer im Notizordner: fortlaufend, auch über Zettel hinweg, die der Nutzer selbst angelegt hat."""
     return max((int(m.group(1)) for n in os.listdir(folder) for m in [re.match(r'(\d+)(?:\D|$)', n)] if m), default=0) + 1
@@ -237,7 +242,7 @@ class Book:
         if lines:
             a, b = int(lines[0]), int(lines[-1])
             where += ', %s %s' % (W['line'], str(a) if a == b else '%d–%d' % (a, b))
-        body = '**%s**\n\n\n\n---\n\n> %s\n\n%s, [[%s|%s]]\n' % (W['note'], text, where, src, self.title)
+        body = '**%s**\n\n\n\n---\n\n> %s\n\n%s, [[%s|%s]]\n' % (W['note'], text, where, src, link_title(self.title))
         with open(path, 'x', encoding='utf-8', newline='\n') as f:  # 'x': nie überschreiben
             f.write(body)
         return dict(file=path, name=name, number=n, page=page, text=text), None
@@ -1373,7 +1378,9 @@ def prepare_scans(source, title, split, deskew, target, trim, progress, cancelle
 # ---- Markierungen vom Kindle als Zettel für Obsidian (#61)
 
 def same_title(a, b):
-    return re.sub(r'[^0-9a-zäöüß]+', '', (a or '').lower()) == re.sub(r'[^0-9a-zäöüß]+', '', (b or '').lower())
+    """Gleicher Titel trotz Satzzeichen und Groß-/Kleinschreibung – in jeder Schrift, nicht nur der lateinischen."""
+    k = lambda s: ''.join(c for c in (s or '').casefold() if c.isalnum())
+    return bool(k(a)) and k(a) == k(b)
 
 
 def notes_suggestion(title):
@@ -1415,7 +1422,10 @@ def kindle_scan(path):
 def kindle_notes(path, key, folder, lang='de'):
     """Je Markierung eines Kindle-Buchs ein Zettel wie mit F4: fortlaufend nummeriert, die eigene Notiz vom Kindle als
     Anmerkung, das Zitat, Seite und Position, Verweis auf die Quellenangabe. Was schon als Zettel im Ordner steht, kommt
-    nicht noch einmal – man darf die Datei nach jedem Lesen wieder einlesen."""
+    nicht noch einmal – man darf die Datei nach jedem Lesen wieder einlesen. Wiedererkannt wird ein Zettel am Zitat
+    samt Quellenzeile: So gilt ein kurzes Zitat nicht schon deshalb als da, weil ein längeres genauso anfängt. Schreibt
+    der Nutzer auf dem Kindle später eine Notiz zu einer schon übernommenen Markierung, kommt sie als eigener Zettel
+    ohne Zitat dazu – ein vorhandener Zettel wird nie verändert."""
     W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
     try:
         entries = kindle.read(path or '')
@@ -1425,35 +1435,48 @@ def kindle_notes(path, key, folder, lang='de'):
     if not b:
         raise ValueError('keine_markierungen')
     folder = os.path.abspath(folder) if folder else ''
-    err = notes_ready(folder)
+    try:
+        err = notes_ready(folder)
+    except OSError:  # der Pfad ist eine Datei, oder dort darf der Nutzer nicht schreiben
+        raise ValueError('kindle_schreiben')
     if err:  # eigene Meldungen: die für F4 verweisen auf die Taste O der Leseansicht
         raise ValueError(dict(kein_notizordner='kindle_ordner_leer', notizordner_fehlt='kindle_ordner_fehlt')[err])
     its, cut = kindle.items(entries, key)
-    have = []  # Inhalt der vorhandenen Zettel, Leerraum zusammengezogen – so wie die Zitate unten geschrieben werden
-    for p in glob.glob(os.path.join(folder, '*.md')):
-        try:
-            have.append(' '.join(open(p, encoding='utf-8').read().split()))
-        except (OSError, UnicodeDecodeError):
-            pass
-    have = ' \n'.join(have) + ' \n'  # jedes Zitat endet mit Leerraum, auch am Dateiende
-    title = b['title'].replace('|', '/').replace('[', '(').replace(']', ')')  # sonst zerbricht der Verweis [[…|…]]
-    src = note_source(folder, W, W['kindle'] % (b['title'], b['author'] or '–'))
+    have = []  # Inhalt der vorhandenen Zettel, Leerraum zusammengezogen – so wie Zitat und Quellenzeile unten geschrieben werden
+    for name in sorted(os.listdir(folder)):  # nicht glob: eckige Klammern im Ordnernamen wären ein Suchmuster
+        if name.lower().endswith('.md'):
+            try:
+                have.append(' '.join(open(os.path.join(folder, name), encoding='utf-8').read().split()))
+            except (OSError, UnicodeDecodeError):
+                pass
+    present = lambda s: any(s in h for h in have)
+    title = link_title(b['title'])
     n, made, skipped = note_number(folder), [], 0
-    for it in its:
-        probe = '> %s ' % it['text'] if it['text'] else ' '.join(it['note'].split())
-        if probe in have:
-            skipped += 1
-            continue
-        where = ([('%s %s' % (W['page'], it['page']))] if it['page'] else []) + \
-                ([('%s %s' % (W['pos'], it['loc'][0] if it['loc'][0] == it['loc'][1] else '%d–%d' % it['loc']))] if it['loc'] else [])
-        name = '%02d %s' % (n, where[0] if where else W['note'])
-        body = '**%s**\n\n%s\n\n---\n\n%s%s\n' % (W['note'], it['note'], '> %s\n\n' % it['text'] if it['text'] else '',
-                                                 ', '.join(where + ['[[%s|%s]]' % (src, title)]))
-        path_n = os.path.join(folder, name + '.md')
-        with open(path_n, 'x', encoding='utf-8', newline='\n') as f:  # 'x': nie überschreiben
-            f.write(body)
-        made.append(path_n)
-        n += 1
+    try:
+        src = note_source(folder, W, W['kindle'] % (b['title'], b['author'] or '–'))
+        for it in its:
+            where = ([('%s %s' % (W['page'], it['page']))] if it['page'] else []) + \
+                    ([('%s %s' % (W['pos'], it['loc'][0] if it['loc'][0] == it['loc'][1] else '%d–%d' % it['loc']))] if it['loc'] else [])
+            stamp, note, late = ', '.join(where + ['[[%s|%s]]' % (src, title)]), ' '.join(it['note'].split()), False
+            if it['text']:
+                q = '> %s %s' % (it['text'], stamp)
+                if present(q):  # schon übernommen – fehlt noch eine Notiz, die erst danach auf dem Kindle entstand?
+                    if not note or any(q in h and note in h for h in have) or present('%s --- %s' % (note, stamp)):
+                        skipped += 1
+                        continue
+                    late = True
+            elif present('%s --- %s' % (note, stamp)):
+                skipped += 1
+                continue
+            name = '%02d %s' % (n, where[0] if where else W['note'])
+            body = '**%s**\n\n%s\n\n---\n\n%s%s\n' % (W['note'], it['note'], '> %s\n\n' % it['text'] if it['text'] and not late else '', stamp)
+            path_n = os.path.join(folder, name + '.md')
+            with open(path_n, 'x', encoding='utf-8', newline='\n') as f:  # 'x': nie überschreiben
+                f.write(body)
+            made.append(path_n)
+            n += 1
+    except OSError:
+        raise ValueError('kindle_schreiben')
     return dict(created=len(made), skipped=skipped, cut=cut, folder=folder, title=b['title'], files=made)
 
 
@@ -1982,7 +2005,10 @@ class H(BaseHTTPRequestHandler):
             korrlib.save_cache()
             return self.sendjson(dict(st, total=total))
         if rest == '/api/notiz':
-            r, err = book.make_note(str(body.get('page') or ''), body.get('text') or '', body.get('lang') or 'de', body.get('lines'))
+            try:
+                r, err = book.make_note(str(body.get('page') or ''), body.get('text') or '', body.get('lang') or 'de', body.get('lines'))
+            except OSError:  # der Notizordner ist eine Datei oder schreibgeschützt: eine Meldung statt einer abgerissenen Verbindung
+                r, err = None, 'notiz_schreiben'
             if err:
                 return self.sendjson(dict(error=err), 400)
             r['opened'] = bool(body.get('open')) and self.local() and open_obsidian(r['file'])

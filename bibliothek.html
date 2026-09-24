@@ -822,7 +822,7 @@ function kindleStep(done) {
 async function openKindle(path) {
   $('kdlg').classList.add('on'); kindleStep(false);
   $('kmsg').textContent = ''; $('kBooks').innerHTML = ''; $('kDirBox').style.display = 'none'; $('kGo').disabled = true;
-  $('kSrc').value = path || ''; kb = null; kSuggested = '';
+  $('kSrc').value = path || ''; $('kDir').value = ''; kb = null; kSuggested = '';  // der Ordner vom letzten Mal gehörte zu einem anderen Buch
   await kindleScan(true);
 }
 async function kindleScan(first) {

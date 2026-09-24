@@ -62,7 +62,9 @@ Every highlight becomes a note, numbered consecutively like the notes from `F4`,
 ## After reading on
 
 Simply read the file in again. Highlights that are already notes in the folder are skipped – the program recognises
-them by the quotation. New notes get the next numbers. If you changed the quotation in a note by hand, the program
-no longer recognises it and creates the highlight again.
+them by the quotation and the place (page, location). New notes get the next numbers. If you later wrote a note on
+the Kindle to a highlight that was already taken over, it is added as a note of its own with the same place; the
+existing note is left unchanged. If you changed the quotation or the source line in a note by hand, the program no
+longer recognises it and creates the highlight again.
 
 The program changes nothing on the Kindle and never overwrites a note.

@@ -42,6 +42,8 @@ def parse(raw):
         if len(lines) < 2 or not lines[1].lstrip().startswith('-'):
             continue
         head, meta, text = lines[0].strip(), lines[1], '\n'.join(lines[2:]).strip()
+        if not (LOC.search(meta) or ADDED.search(meta) or any(rx.search(meta) for _, rx in KINDS)):
+            continue  # eine unterstrichene Überschrift oder ein Spiegelstrich ist keine Kennzeile – sonst wäre jede Textdatei ein Kindle
         m = re.match(r'^(.*\S)\s*\(([^()]*)\)$', head)  # der Autor steht in der letzten Klammer; Titel dürfen eigene Klammern haben
         book, author = (m.group(1), m.group(2).strip()) if m else (head, '')
         kind = next((k for k, rx in KINDS if rx.search(meta)), 'highlight' if text else 'bookmark')
