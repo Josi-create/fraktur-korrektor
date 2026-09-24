@@ -1185,7 +1185,7 @@ def merge_pdfbuch(source, into, m, progress, cancelled):
         pass
     for name, data in z.items():
         if re.fullmatch(r'\d{3}\.txt', name):
-            theirs['pages'][name[:3]] = data.decode('utf-8', 'replace').replace('\r\n', '\n').split('\n')[:-1]
+            theirs['pages'][name[:3]] = korrlib.page_lines(data.decode('utf-8', 'replace'))
     progress(0, 1, 'merge')
     r = merge.Merge(book, theirs).run()
     missing = [pg for pg in pagexml.book_pages(folder) if m['seiten'].get(pg) and not book.img_file(pg)]

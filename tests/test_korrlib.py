@@ -108,3 +108,12 @@ def test_hunspell_vorschlaege():
     s = korrlib.suggest('Zutunft')
     assert 'Zukunft' in s and 'Zutunft' not in s and all(not w.startswith('-') for w in s)
     assert korrlib.suggest('Kolonisten') == [] or 'Kolonisten' not in korrlib.suggest('Kolonisten')
+
+
+def test_page_lines_ohne_zeilenumbruch_am_ende():
+    """Seitendateien aus einem Editor enden nicht immer mit einem Zeilenumbruch – die letzte Zeile zählt trotzdem
+    (dieselbe Zerlegung für Buchordner und für die Seitentexte im Anhang eines gesicherten PDF)."""
+    assert korrlib.page_lines('# 5\nZeile 1\nZeile 2\n') == ['# 5', 'Zeile 1', 'Zeile 2']
+    assert korrlib.page_lines('# 5\nZeile 1\nZeile 2') == ['# 5', 'Zeile 1', 'Zeile 2']
+    assert korrlib.page_lines('# 5\r\nZeile 1\r\n') == ['# 5', 'Zeile 1']
+    assert korrlib.page_lines('') == ['']

@@ -157,10 +157,14 @@ def guess_year(pages, now=2100):
     if m: return int(m.group(1))
     ys = [int(y) for y in YEAR.findall(text) if int(y) <= now]
     return max(ys) if ys else None
-def read_page(path):
-    t = open(path, encoding='utf-8').read()
+def page_lines(t):
+    """Der Inhalt einer Seitendatei als Zeilen: Die Datei endet normalerweise mit einem Zeilenumbruch (so schreibt das
+    Programm sie), doch ein Editor lässt ihn manchmal weg – die letzte Zeile darf dabei nicht verloren gehen."""
+    t = t.replace('\r\n', '\n')
     if t.endswith('\n'): t = t[:-1]
     return t.split('\n')
+def read_page(path):
+    return page_lines(open(path, encoding='utf-8').read())
 def read_pages(folder):
     """{ 'NNN': [zeilen] } aus NNN.txt"""
     return {os.path.basename(f)[:3]: read_page(f) for f in sorted(glob.glob(os.path.join(folder, '[0-9][0-9][0-9].txt')))}

@@ -203,3 +203,24 @@ def test_sicherung_und_bilder(lib, tmp_path):
     assert len(b) == 1 and b[0]['name'] == r['backup']
     assert lib.lpost('/api/restore', dict(id=pc, name=b[0]['name']))[0] == 200
     assert lines(lib, pc, '002')[1] == 'Der Vater und ber Sohn.' and lib.lget('/buch/%s/api/whitelist' % pc)[1]['words'] == []
+
+
+def test_fussnotenstrich_gesetzt_kommt_an_dieselbe_stelle(lib, tmp_path):
+    """Dort wurde auf einer Seite ohne Fußnotenstrich einer gesetzt: Hier kommt er an dieselbe Stelle – nicht eine Zeile
+    tiefer –, und der Protokolleintrag ist danach wortgleich, damit ein zweites Zusammenführen nichts mehr zu tun hat."""
+    pc, lap, pdf2 = hin_und_zurueck(lib, tmp_path)
+    lib.lpost('/api/open', dict(folder=str(tmp_path / 'laptop')))
+    assert lib.lpost('/buch/%s/api/fnsep/002' % lap, dict(line=1, old='Der Vater und der Sohn.'))[0] == 200
+    assert lines(lib, lap, '002') == ['# 6', '---', 'Der Vater und der Sohn.']
+    pdf3 = job(lib, '/api/export_pdf', dict(id=lap, target=str(tmp_path / 'stick')))['file']
+    lib.lpost('/api/forget', dict(id=lap))
+    edit(lib, pc, '001', 4, 'ber Heimat gedachten.', 'der Heimat gedachten.')  # hier inzwischen etwas anderes
+    r = job(lib, '/api/import_pdfbuch', dict(source=pdf3, into=pc, merge=True))
+    assert (r['merged']['applied'], r['merged']['conflicts']) == (2, 0), r['merged']  # Korrektur 002 und der Strich
+    p = lib.lget('/buch/%s/api/page/002' % pc)[1]
+    assert p['lines'] == ['# 6', '---', 'Der Vater und der Sohn.'] and len(p['geo']) == len(p['lines'])
+    theirs = open(tmp_path / 'laptop' / 'korrekturen.log', encoding='utf-8').read().splitlines()
+    mine = open(tmp_path / 'Probebuch' / 'korrekturen.log', encoding='utf-8').read().splitlines()
+    assert all(l in mine for l in theirs)
+    r = job(lib, '/api/import_pdfbuch', dict(source=pdf3, into=pc, merge=True))  # noch einmal: nichts zu tun, nichts verschoben
+    assert (r['merged']['applied'], r['merged']['conflicts']) == (0, 0) and lines(lib, pc, '002') == ['# 6', '---', 'Der Vater und der Sohn.']

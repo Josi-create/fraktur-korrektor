@@ -181,13 +181,16 @@ class Merge:
         return self._conflict(pg, max(0, n), 'sonst', old, new, when)
 
     def _fnsep(self, row, when, pg, n, old, new):
-        """Fußnotentrenner: 'gesetzt' – jetzt steht --- an Zeile n; 'entfernt' – er stand an n, new ist die Zeile danach."""
+        """Fußnotentrenner. Book.fnsep protokolliert die Zeile NACH dem Strich: 'gesetzt' – der Strich steht jetzt an n-1,
+        new ist die Zeile n dahinter; 'entfernt' – der Strich stand an n, new ist die Zeile, die dort jetzt steht."""
         book, lines = self.book, self.book.pages[pg]
         has = '---' in lines
         if old == 'gesetzt':
-            if 0 <= n < len(lines) and lines[n] == '---':
+            if 0 < n < len(lines) and lines[n - 1] == '---' and lines[n] == new:
                 return self._same(row, when, 'fnsep', pg, n, old, new)
-            if not has and 0 < n < len(lines) and book.fnsep(pg, n, lines[n], when=when):
+            # Ohne Strich hier steht die Zeile dahinter noch an n-1; der Strich kommt vor sie – nur, wenn sie noch so lautet,
+            # sonst hat sich die Seite hier verschoben, und der Nutzer setzt ihn selbst
+            if not has and 0 < n <= len(lines) and lines[n - 1] == new and book.fnsep(pg, n - 1, new, when=when):
                 return self._done(pg)
         elif old == 'entfernt':
             if not has:
