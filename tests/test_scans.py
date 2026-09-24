@@ -188,7 +188,7 @@ def test_gerade_einzelseiten_bleiben_unveraendert(tmp_path):
     assert not r['double'] and r['skew'] == 0.0 and not r['needed']
     p = scans.prepare(str(src), str(tmp_path / 'out'), split=None, deskew=True)
     assert (p['pages'], p['split'], p['rotated']) == (1, 0, 0)
-    assert os.listdir(tmp_path / 'out') == ['aufbereitung.json', 'seite_001.png']
+    assert sorted(os.listdir(tmp_path / 'out')) == ['aufbereitung.json', 'seite_001.png']  # Reihenfolge ist unter Linux nicht sortiert
 
 
 def test_pdf_als_quelle(tmp_path):
