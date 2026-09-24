@@ -241,6 +241,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
 ### Behoben
+- **Hilfe: zerschossene Tabelle in »Ein Buch öffnen«**: Die erste Spalte einer Tabelle brach nie um – gedacht für
+  Tastenkürzel und Dateinamen. Mit ganzen Sätzen darin (»Buch – ein Ordner, an dem Sie …«) wurde sie so breit, dass die
+  zweite Spalte aus der Seite ragte. Das gilt jetzt nur noch für schmale Tabellen mit durchweg kurzen Einträgen links
+  (`server.short_table`); eine Tabelle, die trotzdem zu breit ist, lässt sich seitwärts rollen, statt aus dem Kasten
+  zu ragen. Betraf auch *Mit Transkribus arbeiten* und die Vergleichstabelle, im Programm wie auf der Website.
 - **Zwei Spalten neben einem Bild wurden verschränkt** (#37): Läuft eine Spalte neben Fotos schmaler weiter, galt sie
   als zu schmal für eine Spalte – in einem Zeitschriftenartikel lag sie mit 29,7 % des Satzspiegels knapp unter der
   Schwelle von 30 %, und der obere Teil der Seite wurde Zeile für Zeile gelesen. Die Schwelle liegt jetzt bei 20 %;

@@ -1494,7 +1494,7 @@ nav{flex:none;width:210px;font-size:15px} nav a{display:block;padding:4px 8px;bo
 nav a.cur{background:#fff;font-weight:bold} nav a:hover{background:#f4f2ec}
 main{flex:1;min-width:0;background:#fff;border:1px solid #bbb;border-radius:4px;padding:10px 34px 30px}
 main img{max-width:100%%} table{border-collapse:collapse} td,th{border:1px solid #ccc;padding:4px 9px;vertical-align:top;text-align:left}
-th{background:#f6f3ea} td:first-child{white-space:nowrap} code,kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:0 4px;font-family:Consolas,monospace;font-size:.9em}
+main table{display:block;max-width:100%%;overflow-x:auto} th{background:#f6f3ea} table.kurz td:first-child{white-space:nowrap} code,kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:0 4px;font-family:Consolas,monospace;font-size:.9em}
 pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} h1{margin-top:.6em}
 </style></head><body><div id="top"><b>Fraktur-Korrektor</b><a href="%(home_url)s">%(home)s</a><span class="sp"></span>%(langs)s</div>
 <div id="wrap"><nav>%(nav)s</nav><main>%(body)s</main></div></body></html>'''
@@ -1517,6 +1517,15 @@ def help_href(lang, name):
     return '/hilfe/%s/%s' % (lang, name)
 
 
+def short_table(m):
+    """Tastenkürzel und Dateinamen in der ersten Spalte sollen nicht umbrechen – aber nur, wenn dort durchweg Kurzes steht
+    und die Tabelle schmal ist; ganze Sätze (»Buch – ein Ordner, an dem Sie …«) sprengten sonst die Tabelle, und in der
+    Vergleichstabelle mit acht Spalten braucht jede Spalte Platz."""
+    first = [re.sub(r'<[^>]+>', '', c) for c in re.findall(r'<tr>\s*<td>(.*?)</td>', m.group(0), re.S)]
+    cols = len(re.findall(r'<th[ >]', m.group(0).split('</tr>')[0]))
+    return m.group(0).replace('<table>', '<table class="kurz">', 1) if cols <= 3 and all(len(c) <= 40 for c in first) else m.group(0)
+
+
 def help_html(lang, name, href=help_href, home=None):
     """Eine Hilfeseite als HTML. Dieselbe Funktion baut die Website (tools/build_site.py): href(sprache, seite) liefert
     dort relative Dateinamen statt /hilfe/…, home = (adresse, beschriftung) des Links oben links (im Programm die Bibliothek)."""
@@ -1528,6 +1537,7 @@ def help_html(lang, name, href=help_href, home=None):
         import markdown
         body = markdown.markdown(src, extensions=['tables', 'fenced_code', 'toc'])
         body = re.sub(r'href="(?![a-z]+:|/|#)([^"#]+)\.md(#[^"]*)?"', lambda m: 'href="%s%s"' % (href(lang, m.group(1)), m.group(2) or ''), body)
+        body = re.sub(r'<table>.*?</table>', short_table, body, flags=re.S)
     except ImportError:
         body = '<p><i>pip install markdown</i></p><pre>' + src.replace('&', '&amp;').replace('<', '&lt;') + '</pre>'
     pages = help_pages(lang)

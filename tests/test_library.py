@@ -106,11 +106,21 @@ def test_hilfe(lib):
     for lang, word in (('de', 'Serienkorrektur'), ('en', 'Batch correction')):
         code, html = lib.raw('/hilfe/%s/usage' % lang)
         html = html.decode('utf-8')
-        assert code == 200 and word in html and '<table>' in html and 'class="cur"' in html
+        assert code == 200 and word in html and '<table class="kurz">' in html and 'class="cur"' in html
     index = lib.raw('/hilfe/de/index')[1].decode('utf-8')
     assert 'href="/hilfe/de/usage"' in index and '.md"' not in index
     assert lib.raw('/hilfe/de/gibtsnicht')[0] == 404
     assert lib.raw('/hilfe/de/..%2Fserver')[0] == 404
+
+
+def test_hilfe_tabellen_umbruch():
+    """Die erste Spalte bricht nur dann nicht um, wenn dort durchweg Kurzes steht und die Tabelle schmal ist – ganze
+    Sätze in der ersten Spalte sprengten sonst die Tabelle (»Ein Buch öffnen«)."""
+    import server
+    for lang in ('de', 'en'):
+        tables = re.findall(r'<table[^>]*>.*?</table>', server.help_html(lang, 'add-book'), re.S)
+        assert [t.startswith('<table class="kurz">') for t in tables] == [False, True, True]
+        assert '<table class="kurz">' not in server.help_html(lang, 'vergleich')  # acht Spalten
 
 
 def test_hilfeseiten_in_beiden_sprachen():
