@@ -145,5 +145,5 @@ however good it is otherwise.
 4. By contributing you agree that your contribution is published under [GPL-3.0-or-later](LICENSE) (help texts under
    CC BY-SA 4.0).
 
-The [Code of Conduct](CODE_OF_CONDUCT.en.md) applies to everyone. Questions are welcome – when in doubt, just open
-an issue.
+The [Code of Conduct](CODE_OF_CONDUCT.en.md) applies to everyone. Questions are welcome – preferably in the
+[Discussions](https://github.com/Josi-create/fraktur-korrektor/discussions), or when in doubt just open an issue.

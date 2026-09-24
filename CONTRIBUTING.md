@@ -148,4 +148,4 @@ auch wenn er sonst gut ist.
 4. Mit dem Beitrag stimmen Sie zu, dass er unter [GPL-3.0-or-later](LICENSE) veröffentlicht wird (Hilfetexte unter
    CC BY-SA 4.0).
 
-Für alle gilt der [Verhaltenskodex](CODE_OF_CONDUCT.md). Fragen sind willkommen – im Zweifel einfach ein Issue.
+Für alle gilt der [Verhaltenskodex](CODE_OF_CONDUCT.md). Fragen sind willkommen – am besten in den [Discussions](https://github.com/Josi-create/fraktur-korrektor/discussions), im Zweifel einfach ein Issue.
