@@ -1,0 +1,62 @@
+name: Website
+
+# Baut die Hilfe (docs/de, docs/en) mit tools/build_site.py als statische Website – dieselben
+# Seiten wie im Programm unter /hilfe – und veröffentlicht sie über GitHub Pages:
+# https://josi-create.github.io/fraktur-korrektor/
+#
+# Gebaut wird bei jedem Push auf main; das prüft nebenbei, dass alle Seiten entstehen.
+# Veröffentlicht wird nur, wenn Pages für das Repository eingeschaltet ist (Einstellungen →
+# Pages, Quelle »GitHub Actions«). Solange nicht – das Repository ist noch privat –, wird der
+# zweite Auftrag übersprungen und der Lauf bleibt grün. Nichts weiter ist einzustellen.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  bauen:
+    runs-on: ubuntu-latest
+    outputs:
+      pages: ${{ steps.pruefen.outputs.pages }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install -e .
+      - run: python tools/build_site.py site
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - name: Ist Pages eingeschaltet?
+        id: pruefen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${{ github.repository }}/pages" --silent; then
+            echo "pages=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pages=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages ist für dieses Repository nicht eingeschaltet – die Website wird nur gebaut, nicht veröffentlicht."
+          fi
+
+  veroeffentlichen:
+    needs: bauen
+    if: needs.bauen.outputs.pages == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5

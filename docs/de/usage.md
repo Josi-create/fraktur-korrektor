@@ -43,7 +43,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `D` | Wörterbuch: welche Rechtschreibung gilt in diesem Buch (siehe unten) |
 | Lesen | `Umschalt`+`↓` / `↑` | Zeilen für eine Notiz markieren (innerhalb der Seite); jede andere Taste hebt die Markierung auf |
 | Lesen / Korrektur | `F4` oder Rechtsklick auf die Markierung | Notiz für Obsidian aus der markierten Passage, sonst aus der Lesezeile (siehe unten) |
-| Lesen | `Z` | nach dem Zusammenführen zweier Arbeitsstände: zur nächsten Zeile, die an beiden Rechnern anders berichtigt wurde; `1` behält die hiesige Fassung, `2` nimmt die andere (siehe [Ein Buch als PDF sichern](pdf-sichern)) |
+| Lesen | `Z` | nach dem Zusammenführen zweier Arbeitsstände: zur nächsten Zeile, die an beiden Rechnern anders berichtigt wurde; `1` behält die hiesige Fassung, `2` nimmt die andere (siehe [Ein Buch als PDF sichern](pdf-sichern.md)) |
 | Lesen | `N` | Notizordner für dieses Buch festlegen |
 | überall | `F1` | diese Hilfe |
 

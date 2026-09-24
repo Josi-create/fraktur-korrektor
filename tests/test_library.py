@@ -108,7 +108,7 @@ def test_hilfe(lib):
         html = html.decode('utf-8')
         assert code == 200 and word in html and '<table>' in html and 'class="cur"' in html
     index = lib.raw('/hilfe/de/index')[1].decode('utf-8')
-    assert 'href="usage"' in index and '.md"' not in index
+    assert 'href="/hilfe/de/usage"' in index and '.md"' not in index
     assert lib.raw('/hilfe/de/gibtsnicht')[0] == 404
     assert lib.raw('/hilfe/de/..%2Fserver')[0] == 404
 

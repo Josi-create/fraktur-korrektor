@@ -43,7 +43,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `D` | dictionary: which spelling applies to this book (see below) |
 | Reading | `Shift`+`↓` / `↑` | select lines for a note (within the page); any other key clears the selection |
 | Reading / Correction | `F4` or right-click the selection | note for Obsidian from the selected passage, otherwise from the reading line (see below) |
-| Reading | `Z` | after merging two states of a book: to the next line that was corrected differently on both computers; `1` keeps this version, `2` takes the other (see [Saving a book as PDF](pdf-sichern)) |
+| Reading | `Z` | after merging two states of a book: to the next line that was corrected differently on both computers; `1` keeps this version, `2` takes the other (see [Saving a book as PDF](pdf-sichern.md)) |
 | Reading | `N` | set the notes folder for this book |
 | anywhere | `F1` | this help |
 

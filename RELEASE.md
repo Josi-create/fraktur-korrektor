@@ -104,6 +104,17 @@ Die Notarisierung dauert meist wenige Minuten (`xcrun notarytool … --wait`). E
 Unter Windows macht `build.bat` dasselbe (Installer nur, wenn Inno Setup 6 installiert ist). Der Windows-Build
 bleibt unsigniert; SmartScreen warnt darum beim ersten Start, siehe [docs/de/install.md](docs/de/install.md).
 
+## Die Hilfe als Website
+
+Die Seiten unter `docs/de` und `docs/en` – im Programm die Hilfe unter `/hilfe/…` – stehen als Website unter
+<https://josi-create.github.io/fraktur-korrektor/>. Gebaut wird sie mit derselben Vorlage wie im Programm
+(`server.help_html`), es gibt keine zweite Quelle. Bei jedem Push auf `main` baut `.github/workflows/pages.yml` die
+Seiten und veröffentlicht sie, sobald GitHub Pages in den Einstellungen des Repositorys eingeschaltet ist (Quelle
+»GitHub Actions«); vorher wird der Veröffentlichen-Auftrag übersprungen. Lokal ansehen:
+
+    python tools/build_site.py          # schreibt site/ (steht in .gitignore)
+    start site\index.html               # Windows; Mac: open site/index.html
+
 ## Eine Version veröffentlichen
 
 1. `version` in `pyproject.toml` hochsetzen, `CHANGELOG.md` abschließen, committen.

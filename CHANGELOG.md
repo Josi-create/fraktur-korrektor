@@ -5,6 +5,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Hilfe als Website** (#27): `tools/build_site.py` schreibt die Seiten aus `docs/de` und `docs/en` mit derselben
+  Vorlage und Navigation wie im Programm (`server.help_html`, jetzt ohne laufenden Server aufrufbar) nach `site/`,
+  dazu eine Startseite mit Sprachwahl und dem Überblick aus der README; Links zwischen den Seiten sind relativ,
+  Links auf Programmfunktionen bleiben als Text mit dem Hinweis »im Programm«. Der Workflow `pages.yml` baut sie bei
+  jedem Push auf `main` und veröffentlicht sie über GitHub Pages unter <https://josi-create.github.io/fraktur-korrektor/>,
+  sobald Pages im Repository eingeschaltet ist. Tests prüfen, dass jede Hilfeseite herauskommt und alle Links
+  aufgehen.
 - **Community-Dateien** (#28): `CONTRIBUTING.md` (Einrichtung, Aufbau, was nicht brechen darf, Stil, Testumgebung,
   Hilfe auch ohne Programmieren), `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 im offiziellen Wortlaut),
   `SECURITY.md` (was lokal bleibt, was `--lan` öffnet, wie man Lücken meldet), `CITATION.cff`; jeweils deutsch mit

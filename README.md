@@ -17,6 +17,7 @@ Alles geht mit der Tastatur; die wichtigsten Tasten stehen im Programm immer obe
 - English: [Help](docs/en/index.md) · [Opening a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
   [Working with Transkribus](docs/en/transkribus.md) · [Usage](docs/en/usage.md) ·
   [Installing the program](docs/en/install.md) · [Installing the tools](docs/en/install-tools.md)
+- Dieselben Seiten als Website: <https://josi-create.github.io/fraktur-korrektor/>
 
 Jede Korrektur wird sofort in die Textdatei geschrieben und in `korrekturen.log` protokolliert; die Leseposition steht in
 `lesezeichen.json`. Die Dateien dürfen parallel in einem Editor bearbeitet werden (die Zeilenzahl einer Seite dabei nicht

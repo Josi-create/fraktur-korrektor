@@ -17,4 +17,6 @@ dist/
 vendor/
 icon.icns
 icon.iconset/
+# Die Hilfe als Website (tools/build_site.py) – baut die CI
+site/
 *.egg-info/

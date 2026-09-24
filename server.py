@@ -1492,7 +1492,7 @@ main{flex:1;min-width:0;background:#fff;border:1px solid #bbb;border-radius:4px;
 main img{max-width:100%%} table{border-collapse:collapse} td,th{border:1px solid #ccc;padding:4px 9px;vertical-align:top;text-align:left}
 th{background:#f6f3ea} td:first-child{white-space:nowrap} code,kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:0 4px;font-family:Consolas,monospace;font-size:.9em}
 pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} h1{margin-top:.6em}
-</style></head><body><div id="top"><b>Fraktur-Korrektor</b><a href="/">%(home)s</a><span class="sp"></span>%(langs)s</div>
+</style></head><body><div id="top"><b>Fraktur-Korrektor</b><a href="%(home_url)s">%(home)s</a><span class="sp"></span>%(langs)s</div>
 <div id="wrap"><nav>%(nav)s</nav><main>%(body)s</main></div></body></html>'''
 
 
@@ -1509,7 +1509,13 @@ def help_pages(lang):
     return out
 
 
-def help_html(lang, name):
+def help_href(lang, name):
+    return '/hilfe/%s/%s' % (lang, name)
+
+
+def help_html(lang, name, href=help_href, home=None):
+    """Eine Hilfeseite als HTML. Dieselbe Funktion baut die Website (tools/build_site.py): href(sprache, seite) liefert
+    dort relative Dateinamen statt /hilfe/…, home = (adresse, beschriftung) des Links oben links (im Programm die Bibliothek)."""
     p = os.path.join(HERE, 'docs', lang, name + '.md')
     if not os.path.exists(p):
         return None
@@ -1517,16 +1523,16 @@ def help_html(lang, name):
     try:
         import markdown
         body = markdown.markdown(src, extensions=['tables', 'fenced_code', 'toc'])
-        body = re.sub(r'href="(?![a-z]+:|/|#)([^"#]+)\.md(#[^"]*)?"', lambda m: 'href="%s%s"' % (m.group(1), m.group(2) or ''), body)
+        body = re.sub(r'href="(?![a-z]+:|/|#)([^"#]+)\.md(#[^"]*)?"', lambda m: 'href="%s%s"' % (href(lang, m.group(1)), m.group(2) or ''), body)
     except ImportError:
         body = '<p><i>pip install markdown</i></p><pre>' + src.replace('&', '&amp;').replace('<', '&lt;') + '</pre>'
     pages = help_pages(lang)
-    nav = ''.join('<a href="/hilfe/%s/%s"%s>%s</a>' % (lang, n, ' class="cur"' if n == name else '', t) for n, t in pages)
+    nav = ''.join('<a href="%s"%s>%s</a>' % (href(lang, n), ' class="cur"' if n == name else '', t) for n, t in pages)
     other = 'en' if lang == 'de' else 'de'
-    langs = '<a href="/hilfe/%s/%s">%s</a>' % (other, name if os.path.exists(os.path.join(HERE, 'docs', other, name + '.md')) else 'index',
-                                               'English' if other == 'en' else 'Deutsch')
-    return HELP_PAGE % dict(lang=lang, title=dict(pages).get(name, name), nav=nav, body=body, langs=langs,
-                            home='Bibliothek' if lang == 'de' else 'Library')
+    langs = '<a href="%s">%s</a>' % (href(other, name if os.path.exists(os.path.join(HERE, 'docs', other, name + '.md')) else 'index'),
+                                     'English' if other == 'en' else 'Deutsch')
+    home_url, home = home or ('/', 'Bibliothek' if lang == 'de' else 'Library')
+    return HELP_PAGE % dict(lang=lang, title=dict(pages).get(name, name), nav=nav, body=body, langs=langs, home=home, home_url=home_url)
 
 
 class H(BaseHTTPRequestHandler):
