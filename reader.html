@@ -380,6 +380,17 @@ function render() {
   } else if (mode == 'konf') { e1.style.display = 'none'; e2.style.display = 'none'; renderConflict(); }
   layoutText(); layoutImage();  // nochmal, falls das Korrekturfeld oben seine Höhe geändert hat
   renderSug();  // das Aufklappmenü hängt an der Lage des Eingabefelds
+  suggestAhead();
+}
+// Während der Nutzer liest, rechnet der Server die Vorschläge für die nächsten roten Wörter voraus (#68) – im Hintergrund
+// und so, dass jede andere Anfrage Vortritt hat. Gemeldet wird nur, wenn sich die Liste ändert.
+let aheadSent = '';
+function suggestAhead() {
+  const at = cf ? { line: cf.line, start: cf.start - 1 } : { line: li, start: -1 };  // beim Korrigieren: ab dem Wort, das offen ist
+  const words = data.flags.filter(f => f.line > at.line || (f.line == at.line && f.start > at.start)).concat(nextD ? nextD.flags : [])
+    .filter(f => f.kind != 'page').slice(0, 3).map(f => f.word);
+  const key = words.join('|'); if (key == aheadSent) return; aheadSent = key;
+  if (words.length) fetch(BASE + '/api/suggest_ahead', { method: 'POST', body: JSON.stringify({ words }) }).catch(() => {});
 }
 function layoutText() {
   const el = lineEls[li]; if (!el) return;

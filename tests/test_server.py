@@ -209,6 +209,9 @@ def test_korrekturvorschlaege(app):
     assert app.get('/api/suggest?fast=1&word=Zu%C2%ACkunft')[1]['items'] == []  # getrenntes Wort: als Ganzes, und das ist richtig
     assert 'Zukunft' in app.get('/api/suggest?word=Zutunft')[1]['items']  # mit Hunspell
     assert app.get('/api/suggest?word=')[1]['items'] == []
+    # die nächsten roten Wörter meldet der Reader vorab (#68); die Rechnung dazu prüft test_korrlib
+    assert app.post('/api/suggest_ahead', dict(words=['Rußlanb', 'Zu¬kunft', 'x', 7]))[0] == 200
+    assert 'Rußland' in app.get('/api/suggest?word=Ru%C3%9Flanb')[1]['items']
 
 
 def test_trennung_ueber_die_seitengrenze(lib, tmp_path):

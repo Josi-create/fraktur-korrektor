@@ -110,6 +110,62 @@ def test_hunspell_vorschlaege():
     assert korrlib.suggest('Kolonisten') == [] or 'Kolonisten' not in korrlib.suggest('Kolonisten')
 
 
+def test_hunspell_budget_auch_mitten_im_schritt():
+    """Ein einzelner Schritt von spylls dauert bei langen Zusammensetzungen 20 s – das Budget gilt trotzdem (ohne
+    Vorschlag bis zum Fünffachen), und das Einlesen des Wörterbuchs zählt nicht mit."""
+    import time
+    t0 = time.monotonic()
+    korrlib.suggest('Handelsgesellschast', budget=0.2)
+    assert time.monotonic() - t0 < 5
+
+
+def test_vorschlaege_im_hintergrund():
+    """#68: Ein eigener Thread rechnet die Hunspell-Vorschläge; das Ergebnis bleibt im Zwischenspeicher."""
+    v = korrlib.Vorschlaege()
+    assert 'Zukunft' in v.hole('Zutunft', ('1901',))
+    assert v.cache[('Zutunft', ('1901',))] == v.hole('Zutunft', ('1901', 'vor1901'))  # vor1901 ist kein Wörterbuch
+
+
+def test_vorschlaege_lassen_anfragen_vortritt():
+    """Solange eine Anfrage läuft, hält die Rechnung an – sie teilt sich den Interpreter nicht mit dem Speichern."""
+    import threading, time
+    korrlib.suggest('Zutunft')  # Wörterbuch schon eingelesen: Das dauert und hat keinen Haken
+    v, r = korrlib.Vorschlaege(), {}
+    with v.vorrang():
+        th = threading.Thread(target=lambda: r.setdefault('x', v.hole('Zutunft', ('1901',))))
+        th.start()
+        time.sleep(1)
+        assert th.is_alive() and v.jetzt == ('Zutunft', ('1901',))
+    th.join(30)
+    assert 'Zukunft' in r['x'] and v.pause > 0.5
+
+
+def test_vorschlaege_ueberholt():
+    """Fragt der Reader schon nach dem nächsten Wort, bekommt die ältere Anfrage sofort None, statt eine der wenigen
+    Verbindungen des Browsers sekundenlang zu belegen."""
+    import threading, time
+    v, r = korrlib.Vorschlaege(budget=5), {}
+    th = threading.Thread(target=lambda: r.setdefault('a', v.hole('Handelsgesellschast', ('1901',))))
+    th.start()
+    time.sleep(0.3)
+    assert 'Zukunft' in v.hole('Zutunft', ('1901',))
+    th.join(30)
+    assert r['a'] is None and ('Handelsgesellschast', ('1901',)) not in v.cache  # abgebrochen, nicht halb gespeichert
+
+
+def test_vorschlaege_vorausrechnen():
+    """Die nächsten roten Wörter werden vorab gerechnet, während der Nutzer liest – danach kommen sie sofort."""
+    import time
+    v = korrlib.Vorschlaege()
+    v.vorausrechnen(['Zutunft', 'Bolk', 'Zutunft'], ('1901',))
+    for _ in range(300):
+        if not v.voraus: break
+        time.sleep(0.1)
+    assert set(v.cache) == {('Zutunft', ('1901',)), ('Bolk', ('1901',))}
+    v.vorausrechnen(['Zutunft'], ('1901',))
+    assert v.voraus == []  # schon gerechnet
+
+
 def test_page_lines_ohne_zeilenumbruch_am_ende():
     """Seitendateien aus einem Editor enden nicht immer mit einem Zeilenumbruch – die letzte Zeile zählt trotzdem
     (dieselbe Zerlegung für Buchordner und für die Seitentexte im Anhang eines gesicherten PDF)."""

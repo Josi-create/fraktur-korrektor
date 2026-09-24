@@ -87,9 +87,11 @@ Programm in einem kleinen Menü unter dem Wort Vorschläge, das Wahrscheinlichst
 2. **Typische Lesefehler der Fraktur-Erkennung**, rückgängig gemacht: `b`/`d`, `f`/`s`, `n`/`u`, `r`/`t`, `ll`/`tt`,
    fehlende Umlautpunkte. Aus `ber` wird `der`, aus `Bolk` `Volk`, aus `Zutunft` `Zukunft` – aber nur, wenn das Ergebnis
    ein bekanntes Wort ist (Wörterbuch, Whitelist oder häufig im Buch). Was im Buch oft vorkommt, steht vorn.
-3. **Das Wörterbuch** (Hunspell). Diese Vorschläge brauchen ein, zwei Sekunden und erscheinen etwas später; die ersten
-   beiden Gruppen stehen sofort da. Haben Sie inzwischen schon einen Vorschlag gewählt, bleibt der stehen – die
-   Wörterbuchvorschläge werden nur hinten angefügt. Für Wörter mit nur zwei Buchstaben fragt das Programm das
+3. **Das Wörterbuch** (Hunspell). Diese Vorschläge brauchen ein, zwei Sekunden. Das Programm rechnet sie deshalb
+   schon für die nächsten roten Wörter aus, während Sie noch lesen – kommen Sie dort an, stehen sie meist sofort da.
+   Sonst erscheinen sie etwas später; die ersten beiden Gruppen stehen immer sofort da. Haben Sie inzwischen schon
+   einen Vorschlag gewählt, bleibt der stehen – die Wörterbuchvorschläge werden nur hinten angefügt. Ihre Tasten
+   bremst das Rechnen nicht: Es hält an, solange das Programm etwas für Sie erledigt. Für Wörter mit nur zwei Buchstaben fragt das Programm das
    Wörterbuch nicht.
 
 `↓` setzt den ersten Vorschlag ins Feld, jedes weitere `↓` den nächsten, `↑` geht zurück (bis zum Wort, wie es erkannt

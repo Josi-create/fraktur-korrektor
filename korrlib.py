@@ -142,18 +142,152 @@ def ocr_candidates(w, ok):
             if c != w and c not in out and c not in FALLEN and ok(c): out.append(c)
             i = w.find(a, i + 1)
     return out
-def suggest(w, dics=DEFAULT, budget=1.5, limit=5):
-    """Hunspell-Vorschläge zu w. spylls liefert sie nacheinander, die naheliegenden zuerst – nach dem Budget (Sekunden)
-    wird nicht weiter gewartet; ein einzelner Schritt kann es trotzdem überziehen."""
-    import time
-    real = [d for d in dics if d != 'vor1901'] or ['1901']
-    out, t0 = [], time.monotonic()
-    for d in real:
-        for s in checker(d).load().suggest(w):
-            s = s.strip('-')  # spylls schlägt auch Zusammensetzungen mit Bindestrich vor (-kolonisten)
-            if s and s != w and s not in out and s not in FALLEN: out.append(s)
-            if len(out) >= limit or time.monotonic() - t0 > budget: return out
-    return out
+_haken = threading.local()  # .f: wird im rechnenden Thread bei jedem Wörterbuchzugriff der Vorschlagssuche aufgerufen
+def _hake():
+    f = getattr(_haken, 'f', None)
+    if f: f()
+class _Nachsehen:
+    """Steht in spylls an Stelle des Nachschlagens, das die Vorschlagssuche für jeden Kandidaten aufruft – so kommt der
+    Haken alle paar Millisekunden dran, auch mitten in einem Schritt, der Sekunden dauert."""
+    def __init__(self, orig): self.orig = orig
+    def __call__(self, *a, **k): _hake(); return self.orig(*a, **k)
+    def good_forms(self, *a, **k): _hake(); return self.orig.good_forms(*a, **k)
+    def __getattr__(self, n): return getattr(self.orig, n)
+class _Woerter(list):
+    """Die Wortliste, die spylls für die n-Gramm-Vorschläge ganz durchgeht (170 000 Wörter, eine Sekunde): Haken je 1000."""
+    def __iter__(self):
+        it = list.__iter__(self)
+        while True:
+            _hake()
+            teil = list(itertools.islice(it, 1000))
+            if not teil: return
+            yield from teil
+def _suggester(d):
+    sg = checker(d).load().suggester
+    if not isinstance(sg.lookup, _Nachsehen):
+        sg.lookup, sg.words_for_ngram = _Nachsehen(sg.lookup), _Woerter(sg.words_for_ngram)
+    return sg
+class _Genug(Exception): pass
+def suggest(w, dics=DEFAULT, budget=1.5, limit=5, haken=None, uhr=time.monotonic):
+    """Hunspell-Vorschläge zu w. spylls liefert sie nacheinander, die naheliegenden zuerst. Nach dem Budget (Sekunden auf
+    der uhr) ist Schluss, sobald es einen gibt – geprüft bei jedem Wörterbuchzugriff, denn ein einzelner Schritt von
+    spylls dauert bei langen Zusammensetzungen auch 20 s; ohne jeden Vorschlag wird bis zum Fünffachen gesucht.
+    haken: wird dabei jedes Mal aufgerufen (siehe Vorschlaege)."""
+    sgs = [_suggester(d) for d in dics if d != 'vor1901'] or [_suggester('1901')]  # das Einlesen zählt nicht zum Budget
+    out, t0 = [], uhr()
+    def pruefe():
+        if haken: haken()
+        if uhr() - t0 > (budget if out else 5 * budget): raise _Genug
+    _haken.f = pruefe
+    try:
+        for sg in sgs:
+            for s in sg(w):
+                s = s.strip('-')  # spylls schlägt auch Zusammensetzungen mit Bindestrich vor (-kolonisten)
+                if s and s != w and s not in out and s not in FALLEN: out.append(s)
+                if len(out) >= limit or uhr() - t0 > budget: return out
+        return out
+    except _Genug:
+        return out
+    finally:
+        _haken.f = None
+# ---- Hunspell-Vorschläge im Hintergrund (#68). spylls rechnet sekundenlang in reinem Python. Lief das im Thread der
+# Anfrage, teilte sich jede andere Anfrage den Interpreter mit ihm und wartete nach jedem Dateizugriff bis zu 5 ms, bis
+# sie wieder dran war – das Speichern mit Return brauchte so 3 s statt 0,07 s. Jetzt rechnet ein einziger Thread, und der
+# hält an, solange eine andere Anfrage läuft (vorrang). Nebenbei rechnet er die nächsten roten Wörter voraus, die der
+# Reader meldet, während der Nutzer noch liest – das Wort, auf dem er steht, geht immer vor.
+class _Abbruch(Exception): pass
+class Vorschlaege:
+    def __init__(self, budget=1.5):
+        self.budget, self.cache, self.cond = budget, {}, threading.Condition()
+        self.eilig, self.voraus, self.jetzt = None, [], None  # Schlüssel (wort, dics): der Nutzer steht darauf | vorausrechnen | in Arbeit
+        self.warten = {}                                      # Schlüssel -> [Event] der Anfragen, die auf ihn warten
+        self.vorn, self.frei, self.pause, self.thread, self.tl = 0, threading.Event(), 0.0, None, threading.local()
+        self.frei.set()
+
+    @staticmethod
+    def key(word, dics):
+        return word, tuple(d for d in dics if d != 'vor1901') or ('1901',)
+
+    def hole(self, word, dics, timeout=30):
+        """Die Vorschläge für das Wort, auf dem der Nutzer gerade steht – wartet, bis sie gerechnet sind. None, wenn
+        inzwischen nach einem anderen Wort gefragt wurde (der Reader will sie dann nicht mehr)."""
+        k = self.key(word, dics)
+        with self.cond:
+            if k in self.cache: return self.cache[k]
+            mein = getattr(self.tl, 'n', 0)  # die Anfrage selbst hat Vortritt – den gibt sie ab, solange sie auf den Rechner wartet
+            self.vorn -= mein
+            if not self.vorn: self.frei.set()
+            if self.eilig and self.eilig != k: self._freigeben(self.eilig)  # überholt: nicht warten lassen, der Browser hat nur wenige Verbindungen
+            self.eilig, ev = k, threading.Event()
+            self.warten.setdefault(k, []).append(ev)
+            self._starten()
+        ev.wait(timeout)
+        with self.cond:
+            self.vorn += mein
+            if self.vorn: self.frei.clear()
+            if ev in self.warten.get(k, []): self.warten[k].remove(ev)
+            return self.cache.get(k)
+
+    def vorausrechnen(self, words, dics):
+        """Die nächsten roten Wörter der Reihe nach vorab rechnen; ersetzt die bisherige Liste."""
+        with self.cond:
+            self.voraus = [k for k in dict.fromkeys(self.key(w, dics) for w in words) if k not in self.cache]
+            if self.voraus: self._starten()
+
+    def vorrang(self):
+        """Solange eine Anfrage darin läuft, rechnet der Hintergrund nicht (with vorschlaege.vorrang(): …)."""
+        return _Vorrang(self)
+
+    def _freigeben(self, k):
+        for ev in self.warten.pop(k, []): ev.set()
+
+    def _starten(self):
+        if not self.thread:
+            self.thread = threading.Thread(target=self._lauf, daemon=True, name='vorschlaege')
+            self.thread.start()
+        self.cond.notify()
+
+    def _haken(self):
+        """Im Rechen-Thread bei jedem Wörterbuchzugriff: warten, solange eine Anfrage läuft (die Pause zählt nicht zum
+        Budget); aufhören, wenn die Arbeit überholt ist – der Nutzer ist weitergegangen oder steht jetzt auf einem Wort."""
+        if self.vorn:
+            t0 = time.monotonic()
+            while self.vorn: self.frei.wait(0.1)
+            self.pause += time.monotonic() - t0
+        k = self.jetzt
+        if k != self.eilig and (self.eilig or k not in self.voraus): raise _Abbruch
+
+    def _lauf(self):
+        while True:
+            with self.cond:
+                while not (self.eilig or self.voraus): self.cond.wait()
+                k = self.jetzt = self.eilig or self.voraus[0]
+            self.pause = 0.0
+            try:
+                r = suggest(k[0], k[1], budget=self.budget, haken=self._haken, uhr=lambda: time.monotonic() - self.pause)
+                save_cache()  # was die Suche nebenbei nachgeschlagen hat
+            except _Abbruch:
+                r = None
+            except Exception:  # ein Fehler in spylls darf den Thread nicht beenden: ohne Vorschläge weiter
+                r = []
+            with self.cond:
+                self.jetzt = None
+                if r is not None:
+                    self.cache[k] = r
+                    self._freigeben(k)
+                    if k in self.voraus: self.voraus.remove(k)
+                if self.eilig == k: self.eilig = None
+class _Vorrang:
+    def __init__(self, v): self.v = v
+    def __enter__(self):
+        with self.v.cond:
+            self.v.vorn += 1; self.v.frei.clear()
+            self.v.tl.n = getattr(self.v.tl, 'n', 0) + 1  # je Thread: wie oft er gerade Vortritt hat
+    def __exit__(self, *a):
+        with self.v.cond:
+            self.v.vorn -= 1; self.v.tl.n -= 1
+            if not self.v.vorn: self.v.frei.set()
+VORSCHLAEGE = Vorschlaege()
 def dics_for_year(year):
     """Vorschlag nach dem Erscheinungsjahr. Ab 1998 beide Rechtschreibungen: Die Umstellung zog sich hin, und neuere
     Arbeiten zitieren ältere Texte."""

@@ -85,8 +85,11 @@ shows suggestions in a small menu below the word, the most likely first (at most
 2. **Typical misreadings of Fraktur OCR**, undone: `b`/`d`, `f`/`s`, `n`/`u`, `r`/`t`, `ll`/`tt`, missing umlaut dots.
    `ber` becomes `der`, `Bolk` becomes `Volk`, `Zutunft` becomes `Zukunft` – but only if the result is a known word
    (dictionary, whitelist, or frequent in the book). Words frequent in the book come first.
-3. **The dictionary** (Hunspell). These take a second or two and appear a little later; the first two groups are there
-   at once. If you have already picked a suggestion by then, it stays – the dictionary suggestions are only appended.
+3. **The dictionary** (Hunspell). These take a second or two, so the program works them out for the next red words
+   while you are still reading – when you get there, they are usually ready at once. Otherwise they appear a little
+   later; the first two groups are always there at once. If you have already picked a suggestion by then, it stays –
+   the dictionary suggestions are only appended. This work never slows down your keys: it pauses whenever the program
+   is doing something for you.
    For words of just two letters the program does not ask the dictionary.
 
 `↓` puts the first suggestion into the field, each further `↓` the next, `↑` goes back (down to the word as it was

@@ -5,6 +5,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Korrekturvorschläge im Voraus** (#68): Während Sie lesen, rechnet das Programm die Wörterbuchvorschläge für die
+  nächsten drei roten Wörter aus (der Reader meldet sie über `/api/suggest_ahead`, sobald sich die Liste ändert);
+  kommt man dort an, stehen sie sofort da statt nach ein bis fünf Sekunden.
 - **Hilfe, Entwurf zum Gegenlesen** (#23, #24, #25 – noch nicht abgeschlossen): *Mit Transkribus arbeiten*
   bekommt den Abschnitt *Was es kostet* (Konten, Credits je Seite, Rechenbeispiel, Grenzen des kostenlosen
   Kontos), Fehlerquoten und Stand der öffentlichen Fraktur-Modelle, den aktuellen Exportweg. *PDF oder Bilder
@@ -238,6 +241,14 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
 ### Behoben
+- **Return beim Korrigieren reagierte träge** (#68), seit es Korrekturvorschläge gibt: Die Wörterbuchvorschläge
+  rechnete spylls im Thread der Anfrage, sekundenlang in reinem Python; das Speichern musste sich den Interpreter mit
+  ihm teilen und wartete nach jedem Dateizugriff bis zu 5 ms – bei einem Buch mit 361 Seiten 1–3 s statt 0,07 s.
+  Jetzt rechnet ein eigener Thread (`korrlib.Vorschlaege`), der bei jedem Wörterbuchzugriff anhält, solange eine
+  andere Anfrage läuft, und aufhört, wenn der Nutzer schon beim nächsten Wort ist. Gemessen an einer Kopie dieses
+  Buchs: Speichern während der Vorschlagssuche 0,08 s. Das Zeitbudget von 1,5 s gilt jetzt auch mitten in einem
+  Schritt von spylls (vorher bis zu 20 s bei langen Zusammensetzungen; ohne jeden Vorschlag höchstens 7,5 s), und das
+  Einlesen des Wörterbuchs zählt nicht mehr mit.
 - **ALTO einer Bibliothek: die gelbe Lesezeile im Seitenbild war nur ein Strich unter der Zeile** und wirkte wie
   eine Zeile zu tief. Die SuUB Bremen gibt ihren Zeilen (`TextLine`) eine Höhe von −2 oder 6 Pixeln bei einer
   Lage in Zeilenmitte; nur die Wörter (`String`) haben brauchbare Kästen. Der Zeilenkasten kommt jetzt aus den

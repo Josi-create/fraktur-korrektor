@@ -119,7 +119,7 @@ class Book:
         self.settings = self.load_settings()
         self.pages, self.mt, self.freq, self.wl, self.wlmt, self.fcache, self.size = {}, {}, {}, set(), None, {}, {}
         self.prog = None  # [geprüfte Seiten, Seiten] während overview() läuft – für den Ladebalken (/api/progress)
-        self.gelernt, self.sugcache = None, {}  # Korrekturvorschläge: (mtime des Protokolls, Wortpaare) und Hunspell-Ergebnisse je Wort
+        self.gelernt = None  # Korrekturvorschläge: (mtime des Protokolls, Wortpaare)
 
     def load_settings(self):
         """buch.json: year (Erscheinungsjahr, geraten oder None), dics (welche Rechtschreibung gilt), notizen (Ordner für
@@ -261,13 +261,17 @@ class Book:
         cand = korrlib.ocr_candidates(word, lambda c: c in wl or known(c, freq, dics))
         cand.sort(key=lambda c: -freq.get(c, 0))
         if hunspell and len(word) > 2:
-            if (word, dics) not in self.sugcache:
-                self.sugcache[(word, dics)] = korrlib.suggest(word, dics)
-            cand += self.sugcache[(word, dics)]
+            cand += korrlib.VORSCHLAEGE.hole(word, dics) or []  # meist schon vorausgerechnet
         for c in cand:
             if c not in out and c != word:
                 out.append(c)
         return out[:6]
+
+    def suggest_ahead(self, words):
+        """Die nächsten roten Wörter, die der Reader meldet: ihre Hunspell-Vorschläge im Hintergrund vorab rechnen."""
+        with self.lock:
+            dics = tuple(self.settings['dics'])
+        korrlib.VORSCHLAEGE.vorausrechnen([w.replace('¬', '') for w in words if len(w.replace('¬', '')) > 2][:5], dics)
 
     def klog(self, kind, pg, line, old, new, when=None):
         """Korrekturprotokoll: Zeit, Art (edit | serie:ID | undo:ID | teilen | verbinden | fnsep | seite | whitelist+/-),
@@ -1565,7 +1569,17 @@ class H(BaseHTTPRequestHandler):
         """Bibliothek verändern (Ordner öffnen, importieren) darf nur, wer am Rechner selbst sitzt – nicht das LAN."""
         return self.client_address[0] in ('127.0.0.1', '::1', '::ffff:127.0.0.1')
 
+    # Jede Anfrage hat Vortritt vor der Vorschlagsrechnung im Hintergrund (#68). Die vollständige Vorschlagsanfrage gibt
+    # ihn ab, solange sie auf diese Rechnung wartet (Vorschlaege.hole).
     def do_GET(self):
+        with korrlib.VORSCHLAEGE.vorrang():
+            self.get()
+
+    def do_POST(self):
+        with korrlib.VORSCHLAEGE.vorrang():
+            self.post()
+
+    def get(self):
         u = urllib.parse.urlparse(self.path)
         q = urllib.parse.parse_qs(u.query)
         if u.path == '/':
@@ -1665,7 +1679,7 @@ class H(BaseHTTPRequestHandler):
                 return self.send(404, '{}')
         self.send(404, '{}')
 
-    def do_POST(self):
+    def post(self):
         u = urllib.parse.urlparse(self.path)
         body = json.loads(self.rfile.read(int(self.headers.get('Content-Length', 0))) or b'{}')
         m = re.fullmatch(r'/api/job/([0-9a-f]{8})/cancel', u.path)
@@ -1803,6 +1817,9 @@ class H(BaseHTTPRequestHandler):
             except (TypeError, ValueError):
                 n = 1
             return self.sendjson(dict(job=start_job(replace_page, book.id, str(body.get('page') or ''), body.get('source'), n, body.get('script'))))
+        if rest == '/api/suggest_ahead':
+            book.suggest_ahead([w for w in body.get('words', []) if isinstance(w, str)])
+            return self.sendjson({})
         if rest == '/api/series':
             if not body.get('word') or not body.get('new') or re.search(r'\s', body['new']):
                 return self.send(400, '{}')
