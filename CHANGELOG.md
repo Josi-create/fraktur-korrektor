@@ -5,6 +5,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Vorbereiten-Knöpfe nach Ampel und Herkunft** (#69): *Scans vorbereiten*, *Für Transkribus vorbereiten* und *Für
+  ScanTailor vorbereiten* treten in der Bibliothek grau zurück, wenn sie wenig bringen – bei grüner Ampel, wenn der
+  Text schon aus Transkribus stammt (dann auch die beiden Bildvorbereitungen: sie bräuchten eine neue Erkennung, die
+  bei Fraktur selten besser ist) oder wenn die Seiten schon mit ScanTailor bzw. dem Programm selbst aufbereitet sind.
+  Benutzbar bleiben sie: Der Tooltip und im Dialog *Weiterbearbeiten* eine Zeile darunter sagen, warum, ein Klick
+  fragt nach. Nach dem eingebauten Vorbereiten bleibt ScanTailor frei – es kann gewölbte Seiten und Flecken. Ohne
+  Ampel (Buch noch nicht bewertet) ändert sich nichts.
 - **Buch umbenennen** (#71): Knopf *Umbenennen* in der Bibliothek, auch im Dialog *Weiterbearbeiten*. Ein Buch, das
   noch wie seine Datei heißt (`asjflkasjdfl.pdf`), bekommt einen richtigen Namen – in der Bibliothek, oben in der
   Leseansicht, in Notizen für Obsidian und als Dateiname beim Sichern als PDF. Der Ordner bleibt, wie er ist, damit

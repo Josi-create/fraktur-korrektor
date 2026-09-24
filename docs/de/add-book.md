@@ -127,6 +127,14 @@ das Wörterbuch nicht kennt („20 % rote Wörter"). Das ist dieselbe Zahl, die 
 sehen; alte Schreibweisen und Namen sind darunter, es sind also nicht lauter Fehler. Der farbige Punkt vor dem
 Titel ist die Ampel aus dem Einlesen.
 
+Nach diesen Kennzeichen richten sich auch die Knöpfe darunter: **Scans vorbereiten**, **Für Transkribus
+vorbereiten** und **Für ScanTailor vorbereiten** sind grau, wenn sie wenig bringen – bei grüner Ampel, wenn der
+Text schon aus Transkribus stammt oder die Seiten schon aufbereitet sind. Sie funktionieren trotzdem; das
+Programm sagt vorher, warum es davon abrät, und fragt nach.
+
+Der Knopf **Umbenennen** gibt einem Buch einen anderen Namen, etwa wenn es noch wie die Datei heißt, aus der es
+kam. Der Ordner auf der Festplatte bleibt dabei, wie er ist.
+
 ### Textexport statt PAGE XML
 
 Transkribus kann seinen Text auch als einfache Textdatei ausgeben; die liest das Programm ebenso. Sie verlieren

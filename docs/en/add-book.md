@@ -123,6 +123,14 @@ dictionary does not know (“20 % red words”). That is the same figure you see
 spellings and names are among them, so they are not all mistakes. The coloured dot before the title is the
 traffic light from reading the book in.
 
+The buttons below follow these marks: **Prepare scans**, **Prepare for Transkribus** and **Prepare for
+ScanTailor** are grey when they would do little good – with a green light, when the text already comes from
+Transkribus, or when the pages have already been prepared. They still work; the program says first why it
+advises against it, and asks.
+
+The **Rename** button gives a book a different name, for instance when it is still named after the file it came
+from. The folder on disk stays as it is.
+
 ### Text export instead of PAGE XML
 
 Transkribus can also give out its text as a plain text file, and the program reads that too. You do lose

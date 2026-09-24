@@ -27,6 +27,7 @@ button:disabled{opacity:.5;cursor:default}
 .acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px} .acts .sp{flex:1}
 .acts button{font-size:14px;padding:6px 14px} .acts button.weg,.book .line .weg{color:#a40;border-color:#caa;font-size:13.5px;padding:5px 10px}
 .acts button.weg:hover,.book .line .weg:hover{background:#fdeaea}
+.acts button.muted{color:#999;border-color:#d4d0c6;background:#f7f5f0} .act.muted{opacity:.62} .act .why{color:#a60}
 #empty{padding:26px;color:#666;line-height:1.6}
 #foot{margin-top:22px;color:#777;font-size:13.5px;display:flex;gap:18px;flex-wrap:wrap} #foot a{color:#456}
 .dlg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
@@ -165,6 +166,17 @@ let booksdir = '', entered = false;
 const BOOKACTS = [['open', b => true], ['pdf', b => true], ['trans', b => true], ['images', b => b.images < b.pages],
                   ['prep_scans', b => b.images > 0], ['prep_trans', b => b.images > 0], ['prep_st', b => b.images > 0],
                   ['restore', b => (b.backups || []).length]];
+// Vorbereiten für ein anderes Programm, obwohl es wenig bringt (#69): Der Knopf bleibt benutzbar, tritt aber zurück und fragt
+// nach. Liefert den Schlüssel der Begründung, sonst ''. Ohne Ampel (noch nicht gerechnet) bleibt alles, wie es ist.
+function unneeded(k, b) {
+  const q = b.quelle || [], green = b.quality == 'gruen' ? 'why_gruen' : '';
+  if (k == 'prep_trans') return q.includes('transkribus') ? 'why_trans' : green;
+  // ScanTailor kann mehr als »Scans vorbereiten« (gewölbte Seiten, Flecken) – nach dem eingebauten Vorbereiten lohnt es sich noch
+  if (k == 'prep_st' || k == 'prep_scans') return q.includes('scantailor') ? 'why_scantailor' : k == 'prep_scans' && q.includes('aufbereitet') ? 'why_aufbereitet'
+    : q.includes('transkribus') ? 'why_trans_img' : green;
+  return '';
+}
+const stillWant = (k, b) => { const w = unneeded(k, b); return !w || confirm(t('why_ask', { why: t(w) })); };
 async function load() {
   const lib = await (await fetch('/api/library')).json();
   $('ver').textContent = lib.version ? 'Version ' + lib.version : '';
@@ -178,8 +190,9 @@ async function load() {
     const row = document.createElement('div'); row.className = 'book' + (b.pages ? '' : ' gone');
     const ti = b.pages ? ['<a class="ti" href="/buch/' + b.id + '">', '</a>'] : ['<span class="ti">', '</span>'];
     // Jede Möglichkeit bekommt einen beschrifteten Knopf: niemand soll erraten müssen, was hinter einem Zeichen steckt
-    const acts = lib.local && b.pages ? BOOKACTS.filter(([k, when]) => when(b)).map(([k]) =>
-      '<button class="' + (k == 'open' ? 'main' : '') + '" data-a="' + k + '">' + t(k == 'open' ? 'open_now' : 'act_' + k) + '</button>').join('') +
+    const acts = lib.local && b.pages ? BOOKACTS.filter(([k, when]) => when(b)).map(([k]) => { const w = unneeded(k, b);
+      return '<button class="' + (k == 'open' ? 'main' : w ? 'muted' : '') + '" data-a="' + k + '"' + (w ? ' title="' + esc(t(w)) + '"' : '') + '>' +
+        t(k == 'open' ? 'open_now' : 'act_' + k) + '</button>'; }).join('') +
       '<span class="sp"></span><button data-a="rename">' + t('act_rename') + '</button><button class="weg" data-a="forget">' + t('act_forget') + '</button>' : '';
     // Kennzeichen: woher der Text stammt und wie viele Wörter das Wörterbuch nicht kennt
     const tags = (b.quelle || []).map(q => '<span class="tag" title="' + t('src_' + q + '_t') + '">' + t('src_' + q) + '</span>').join('') +
@@ -194,7 +207,7 @@ async function load() {
       e.preventDefault(); e.stopPropagation();
       const k = el.dataset.a;
       if (k == 'open') return location.href = '/buch/' + b.id;
-      if (k != 'forget') return openEdit(b, k);
+      if (k != 'forget') return stillWant(k, b) && openEdit(b, k);
       if (confirm(t('forget_confirm', { t: b.title }))) { await post('/api/forget', { id: b.id }); load(); }
     };
     box.appendChild(row);
@@ -585,9 +598,10 @@ function editPick() {
   $('ebody').style.display = ''; $('edone').style.display = 'none';
   $('eBack').style.display = $('eGo').style.display = $('eBook').style.display = 'none';
   $('eClose').textContent = t('cancel');
-  $('ebody').innerHTML = Object.keys(ACTS).filter(k => ACTS[k][1](eb)).map(k =>
-    '<a href="#" class="act" data-a="' + k + '"><span class="ic">' + ACTS[k][0] + '</span><span><b>' + t('act_' + k) + '</b><small>' + t('act_' + k + '_hint') + '</small></span></a>').join('');
-  for (const el of $('ebody').querySelectorAll('a[data-a]')) el.onclick = ev => { ev.preventDefault(); editAct(el.dataset.a); };
+  $('ebody').innerHTML = Object.keys(ACTS).filter(k => ACTS[k][1](eb)).map(k => { const w = unneeded(k, eb);
+    return '<a href="#" class="act' + (w ? ' muted' : '') + '" data-a="' + k + '"><span class="ic">' + ACTS[k][0] + '</span><span><b>' + t('act_' + k) + '</b><small>' +
+      t('act_' + k + '_hint') + '</small>' + (w ? '<small class="why">' + t(w) + '</small>' : '') + '</span></a>'; }).join('');
+  for (const el of $('ebody').querySelectorAll('a[data-a]')) el.onclick = ev => { ev.preventDefault(); if (stillWant(el.dataset.a, eb)) editAct(el.dataset.a); };
 }
 function editAct(a) {
   eact = a; $('emsg').textContent = ''; $('eBack').style.display = ''; $('ehead').innerHTML = '<b>' + t('act_' + a) + '</b>';
