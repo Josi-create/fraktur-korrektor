@@ -1,5 +1,7 @@
 # Working with Transkribus
 
+*Draft of 24 September 2026 – please check the statements about third-party programs.*
+
 [Transkribus](https://www.transkribus.org/) is a service of the European cooperative READ-COOP for text
 recognition in historical documents. For Fraktur prints it usually gives much better results than Tesseract
 – especially with mediocre scans. Fraktur-Korrektor is built for exactly this division of labour:
@@ -9,15 +11,49 @@ recognition in historical documents. For Fraktur prints it usually gives much be
 
 - Transkribus works **on the internet**: your page images are uploaded to the servers of READ-COOP
   (Innsbruck). Keep this in mind for copyrighted or confidential material.
-- You need an **account**; the free one is enough for trying it out. Recognition costs *credits*. The free
-  account includes 50 credits per month (as of September 2026) – enough for a chapter, not for a whole book.
-  For a book you buy additional credits or spread the work over several months.
-  Current prices: <https://www.transkribus.org/plans>.
+- You need an **account**; the free one is enough for trying it out. Recognition costs *credits*: 50 per month
+  are free, and a printed page costs half a credit – enough for about 60 pages a month including line
+  detection, not for a whole book. For a book you buy additional credits or spread the work over several
+  months. Figures and limits: [What it costs](#what-it-costs).
 - The web application (in the browser) is sufficient for everything described here.
 - **Two-column layouts** (newspapers, encyclopaedias): the layout analysis of Transkribus usually creates a
   separate text region per column; the program then reads column by column – first the left one from top to
   bottom, then the right one. If the columns come out interleaved, check the regions of the page in Transkribus
   (one region per column, no line running across both columns) and export again.
+
+## What it costs
+
+Transkribus charges in *credits*. The figures here come from <https://www.transkribus.org/plans> and
+<https://help.transkribus.org/credit-system> (as of 24 September 2026); all prices include 20 % Austrian VAT.
+Check them before buying – they change.
+
+| Plan | Credits | Price |
+|---|---|---|
+| **Free** | 50 per month | free |
+| **Scholar** | 900 per year | €99 per year (or €19.99 per month) |
+| **Team** (up to 5 people) | 1,500 per year | €449 per year |
+| Buying credits separately | 250 | €59.50, no subscription; they do not expire |
+
+What a job costs, per page:
+
+| Job | Credits |
+|---|---|
+| Text recognition, **printed** – your case | 0.5 |
+| Text recognition, handwritten | 1 |
+| Finding the lines (layout, step 4) | 0.25 |
+| Table or form field recognition | 1 |
+
+Example: a book of 400 pages needs 400 × 0.75 = 300 credits for lines and text. With the free account that is
+six months of 50 credits each – or buy 250 credits once (€59.50) and take the rest from the monthly allowance.
+Before every job Transkribus shows the cost and only starts on your click (step 5), so a slip costs nothing.
+
+**Limits of the free account** (according to the pricing page, as of 24 September 2026):
+
+- The *Super Models* (such as “Text Titan II”) are only available in the paid plans. For Fraktur prints the
+  free models from step 5 are sufficient.
+- Export as **Page XML** – the only one Fraktur-Korrektor needs – is included in the free account, as are
+  text, Word and PDF. ALTO, METS and TEI are reserved for the paid plans.
+- Storage: 20 GB. We have not checked whether unused monthly credits expire.
 
 ## Step by step
 
@@ -61,6 +97,8 @@ A *collection* is a drawer for your books; nothing works without one.
 4. Enter a name under **“Title”**.
 5. Click **“Submit”**. A bar shows the progress; with many pages this takes a while.
 
+<!-- Draft: the size limits below come from the web app and were not re-checked on 24 Sept 2026;
+     help.transkribus.org lists only JPEG/JPG and PDF as formats. -->
 Allowed are JPG, PNG and TIFF (up to 20 MB each, up to 3000 files) and PDF (up to 512 MB). Around 300 dpi is
 recommended, which is exactly what Fraktur-Korrektor produces.
 
@@ -73,7 +111,9 @@ reliably run as part of text recognition.
 
 1. In the document, tick the box at the top left that **selects all pages**.
 2. Click **“Process with AI”**.
-3. Choose **“Layout Recognition”** at the top and start the job.
+3. Under *Process Type* at the top choose **“Layout Analysis”** (older versions: “Layout Recognition”). As
+   the model, the Transkribus help recommends *Mixed Line Orientation* or *Universal Lines* – both suit books.
+   Cost: 0.25 credits per page. Then **“Start recognition”**.
 
 Then leaf through a page: every line of text should have a line drawn over it. If the lines are crooked or
 missing, a better image (ScanTailor) usually helps more than a different setting.
@@ -83,15 +123,19 @@ missing, a better image (ScanTailor) usually helps more than a different setting
 1. Again **select all pages** and click **“Process with AI”**.
 2. The **“Text Recognition”** panel is already open. Search for a model:
 
-   | Model | for what |
-   |---|---|
-   | **Transkribus Print M1** | all printing, Fraktur and Antiqua – the safe choice |
-   | **ONB_Newseye_GT_M1+** | German Fraktur, late 18th to mid 20th century |
-   | **NZZ Gold Standard M1+** | German Fraktur, 18th to 20th century |
+   | Model | for what | Error rate according to the model page |
+   |---|---|---|
+   | **Transkribus Print M1** | all printing, Fraktur and Antiqua, 14 languages – the safe choice | 2.2 % of characters |
+   | **ONB_Newseye_GT_M1+** | German Fraktur, late 18th to mid 20th century; newspapers of the Austrian National Library | 1.1 % |
+   | **NZZ Gold Standard M1+** | German Fraktur 1780–1940; front pages of the Neue Zürcher Zeitung | 0.5 % |
 
+   The error rates come from the model pages on transkribus.org (as of 24 September 2026) and refer to each
+   model's own test pages, not to your book – the smaller number is not automatically the better model for you.
    When in doubt, *Transkribus Print M1*. For a book from 1850 to 1940 it is worth comparing two or three pages.
-3. Transkribus shows **how many credits** the job costs and how many you have left. Only then
-4. click **“Start recognition”**.
+   The *Super Models* of the paid plans (**Text Titan II**, since June 2026, print and handwriting in twelve
+   languages) are normally not needed for clean Fraktur print.
+3. Transkribus shows **how many credits** the job costs (0.5 per page) and how many you have left. Only then
+   click **“Start recognition”**.
 
 **After that you may switch your computer off.** Recognition runs on READ-COOP's servers in Innsbruck, not
 on your machine; your computer is not needed for it. Only during the upload (step 3) does it have to stay on
@@ -112,8 +156,8 @@ document itself.
    The plain **text export** can be read as well, but it only holds the wording: the lines can then no longer
    be shown in the image.
 4. Click **“Start export”**.
-5. You get an email with a link (valid for two weeks). Without email: on the left under
-   **“Uploads & downloads”**, click the three dots next to the finished export and choose **“Download”**.
+5. You get an email with a link (valid for two weeks). Without email: under **“Processes & Activity”** →
+   **“Up- & Downloads”**, click the three dots at the far right of the finished export and choose **“Download”**.
 
 You receive a **ZIP file**. You do not need to export the images as well if the book is already in
 Fraktur-Korrektor – when opening, the program suggests your existing image folder.
@@ -139,7 +183,7 @@ correction** (`F9`) – see [Usage](usage.md).
 
 | | Tesseract (built in) | Transkribus |
 |---|---|---|
-| Cost | free | 50 credits per month free, a whole book costs money |
+| Cost | free | 50 credits per month free (about 60 pages), a whole book costs money or months |
 | Privacy | everything stays on your computer | images are uploaded |
 | Effort | one click | account, upload, waiting, export |
 | Quality with a clean scan | good | very good |

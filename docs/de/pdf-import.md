@@ -1,5 +1,7 @@
 # PDF oder Bilder einlesen
 
+*Entwurf vom 24. September 2026 – Angaben zu fremden Programmen bitte prüfen.*
+
 Haben Sie ein Buch als gescanntes PDF oder als Ordner mit Seitenfotos, kann der Fraktur-Korrektor den Text
 selbst erkennen. Er benutzt dafür das freie Programm **Tesseract**, das auf Ihrem Rechner läuft – es wird
 nichts ins Internet übertragen. Tesseract ist im fertigen Programm enthalten; nur wer aus dem Quelltext
@@ -7,6 +9,33 @@ startet, installiert es selbst: [Werkzeuge installieren](install-tools.md).
 
 **Zum Ausprobieren** eignet sich eine gemeinfreie Ausgabe von Goethes *Faust* (Fraktur, 470 Seiten, 17 MB):
 <https://archive.org/download/fausteinetragd00goetuoft/fausteinetragd00goetuoft.pdf>. Sie bringt schon eine Textebene mit – gut, um beide Wege zu vergleichen (siehe unten).
+
+## Der Weg im Überblick
+
+So kommen Sie von einem gescannten PDF zu einem lesbaren Text. Die Ampel entscheidet, wie weit Sie gehen müssen:
+
+1. **Einlesen** (nächster Abschnitt). Tesseract erkennt den Text, wenige Sekunden je Seite.
+2. **Ampel ansehen.** Grün: fertig – lesen und korrigieren. Gelb oder Rot: *nicht* von Hand korrigieren, sondern
+   zuerst die Vorlage verbessern. Das ist fast immer schneller als tausend Einzelkorrekturen.
+3. **Scans vorbereiten** – eingebaut, ein Klick: Doppelseiten teilen, geraderichten, dunkle Ränder und Finger
+   entfernen. Danach **erneut erkennen**. Meist reicht das.
+4. **ScanTailor** – ein eigenes Programm, nur wenn die Seiten zum Bund hin gewölbt sind, Flecken mitten im Text
+   liegen oder das Licht ungleichmäßig ist. Gewölbte Seiten meldet das Programm selbst („die Zeilenenden sind
+   viel schlechter als der Rest“). Danach erneut erkennen.
+5. Bleibt die Ampel auf Gelb oder Rot, ist die Vorlage für Tesseract zu schwer: dann [Transkribus](transkribus.md)
+   – mit denselben vorbereiteten Bildern, die Arbeit aus Schritt 3 und 4 ist nicht verloren.
+
+Jeder Durchgang legt ein neues Buch an, das alte bleibt, bis Sie es aus der Bibliothek entfernen. Sie können also
+gefahrlos vergleichen. Welche anderen Programme es gibt und wofür sie taugen, steht unter
+[Andere Programme im Vergleich](vergleich.md).
+
+**Was dahinter steckt** (Stand 24. September 2026): Tesseract ist eine freie Texterkennung, die Google lange
+gepflegt hat und die heute eine offene Gemeinschaft weiterentwickelt; aktuelle Fassung 5.5.3 vom Juli 2026
+(<https://github.com/tesseract-ocr/tesseract/releases>). Für Fraktur benutzt der Fraktur-Korrektor das Modell
+**frak2021** der Universitätsbibliothek Mannheim, das an vielen historischen Drucken trainiert wurde
+(<https://github.com/UB-Mannheim/tesseract/wiki>); ist stattdessen ein anderes Fraktur-Modell installiert
+(`deu_latf`, `deu_frak`, `frk` oder `Fraktur` aus dem Tesseract-Projekt), nimmt er dieses. Für Antiqua das
+Standardmodell `deu`. Einzelheiten: [Werkzeuge installieren](install-tools.md).
 
 ## So geht es
 

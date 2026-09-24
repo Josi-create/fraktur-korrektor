@@ -22,6 +22,11 @@ as its window.
 4. **Take it along** – [Saving a book as PDF](pdf-sichern.md): one file with page images, searchable text and all
    your work, readable in any PDF reader and a book again on another computer.
 
+## Other programs
+
+What ABBYY FineReader, Transkribus, Tesseract, OCR4all, eScriptorium, OCR-D, gImageReader and PoCoTo can do,
+what they cost and how they combine with this program: [Other programs compared](vergleich.md).
+
 ## If something does not work
 
 [FAQ and troubleshooting](faq.md): firewall question, port in use, warnings at the first start, lost image

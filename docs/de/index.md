@@ -22,6 +22,11 @@ lediglich als Fenster.
 4. **Mitnehmen** – [Ein Buch als PDF sichern](pdf-sichern.md): eine Datei mit Seitenbildern, durchsuchbarem Text und
    Ihrem ganzen Arbeitsstand, lesbar in jedem PDF-Reader und auf einem anderen Rechner wieder ein Buch.
 
+## Andere Programme
+
+Was ABBYY FineReader, Transkribus, Tesseract, OCR4all, eScriptorium, OCR-D, gImageReader und PoCoTo können, was
+sie kosten und wie sie sich mit diesem Programm verbinden lassen: [Andere Programme im Vergleich](vergleich.md).
+
 ## Wenn etwas nicht klappt
 
 [Häufige Fragen und Fehlerbehebung](faq.md): Firewall-Nachfrage, belegter Port, Warnungen beim ersten Start,

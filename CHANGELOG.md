@@ -5,6 +5,16 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Hilfe, Entwurf zum Gegenlesen** (#23, #24, #25 – noch nicht abgeschlossen): *Mit Transkribus arbeiten*
+  bekommt den Abschnitt *Was es kostet* (Konten, Credits je Seite, Rechenbeispiel, Grenzen des kostenlosen
+  Kontos), Fehlerquoten und Stand der öffentlichen Fraktur-Modelle, den aktuellen Exportweg. *PDF oder Bilder
+  einlesen* bekommt *Der Weg im Überblick* (Einlesen → Ampel → Scans vorbereiten → ScanTailor → Transkribus) und
+  einen Absatz zu Tesseract und dem Modell frak2021. Neue Seite *Andere Programme im Vergleich*
+  (`docs/de/vergleich.md`, `docs/en/vergleich.md`): ABBYY FineReader, Transkribus, Tesseract, OCR4all/LAREX,
+  eScriptorium/Kraken, OCR-D, gImageReader, PoCoTo – Preis, Fraktur, Korrekturkomfort, Datenschutz, Lernkurve,
+  Export, Plattform, mit Quelle und Stand-Datum je Angabe. Alle drei Seiten tragen oben den Vermerk »Entwurf vom
+  24. September 2026«; die Angaben zu fremden Programmen sind gegen die offiziellen Seiten geprüft, aber vom
+  Betreiber noch nicht gegengelesen.
 - **Linux-Fassung als AppImage** (#45, noch ohne Probelauf auf einem Linux-Rechner): Der Release-Workflow bekommt
   einen Auftrag auf `ubuntu-22.04`, der mit derselben PyInstaller-Spec baut und mit `scripts/build_appimage.sh`
   ein `Fraktur-Korrektor-linux-x86_64.AppImage` (fester Name, Dauerlink) und ein `…-linux-x86_64.tar.gz` als

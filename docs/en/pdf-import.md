@@ -1,5 +1,7 @@
 # Reading in a PDF or images
 
+*Draft of 24 September 2026 – please check the statements about third-party programs.*
+
 If you have a book as a scanned PDF or as a folder of page photos, Fraktur-Korrektor can recognise the text
 itself. It uses the free program **Tesseract**, which runs on your own computer – nothing is sent to the
 internet. Tesseract comes with the finished program; only if you start from the source code do you install it
@@ -7,6 +9,32 @@ yourself: [Installing the tools](install-tools.md).
 
 **To try it out**, take a public-domain edition of Goethe's *Faust* (Fraktur, 470 pages, 17 MB):
 <https://archive.org/download/fausteinetragd00goetuoft/fausteinetragd00goetuoft.pdf>. It already carries a text layer, which makes it a good way to compare both routes (see below).
+
+## The route at a glance
+
+This is how you get from a scanned PDF to readable text. The traffic light decides how far you have to go:
+
+1. **Read it in** (next section). Tesseract recognises the text, a few seconds per page.
+2. **Look at the traffic light.** Green: done – read and correct. Yellow or red: do *not* correct by hand; improve
+   the scan first. That is almost always faster than a thousand single corrections.
+3. **Prepare the scans** – built in, one click: split double pages, straighten, remove dark margins and fingers.
+   Then **recognise again**. Usually that is enough.
+4. **ScanTailor** – a separate program, only if the pages curve towards the binding, there are stains in the
+   middle of the text or the lighting is uneven. The program reports curved pages itself (“the line ends are
+   much worse than the rest”). Then recognise again.
+5. If the traffic light stays yellow or red, the scan is too hard for Tesseract: then [Transkribus](transkribus.md)
+   – with the same prepared images, so the work of steps 3 and 4 is not lost.
+
+Every run creates a new book; the old one stays until you remove it from the library. So you can compare
+without risk. For what else is available, see [Other programs compared](vergleich.md).
+
+**What is behind it** (as of 24 September 2026): Tesseract is a free text recognition engine that Google
+maintained for years and that an open community develops today; current version 5.5.3 of July 2026
+(<https://github.com/tesseract-ocr/tesseract/releases>). For Fraktur, Fraktur-Korrektor uses the model
+**frak2021** of Mannheim University Library, trained on many historical prints
+(<https://github.com/UB-Mannheim/tesseract/wiki>); if another Fraktur model is installed instead (`deu_latf`,
+`deu_frak`, `frk` or `Fraktur` from the Tesseract project), it uses that one. For Antiqua, the standard model
+`deu`. Details: [Installing the tools](install-tools.md).
 
 ## How to do it
 

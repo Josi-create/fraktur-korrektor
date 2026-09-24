@@ -1496,7 +1496,7 @@ pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} 
 <div id="wrap"><nav>%(nav)s</nav><main>%(body)s</main></div></body></html>'''
 
 
-HELP_ORDER = ['index', 'add-book', 'pdf-import', 'transkribus', 'usage', 'pdf-sichern', 'install', 'install-tools', 'faq']
+HELP_ORDER = ['index', 'add-book', 'pdf-import', 'transkribus', 'usage', 'pdf-sichern', 'install', 'install-tools', 'vergleich', 'faq']
 
 
 def help_pages(lang):
