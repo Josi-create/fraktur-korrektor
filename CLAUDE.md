@@ -14,7 +14,7 @@ Geschichtsprofessor. Daran wird jede Entscheidung gemessen: kein Kommandozeilenz
 mit einem nächsten Schritt, eine klare Empfehlung statt einer Auswahl ohne Rat.
 
 Das Projekt wird Open Source (GPL-3.0-or-later), Mitarbeit erwünscht. Plan und Stand: [ROADMAP.md](ROADMAP.md),
-[CHANGELOG.md](CHANGELOG.md), GitHub-Milestones M1–M7. Das Repository bleibt privat, bis die Installer stehen (M4).
+[CHANGELOG.md](CHANGELOG.md), GitHub-Milestones M1–M7. Das Repository ist seit dem 24. September 2026 öffentlich; die CI (Tests, Installer, Website) läuft bei jedem Push.
 
 ## Aufbau
 
