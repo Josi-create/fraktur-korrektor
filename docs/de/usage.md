@@ -16,6 +16,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `↓` `↑` (oder `j` `k`), Mausrad | nächste / vorige Zeile; der Text läuft fließend über Seitengrenzen. Ein Klick auf eine Zeile macht sie zur Lesezeile |
 | Lesen | `Leertaste` | zum nächsten roten Wort → Korrektur |
 | Lesen | Doppelklick auf ein Wort | Korrektur dieser Zeile, das angeklickte Wort ist markiert |
+| Lesen | Doppelklick ins Seitenbild | die Zeile unter dem Mauszeiger wird Lesezeile, im Bild wie im Text – praktisch, wenn man im Bild eine Stelle sucht |
 | Lesen | `F8` (oder `#`) | erstes rotes Wort der Lesezeile ist richtig → Whitelist. Nochmal `F8` = nächstes. Ohne rotes Wort in der Lesezeile: das nächste weiter unten auf der Seite |
 | Lesen | `Enter` | steht in der Lesezeile ein rotes Wort: direkt dorthin; sonst wie `F2` |
 | Lesen | `F2` | die Lesezeile frei bearbeiten (Satzzeichen, Fußnotenzeichen, alles, was die Automatik nicht bemerkt) |

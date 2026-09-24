@@ -16,6 +16,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `↓` `↑` (or `j` `k`), mouse wheel | next / previous line; the text flows across page breaks. Clicking a line makes it the reading line |
 | Reading | `Space` | jump to the next red word → correction |
 | Reading | double-click a word | correct this line, with the clicked word selected |
+| Reading | double-click in the page image | the line under the mouse pointer becomes the reading line, in the image and in the text – handy when you spot a place in the image |
 | Reading | `F8` (or `#`) | first red word of the reading line is correct → whitelist. `F8` again = the next one. With no red word in the reading line: the next one further down the page |
 | Reading | `Enter` | if the reading line has a red word: go there; otherwise like `F2` |
 | Reading | `F2` | edit the reading line freely (punctuation, footnote marks, anything the automatic check misses) |

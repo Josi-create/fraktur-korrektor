@@ -5,6 +5,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Doppelklick ins Seitenbild** (#70): Die Zeile unter dem Mauszeiger wird Lesezeile, links wie rechts – auch auf
+  der vorigen oder nächsten Seite im Bildstapel und bei zweispaltigem Satz. Ein Doppelklick auf eine Abbildung oder den
+  leeren Rand (weiter als eine Zeilenhöhe von jeder Zeile entfernt) verstellt nichts. Selbsttest: `keys=imgdbl:002:1`.
 - **Korrekturvorschläge im Voraus** (#68): Während Sie lesen, rechnet das Programm die Wörterbuchvorschläge für die
   nächsten drei roten Wörter aus (der Reader meldet sie über `/api/suggest_ahead`, sobald sich die Liste ändert);
   kommt man dort an, stehen sie sofort da statt nach ein bis fünf Sekunden.

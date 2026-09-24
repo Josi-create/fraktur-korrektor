@@ -248,7 +248,7 @@ let ed = { pre: '', post: '' }, ed2 = { pre: '', post: '' };
 // Getrenntes Wort mit der zweiten Hälfte in der Folgezeile; über die Seitengrenze (cross) steht sie auf der anderen Seite
 function isJoin(f) { return f && f.word.indexOf('¬') >= 0 && !f.cross; }
 function part2len(f) { return f.word.length - f.len - 1; }
-function skippable(i) { const l = data.lines[i]; return l.trim() === '' || l === '---'; }
+function skippable(i, b) { const l = (b || data).lines[i]; return l.trim() === '' || l === '---'; }
 
 async function loadOverview() {
   // Beim ersten Öffnen prüft der Server jedes Wort – der Balken zeigt, wie weit er ist. Ein schnelles Öffnen zeigt ihn gar nicht.
@@ -1176,6 +1176,32 @@ $('lines').addEventListener('click', async e => {
   if (d.dataset.p == pg) { if (!skippable(i)) { li = i; msg = ''; render(); bookmark(); } }
   else { busy = true; try { await loadPage(d.dataset.p, i, true); bookmark(); } finally { busy = false; } }
 });
+function lineInImage(x, y) {
+  // Zeile unter einem Punkt im Bildstapel (Bildpixel): die Zeile, deren Kasten ihn enthält, sonst die nächstgelegene – aber
+  // höchstens eine Zeilenhöhe entfernt, damit ein Doppelklick auf eine Abbildung oder den leeren Rand nichts verstellt
+  const s = imgState; let best = null;
+  for (const b of [prevD, data, nextD]) {
+    const q = b && b.geo && s.place[b.page]; if (!q) continue;
+    const px = x - q.x, py = y - q.y;
+    if (py < -IMG_GAP / 2 || py > q.h + IMG_GAP / 2) continue;
+    b.geo.forEach((g, i) => {
+      if (!g || skippable(i, b)) return;
+      const d = Math.hypot(Math.max(0, g.x0 - px, px - g.x1), Math.max(0, g.y0 - py, py - g.y1));
+      if (d <= g.y1 - g.y0 && (!best || d < best.d)) best = { page: b.page, i, d };
+    });
+  }
+  return best;
+}
+$('imgpane').addEventListener('dblclick', async e => {
+  // Doppelklick ins Seitenbild: die Zeile unter dem Mauszeiger wird Lesezeile, links wie rechts (#70)
+  if (mode != 'read' || busy || !imgState) return;
+  try { getSelection().removeAllRanges(); } catch (x) {}
+  const pane = $('imgpane'), r = pane.getBoundingClientRect(), s = imgState;
+  const hit = lineInImage((e.clientX - r.left - pane.clientLeft - s.tx) / s.k, (e.clientY - r.top - pane.clientTop - s.ty) / s.k);
+  if (!hit) return;
+  if (hit.page == pg) { li = hit.i; msg = ''; render(); bookmark(); }
+  else { busy = true; try { await loadPage(hit.page, hit.i, true); bookmark(); } finally { busy = false; } }
+});
 function onWheel(e) {
   // Strg+Mausrad: über dem Text die Schriftgröße, über dem Bild der Bild-Zoom
   if (e.ctrlKey) { e.preventDefault(); const f = e.deltaY < 0 ? 1.15 : 1 / 1.15; if (e.currentTarget == $('text')) setTextZoom(tzoom * f); else setZoom(zoom * f); return; }
@@ -1199,6 +1225,12 @@ $('text').addEventListener('wheel', onWheel, { passive: false }); $('imgpane').a
     if (k.startsWith('=')) $('edit').value = k.slice(1);
     else if (k.startsWith('click:')) $(k.slice(6)).click();  // ein Knopf oder Link der Oberfläche, z. B. click:replPage
     else if (k.startsWith('caret=')) $('edit').setSelectionRange(+k.slice(6), +k.slice(6));
+    else if (k.startsWith('imgdbl:')) {  // Doppelklick ins Seitenbild auf die Mitte einer Zeile, z. B. imgdbl:002:1 (Seite, Zeile)
+      const [p, i] = k.slice(7).split(':'), g = [prevD, data, nextD].find(b => b && b.page == p).geo[+i], q = imgState.place[p];
+      const pane = $('imgpane'), r = pane.getBoundingClientRect(), s = imgState;
+      pane.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, clientX: r.left + pane.clientLeft + s.tx + (q.x + (g.x0 + g.x1) / 2) * s.k,
+                                                       clientY: r.top + pane.clientTop + s.ty + (q.y + (g.y0 + g.y1) / 2) * s.k }));
+    }
     else if (k.startsWith('Shift+') || k.startsWith('Shift ')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(6), shiftKey: true, bubbles: true }));
     else if (k.startsWith('Ctrl+') || k.startsWith('Ctrl ')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(5), ctrlKey: true, bubbles: true }));  // »+« wird in der Adresse zum Leerzeichen
     else if (k.includes('=')) $(k.split('=')[0]).value = k.split('=')[1];
