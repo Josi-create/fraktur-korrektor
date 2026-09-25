@@ -1,27 +1,58 @@
 # Fraktur-Korrektor
 
-Lesen und Korrekturlesen in einem: ein kleiner lokaler „E-Book-Reader“ für OCR-Text gescannter
-(Fraktur-)Bücher. Links das Seitenbild, rechts der erkannte Text. Ein Lesecursor (aktuelle Zeile,
-immer im oberen Viertel) hält Bild und Text synchron. Fragliche Wörter (nicht im Wörterbuch, unsichere
-automatische Ersetzungen) sind rot markiert. Alles ist mit der Tastatur bedienbar.
+*English version: [README.en.md](README.en.md)*
 
-Ziel ist ein sauberer Text als Grundlage für ein Epub.
+**Alte Bücher lesen, berichtigen und daraus zitieren – auf Ihrem eigenen Rechner.**
 
-## Bedienung
+Sie haben ein Buch in Frakturschrift als Scan, als PDF oder als Fotos aus dem Archiv und wollen damit arbeiten: es
+lesen, darin suchen, daraus zitieren. Der Fraktur-Korrektor macht aus den Seitenbildern Text und zeigt beides
+nebeneinander – links die Seite, wie sie gedruckt ist, rechts der erkannte Text. Wörter, die das Programm nicht kennt,
+sind rot. Sie lesen das Buch einfach durch und verbessern dabei, was die Texterkennung (OCR) falsch gelesen hat. Am
+Ende steht ein sauberer, durchsuchbarer Text.
 
-Alles geht mit der Tastatur; die wichtigsten Tasten stehen im Programm immer oben rechts, `F1` öffnet die Hilfe.
+<!-- Bildschirmfoto: Seitenbild links, Text rechts, ein rotes Wort mit Vorschlägen (#20) -->
 
-- [Hilfe: Überblick](docs/de/index.md) · [Ein Buch öffnen](docs/de/add-book.md) · [PDF oder Bilder einlesen](docs/de/pdf-import.md) ·
-  [Mit Transkribus arbeiten](docs/de/transkribus.md) · [Bedienung und alle Tasten](docs/de/usage.md) ·
-  [Programm installieren](docs/de/install.md) · [Werkzeuge installieren](docs/de/install-tools.md)
-- English: [Help](docs/en/index.md) · [Opening a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
-  [Working with Transkribus](docs/en/transkribus.md) · [Usage](docs/en/usage.md) ·
-  [Installing the program](docs/en/install.md) · [Installing the tools](docs/en/install-tools.md)
-- Dieselben Seiten als Website: <https://josi-create.github.io/fraktur-korrektor/>
+Wer beim Lesen exzerpiert, macht aus einer markierten Stelle mit einer Taste einen Zettel für
+[Obsidian](https://obsidian.md): das Zitat mit gedruckter Seitenzahl und Verweis auf die Quelle. So wächst beim Lesen
+ein Zettelkasten nach dem Vorbild Niklas Luhmanns – das Programm liefert die Exzerpte, das Verknüpfen und
+Weiterdenken geschieht in Obsidian.
 
-Jede Korrektur wird sofort in die Textdatei geschrieben und in `korrekturen.log` protokolliert; die Leseposition steht in
-`lesezeichen.json`. Die Dateien dürfen parallel in einem Editor bearbeitet werden (die Zeilenzahl einer Seite dabei nicht
-ändern, sonst fehlt die Bildzuordnung).
+Ihre Bücher und Notizen verlassen den Rechner nicht. Das Programm ist frei (GPL), kostet nichts und läuft unter
+Windows, macOS und Linux.
+
+## Was es kann
+
+- **Einlesen, was Sie haben.** PDF, Scans oder Fotos, EPUB, ein Export aus Transkribus – Sie zeigen dem Programm die
+  Datei, es erkennt selbst, was es ist ([Ein Buch öffnen](docs/de/add-book.md)). Die Texterkennung samt Modell für
+  Fraktur ist eingebaut; eine Ampel zeigt danach, wie gut sie gelungen ist und was helfen würde
+  ([PDF oder Bilder einlesen](docs/de/pdf-import.md)).
+- **Lesen und berichtigen in einem Durchgang.** Seitenbild und Text laufen mit, rote Wörter bekommen Vorschläge. Das
+  Wörterbuch richtet sich nach dem Erscheinungsjahr: »Thür« ist in einem Buch von 1880 richtig. Alles geht mit der
+  Tastatur, jede Korrektur ist sofort gespeichert ([Bedienung](docs/de/usage.md)).
+- **Exzerpieren.** Zettel für Obsidian mit Zitat, Seite und Zeile – auch aus den Markierungen, die Sie auf dem Kindle
+  gemacht haben ([Markierungen vom Kindle](docs/de/kindle.md)).
+- **Mitnehmen.** Das Buch als PDF sichern: Seitenbilder, durchsuchbarer Text, Inhaltsverzeichnis und Ihr ganzer
+  Arbeitsstand – lesbar in jedem PDF-Programm und auf einem anderen Rechner wieder ein Buch
+  ([Ein Buch als PDF sichern](docs/de/pdf-sichern.md)).
+
+## Für wen?
+
+- **Historikerinnen und Historiker**, die mit gedruckten Quellen in Fraktur arbeiten.
+- **Familienforscher** mit Ortschroniken, Heimatbüchern und alten Zeitungen – zweispaltiger Satz wird Spalte für
+  Spalte gelesen.
+- **Alle, die exzerpieren** und ihre Zettel in Obsidian sammeln.
+
+So sieht ein Zettel aus:
+
+    **Anmerkung**
+
+    (Ihr Gedanke dazu)
+
+    ---
+
+    > Die Kolonisten zogen nach Rußland und der Weg war weit.
+
+    Seite 57, Zeile 3–4, [[0 Quellenangabe|Leibbrandt 1928]]
 
 ## Installieren
 
@@ -39,78 +70,31 @@ zusätzlich das freie Programm ScanTailor einbinden ([Werkzeuge installieren](do
 
 Schritt für Schritt, auch zum Beenden und Aktualisieren: [Programm installieren](docs/de/install.md) ·
 [Installing the program](docs/en/install.md). Alle Fassungen samt portablem ZIP stehen auf der
-[Seite der Veröffentlichungen](https://github.com/Josi-create/fraktur-korrektor/releases/latest).
+[Seite der Veröffentlichungen](https://github.com/Josi-create/fraktur-korrektor/releases/latest). Wer das Programm aus
+dem Quelltext starten möchte: [CONTRIBUTING.md](CONTRIBUTING.md#einrichtung-für-entwickler).
 
-## Start aus dem Quelltext
+## Hilfe
 
-    pip install spylls markdown pymupdf
-    py server.py                  Bibliothek; »Öffnen …« erkennt selbst: Buchordner, PDF, EPUB (+ gleichnamiges PDF), Bilder, Transkribus-Export
-    py server.py <buchordner>     direkt ein Buch öffnen
+Alles geht mit der Tastatur; die wichtigsten Tasten stehen im Programm immer unten unter Bild und Text, `F1` öffnet die Hilfe.
 
-Optionen: `--port 8765`, `--dic <hunspell-pfad-ohne-endung>`, `--title "…"`, `--no-browser`, `--lan`,
-`--last` (ohne Buchordner: im Browser gleich das zuletzt gelesene Buch statt der Bibliothek).
-Die Oberfläche gibt es auf Deutsch und Englisch (Umschalter oben rechts).
-
-Mit `--lan` ist die App auch von anderen Rechnern im lokalen Netz erreichbar (die Adresse wird beim Start angezeigt;
-Windows fragt beim ersten Mal nach der Firewall-Freigabe für „Private Netzwerke“). Es gibt keinen Passwortschutz – nur im eigenen Heimnetz verwenden.
-
-Wörterbücher: mitgeliefert werden freie Hunspell-Wörterbücher für die deutsche Rechtschreibung von 1901 und für die neue
-(siehe [dict/](dict/README.md)); welche Rechtschreibung gilt, wird je Buch gewählt (Taste `D`, Vorschlag nach Erscheinungsjahr).
-Ein anderes Wörterbuch für die Rechtschreibung von 1901 lässt sich per `--dic`, Umgebungsvariable `FRAKTUR_DIC` oder
-`"dic"` in `~/.fraktur-korrektor/config.json` wählen. Der erste Start mit einem neuen Buch dauert etwas länger,
-danach sind die Prüfergebnisse zwischengespeichert.
-
-## Buchordner
-
-    NNN.txt        eine Datei je Seite: optional "# Kopfzeile", Haupttext, "---", Fußnoten; Auszeichnung als XHTML wie im
-                   EPUB (<table><tr><td>, <h2>, <em> …) – jede Zeile bleibt eine Zeile
-    lines.json     Zeilengeometrie je Seite (aus PAGE-XML, siehe tools/build_text.py)
-    img/NNN.png    Seitenbilder (PNG oder JPG)
-    autokorr.log   optional: Protokoll der automatischen Ersetzungen (unsichere werden orange markiert)
-    whitelist.txt  bestätigte Wörter
-    lesezeichen.json
-    korrekturen.log  Protokoll aller Korrekturen (Zeit, Art, Seite, Zeile, alt, neu)
-    buch.json        Erscheinungsjahr (geschätzt) und geltende Rechtschreibung
-    qualitaet.json   nur nach dem Einlesen mit Tesseract: Konfidenz und Wörterbuchquote je Seite, Ampel
-
-Buchdaten gehören **nicht** in dieses Repository.
-
-## Werkzeuge (tools/)
-
-Was geöffnet wird, erkennt `finder.py`. Die Importwege stecken in `pagexml.py` (Transkribus), `epub.py` (EPUB, auch auf die Zeilen
-eines PDF gelegt) und `ocr.py` (PDF/Bilder → Tesseract bzw. vorhandene Textebene; auch als
-`py ocr.py <pdf-oder-bilderordner> <buchordner>` aufrufbar). `pdfbuch.py` sichert ein Buch als PDF mit dem Arbeitsstand
-im Anhang und liest es wieder ein. `scans.py` bereitet abfotografierte Seiten vor (Doppelseiten teilen, geraderichten; auch als
-`py scans.py <pdf-oder-bilderordner> [<zielordner>]` aufrufbar).
-
-- `page2txt.py` – Text aus Transkribus-PAGE-XML
-- `build_text.py` – PAGE-XML → `NNN.txt` + `lines.json`, trennt Fußnoten (Grundlinienabstand, „N)“-Anfang); dasselbe macht der Import in der Bibliothek (`pagexml.py`)
-- `autokorr.py` – typische Fraktur-Verwechslungen (l/t/k/f, b/d, B/W/V, s/f, u/n …) gegen Wörterbuch und Korpusfrequenz korrigieren
-- `ocr_quality.py` – Qualitätsmaß je Seite (Hapax-Quote der Zeilenendwörter)
-
-## Geplant
-
-Siehe [ROADMAP.md](ROADMAP.md): Installer für Windows,
-Mac und Linux, zweisprachige Dokumentation; später Epub-Export.
-
-## Entwicklung
-
-    pip install -e .[dev]
-    pytest
-
-Die Tests starten eigene Serverinstanzen auf freien Ports mit einem Wegwerf-Buch im Temp-Ordner.
-
-Auf dem Mac nimmt `./mac_lesen.sh` einem das ab: Es legt beim ersten Mal `.venv` an und startet den Server
-(`./mac_lesen.sh <buchordner> --lan`), baut mit `./mac_lesen.sh build` die App samt DMG lokal und lässt mit
-`./mac_lesen.sh test` die Tests laufen.
+- [Hilfe: Überblick](docs/de/index.md) · [Ein Buch öffnen](docs/de/add-book.md) · [PDF oder Bilder einlesen](docs/de/pdf-import.md) ·
+  [Bücher selbst fotografieren](docs/de/fotografieren.md) · [Mit Transkribus arbeiten](docs/de/transkribus.md) ·
+  [Bedienung und alle Tasten](docs/de/usage.md) · [Programm installieren](docs/de/install.md) ·
+  [Werkzeuge installieren](docs/de/install-tools.md) · [Häufige Fragen](docs/de/faq.md)
+- English: [Help](docs/en/index.md) · [Opening a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
+  [Photographing books yourself](docs/en/fotografieren.md) · [Working with Transkribus](docs/en/transkribus.md) ·
+  [Usage](docs/en/usage.md) · [Installing the program](docs/en/install.md) ·
+  [Installing the tools](docs/en/install-tools.md) · [FAQ](docs/en/faq.md)
+- Dieselben Seiten als Website: <https://josi-create.github.io/fraktur-korrektor/>
 
 ## Mitmachen
 
 Fehlerberichte und Vorschläge bitte über die [Issue-Vorlagen](../../issues/new/choose) – ohne Seitenbilder oder Texte aus
 dem Buch (Urheberrecht). Wie man mitarbeitet, auch ohne zu programmieren (Wörterbücher, Hilfetexte, Übersetzung,
-Probelesen), und was im Code nicht brechen darf, steht in [CONTRIBUTING.md](CONTRIBUTING.md)
-([English](CONTRIBUTING.en.md)). Für alle gilt der [Verhaltenskodex](CODE_OF_CONDUCT.md); Sicherheitslücken bitte
-nach [SECURITY.md](SECURITY.md) melden, nicht als öffentliches Issue. Zitieren: [CITATION.cff](CITATION.cff).
+Probelesen), wie man das Programm aus dem Quelltext startet und was im Code nicht brechen darf, steht in
+[CONTRIBUTING.md](CONTRIBUTING.md) ([English](CONTRIBUTING.en.md)); was geplant ist, in der [ROADMAP](ROADMAP.md).
+Für alle gilt der [Verhaltenskodex](CODE_OF_CONDUCT.md); Sicherheitslücken bitte nach [SECURITY.md](SECURITY.md)
+melden, nicht als öffentliches Issue. Zitieren: [CITATION.cff](CITATION.cff).
 
 ## Unterstützen
 

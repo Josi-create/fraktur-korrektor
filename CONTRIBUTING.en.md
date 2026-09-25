@@ -49,6 +49,24 @@ without it (in CI, the run with real Tesseract happens on Linux only).
 On a Mac, `./mac_lesen.sh` creates the `.venv` and starts the server; `./mac_lesen.sh test` runs the tests. How the
 installers are built is described in [RELEASE.md](RELEASE.md) (German).
 
+### Running from source
+
+    python server.py                  library; "Open …" works out what it is: book folder, PDF, EPUB (+ PDF of the same name), images, Transkribus export
+    python server.py <book-folder>    open a book directly
+
+Options: `--port 8765`, `--dic <hunspell-path-without-extension>`, `--title "…"`, `--no-browser`, `--lan`,
+`--last` (without a book folder: the browser opens the book read last instead of the library).
+
+With `--lan` the program can also be reached from other computers on the local network (the address is shown at
+start; Windows asks for firewall permission for "Private networks" the first time). There is no password
+protection – use it only on your own home network.
+
+Dictionaries: free Hunspell dictionaries for German spelling of 1901 and for the current spelling are bundled (see
+[dict/](dict/README.md)); which spelling applies is chosen per book (key `D`, suggested from the year of
+publication). A different dictionary for the 1901 spelling can be chosen with `--dic`, the environment variable
+`FRAKTUR_DIC` or `"dic"` in `~/.fraktur-korrektor/config.json`. The first start with a new book takes a little
+longer; after that the check results are cached.
+
 ### Your own test environment – never against real books
 
 The program writes into book folders (text files, log, bookmark) and into `~/.fraktur-korrektor` (settings, cache).
@@ -90,7 +108,24 @@ should be named explicitly in the pull request so someone tries it by hand.
 A **book folder** contains `NNN.txt` (one file per page: optional `# running head`, body text, `---`, footnotes),
 `lines.json` (line geometry), `img/NNN.jpg|png`, plus `whitelist.txt`, `lesezeichen.json`, `korrekturen.log`,
 `buch.json` (identifier, year of publication, applicable spelling) and `qualitaet.json`. Settings live in
-`~/.fraktur-korrektor` (override with `FRAKTUR_HOME`), new books in `~/Fraktur-Korrektor`.
+`~/.fraktur-korrektor` (override with `FRAKTUR_HOME`), new books in `~/Fraktur-Korrektor`. Optionally there is
+`autokorr.log`, the log of automatic replacements (the reader shows uncertain ones in orange). The text files may be
+edited in a text editor at the same time – but do not change the number of lines on a page, or the link to the page
+image is lost.
+
+### Command-line tools
+
+The import paths can also be called without the interface: `python ocr.py <pdf-or-image-folder> <book-folder>`
+(Tesseract or an existing text layer), `python scans.py <pdf-or-image-folder> [<target-folder>]` (split double pages,
+straighten). `tools/` holds older tools from before the library, and the website build:
+
+- `page2txt.py` – text from Transkribus PAGE XML
+- `build_text.py` – PAGE XML → `NNN.txt` + `lines.json`, separates footnotes (baseline spacing, "N)" at the start);
+  the import in the library does the same (`pagexml.py`)
+- `autokorr.py` – corrects typical Fraktur confusions (l/t/k/f, b/d, B/W/V, s/f, u/n …) against dictionary and
+  corpus frequency
+- `ocr_quality.py` – quality measure per page (hapax rate of line-final words)
+- `build_site.py` – the help as a website (`site/`), as built by the GitHub Pages workflow
 
 ## What must not break
 

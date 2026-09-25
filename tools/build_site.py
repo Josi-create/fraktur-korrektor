@@ -31,10 +31,11 @@ def page(lang, name):
 
 
 def readme_intro():
-    """Der Überblick aus der README: alles zwischen der Überschrift und dem ersten Abschnitt."""
+    """Der Überblick aus der README: alles zwischen der Überschrift und dem ersten Abschnitt – ohne den Verweis auf die
+    englische README, die es auf der Website nicht gibt (die Sprachwahl steht darüber)."""
     src = open(os.path.join(server.HERE, 'README.md'), encoding='utf-8').read()
     m = re.search(r'^# .*?\n(.*?)^## ', src, re.S | re.M)
-    return m.group(1).strip() if m else ''
+    return re.sub(r'^\*English version:.*$', '', m.group(1), flags=re.M).strip() if m else ''
 
 
 def index_html():

@@ -184,9 +184,9 @@ def test_spendenlink(lib):
 
 
 def test_community_dateien_in_beiden_sprachen():
-    """CONTRIBUTING, Verhaltenskodex und SECURITY gibt es deutsch (Name, den GitHub findet) und als *.en.md;
+    """README, CONTRIBUTING, Verhaltenskodex und SECURITY gibt es deutsch (Name, den GitHub findet) und als *.en.md;
     die Version in CITATION.cff muss die aus pyproject.toml sein, sonst zitiert jemand einen falschen Stand."""
-    for name in ('CONTRIBUTING', 'CODE_OF_CONDUCT', 'SECURITY'):
+    for name in ('README', 'CONTRIBUTING', 'CODE_OF_CONDUCT', 'SECURITY'):
         de, en = (open(os.path.join(ROOT, name + ext), encoding='utf-8').read() for ext in ('.md', '.en.md'))
         assert name + '.en.md' in de and name + '.md' in en, name  # verweisen aufeinander
     version = re.search(r'^version = "([^"]+)"', open(os.path.join(ROOT, 'pyproject.toml'), encoding='utf-8').read(), re.M).group(1)

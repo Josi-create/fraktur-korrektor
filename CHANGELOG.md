@@ -297,6 +297,14 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Tests (pytest) und CI für Windows, macOS, Linux; `pyproject.toml`; Lizenz GPL-3.0-or-later; ROADMAP.
 
 ### Geändert
+- **README neu, auch auf Englisch** (#62, #20 zum Teil): Sie beginnt mit dem, was das Programm für Leser ohne
+  Technikkenntnisse tut – alte Bücher lesen, berichtigen und daraus zitieren –, dann *Was es kann*, *Für wen?* und ein
+  Beispielzettel für Obsidian (Exzerpieren nach dem Vorbild von Luhmanns Zettelkasten). Der veraltete Satz »Ziel ist ein
+  sauberer Text als Grundlage für ein Epub« ist weg. Start aus dem Quelltext mit allen Optionen, `--lan`, Wörterbücher,
+  Buchordner und Kommandozeilenwerkzeuge stehen jetzt in `CONTRIBUTING.md`/`CONTRIBUTING.en.md`. Neue `README.en.md`;
+  der Test der Community-Dateien prüft auch sie. Die Startseite der Website übernimmt den neuen Überblick ohne den
+  Verweis auf die englische README. README und Hilfe sagen jetzt richtig, dass die Tastenleiste unten steht, unter Bild
+  und Text (nicht mehr »oben rechts«).
 - **Seitenauswahl mit Blätterpfeilen und „4 / 30“:** Oben steht jetzt `←` Seite [Auswahl] 4 / 30 `→`, gebaut wie das
   Feld der Suche. Die Zahl der roten Wörter in Klammern hinter jeder Seite ist aus der Auswahl verschwunden – sie wurde
   für eine Seitenzahl gehalten; in der Statuszeile steht sie weiterhin.

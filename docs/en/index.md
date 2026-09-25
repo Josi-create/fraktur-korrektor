@@ -21,7 +21,7 @@ as its window.
 2. **Open** – a single button: you show the program a file or a folder, and it works out by itself whether it is
    a PDF, an EPUB, page images, a Transkribus export or a book you have already worked on: [Opening a book](add-book.md).
 3. **Read and correct** – [Usage](usage.md). Everything works from the keyboard; the most important keys
-   are always shown at the top right.
+   are always shown at the bottom of the window, below the image and the text.
 4. **Take it along** – [Saving a book as PDF](pdf-sichern.md): one file with page images, searchable text and all
    your work, readable in any PDF reader and a book again on another computer.
 

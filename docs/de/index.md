@@ -21,7 +21,7 @@ lediglich als Fenster.
 2. **Öffnen** – Ein einziger Knopf: Sie zeigen dem Programm eine Datei oder einen Ordner, es erkennt selbst, ob es
    ein PDF, ein EPUB, Seitenbilder, ein Transkribus-Export oder ein schon bearbeitetes Buch ist: [Ein Buch öffnen](add-book.md).
 3. **Lesen und korrigieren** – [Bedienung](usage.md). Alles geht mit der Tastatur; die wichtigsten Tasten
-   stehen immer oben rechts im Fenster.
+   stehen immer unten im Fenster, unter Bild und Text.
 4. **Mitnehmen** – [Ein Buch als PDF sichern](pdf-sichern.md): eine Datei mit Seitenbildern, durchsuchbarem Text und
    Ihrem ganzen Arbeitsstand, lesbar in jedem PDF-Reader und auf einem anderen Rechner wieder ein Buch.
 
