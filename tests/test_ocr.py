@@ -23,6 +23,9 @@ def test_clean_und_trennungen():
     assert ocr.hyphens(['die Zu-', 'kunft lag', 'Amts- und', 'Stadt=', 'schreiber', 'Ende-']) == \
         ['die Zu¬', 'kunft lag', 'Amts- und', 'Stadt¬', 'schreiber', 'Ende-']
     assert ocr.hyphens(['Nord-', 'Amerika']) == ['Nord-', 'Amerika']  # groß weiter: kein Trennstrich
+    # frak2021 liest den Doppelstrich ⸗ auch als Gedankenstrich; mit Leerzeichen davor bleibt es einer
+    assert ocr.hyphens(['du unend—', 'licher Geist', 'ver—-', 'birgst mir', 'Geist, —', 'und das']) == \
+        ['du unend¬', 'licher Geist', 'ver¬', 'birgst mir', 'Geist, —', 'und das']
 
 
 def test_tesseract_ausgabe_lesen(monkeypatch):

@@ -125,10 +125,11 @@ def clean(text):
 
 
 def hyphens(texts):
-    """Trennstrich am Zeilenende -> '¬', wenn die nächste Zeile klein weitergeht (Fraktur-Doppelstrich wird oft als '=' gelesen)."""
+    """Trennstrich am Zeilenende -> '¬', wenn die nächste Zeile klein weitergeht. Den Fraktur-Doppelstrich liest die
+    Erkennung oft als '=', frak2021 auch als Gedankenstrich ('unend—', 'ver—-'); direkt am Wort ist der keiner."""
     out = list(texts)
     for i in range(len(out) - 1):
-        m = re.search(r'(?<=[A-Za-zÄÖÜäöüß])[-=]\s*$', out[i])
+        m = re.search(r'(?<=[A-Za-zÄÖÜäöüß])[-=—–]+\s*$', out[i])
         if m and re.match(r'[a-zäöüß]', out[i + 1]):
             out[i] = out[i][:m.start()] + '¬'
     return out
