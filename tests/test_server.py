@@ -277,3 +277,26 @@ def test_trennung_ueber_die_seitengrenze(lib, tmp_path):
     # die eine Hälfte berichtigt: die andere Seite merkt es (Zwischenspeicher hängt an beiden Seiten)
     lib.lpost(b + '/api/edit/038', dict(edits=[dict(line=1, old='qwxyz der Kolonisten.', new='mögen der Kolonisten.')]))
     assert words(lib.lget(b + '/api/page/037')[1]) == []
+
+
+def test_gleiche_aenderungszeit_beim_zweiten_schreiben(tmp_path, monkeypatch):
+    """#72: Windows vergibt Änderungszeiten in Schritten von bis zu 15 ms. Teilen und Verbinden derselben Seite kurz
+    hintereinander (so beim Zusammenführen) ergaben dieselbe Zeit, und das Programm arbeitete mit der geteilten Fassung
+    weiter. Hier bekommt jede geschriebene Datei dieselbe Zeit – das Ergebnis muss trotzdem stimmen."""
+    import os, server
+    from conftest import make_book
+    make_book(str(tmp_path / 'buch'))
+    b = server.Book(str(tmp_path / 'buch'))
+    b.refresh()
+    schreiben = server.write_atomic
+
+    def gleiche_zeit(path, text):
+        schreiben(path, text)
+        os.utime(path, (1e9, 1e9))
+    monkeypatch.setattr(server, 'write_atomic', gleiche_zeit)
+    t = list(b.pages['001'])
+    assert b.split_line('001', 1, t[1], t[1], t[1].index(' nach'))[1] is None
+    assert b.pages['001'][1:3] == ['Die Kolonisten zogen', 'nach Rußland und']
+    d, err = b.join_lines('001', 1, b.pages['001'][1:3])
+    assert err is None and d['lines'] == t and b.pages['001'] == t
+    assert b.fnsep('001', 6, t[6])['data']['lines'] == t[:5] + t[6:]  # arbeitet auf der verbundenen Fassung

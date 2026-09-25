@@ -329,6 +329,12 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
 ### Behoben
+- **Zwei Änderungen an derselben Seite kurz hintereinander** (#72): Windows vergibt Änderungszeiten von Dateien in
+  Schritten von bis zu etwa 15 ms (HFS+ am Mac in Sekunden). Wurde eine Seite zweimal so schnell geschrieben – beim
+  Zusammenführen etwa Teilen und gleich danach Verbinden –, bekam sie dieselbe Zeit, und das Programm arbeitete mit
+  der vorigen Fassung weiter: Das Verbinden wurde als Konflikt gemeldet, der Fußnotenstrich danach auf die veraltete
+  Seite gesetzt. Daher kam der gelegentlich scheiternde Test unter Windows. Nach jedem Schreiben liest das Programm die
+  Seite jetzt sicher neu; dasselbe gilt für die Whitelist (ein zweites Wort kurz nach dem ersten blieb sonst rot).
 - **Hilfe: Taste für den Notizordner**: Die Tastentabelle in *Bedienung* nannte `N` – das springt zur nächsten
   Fundstelle. Der Notizordner liegt auf `O`, wie im Fließtext darunter und in der Kopfleiste (»Notizen (O)«).
 - **Hilfe: zerschossene Tabelle in »Ein Buch öffnen«**: Die erste Spalte einer Tabelle brach nie um – gedacht für

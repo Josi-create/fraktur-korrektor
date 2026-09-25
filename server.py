@@ -308,7 +308,10 @@ class Book:
 
     def write_page(self, pg, lines):
         write_atomic(os.path.join(self.folder, pg + '.txt'), '\n'.join(lines) + '\n')
-        self.mt.pop(pg, None)  # sicher neu lesen, auch wenn die Datei zweimal in derselben Sekunde geschrieben wird (HFS+)
+        # Beim nächsten refresh sicher neu lesen: Zwei Schreibvorgänge kurz hintereinander können dieselbe Änderungszeit
+        # bekommen (Windows vergibt sie in Schritten von bis zu 15 ms, HFS+ in Sekunden) – dann arbeitete das Programm mit
+        # der alten Fassung weiter, etwa beim Zusammenführen nach Teilen und Verbinden derselben Seite (#72)
+        self.mt.pop(pg, None)
 
     def refresh(self):
         changed = False
@@ -2168,12 +2171,14 @@ class H(BaseHTTPRequestHandler):
         if rest == '/api/whitelist_remove':
             with book.lock:
                 write_atomic(book.wlpath, ''.join(w + '\n' for w in book.whitelist() if w != body['word']))
+                book.wlmt = None  # neu lesen, auch bei gleicher Änderungszeit (siehe write_page)
                 book.klog('whitelist-', '-', -1, body['word'], '')
             return self.send(200, '{}')
         if rest == '/api/whitelist':
             with book.lock:
                 with open(book.wlpath, 'a', encoding='utf-8') as f:
                     f.write(body['word'] + '\n')
+                book.wlmt = None
                 book.klog('whitelist+', '-', -1, body['word'], '')
             return self.send(200, '{}')
         if rest == '/api/conflict':  # eine Zeile aus dem Zusammenführen (#66) ist angesehen

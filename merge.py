@@ -262,6 +262,7 @@ class Merge:
                 book.klog('whitelist+', '-', -1, w, '')
         if words != list(dict.fromkeys(book.whitelist())):
             _write(book.wlpath, ''.join(w + '\n' for w in words))
+            book.wlmt = None  # neu lesen, auch bei gleicher Änderungszeit
         return added
 
     def _bookmark(self):
