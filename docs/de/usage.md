@@ -42,6 +42,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `F` | Fußnoten beginnen mit der Lesezeile (siehe unten) |
 | Lesen | `T` | Tabelle: aus getrennten Zeilen eine Tabelle machen bzw. wieder auflösen (siehe unten) |
 | Lesen | `H` | Überschrift: Ebene 1 → 2 → 3 → keine (siehe unten) |
+| Lesen | `A` | hier beginnt ein Absatz – noch einmal `A` nimmt es zurück (siehe unten) |
 | Lesen | `I` | Inhalt: alle Überschriften des Buchs, `Enter` springt hin (siehe unten) |
 | Lesen | `V` | Lesezeile mit der nächsten Zeile verbinden |
 | Lesen | `Strg`+`⌫` (Mac: `⌘`+`⌫`) | Lesezeile löschen, bzw. alle mit `Umschalt`+`↓`/`↑` markierten – für Rauschen vom Scanrand (siehe unten) |
@@ -221,6 +222,24 @@ gleich: Kapitel Ebene 1, Abschnitte darin Ebene 2; hat das Buch Teile, sind die 
 Sie, ob ein Kapitel fehlt. `↓` `↑` wählen, `Enter` oder ein Klick springt hin, `Esc` schließt. Beim
 [Sichern als PDF](pdf-sichern.md) werden die Überschriften das Inhaltsverzeichnis des PDFs, das jeder PDF-Reader in der
 Seitenleiste zeigt. Ein späterer EPUB-Export bildet daraus Kapitel und ein anklickbares Inhaltsverzeichnis.
+
+## Absätze (A)
+
+Im Druck endet jede Zeile am Rand; wo ein Absatz beginnt, zeigt nur der Einzug seiner ersten Zeile. Für ein späteres
+E-Book, in dem der Text frei fließt, muss das Programm die Absätze kennen. Beim ersten Öffnen eines Buchs erkennt es
+sie selbst am Einzug im Seitenbild und rückt die erste Zeile jedes Absatzes auch im Text ein; unten in der Statuszeile
+steht, wie viele es gefunden hat.
+
+Wo es sich geirrt hat: `A` auf der Lesezeile setzt dort einen Absatzanfang, noch einmal `A` nimmt ihn wieder weg.
+`U` nimmt alle erkannten Absatzanfänge auf einmal zurück, solange danach keine Serienkorrektur kam (`U` sagt vorher,
+was es zurücknimmt). Erkannt wird das Buch danach nicht noch einmal – die Absätze setzen Sie dann mit `A` von Hand.
+
+Erkannt wird nur, was eindeutig aussieht: Die Zeile ist gegenüber ihren Nachbarn eingerückt, und die Zeile davor endet
+mit einem Satzzeichen. Verse, Listen und Register bleiben so meist unberührt. Ohne Zeilenlage im Bild (ein Buch aus
+einem EPUB ohne PDF) oder in einem Buch ohne Einzüge erkennt das Programm keine Absätze. In der Textdatei steht ein
+Absatzanfang als `<p>` am Zeilenanfang, wie im EPUB.
+
+## Weitere Auszeichnung
 
 Wer mag, kann mit `F2` auch weitere Auszeichnung von Hand eintragen; das Programm kennt `<em>`, `<strong>`, `<i>`, `<b>`,
 `<sup>`, `<sub>`, `<p>`, `<blockquote>` und `<br/>`, behandelt sie nicht als Wörter und stellt Schrift-Auszeichnung

@@ -76,6 +76,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 #lines .tblgrid > div.cur{background:#fff3b8;color:#000}
 #lines .tblgrid > div.blank{display:none}
 #lines div.tsel{background:#d6eaff !important;color:#000}
+#lines div.para{text-indent:1.5em}
 #lines div.hd1{font-size:calc(27px * var(--tz, 1));font-weight:bold;color:#222} #lines div.hd2{font-size:calc(23px * var(--tz, 1));font-weight:bold;color:#222} #lines div.hd3{font-size:calc(20px * var(--tz, 1));font-weight:bold;color:#222}
 #tprev{border-collapse:collapse;font:14px Georgia,serif;margin-top:6px;color:#222} #tprev td,#tprev th{border:1px solid #9bc;padding:1px 9px} #tprev th{background:#e3eefa}
 #centerline{position:absolute;left:0;width:5px;top:25%;height:30px;margin-top:-15px;background:#c90;border-radius:0 3px 3px 0}
@@ -274,6 +275,7 @@ async function loadOverview() {
   }, 300);
   let o; try { o = await (await fetch(BASE + '/api/overview')).json(); } finally { clearInterval(tick); }
   ov = o.pages; konf = o.conflicts || [];
+  if (o.absaetze) msg = t('para_auto', { n: o.absaetze });  // beim ersten Öffnen erkannt (#67)
   $('konflink').style.display = konf.length ? '' : 'none'; $('konflink').textContent = t(konf.length == 1 ? 'konf_link_1' : 'konf_link_n', { n: konf.length });
   $('title').textContent = o.title; document.title = o.title + ' – Fraktur-Korrektor'; $('loading').style.display = 'none';
   // Was dem Buch noch fehlt, lässt sich von hier aus nachlegen – der Dialog dafür steht in der Bibliothek
@@ -346,6 +348,7 @@ function decorate(els, b) {
     if (l.includes('</table>')) inT = false;
     const m = l.match(/^<h([1-6])>/);
     for (const n of [1, 2, 3]) d.classList.toggle('hd' + n, !!m && Math.min(3, +m[1]) == n);
+    d.classList.toggle('para', l.startsWith('<p>'));  // Absatzanfang (#67): eingerückt wie im Druck
   });
 }
 function renderText() {
@@ -712,10 +715,15 @@ async function applySeries() {
   await closeSeries(t('ser_done', { w, nw, done: r.done }) + (r.skipped ? t('ser_skipped', { n: r.skipped }) : '') + t('ser_undo_hint'));
 }
 async function undoSeries() {
-  if (!confirm(t('undo_confirm'))) return;
+  // U nimmt die letzte Serie zurück – eine Serienkorrektur oder die beim ersten Öffnen erkannten Absätze
+  const last = (await (await fetch(BASE + '/api/series_last')).json()).id;
+  if (!last) { msg = t('undo_none'); render(); return; }
+  const para = last.startsWith('absaetze');
+  if (!confirm(t(para ? 'undo_para_confirm' : 'undo_confirm'))) return;
   const r = await (await fetch(BASE + '/api/series_undo', { method: 'POST', body: '{}' })).json();
   await loadOverview(); await loadPage(pg, li);
-  msg = r.id ? t('undo_done', { id: r.id, done: r.done }) + (r.skipped ? t('undo_skipped', { n: r.skipped }) : '') : t('undo_none'); render();
+  msg = !r.id ? t('undo_none') : (para ? t('undo_para_done', { done: r.done }) : t('undo_done', { id: r.id, done: r.done }))
+    + (r.skipped ? t('undo_skipped', { n: r.skipped }) : ''); render();
 }
 async function serieKey(e) {
   const inp = e.target.tagName == 'INPUT', k = e.key;
@@ -804,6 +812,14 @@ async function undeleteLines() {
   if (r.error) { msg = t(r.error == 'nichts' ? 'undel_none' : 'undel_moved'); render(); return; }
   await loadOverview(); await loadPage(r.page, r.line);
   msg = t(r.n > 1 ? 'undel_done_n' : 'undel_done', { n: r.n }); render(); bookmark();
+}
+// A: Hier beginnt ein Absatz – nochmals A nimmt es zurück (#67). Die meisten setzt das Programm beim ersten Öffnen selbst.
+async function paraKey() {
+  if (!plainLine(li)) return;
+  if (lineEls[li].classList.contains('intable') || /^<h[1-6]>/.test(data.lines[li])) { msg = t('para_no'); render(); return; }
+  const on = !data.lines[li].startsWith('<p>');
+  if (await markup({ kind: 'para', line: li, old: data.lines[li] })) msg = t(on ? 'para_set' : 'para_removed');
+  render();
 }
 async function headingKey() {
   if (!plainLine(li)) return;
@@ -1179,6 +1195,7 @@ async function onKey(e) {
     else if (k == 'f' || k == 'F') await footnoteSep();
     else if (k == 't' || k == 'T') await tableKey();
     else if (k == 'h' || k == 'H') await headingKey();
+    else if (k == 'a' || k == 'A') await paraKey();
     else if (k == 'i' || k == 'I') await openToc();
     else if (k == 'v' || k == 'V') await joinLine();
     else if (k == 'z' || k == 'Z') await openConflict();  // K geht wie ↑ eine Zeile hoch (j/k)

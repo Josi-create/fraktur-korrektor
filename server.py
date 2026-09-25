@@ -4,7 +4,7 @@ py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"
 Ohne Buchordner erscheint die Bibliothek (Bücher öffnen, Transkribus-Export importieren).
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png|jpg,
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
-import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse, collections
+import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse, collections, statistics
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import korrlib, pagexml, ocr, epub, finder, pdfbuch, scans, merge, kindle
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
@@ -153,6 +153,7 @@ class Book:
         self.feet = {}  # Seitenzahlen unten auf der Seite: {seite: (zahl, zeile, position, länge)}, nur in Büchern, die sie dort tragen
         self.prog = None  # [geprüfte Seiten, Seiten] während overview() läuft – für den Ladebalken (/api/progress)
         self.gelernt = None  # Korrekturvorschläge: (mtime des Protokolls, Wortpaare)
+        self.para_checked = False  # Absätze (#67): in dieser Sitzung schon geprüft, ob sie noch zu erkennen sind
 
     def load_settings(self):
         """buch.json: year (Erscheinungsjahr, geraten oder None), dics (welche Rechtschreibung gilt), notizen (Ordner für
@@ -498,6 +499,64 @@ class Book:
             self.refresh()
             return [dict(page=pg, line=i, level=lv, text=tx, printed=self.printed_page(pg)) for pg, i, lv, tx in korrlib.headings(self.pages)]
 
+    PARA_END = re.compile(r'[.!?:;»«"“”)—…]\s*$')
+
+    def paragraph_starts(self):
+        """#67: Wo beginnt ein neuer Absatz? Am Einzug der ersten Zeile, gemessen an der Zeilenlage: gegenüber den
+        Nachbarzeilen derselben Spalte (±6 Zeilen) um 0,45 bis 3 Zeilenhöhen eingerückt. In Büchern mit Transkribus-,
+        Textebenen- und hOCR-Zeilen lagen Absätze bei 0,6–2,2, gewöhnliche Zeilen unter 0,3; weiter eingerückt sind
+        zentrierte Zeilen, Seitenzahlen, Registereinträge. Und nur, wenn die Zeile davor mit einem Satzzeichen endet (nicht
+        mit ¬) – sonst sind es Verse, Listen oder ein verrutschter Zeilenrahmen. Ohne Zeilenlage keine Vermutung; Kopfzeile,
+        Seitenzahl unten, Fußnoten, Überschriften und Tabellen bleiben außen vor. Liefert {seite: [zeilen]}."""
+        out, last = {}, None
+        for pg, lines in self.pages.items():
+            seq = self.geo_seq(pg, lines)
+            end = lines.index('---') if '---' in lines else len(lines)
+            if pg in self.feet:
+                end = min(end, self.feet[pg][1])
+            text = [i for i in range(end) if lines[i].strip() and not (i == 0 and lines[0].startswith('#'))]
+            body = [i for i in text if seq and seq[i] is not None]
+            if len(body) >= 5:
+                lh = statistics.median(seq[i]['y1'] - seq[i]['y0'] for i in body) or 1
+                for j, i in enumerate(body):
+                    left = statistics.median(seq[k]['x0'] for jj, k in enumerate(body) if jj != j and abs(jj - j) <= 6)
+                    prev = korrlib.TAG.sub('', lines[body[j - 1]]).rstrip() if j else last
+                    if 0.45 <= (seq[i]['x0'] - left) / lh <= 3 and prev and not prev.endswith('¬') and self.PARA_END.search(prev) \
+                            and not lines[i].startswith('<p>') and not korrlib.HEADTAG.search(lines[i]) and not korrlib.table_block(lines, i):
+                        out.setdefault(pg, []).append(i)
+            if text:
+                last = korrlib.TAG.sub('', lines[text[-1]]).rstrip()
+        return out
+
+    def auto_paragraphs(self):
+        """Beim ersten Öffnen eines Buchs die Absatzanfänge setzen: <p> am Anfang der Zeile, mit der ein Absatz beginnt
+        (#67). Einmal je Buch – nicht, wenn schon ein <p> im Buch steht oder das Protokoll einen Lauf kennt, auch einen
+        zurückgenommenen. Protokolliert wie eine Serienkorrektur, U nimmt alles zurück. Gesetzt wird nur, was nach
+        Absätzen aussieht (1–25 % der Zeilen); sonst hat das Buch keinen Einzug oder keine brauchbare Zeilenlage, und
+        man setzt sie mit A von Hand. Liefert die Zahl der gesetzten Absätze."""
+        with self.lock:
+            if self.para_checked:
+                return 0
+            self.para_checked = True
+            self.refresh()
+            if any(l.startswith('<p>') for lines in self.pages.values() for l in lines):
+                return 0
+            if os.path.exists(self.klogpath) and '\tserie:absaetze-' in open(self.klogpath, encoding='utf-8').read():
+                return 0
+            starts = self.paragraph_starts()
+            n, total = sum(len(v) for v in starts.values()), sum(len(v) for v in self.pages.values())
+            if not n or not 0.01 <= n / total <= 0.25:
+                return 0
+            sid = 'absaetze-' + time.strftime('%Y%m%d-%H%M%S')
+            for pg, idx in starts.items():
+                old = self.pages[pg]
+                lines = [('<p>' + l) if i in idx else l for i, l in enumerate(old)]
+                self.write_page(pg, lines)
+                for i in idx:
+                    self.klog('serie:' + sid, pg, i, old[i], lines[i])
+            self.refresh()
+            return n
+
     def conflicts(self, pg=None):
         """Zeilen, an denen das Zusammenführen zweier Arbeitsstände (#66) nicht entscheiden konnte – bis der Nutzer sie
         angesehen hat. Wurde die Zeile inzwischen verschoben (geteilt, verbunden), findet ihr Wortlaut sie wieder."""
@@ -626,17 +685,22 @@ class Book:
             self.refresh()
         return dict(id=sid, done=done, skipped=skipped)
 
-    def series_undo(self):
-        """Macht die letzte noch nicht zurückgenommene Serie rückgängig (nur Zeilen, die seither unverändert sind)."""
+    def last_series(self):
+        """(ID der letzten noch nicht zurückgenommenen Serie oder None, Protokollzeilen). Auch die erkannten Absätze
+        (absaetze-…) sind eine Serie – der Reader fragt vorher, um was es geht."""
         if not os.path.exists(self.klogpath):
-            return dict(id=None)
+            return None, []
         rows = [l.rstrip('\n').split('\t') for l in open(self.klogpath, encoding='utf-8')]
         rows = [r for r in rows if len(r) == 6]
         undone = {r[1][5:] for r in rows if r[1].startswith('undo:')}
         ids = [r[1][6:] for r in rows if r[1].startswith('serie:') and r[1][6:] not in undone]
-        if not ids:
+        return (ids[-1] if ids else None), rows
+
+    def series_undo(self):
+        """Macht die letzte noch nicht zurückgenommene Serie rückgängig (nur Zeilen, die seither unverändert sind)."""
+        sid, rows = self.last_series()
+        if not sid:
             return dict(id=None)
-        sid = ids[-1]
         done = skipped = 0
         with self.lock:
             self.refresh()
@@ -745,7 +809,7 @@ class Book:
             lines = list(self.pages[pg])
             if not (0 <= n < len(lines) - 1) or lines[n:n + 2] != old or '---' in lines[n:n + 2] or (n == 0 and lines[n].startswith('#')):
                 return None, 409
-            a, b = lines[n].rstrip(), lines[n + 1].lstrip()
+            a, b = lines[n].rstrip(), re.sub(r'^<p>', '', lines[n + 1].lstrip())  # ein Absatz beginnt nicht mitten in der Zeile
             seq = self.geo_seq(pg, lines)
             if seq and seq[n] and seq[n + 1]:
                 e, f = seq[n], seq[n + 1]
@@ -915,6 +979,14 @@ class Book:
                 if korrlib.table_block(lines, a):  # <h2><td>…</td></h2> wäre falsch verschachtelt
                     return None, 400
                 new = [korrlib.heading(lines[a], int(body.get('level') or 0))]
+                b = a
+            elif body.get('kind') == 'para':  # A: hier beginnt ein Absatz – oder wieder nicht (#67)
+                if lines[a] != body.get('old'):
+                    return None, 409
+                if not lines[a].strip() or lines[a] == '---' or (a == 0 and lines[a].startswith('#')) or \
+                        korrlib.HEADTAG.search(lines[a]) or korrlib.table_block(lines, a):
+                    return None, 400
+                new = [lines[a][3:] if lines[a].startswith('<p>') else '<p>' + lines[a]]
                 b = a
             else:
                 return None, 400
@@ -1942,8 +2014,9 @@ class H(BaseHTTPRequestHandler):
             return self.send(404, '{}')
         if rest == '/api/overview':
             # images/local: die Leseansicht bietet an, Seitenbilder oder einen Transkribus-Text nachzulegen
+            absaetze = book.auto_paragraphs()  # beim ersten Öffnen: Absatzanfänge setzen (#67)
             r = dict(title=book.title, pages=book.overview(), id=book.id, local=self.local(),
-                     images=len(glob.glob(os.path.join(book.imgdir, '*.*'))), conflicts=book.conflicts())
+                     images=len(glob.glob(os.path.join(book.imgdir, '*.*'))), conflicts=book.conflicts(), absaetze=absaetze)
             korrlib.save_cache()
             return self.sendjson(r)
         if rest == '/api/progress':  # ohne Sperre: der Ladebalken fragt, während overview() die Sperre hält
@@ -1955,6 +2028,8 @@ class H(BaseHTTPRequestHandler):
             return self.sendjson(dict(words=list(dict.fromkeys(book.whitelist()))))
         if rest == '/api/headings':
             return self.sendjson(dict(items=book.headings()))
+        if rest == '/api/series_last':  # was U zurücknähme: eine Serienkorrektur oder die erkannten Absätze
+            return self.sendjson(dict(id=book.last_series()[0]))
         if rest == '/api/bookmark':
             return self.send(200, open(book.bmpath, encoding='utf-8').read() if os.path.exists(book.bmpath) else '{}')
         if rest == '/api/occurrences':

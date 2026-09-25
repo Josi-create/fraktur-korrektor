@@ -5,6 +5,18 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Absätze** (#67): Für ein späteres E-Book muss das Programm wissen, wo ein Absatz beginnt. Ein Absatzanfang steht als
+  `<p>` am Anfang seiner ersten Zeile, ohne Schlusszeichen – der Absatz reicht bis zum nächsten, auch über die
+  Seitengrenze; die Zeilenzahl bleibt, wie sie ist. Beim ersten Öffnen eines Buchs – auch eines vorhandenen – erkennt
+  das Programm die Absätze am Einzug im Seitenbild: gegenüber den Nachbarzeilen derselben Spalte um 0,45 bis 3
+  Zeilenhöhen eingerückt, und die Zeile davor endet mit einem Satzzeichen (nicht mit `¬`). In drei Büchern mit
+  Transkribus-, Textebenen- und hOCR-Zeilen lagen Absätze bei 0,6–2,2 Zeilenhöhen, gewöhnliche Zeilen unter 0,3; auf den
+  geprüften Seiten war jeder erkannte Anfang ein echter. Gesetzt wird nur, wenn 1–25 % der Zeilen Absatzanfänge wären,
+  sonst hat das Buch keine Einzüge oder keine brauchbare Zeilenlage. Die Statuszeile sagt, wie viele es waren. Der
+  Lauf ist als Serie protokolliert: `U` nimmt ihn ganz zurück (und fragt vorher mit eigenem Wortlaut, `/api/series_last`),
+  danach erkennt das Programm das Buch nicht noch einmal. `A` setzt oder entfernt einen Absatzanfang von Hand. Der
+  Reader rückt die erste Zeile eines Absatzes ein wie im Druck; beim Verbinden zweier Zeilen fällt ein `<p>` mitten in
+  der Zeile weg. Hilfe *Bedienung* (DE/EN): Abschnitt *Absätze (A)*.
 - **Beispielbuch** (#4): `beispiel/` enthält acht Seiten aus Goethes *Faust* (Cotta 1862, gemeinfrei; Scan der
   University of Toronto bei archive.org) – Titelblatt mit Bibliotheksstempel, der Anfang von »Nacht« und die
   Prosaszene »Trüber Tag. Feld.« mit Silbentrennung. Eingelesen mit dem eigenen Weg (Tesseract, frak2021), unkorrigiert:

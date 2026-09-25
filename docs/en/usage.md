@@ -42,6 +42,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `F` | footnotes start at the reading line (see below) |
 | Reading | `T` | table: turn separate lines into a table, or dissolve it again (see below) |
 | Reading | `H` | heading: level 1 → 2 → 3 → none (see below) |
+| Reading | `A` | a paragraph starts here – press `A` again to take it back (see below) |
 | Reading | `I` | contents: all headings of the book, `Enter` goes there (see below) |
 | Reading | `V` | join the reading line with the next line |
 | Reading | `Ctrl`+`⌫` (Mac: `⌘`+`⌫`) | delete the reading line, or all lines marked with `Shift`+`↓`/`↑` – for noise from the scan edge (see below) |
@@ -215,6 +216,24 @@ within them level 2; if the book has parts, the parts are level 1 and the chapte
 whether a chapter is missing. `↓` `↑` select, `Enter` or a click goes there, `Esc` closes. When you
 [save the book as a PDF](pdf-sichern.md), the headings become the PDF's table of contents, which every PDF reader shows
 in its sidebar. A later EPUB export will build chapters and a clickable table of contents from them.
+
+## Paragraphs (A)
+
+In print every line runs to the margin; only the indentation of its first line shows where a paragraph begins. For a
+later e-book, where the text flows freely, the program has to know the paragraphs. When a book is opened for the first
+time, it detects them itself from the indentation in the page image and indents the first line of each paragraph in the
+text too; the status line at the bottom says how many it found.
+
+Where it got it wrong: `A` on the reading line sets a paragraph start there, pressing `A` again removes it. `U` undoes
+all detected paragraph starts at once, as long as no batch correction came after them (`U` says beforehand what it will
+undo). The book is not detected again after that – then set the paragraphs by hand with `A`.
+
+Only what looks unambiguous is detected: the line is indented against its neighbours, and the line before ends with a
+punctuation mark. Verse, lists and indexes are thus mostly left alone. Without line positions in the image (a book from
+an EPUB without a PDF) or in a book without indentation, the program detects no paragraphs. In the text file a
+paragraph start is written as `<p>` at the beginning of the line, as in an EPUB.
+
+## Further markup
 
 If you like, you can also enter further markup by hand with `F2`; the program knows `<em>`, `<strong>`, `<i>`, `<b>`,
 `<sup>`, `<sub>`, `<p>`, `<blockquote>` and `<br/>`, does not treat them as words, and shows font markup (italic, bold,
