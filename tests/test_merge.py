@@ -133,7 +133,7 @@ def test_teilen_verbinden_fussnoten(lib, tmp_path):
     assert lib.lpost('/buch/%s/api/lines/001' % lap, dict(kind='split', line=3, old=old, text=old, pos=13))[0] == 200
     l = lines(lib, lap, '001')
     assert l[3:5] == ['kunft lag vor', 'ihnen, baß sie']
-    assert lib.lpost('/buch/%s/api/lines/001' % lap, dict(line=1, old=l[1:3]))[0] == 200
+    assert lib.lpost('/buch/%s/api/lines/001' % lap, dict(line=1, old=l[1:3], force=True))[0] == 200
     l = lines(lib, lap, '001')
     assert l[1] == 'Die Kolonisten zogen nach Rußland und der Weg war weit. Die Zu¬' and l[2] == 'kunft lag vor'
     assert lib.lpost('/buch/%s/api/fnsep/001' % lap, dict(line=len(l) - 1, old=l[-1]))[0] == 200  # war schon dort: entfernt

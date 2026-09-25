@@ -93,8 +93,9 @@ def test_zeile_teilen_und_verbinden_mit_bildzuordnung(app):
     # wieder verbinden: alles wie vorher (bis auf die Korrektur)
     code, d = app.post('/api/lines/001', dict(kind='join', line=1, old=d['lines'][1:3]))
     assert code == 200 and d['lines'] == [t[0], 'Die Kolonisten gingen nach Rußland und'] + t[2:] and d['geo'][1] == g0
-    # getrenntes Wort: beim Verbinden fällt das ¬ weg
-    d = app.post('/api/lines/001', dict(kind='join', line=2, old=app.text('001')[2:4]))[1]
+    # getrenntes Wort: beim Verbinden fällt das ¬ weg. Die Zeilen stehen auch im Bild untereinander: erst nach Rückfrage
+    assert app.post('/api/lines/001', dict(kind='join', line=2, old=app.text('001')[2:4]))[0] == 422
+    d = app.post('/api/lines/001', dict(kind='join', line=2, old=app.text('001')[2:4], force=True))[1]
     assert d['lines'][2] == 'ber Weg war weit. Die Zukunft lag vor ihnen, baß sie' and None not in d['geo'][1:4]
     # Schutz: extern geändert, Kopfzeile, Fußnotentrenner, Teilen am Rand
     cur = app.text('001')
@@ -121,3 +122,53 @@ def test_teilen_in_einer_tabelle_rueckt_die_spalten_zurecht(app):
     assert app.post('/api/lines/002', dict(kind='split', line=3, old=d['lines'][3], text=d['lines'][3], pos=len('<tr><td>')))[0] == 400  # keine leere Zelle
     d = app.post('/api/lines/002', dict(kind='join', line=3, old=d['lines'][3:5]))[1]                                      # und zurück
     assert d['lines'][3:6] == ['<tr><td>1812- 12 409</td>', '<td>1813-</td></tr>', '<tr><td>5400</td><td></td></tr></table>']
+
+
+def test_verbundene_zeilen_wieder_trennen(app):
+    """Dreimal V auf untereinanderstehende Zeilen (so geschehen in einem echten Buch: vier gedruckte Zeilen in einer):
+    Umschalt+V trennt sie nach dem Protokoll wieder, jede Zeile bekommt ihren Teil des Bildrahmens zurück."""
+    t = app.text('001')
+    g0 = app.get('/api/page/001')[1]['geo']
+    for _ in range(3):
+        cur = app.text('001')
+        assert app.post('/api/lines/001', dict(kind='join', line=1, old=cur[1:3], force=True))[0] == 200
+    long_ = app.text('001')[1]
+    assert long_ == 'Die Kolonisten zogen nach Rußland und ber Weg war weit. Die Zukunft lag vor ihnen, baß sie ber Heimat gedachten.'
+    for _ in range(3):
+        code, d = app.post('/api/lines/001', dict(kind='unjoin', line=1, old=app.text('001')[1]))
+        assert code == 200 and app.log()[-1][1] == 'teilen'
+    assert d['lines'] == t and d['geo'] == g0  # der hohe Rahmen ist waagrecht zurückgeteilt, genau auf die Zeilen
+    assert app.post('/api/lines/001', dict(kind='unjoin', line=1, old=t[1]))[0] == 400    # nie verbunden
+    # Umschalt+Enter mitten in einer mehrzeiligen Zeile teilt den Rahmen ebenfalls waagrecht
+    for _ in range(2):
+        cur = app.text('001')
+        app.post('/api/lines/001', dict(kind='join', line=1, old=cur[1:3], force=True))
+    j = app.text('001')[1]
+    code, d = app.post('/api/lines/001', dict(kind='split', line=1, old=j, text=j, pos=j.index('ber Weg')))
+    assert code == 200 and d['geo'][1] == g0[1] and d['geo'][2]['y0'] == g0[2]['y0'] and d['geo'][2]['y1'] == g0[3]['y1']
+
+
+def test_alte_verbindung_nach_zeilenabstand_trennen(tmp_path):
+    """Aus einer früheren Programmfassung verbunden, ohne gemerkte Rahmen: Umschalt+V teilt den hohen Rahmen nach dem
+    Zeilenabstand der übrigen Zeilen – bei gleichmäßigem Satz genau auf die gedruckten Zeilen."""
+    import json, server
+    from conftest import png
+    folder = tmp_path / 'buch'
+    (folder / 'img').mkdir(parents=True)
+    rows = ['Zeile %d des Vorworts mit etwas Text.' % n for n in range(1, 11)]
+    (folder / '001.txt').write_text('# 9\n' + '\n'.join(rows) + '\n', encoding='utf-8')
+    geo = [dict(text='9', x0=100, x1=200, y0=40, y1=80, kind='head')]
+    geo += [dict(text=r, x0=100, x1=900, y0=100 + 53 * n, y1=150 + 53 * n, kind='body') for n, r in enumerate(rows)]
+    json.dump({'001': dict(w=1000, h=1500, lines=geo)}, open(folder / 'lines.json', 'w', encoding='utf-8'))
+    (folder / 'img' / '001.png').write_bytes(png(500, 750))
+    b = server.Book(str(folder))
+    b.refresh()
+    g0 = b.page_data('001')['geo']
+    for _ in range(3):
+        assert b.join_lines('001', 1, b.pages['001'][1:3], force=True)[1] is None
+    for g in b.geo['001']['lines']:
+        g.pop('vorher', None)  # so sah lines.json vor dieser Fassung aus
+    for _ in range(3):
+        assert b.unjoin_line('001', 1, b.pages['001'][1])[1] is None
+    d = b.page_data('001')
+    assert d['lines'][1:] == rows and d['geo'] == g0

@@ -789,11 +789,24 @@ async function splitLine() {
   if (!r.ok) { alert(t('conflict')); await loadPage(pg, line); return; }
   data = await r.json(); updateCount(); renderText(); pending = null; msg = t('split_done'); toRead(line);
 }
+// Stehen die beiden Zeilen auch im Bild untereinander, fragt V erst nach (422) – ein zweites V auf derselben Zeile verbindet
+let joinAsk = null;
 async function joinLine() {
   if (!plainLine(li) || li + 1 >= data.lines.length || data.lines[li + 1] == '---') { msg = t('join_no'); render(); return; }
-  const r = await fetch(BASE + '/api/lines/' + pg, { method: 'POST', body: JSON.stringify({ kind: 'join', line: li, old: data.lines.slice(li, li + 2) }) });
+  const old = data.lines.slice(li, li + 2), force = !!joinAsk && joinAsk.page == pg && joinAsk.line == li && joinAsk.text == old.join('\n');
+  joinAsk = null;
+  const r = await fetch(BASE + '/api/lines/' + pg, { method: 'POST', body: JSON.stringify({ kind: 'join', line: li, old, force }) });
+  if (r.status == 422) { joinAsk = { page: pg, line: li, text: old.join('\n') }; msg = t('join_rows'); render(); return; }
   if (!r.ok) { await loadPage(pg, li); msg = t('changed_outside'); render(); return; }
   data = await r.json(); updateCount(); renderText(); pending = null; msg = t('join_done'); render(); bookmark();
+}
+// Umschalt+V: eine mit V verbundene Zeile wieder trennen – die Trennstelle kennt das Protokoll
+async function unjoinLine() {
+  if (!plainLine(li)) return;
+  const r = await fetch(BASE + '/api/lines/' + pg, { method: 'POST', body: JSON.stringify({ kind: 'unjoin', line: li, old: data.lines[li] }) });
+  if (r.status == 400) { msg = t('unjoin_no'); render(); return; }
+  if (!r.ok) { await loadPage(pg, li); msg = t('changed_outside'); render(); return; }
+  data = await r.json(); updateCount(); renderText(); pending = null; msg = t('unjoin_done'); render(); bookmark();
 }
 // ---- Rauschen vom Scanrand löschen (#73): Strg/⌘+⌫ nimmt die Lesezeile bzw. die mit Umschalt+↓/↑ markierten Zeilen
 // weg, ohne Rückfrage – Strg/⌘+Z holt sie zurück. Der Server nimmt die Bildzeilen mit, die Bildzuordnung bleibt.
@@ -1197,6 +1210,7 @@ async function onKey(e) {
     else if (k == 'h' || k == 'H') await headingKey();
     else if (k == 'a' || k == 'A') await paraKey();
     else if (k == 'i' || k == 'I') await openToc();
+    else if ((k == 'v' || k == 'V') && e.shiftKey) await unjoinLine();
     else if (k == 'v' || k == 'V') await joinLine();
     else if (k == 'z' || k == 'Z') await openConflict();  // K geht wie ↑ eine Zeile hoch (j/k)
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }

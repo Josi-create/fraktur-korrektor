@@ -44,7 +44,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `H` | Überschrift: Ebene 1 → 2 → 3 → keine (siehe unten) |
 | Lesen | `A` | hier beginnt ein Absatz – noch einmal `A` nimmt es zurück (siehe unten) |
 | Lesen | `I` | Inhalt: alle Überschriften des Buchs, `Enter` springt hin (siehe unten) |
-| Lesen | `V` | Lesezeile mit der nächsten Zeile verbinden |
+| Lesen | `V` | Lesezeile mit der nächsten Zeile verbinden; `Umschalt`+`V` trennt eine so verbundene Zeile wieder |
 | Lesen | `Strg`+`⌫` (Mac: `⌘`+`⌫`) | Lesezeile löschen, bzw. alle mit `Umschalt`+`↓`/`↑` markierten – für Rauschen vom Scanrand (siehe unten) |
 | Lesen | `Strg`+`Z` (Mac: `⌘`+`Z`) | zuletzt gelöschte Zeilen zurückholen |
 | Lesen | `W` | Whitelist anzeigen |
@@ -153,9 +153,15 @@ sie macht einen zu viel.
 - **Teilen:** Zeile bearbeiten (`F2` oder `Enter`), die Schreibmarke an die Stelle setzen und `Umschalt`+`Enter` drücken.
   Was Sie im Feld schon geändert haben, wird dabei mit übernommen.
 - **Verbinden:** Im Lesemodus `V` – die Lesezeile wird mit der nächsten verbunden. Endet sie mit dem Trennzeichen `¬`,
-  wird das getrennte Wort dabei zusammengezogen (`Zu¬` + `kunft` → `Zukunft`).
+  wird das getrennte Wort dabei zusammengezogen (`Zu¬` + `kunft` → `Zukunft`). Stehen die beiden Zeilen auch im
+  Seitenbild untereinander, fragt das Programm erst nach (noch einmal `V`): Daraus würde eine überlange Zeile, die im
+  Druck zwei sind. Um einen **Absatz** zu kennzeichnen, verbinden Sie keine Zeilen – dafür gibt es `A` (siehe unten).
+- **Wieder trennen:** `Umschalt`+`V` auf einer verbundenen Zeile trennt sie genau dort, wo sie verbunden wurde, samt
+  Bildausschnitt – mehrmals hintereinander auch mehrere Verbindungen. Das geht, solange die Zeile seither nicht
+  geändert wurde.
 
-Das Programm teilt bzw. vereinigt dabei auch den **Bildausschnitt** der Zeile (beim Teilen anteilig an der Trennstelle).
+Das Programm teilt bzw. vereinigt dabei auch den **Bildausschnitt** der Zeile (beim Teilen anteilig an der Trennstelle;
+ist er mehrere Zeilen hoch, waagrecht zwischen den gedruckten Zeilen).
 So behält jede Textzeile ihre Stelle im Seitenbild – anders als beim Ändern der Zeilenzahl in einem fremden Editor.
 Innerhalb einer Tabelle wird die Tabelle danach neu durchgezählt: Verrutschte Spalten stehen wieder richtig.
 

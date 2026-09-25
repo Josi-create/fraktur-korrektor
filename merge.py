@@ -156,7 +156,7 @@ class Merge:
             if 0 <= n < len(lines) and lines[n] == new:
                 return self._same(row, when, kind, pg, n, old, new)
             if 0 <= n < len(lines) - 1 and lines[n] == a and lines[n + 1] == b:
-                r = book.join_lines(pg, n, [a, b], when=when)[0]
+                r = book.join_lines(pg, n, [a, b], when=when, force=True)[0]  # dort gewollt: keine Rückfrage
                 if r:
                     if r['lines'][n] != new:  # dieselben Hälften, anders verbunden (andere Programmversion): der Nutzer sieht es sich an
                         self._conflict(pg, n, 'edit', r['lines'][n], new, when)

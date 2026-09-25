@@ -787,23 +787,80 @@ class Book:
             if not korrlib.TAG.sub('', left).strip() or not korrlib.TAG.sub('', right).strip():  # am sichtbaren Text gemessen
                 return None, 400
             seq = self.geo_seq(pg, lines)
-            e = seq[n] if seq else None
-            if e:
-                vl, vr = len(korrlib.TAG.sub('', left)), len(korrlib.TAG.sub('', right))
-                xs = round(e['x0'] + (e['x1'] - e['x0']) * vl / max(1, vl + vr))
-                G = self.geo[pg]['lines']
-                k = next(i for i, x in enumerate(G) if x is e)
-                G.insert(k + 1, dict(e, x0=xs, text=right))
-                e.update(x1=xs, text=left)
-                self.save_geo()
+            if seq and seq[n]:
+                self.split_geo(pg, seq, seq[n], left, right)
             lines[n:n + 1] = [left, right]
             self.retable(lines, n)
             self.write_page(pg, lines)
             self.klog('teilen', pg, n, old, left + ' ⏎ ' + right, when=when)
             return self.page_data(pg), None
 
-    def join_lines(self, pg, n, old, when=None):
-        """Zeile n mit der folgenden verbinden; die Bildausschnitte werden vereinigt. Ein Trennzeichen ¬ fällt dabei weg."""
+    def split_geo(self, pg, seq, e, left, right):
+        """Den Bildausschnitt e anteilig auf zwei Textzeilen aufteilen. Gewöhnlich stehen die Teile nebeneinander (die
+        Erkennung hatte zwei Zeilen oder Zellen in eine gezogen). Ist der Rahmen mehrere Zeilen hoch – mit V verbundene
+        Zeilen, die im Druck untereinander stehen –, wird er waagrecht geteilt, auf eine ganze Zeilenzahl gerundet."""
+        vl, vr = len(korrlib.TAG.sub('', left)), len(korrlib.TAG.sub('', right))
+        G = self.geo[pg]['lines']
+        k = next(i for i, x in enumerate(G) if x is e)
+        def metrics(groups):  # (Zeilenhöhe, Zeilenabstand samt Zwischenraum) aus Zeilen, die nicht verbunden wurden
+            hs, steps = [], []
+            for L in groups:
+                L = [x for x in L if x is not None and x is not e and x.get('kind') != 'head' and not x.get('vorher')]
+                hs += [x['y1'] - x['y0'] for x in L]
+                tops = sorted(x['y0'] for x in L)
+                steps += [b - a for a, b in zip(tops, tops[1:])]
+            mh = statistics.median(hs) if hs else 0
+            steps = [s for s in steps if 0 < s < 3 * mh]
+            return mh, (statistics.median(steps) if steps else 0), len(steps)
+        mh, pitch, n = metrics([seq])
+        if n < 3:  # zu wenige Zeilen auf der Seite: das ganze Buch
+            mh, pitch, n = metrics([g['lines'] for g in self.geo.values()])
+        pitch = pitch or mh
+        e.pop('vorher', None)  # anders geteilt als verbunden: die gemerkten Rahmen gelten nicht mehr
+        if mh and e['y1'] - e['y0'] >= mh + 0.5 * pitch:
+            rows = max(2, round((e['y1'] - e['y0'] - mh) / pitch) + 1)
+            top = min(rows - 1, max(1, round(rows * vl / max(1, vl + vr))))  # so viele Zeilen gehören zum oberen Teil
+            G.insert(k + 1, dict(e, y0=min(e['y1'], round(e['y0'] + top * pitch)), text=right))
+            e.update(y1=min(e['y1'], round(e['y0'] + (top - 1) * pitch + mh)), text=left)
+        else:
+            xs = round(e['x0'] + (e['x1'] - e['x0']) * vl / max(1, vl + vr))
+            G.insert(k + 1, dict(e, x0=xs, text=right))
+            e.update(x1=xs, text=left)
+        self.save_geo()
+
+    def unjoin_line(self, pg, n, old):
+        """Umschalt+V: eine mit V verbundene Zeile wieder in die beiden Zeilen trennen, aus denen sie entstand – die
+        Trennstelle steht im Protokoll (auch für Verbindungen aus früheren Programmfassungen). Nur, solange die Zeile
+        seither nicht geändert wurde. Liefert (seitendaten, fehler)."""
+        with self.lock:
+            self.refresh()
+            lines = list(self.pages[pg])
+            if not (0 <= n < len(lines)) or lines[n] != old:
+                return None, 409
+            rows = [l.rstrip('\n').split('\t') for l in open(self.klogpath, encoding='utf-8')] if os.path.exists(self.klogpath) else []
+            hit = next((r for r in reversed(rows) if len(r) == 6 and r[1] == 'verbinden' and r[2] == pg and r[5] == old), None)
+            if not hit or ' ⏎ ' not in hit[4]:
+                return None, 400
+            a, b = hit[4].split(' ⏎ ', 1)
+            seq = self.geo_seq(pg, lines)
+            e = seq[n] if seq else None
+            if e and len(e.get('vorher') or []) == 2:  # seit dieser Fassung gemerkt: genau zurück
+                G = self.geo[pg]['lines']
+                k = next(i for i, x in enumerate(G) if x is e)
+                G[k:k + 1] = [dict(x) for x in e['vorher']]
+                self.save_geo()
+            elif e:  # aus einer früheren Fassung verbunden: nach dem Zeilenabstand teilen
+                self.split_geo(pg, seq, e, a, b)
+            lines[n:n + 1] = [a, b]
+            self.retable(lines, n)
+            self.write_page(pg, lines)
+            self.klog('teilen', pg, n, old, a + ' ⏎ ' + b)
+            return self.page_data(pg), None
+
+    def join_lines(self, pg, n, old, when=None, force=False):
+        """Zeile n mit der folgenden verbinden; die Bildausschnitte werden vereinigt. Ein Trennzeichen ¬ fällt dabei weg.
+        V ist für Zeilen gedacht, die die Erkennung fälschlich getrennt hat. Stehen beide auch im Bild untereinander,
+        entstünde eine Zeile, die im Druck zwei sind – dann erst nach Rückfrage (force; Fehler 422)."""
         with self.lock:
             self.refresh()
             lines = list(self.pages[pg])
@@ -811,10 +868,15 @@ class Book:
                 return None, 409
             a, b = lines[n].rstrip(), re.sub(r'^<p>', '', lines[n + 1].lstrip())  # ein Absatz beginnt nicht mitten in der Zeile
             seq = self.geo_seq(pg, lines)
+            if seq and seq[n] and seq[n + 1] and not force:
+                e, f = seq[n], seq[n + 1]
+                if min(e['y1'], f['y1']) - max(e['y0'], f['y0']) < 0.5 * min(e['y1'] - e['y0'], f['y1'] - f['y0']):
+                    return None, 422
             if seq and seq[n] and seq[n + 1]:
                 e, f = seq[n], seq[n + 1]
+                vorher = [dict(e), dict(f)]  # die beiden Rahmen, wie sie waren: Umschalt+V stellt sie genau wieder her
                 e.update(x0=min(e['x0'], f['x0']), x1=max(e['x1'], f['x1']), y0=min(e['y0'], f['y0']), y1=max(e['y1'], f['y1']),
-                         text=(e.get('text') or '') + ' ' + (f.get('text') or ''))
+                         text=(e.get('text') or '') + ' ' + (f.get('text') or ''), vorher=vorher)
                 G = self.geo[pg]['lines']
                 del G[next(i for i, x in enumerate(G) if x is f)]
                 self.save_geo()
@@ -2190,8 +2252,10 @@ class H(BaseHTTPRequestHandler):
                     r, err = book.split_line(m.group(1), body.get('line', -1), body.get('old'), body.get('text') or '', int(body.get('pos') or 0))
                 elif body.get('kind') == 'delete':
                     r, err = book.delete_lines(m.group(1), int(body.get('line', -1)), body.get('old'))
+                elif body.get('kind') == 'unjoin':
+                    r, err = book.unjoin_line(m.group(1), int(body.get('line', -1)), body.get('old'))
                 else:
-                    r, err = book.join_lines(m.group(1), body.get('line', -1), body.get('old'))
+                    r, err = book.join_lines(m.group(1), body.get('line', -1), body.get('old'), force=bool(body.get('force')))
             except KeyError:
                 return self.send(404, '{}')
             return self.sendjson(r) if r else self.send(err or 409, '{}')

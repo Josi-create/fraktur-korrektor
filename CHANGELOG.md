@@ -5,6 +5,17 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Verbundene Zeilen wieder trennen (`Umschalt`+`V`)**: Wer mit `V` gedruckte Zeilen verbunden hatte – etwa, um einen
+  Absatz zu kennzeichnen –, bekam eine überlange Zeile, die im Text viermal umbrach, im Seitenbild einen hohen Rahmen
+  und sich im Eingabefeld kaum bearbeiten ließ. `Umschalt`+`V` trennt eine so verbundene Zeile genau an der Stelle, die
+  das Protokoll kennt, auch für Verbindungen aus früheren Fassungen; mehrmals gedrückt, auch mehrere. `V` merkt sich
+  jetzt die beiden Bildrahmen in `lines.json` (`vorher`), dann kommen sie genau zurück; bei älteren Verbindungen wird
+  der hohe Rahmen nach dem Zeilenabstand der übrigen Zeilen waagrecht geteilt (zu wenige auf der Seite: aus dem ganzen
+  Buch). Dasselbe gilt für `Umschalt`+`Enter` im Feld: Ein mehrzeiliger Rahmen wird zwischen den gedruckten Zeilen
+  geteilt statt nebeneinander.
+- **`V` fragt nach**, wenn die beiden Zeilen auch im Seitenbild untereinander stehen: `V` ist für Zeilen gedacht, die
+  die Texterkennung fälschlich getrennt hat; einen Absatz setzt `A`. Ein zweites `V` verbindet trotzdem
+  (`/api/lines` mit `force`; das Zusammenführen zweier Arbeitsstände fragt nicht).
 - **Absätze** (#67): Für ein späteres E-Book muss das Programm wissen, wo ein Absatz beginnt. Ein Absatzanfang steht als
   `<p>` am Anfang seiner ersten Zeile, ohne Schlusszeichen – der Absatz reicht bis zum nächsten, auch über die
   Seitengrenze; die Zeilenzahl bleibt, wie sie ist. Beim ersten Öffnen eines Buchs – auch eines vorhandenen – erkennt

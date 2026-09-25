@@ -95,7 +95,7 @@ def test_absatz_von_hand_und_beim_oeffnen(tmp_path):
         assert c.post('/api/markup/001', dict(kind='para', line=1, old=t[1]))[0] == 400   # Überschrift
         assert c.post('/api/markup/001', dict(kind='para', line=2, old='anders'))[0] == 409
         # Verbinden: ein Absatz beginnt nicht mitten in der Zeile
-        code, d = c.post('/api/lines/001', dict(kind='join', line=5, old=t[5:7]))
+        code, d = c.post('/api/lines/001', dict(kind='join', line=5, old=t[5:7], force=True))
         assert code == 200 and d['lines'][5] == 'der Heimat gedachten. Im Frühjahr brachen sie auf, und'
     finally:
         p.kill()

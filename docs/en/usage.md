@@ -44,7 +44,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `H` | heading: level 1 → 2 → 3 → none (see below) |
 | Reading | `A` | a paragraph starts here – press `A` again to take it back (see below) |
 | Reading | `I` | contents: all headings of the book, `Enter` goes there (see below) |
-| Reading | `V` | join the reading line with the next line |
+| Reading | `V` | join the reading line with the next line; `Shift`+`V` splits a line joined this way again |
 | Reading | `Ctrl`+`⌫` (Mac: `⌘`+`⌫`) | delete the reading line, or all lines marked with `Shift`+`↓`/`↑` – for noise from the scan edge (see below) |
 | Reading | `Ctrl`+`Z` (Mac: `⌘`+`Z`) | bring back the lines deleted last |
 | Reading | `W` | show the whitelist |
@@ -148,9 +148,14 @@ Sometimes text recognition misses a line break – two lines (or two table cells
 - **Split:** edit the line (`F2` or `Enter`), put the cursor at the place and press `Shift`+`Enter`. Whatever you have
   already changed in the field is applied along with it.
 - **Join:** in reading mode press `V` – the reading line is joined with the next one. If it ends with the hyphenation mark
-  `¬`, the split word is pulled together (`Zu¬` + `kunft` → `Zukunft`).
+  `¬`, the split word is pulled together (`Zu¬` + `kunft` → `Zukunft`). If the two lines are one below the other in the
+  page image too, the program asks first (press `V` again): the result would be an overlong line that is two in print.
+  To mark a **paragraph**, do not join lines – use `A` for that (see below).
+- **Split again:** `Shift`+`V` on a joined line splits it exactly where it was joined, image area included – pressed
+  several times, several joins. This works as long as the line has not been changed since.
 
-The program also splits or merges the **image area** of the line (when splitting, proportionally at the split point). This
+The program also splits or merges the **image area** of the line (when splitting, proportionally at the split point; if it
+is several lines high, horizontally between the printed lines). This
 way every line of text keeps its place in the page image – unlike changing the number of lines in another editor. Inside a
 table, the table is renumbered afterwards: shifted columns fall back into place.
 
