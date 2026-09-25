@@ -20,3 +20,5 @@ icon.iconset/
 # Die Hilfe als Website (tools/build_site.py) – baut die CI
 site/
 *.egg-info/
+# Eigene Startdatei des Betreibers (--lan, feste Python-Fassung) – keine Vorgabe für andere
+lesen.bat
