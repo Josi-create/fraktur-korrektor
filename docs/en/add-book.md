@@ -125,8 +125,11 @@ traffic light from reading the book in.
 
 The buttons below follow these marks: **Prepare scans**, **Prepare for Transkribus** and **Prepare for
 ScanTailor** are grey when they would do little good – with a green light, when the text already comes from
-Transkribus, or when the pages have already been prepared. They still work; the program says first why it
-advises against it, and asks.
+Transkribus, or when the pages have already been prepared. **Take in recognised text** is grey when the text
+already comes from Transkribus or from a library, or when you have already corrected a lot (50 corrections or
+more): the new text would not contain your corrections. In that case it is best to take it in *as a new book* –
+this is then already preselected, and the present book stays as it is. The grey buttons still work; the program
+says first why it advises against it, and asks.
 
 The **Rename** button gives a book a different name, for instance when it is still named after the file it came
 from. The folder on disk stays as it is.

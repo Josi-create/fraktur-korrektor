@@ -51,6 +51,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Benutzbar bleiben sie: Der Tooltip und im Dialog *Weiterbearbeiten* eine Zeile darunter sagen, warum, ein Klick
   fragt nach. Nach dem eingebauten Vorbereiten bleibt ScanTailor frei – es kann gewölbte Seiten und Flecken. Ohne
   Ampel (Buch noch nicht bewertet) ändert sich nichts.
+  Ebenso *Erkannten Text einlesen*: grau, wenn der Text schon aus Transkribus oder von einer Bibliothek stammt oder
+  im Buch schon 50 und mehr Korrekturen stecken – der neue Text enthielte sie nicht. Dann ist im Dialog auch *als
+  neues Buch anlegen* vorgewählt, das bisherige Buch bleibt samt Korrekturen daneben stehen.
 - **Buch umbenennen** (#71): Knopf *Umbenennen* in der Bibliothek, auch im Dialog *Weiterbearbeiten*. Ein Buch, das
   noch wie seine Datei heißt (`asjflkasjdfl.pdf`), bekommt einen richtigen Namen – in der Bibliothek, oben in der
   Leseansicht, in Notizen für Obsidian und als Dateiname beim Sichern als PDF. Der Ordner bleibt, wie er ist, damit

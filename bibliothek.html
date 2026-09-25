@@ -185,17 +185,20 @@ let booksdir = '', entered = false;
 const BOOKACTS = [['open', b => true], ['pdf', b => true], ['trans', b => true], ['images', b => b.images < b.pages],
                   ['prep_scans', b => b.images > 0], ['prep_trans', b => b.images > 0], ['prep_st', b => b.images > 0],
                   ['restore', b => (b.backups || []).length]];
-// Vorbereiten für ein anderes Programm, obwohl es wenig bringt (#69): Der Knopf bleibt benutzbar, tritt aber zurück und fragt
-// nach. Liefert den Schlüssel der Begründung, sonst ''. Ohne Ampel (noch nicht gerechnet) bleibt alles, wie es ist.
+// Vorbereiten für ein anderes Programm oder Text neu einlesen, obwohl es wenig bringt (#69): Der Knopf bleibt benutzbar, tritt
+// aber zurück und fragt nach. Liefert den Schlüssel der Begründung, sonst ''. Ohne Ampel (noch nicht gerechnet) bleibt alles, wie es ist.
+const CORR_MANY = 50;  // ab so vielen Korrekturen steckt Arbeit im Buch, die ein neuer Text nicht enthält
 function unneeded(k, b) {
   const q = b.quelle || [], green = b.quality == 'gruen' ? 'why_gruen' : '';
+  // Erkannten Text einlesen ersetzt den bisherigen: nach viel Korrekturarbeit oder wenn er schon eingelesen ist, tritt es zurück
+  if (k == 'trans') return b.corrections >= CORR_MANY ? 'why_corr' : q.includes('transkribus') ? 'why_trans' : q.includes('hocr') ? 'why_hocr' : '';
   if (k == 'prep_trans') return q.includes('transkribus') ? 'why_trans' : green;
   // ScanTailor kann mehr als »Scans vorbereiten« (gewölbte Seiten, Flecken) – nach dem eingebauten Vorbereiten lohnt es sich noch
   if (k == 'prep_st' || k == 'prep_scans') return q.includes('scantailor') ? 'why_scantailor' : k == 'prep_scans' && q.includes('aufbereitet') ? 'why_aufbereitet'
     : q.includes('transkribus') ? 'why_trans_img' : green;
   return '';
 }
-const stillWant = (k, b) => { const w = unneeded(k, b); return !w || confirm(t('why_ask', { why: t(w) })); };
+const stillWant = (k, b) => { const w = unneeded(k, b); return !w || confirm(t('why_ask', { why: t(w, { n: b.corrections }) })); };
 async function load() {
   const lib = await (await fetch('/api/library')).json();
   $('ver').textContent = lib.version ? 'Version ' + lib.version : '';
@@ -211,7 +214,7 @@ async function load() {
     const ti = b.pages ? ['<a class="ti" href="/buch/' + b.id + '">', '</a>'] : ['<span class="ti">', '</span>'];
     // Jede Möglichkeit bekommt einen beschrifteten Knopf: niemand soll erraten müssen, was hinter einem Zeichen steckt
     const acts = lib.local && b.pages ? BOOKACTS.filter(([k, when]) => when(b)).map(([k]) => { const w = unneeded(k, b);
-      return '<button class="' + (k == 'open' ? 'main' : w ? 'muted' : '') + '" data-a="' + k + '"' + (w ? ' title="' + esc(t(w)) + '"' : '') + '>' +
+      return '<button class="' + (k == 'open' ? 'main' : w ? 'muted' : '') + '" data-a="' + k + '"' + (w ? ' title="' + esc(t(w, { n: b.corrections })) + '"' : '') + '>' +
         t(k == 'open' ? 'open_now' : 'act_' + k) + '</button>'; }).join('') +
       '<span class="sp"></span><button data-a="rename">' + t('act_rename') + '</button><button class="weg" data-a="forget">' + t('act_forget') + '</button>' : '';
     // Kennzeichen: woher der Text stammt und wie viele Wörter das Wörterbuch nicht kennt
@@ -623,7 +626,7 @@ function editPick() {
   $('eClose').textContent = t('cancel');
   $('ebody').innerHTML = Object.keys(ACTS).filter(k => ACTS[k][1](eb)).map(k => { const w = unneeded(k, eb);
     return '<a href="#" class="act' + (w ? ' muted' : '') + '" data-a="' + k + '"><span class="ic">' + ACTS[k][0] + '</span><span><b>' + t('act_' + k) + '</b><small>' +
-      t('act_' + k + '_hint') + '</small>' + (w ? '<small class="why">' + t(w) + '</small>' : '') + '</span></a>'; }).join('');
+      t('act_' + k + '_hint') + '</small>' + (w ? '<small class="why">' + t(w, { n: eb.corrections }) + '</small>' : '') + '</span></a>'; }).join('');
   for (const el of $('ebody').querySelectorAll('a[data-a]')) el.onclick = ev => { ev.preventDefault(); if (stillWant(el.dataset.a, eb)) editAct(el.dataset.a); };
 }
 function editAct(a) {
@@ -634,14 +637,14 @@ function editAct(a) {
   if (a == 'pdf') return editPdf();
   if (a == 'addpdf') return editAddPdf();
   if (a == 'rename') return editRename();
-  const img = a == 'images';
+  const img = a == 'images', many = eb.corrections >= CORR_MANY;  // nach viel Arbeit rät das Programm zum neuen Buch daneben
   $('ebody').innerHTML = '<label class="f">' + t(img ? 'ed_imgsource' : 'ed_source') + '</label>' +
     '<div class="row"><input type="text" id="eSrc" spellcheck="false">' +
     '<button type="button" id="eFile">📄 ' + t('pick_file') + '</button>' +
     '<button type="button" id="eDir">📁 ' + t('pick_folder') + '</button></div>' +
     (!img && eb.corrections ? '<div id="ewarn">' + t('ed_warn_corr', { n: eb.corrections }) +
-      '<div class="radio"><label><input type="radio" name="emode" value="replace" checked> ' + t('ed_mode_replace') + '</label>' +
-      '<label><input type="radio" name="emode" value="new"> ' + t('ed_mode_new') + '</label></div></div>' : '');
+      '<div class="radio"><label><input type="radio" name="emode" value="replace"' + (many ? '' : ' checked') + '> ' + t('ed_mode_replace') + '</label>' +
+      '<label><input type="radio" name="emode" value="new"' + (many ? ' checked' : '') + '> ' + t('ed_mode_new') + '</label></div></div>' : '');
   $('eFile').onclick = () => editChoose(img ? 'pdf' : 'export');
   $('eDir').onclick = () => editChoose('folder');
   $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t(img ? 'ed_take_imgs' : 'ed_take');

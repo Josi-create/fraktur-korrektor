@@ -129,8 +129,11 @@ Titel ist die Ampel aus dem Einlesen.
 
 Nach diesen Kennzeichen richten sich auch die Knöpfe darunter: **Scans vorbereiten**, **Für Transkribus
 vorbereiten** und **Für ScanTailor vorbereiten** sind grau, wenn sie wenig bringen – bei grüner Ampel, wenn der
-Text schon aus Transkribus stammt oder die Seiten schon aufbereitet sind. Sie funktionieren trotzdem; das
-Programm sagt vorher, warum es davon abrät, und fragt nach.
+Text schon aus Transkribus stammt oder die Seiten schon aufbereitet sind. **Erkannten Text einlesen** ist grau,
+wenn der Text schon aus Transkribus oder von einer Bibliothek stammt oder wenn Sie schon viel korrigiert haben
+(ab 50 Korrekturen): Der neue Text enthielte Ihre Korrekturen nicht. Lesen Sie ihn dann am besten *als neues Buch*
+ein – das ist in diesem Fall schon vorgewählt, und das bisherige Buch bleibt, wie es ist. Die grauen Knöpfe
+funktionieren trotzdem; das Programm sagt vorher, warum es davon abrät, und fragt nach.
 
 Der Knopf **Umbenennen** gibt einem Buch einen anderen Namen, etwa wenn es noch wie die Datei heißt, aus der es
 kam. Der Ordner auf der Festplatte bleibt dabei, wie er ist.
