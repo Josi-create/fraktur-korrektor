@@ -64,6 +64,21 @@ def test_buch_umbenennen(lib, tmp_path):
     assert lib.lget('/api/library')[1]['books'][0]['title'] == 'Reise nach Rußland'
 
 
+def test_zuletzt_gelesenes_buch(tmp_path, monkeypatch):
+    # --last: der Browser beginnt beim zuletzt gelesenen Buch; eines, dessen Ordner fehlt, wird übergangen
+    import server
+    monkeypatch.setattr(server, 'LIBFILE', str(tmp_path / 'bibliothek.json'))
+    assert server.last_book() is None
+    make_book(str(tmp_path / 'alt'))
+    make_book(str(tmp_path / 'neu'))
+    json.dump([dict(folder=str(tmp_path / 'alt'), title='alt', last='2026-09-01 10:00:00'),
+               dict(folder=str(tmp_path / 'neu'), title='neu', last='2026-09-20 10:00:00'),
+               dict(folder=str(tmp_path / 'fehlt'), title='fehlt', last='2026-09-24 10:00:00')],
+              open(tmp_path / 'bibliothek.json', 'w', encoding='utf-8'))
+    assert server.last_book() == server.book_id(str(tmp_path / 'neu'))
+    assert server.parse_args(['--last']).last and not server.parse_args([]).last
+
+
 def test_zwei_buecher_nebeneinander(app, tmp_path):
     make_book(str(tmp_path / 'zweites'))
     other = '/buch/' + app.lpost('/api/open', dict(folder=str(tmp_path / 'zweites')))[1]['id']

@@ -47,7 +47,8 @@ Schritt für Schritt, auch zum Beenden und Aktualisieren: [Programm installieren
     py server.py                  Bibliothek; »Öffnen …« erkennt selbst: Buchordner, PDF, EPUB (+ gleichnamiges PDF), Bilder, Transkribus-Export
     py server.py <buchordner>     direkt ein Buch öffnen
 
-Optionen: `--port 8765`, `--dic <hunspell-pfad-ohne-endung>`, `--title "…"`, `--no-browser`, `--lan`.
+Optionen: `--port 8765`, `--dic <hunspell-pfad-ohne-endung>`, `--title "…"`, `--no-browser`, `--lan`,
+`--last` (ohne Buchordner: im Browser gleich das zuletzt gelesene Buch statt der Bibliothek).
 Die Oberfläche gibt es auf Deutsch und Englisch (Umschalter oben rechts).
 
 Mit `--lan` ist die App auch von anderen Rechnern im lokalen Netz erreichbar (die Adresse wird beim Start angezeigt;

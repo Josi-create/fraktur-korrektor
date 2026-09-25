@@ -5,6 +5,10 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **`--last`**: Ohne Buchordner gestartet, öffnet der Browser gleich das zuletzt gelesene Buch (Lesezeichen, Öffnen
+  und Einlesen merken sich das) statt der Bibliothek; ein Buch, dessen Ordner fehlt, wird übergangen, ohne Bücher
+  bleibt es bei der Bibliothek. Die Bibliothek bleibt unter `/` erreichbar. Gedacht für eine Startdatei wie
+  `py server.py --lan --last`.
 - **Hilfeseite »Bücher selbst fotografieren«** (#43, DE/EN): jede Seite einzeln, Kamera parallel, Seite bildfüllend
   (Faustregel 1800 Bildpunkte für 15 cm), Licht, Reihenfolge und Dateinamen, eine Probe vor dem Archivbesuch, was
   bei Doppelseiten hilft, Buch-Scan-Apps wie vFlat mit Preis (Stand September 2026) und dem Hinweis, dass die

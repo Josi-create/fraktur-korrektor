@@ -1,5 +1,5 @@
 """Fraktur-Korrektor: Lesen und Korrigieren von OCR-Text neben dem Seitenbild.
-py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"] [--no-browser] [--lan]
+py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"] [--no-browser] [--lan] [--last]
 
 Ohne Buchordner erscheint die Bibliothek (Bücher öffnen, Transkribus-Export importieren).
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png|jpg,
@@ -2057,7 +2057,17 @@ def parse_args(argv=None):
     ap.add_argument('--title')
     ap.add_argument('--no-browser', action='store_true')
     ap.add_argument('--lan', action='store_true', help='auch für andere Rechner im lokalen Netz erreichbar (kein Passwortschutz!)')
+    ap.add_argument('--last', action='store_true', help='ohne Buchordner: im Browser das zuletzt gelesene Buch öffnen statt der Bibliothek')
     return ap.parse_args(argv)
+
+
+def last_book():
+    """Kennung des zuletzt gelesenen Buchs der Bibliothek – »last« setzen Lesezeichen, Öffnen und Einlesen – oder None.
+    Ein Buch, dessen Ordner fehlt (Stick nicht eingesteckt), wird übergangen."""
+    for e in sorted(lib_load(), key=lambda e: e.get('last', ''), reverse=True):
+        if page_files(e['folder']):
+            return book_id(e['folder'])
+    return None
 
 
 def setup(A):
@@ -2096,7 +2106,8 @@ def main(argv=None):
         print('Im lokalen Netz:   http://%s:%d   oder   http://%s:%d' % (ip, A.port, socket.gethostname(), A.port))
         print('Achtung: ohne Passwort - jeder im selben Netz kann lesen und korrigieren. Nur im eigenen Heimnetz verwenden.')
     if not A.no_browser:
-        threading.Timer(0.5, lambda: webbrowser.open(url)).start()
+        last = last_book() if A.last and not A.folder else None  # die Bibliothek bleibt unter / erreichbar, nur der Browser beginnt beim Buch
+        threading.Timer(0.5, lambda: webbrowser.open(url + ('/buch/' + last if last else ''))).start()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
