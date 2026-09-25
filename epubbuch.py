@@ -23,7 +23,7 @@ INLINE = {'em', 'strong', 'i', 'b', 'sup', 'sub', 'br'}
 # Ein Fußnotenzeichen im Text: hochgestellt (<sup>36</sup>, <sup>*</sup>), »wurde 1)« wie in älteren Büchern, ein Stern am Wort
 # (»Wort*«, »Wort*)«) oder Ziffern, die am Wort kleben (»beziffert.36« – noch nicht hochgestellt)
 REF = re.compile(r'<sup>\s*(\d{1,3}|\*+)(\)?)\s*</sup>'
-                 r'|(?<=[^\s\d(])( ?)(\d{1,3})\)'
+                 r'|(?:(?<=\S)( )|(?<=[^\s\d(]))(\d{1,3})\)'
                  r'|(?<=[A-Za-zÄÖÜäöüßſ.,;:!?“”"»«\'’)\]])(\*+)(\)?)(?![\d*])'
                  r'|(?<=[A-Za-zÄÖÜäöüßſ.,;:!?“”"»«\'’\]])(\d{1,3})(?=[\s,.;:!?)“”"»«]|$)')
 # Anfang einer Fußnote unten: »1) …«, »1 …«, »* …«, »*) …«, »<sup>1</sup> …« – eine bloße Zahl nur mit Leerzeichen dahinter
@@ -193,6 +193,7 @@ class _Flow:
                         new = n == 1 or (prev is not None and prev < n <= prev + 10)
                     else:
                         new = n <= 3 or (prev is not None and prev < n <= prev + 10)
+                    new = new or not (cur or last)  # nichts, das hier weiterliefe: dann beginnt sie hier, passend oder nicht
                 if new:
                     n = int(m.group(1)) if m.group(1) else None
                     if n is not None and num is None and n > 3:
@@ -233,10 +234,10 @@ class _Flow:
                 x = free(num=int(m.group(1))) if m.group(1).isdigit() else free(star=m.group(1))
                 shown = m.group(1) + m.group(2)
             elif m.group(4):
-                b = re.sub(r'\d{1,3}\)', '', before)  # schon gezählte Fußnotenzeichen schließen keine Klammer
+                b = re.sub(r'(?<!\d)\d{1,3}\)', '', before)  # schon gezählte Fußnotenzeichen schließen keine Klammer, »(1752)« schon
                 if not before.strip() or b.count('(') > b.count(')'):
                     return m.group()  # Aufzählung am Zeilenanfang, »(vgl. S. 12)«
-                x = next((x for x in notes if not x['ref'] and x['num'] == int(m.group(4)) and x['paren']), None)
+                x = free(num=int(m.group(4)))  # auch zu »25 …« unten: Die Erkennung setzt die Klammer mal hier, mal dort
                 shown = m.group(4) + ')'
             elif m.group(5):
                 # Ein Stern, aber unten nummerierte Fußnoten: Die Erkennung liest »1)« gern als »*)« – dann die nächste

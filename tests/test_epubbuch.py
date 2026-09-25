@@ -106,6 +106,20 @@ def test_fussnoten_folgezeilen_und_zaehlung():
         ('fn-003-1', '5)', 'Fünfte, zitiert nach 2 Bde., Stuttgart 1850.', True), ('fn-004-1', '6)', 'Sechste.', True)]
 
 
+def test_fussnoten_hinter_zahlen_und_ohne_vorgaenger():
+    """»von 1815 1)« und »(1752) aus 3)« sind Fußnotenzeichen; »4)« passt auch zu »4 …« unten. Eine Nummer oben im
+    Fußnotenblock, vor der nichts weiterlaufen kann, beginnt eine Fußnote, auch wenn sie nicht zur Zählung passt."""
+    pages = {'001': ['Verlust von 1815 11): und 1819/20 12). Das Jahr (1752) aus 13), Einstellung 14) zeigt 15).', '---',
+                     '11) Elf.', '12) Zwölf.', '13) Dreizehn.', '14 Vierzehn.', '15) Fünfzehn.'],
+             '002': ['Ohne Fußnoten.'],
+             '003': ['Neue Zählung 2).', '---', '2) Zwei, neu gezählt.']}  # fortlaufend gezählt: 2 passt nicht zu 15
+    f = epubbuch._Flow(pages, {pg: None for pg in pages}, {}, {})
+    f.run()
+    assert [(x['mark'], x['text'], bool(x['ref'])) for v in f.notes.values() for x in v] == [
+        ('11)', 'Elf.', True), ('12)', 'Zwölf.', True), ('13)', 'Dreizehn.', True), ('14', 'Vierzehn.', True),
+        ('15)', 'Fünfzehn.', True), ('2)', 'Zwei, neu gezählt.', True)]
+
+
 def test_tabelle_und_auszeichnung_wohlgeformt():
     rows = korrlib.make_table(['Ort', 'Familien', 'Rohrbach', '32'], 2, head=True)
     pages = {'001': ['<p>Ein <em>betontes Wort ohne Ende & ein <b>fettes</em> Wort</b>, 3 < 4.'] + rows + ['Danach.'],
