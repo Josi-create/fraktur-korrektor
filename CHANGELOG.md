@@ -310,6 +310,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
 ### Behoben
+- **Hilfe: Taste für den Notizordner**: Die Tastentabelle in *Bedienung* nannte `N` – das springt zur nächsten
+  Fundstelle. Der Notizordner liegt auf `O`, wie im Fließtext darunter und in der Kopfleiste (»Notizen (O)«).
 - **Hilfe: zerschossene Tabelle in »Ein Buch öffnen«**: Die erste Spalte einer Tabelle brach nie um – gedacht für
   Tastenkürzel und Dateinamen. Mit ganzen Sätzen darin (»Buch – ein Ordner, an dem Sie …«) wurde sie so breit, dass die
   zweite Spalte aus der Seite ragte. Das gilt jetzt nur noch für schmale Tabellen mit durchweg kurzen Einträgen links
