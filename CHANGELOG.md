@@ -5,6 +5,21 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Fußnotenzeichen hochstellen**: Die hochgestellten Zahlen, die im Text auf eine Fußnote verweisen, liest die
+  Texterkennung oft als `*` oder klebt sie ans Wort (»beziffert.36«). Gespeichert werden sie wie im EPUB als
+  `<sup>36</sup>`; das Bearbeitungsfeld zeigt sie als hochgestellte Ziffern (»³⁶«) statt der Auszeichnung, und
+  `Strg`+`Umschalt`+`+` (wie in Word, am Mac mit `⌘`) stellt die Ziffern vor der Schreibmarke – oder die markierten –
+  hoch bzw. wieder normal. Hochgestellte Ziffern, die ins Feld kommen (auch eingefügte), werden beim Speichern und beim
+  Teilen zu `<sup>` (`korrlib.sup_markup`, im Reader `supMark`).
+- **Fußnotenzeichen vorschlagen**: Auf Seiten mit Fußnoten markiert das Programm ein `*` direkt am Wort und am Wort
+  klebende Ziffern blau (Markierung `fnref`, nicht `*)` und nicht Stellenangaben wie »S.12«); `Leertaste` springt hin,
+  die vermutete Nummer steht schon hochgestellt im Feld, `Enter` übernimmt sie. Die Nummer ergibt sich aus der
+  Zählung in Lesereihenfolge (`Book.footnote_refs`), verankert an schon hochgestellten Nummern, an passenden
+  angeklebten Ziffern und an den lesbaren Nummern der Fußnoten unten – von diesen gilt nur die längste Folge, die mit
+  den Seiten wächst (`footnote_anchors`), damit verstümmelte (»3« statt 36) nicht stören. In einem Buch mit 279 Seiten
+  stimmen die Vorschläge überall, wo die Fußnoten lesbar sind; wo die Erkennung viele Zeichen verschluckt hat, liegen sie
+  daneben – eine richtig hochgestellte Nummer korrigiert die folgenden. Notizen (`F4`) zitieren ohne Fußnotenzeichen.
+  Selbsttest-Taste `CtrlShift:<taste>`.
 - **Fußnoten ohne Fußnotenstrich erkennen**: Hat die Texterkennung die Fußnoten nicht abgetrennt – ihre hochgestellten
   Nummern liest sie oft als »3!«, »°«, »S,«, an denen die Erkennung beim Einlesen scheitert –, setzt das Programm beim
   ersten Öffnen eines Buchs (auch eines vorhandenen) den Trenner `---` selbst, als gewöhnlichen Eintrag wie mit `F`.

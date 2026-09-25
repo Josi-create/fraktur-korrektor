@@ -34,6 +34,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `Umschalt`+Mausrad | eine breite Tabelle seitwärts rollen; mit der Lesezeile rollt sie von selbst |
 | Lesen | `R` | Seite neu laden (nach Änderungen in einem anderen Editor) |
 | Korrektur | `Enter` | übernehmen und weiterlesen (steht in derselben Zeile noch ein rotes Wort, kommt dieses zuerst) |
+| Korrektur / Zeile bearbeiten | `Strg`+`Umschalt`+`+` (Mac: `⌘`+`Umschalt`+`+`) | die Ziffern vor der Schreibmarke (oder die markierten) hochstellen – für Fußnotenzeichen; noch einmal: wieder normal (siehe *Fußnoten*) |
 | Korrektur / Zeile bearbeiten | `F7` (oder `-` am Zeilenende) | Trennzeichen `¬` an der Schreibmarke einfügen. Mitten in der Zeile bleibt `-` ein Bindestrich; endet die Zeile schon mit `¬`, setzt `-` einen Bindestrich davor (`Ost-¬` / `Preußen`) |
 | Korrektur / Zeile bearbeiten | `Umschalt`+`Enter` | Zeile an der Schreibmarke teilen (siehe unten) |
 | Korrektur | `F8` (oder `#`) | Wort ist richtig → Whitelist |
@@ -153,6 +154,17 @@ Hat die Texterkennung die Fußnoten nicht abgetrennt – oft liest sie ihre hoch
 Fußnotenstrich steht, und an der kleineren Schrift. Es setzt den Trenner dann auf diesen Seiten und sagt unten in der
 Statuszeile, auf wie vielen. Wo es sich geirrt hat, berichtigen Sie es mit `F` wie oben. Das geschieht nur in Büchern,
 die wirklich Fußnoten haben, und nur auf Seiten, die noch keinen Trenner haben.
+
+**Fußnotenzeichen im Text.** Die hochgestellten Zahlen, die im Text auf eine Fußnote verweisen, liest die
+Texterkennung oft als `*` oder klebt sie als gewöhnliche Ziffern ans Wort (»beziffert.36«). Hochgestellt tragen Sie
+sie so ein: die Zahl tippen und `Strg`+`Umschalt`+`+` drücken (wie in Word; am Mac `⌘`+`Umschalt`+`+`) – im Feld
+steht sie dann hochgestellt (»beziffert.³⁶«), in der Textdatei als `<sup>36</sup>` wie im E-Book. Noch einmal die Tasten
+stellt sie wieder normal. Einfacher geht es mit den Vorschlägen: Auf Seiten mit Fußnoten markiert das Programm solche
+Stellen blau, `Leertaste` springt hin wie zu einem roten Wort, und die Nummer steht schon hochgestellt im Feld –
+`Enter` übernimmt sie. Die Nummer ergibt sich aus der Zählung: der vorigen Fußnote und den lesbaren Nummern der
+Fußnoten unten auf der Seite. Wo die Texterkennung viele Zeichen verschluckt hat, liegt sie daneben; dann die richtige
+Zahl eintippen und hochstellen – die folgenden Vorschläge richten sich nach ihr. Im Zitat einer Notiz (`F4`) stehen
+keine Fußnotenzeichen.
 
 ## Zeilen teilen und verbinden
 

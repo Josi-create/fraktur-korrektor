@@ -34,6 +34,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `Shift`+mouse wheel | scroll a wide table sideways; it follows the reading line by itself |
 | Reading | `R` | reload the page (after changes in another editor) |
 | Correction | `Enter` | apply and read on (if the same line has another red word, that comes first) |
+| Correction / Edit line | `Ctrl`+`Shift`+`+` (Mac: `⌘`+`Shift`+`+`) | raise the digits before the cursor (or the selected ones) – for footnote marks; again: back to normal (see *Footnotes*) |
 | Correction / Edit line | `F7` (or `-` at the end of the line) | insert the hyphenation mark `¬` at the cursor. Within the line `-` stays a hyphen; if the line already ends with `¬`, `-` puts a hyphen before it (`Ost-¬` / `Preußen`) |
 | Correction / Edit line | `Shift`+`Enter` | split the line at the cursor (see below) |
 | Correction | `F8` (or `#`) | word is correct → whitelist |
@@ -149,6 +150,16 @@ the program detects them itself when the book is first opened: by the larger gap
 print, and by the smaller type. It then sets the separator on those pages and says in the status line at the bottom on
 how many. Where it got it wrong, correct it with `F` as above. This happens only in books that really have footnotes,
 and only on pages that do not have a separator yet.
+
+**Footnote marks in the text.** The superscript numbers that refer to a footnote are often read by text recognition
+as `*`, or stuck to the word as ordinary digits (»beziffert.36«). To enter them raised: type the number and press
+`Ctrl`+`Shift`+`+` (as in Word; on a Mac `⌘`+`Shift`+`+`) – in the field it then appears raised (»beziffert.³⁶«), in
+the text file as `<sup>36</sup>` as in an e-book. The same keys again make it normal. The suggestions make it easier:
+on pages with footnotes the program marks such places in blue, `Space` goes there as to a red word, and the number is
+already in the field, raised – `Enter` accepts it. The number follows from the numbering: the previous footnote and
+the readable numbers of the footnotes at the bottom of the page. Where text recognition swallowed many marks, it is
+off; then type the correct number and raise it – the following suggestions go by it. The quotation of a note (`F4`)
+contains no footnote marks.
 
 ## Splitting and joining lines
 

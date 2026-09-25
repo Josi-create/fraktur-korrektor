@@ -67,6 +67,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 #lines div.pgsep{text-align:center;color:#999;font:13px Segoe UI,Arial,sans-serif;letter-spacing:1px;margin:18px 0 10px 0;white-space:nowrap;overflow:hidden}
 .flag{background:#f99;border-radius:2px}
 .auto{background:#fc8;border-radius:2px}
+.fnref{background:#c9dcff;border-radius:2px}  /* Fußnotenzeichen, das hochzustellen wäre */
 .curflag{outline:2px solid #c00}
 /* Auszeichnung im Text (XHTML wie im EPUB) wird nicht gezeigt, sondern dargestellt: Tabellen als Gitter – jede Zelle ist
    weiterhin eine Zeile (Lesecursor, Klick, Eingabefeld) –, Überschriften groß, <em>/<sup> … als Schrift */
@@ -257,7 +258,7 @@ if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transiti
 
 // Am Mac heißt die Taste zu Strg+F, Strg+⌫ usw. ⌘ (onKey nimmt metaKey wie ctrlKey)
 const MAC = /Mac/i.test(navigator.platform), macKeys = s => MAC ? s.replace(/<kbd>(Strg|Ctrl)<\/kbd>/g, '<kbd>⌘</kbd>') : s;
-const HELP = { read: macKeys(t('help_read')), fix: t('help_fix'), free: t('help_free'), table: t('help_table'), konf: t('help_konf') };
+const HELP = { read: macKeys(t('help_read')), fix: macKeys(t('help_fix')), free: macKeys(t('help_free')), table: t('help_table'), konf: t('help_konf') };
 
 function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 // Auszeichnung: dieselben Elemente wie der Server (korrlib.MARKUP)
@@ -277,6 +278,20 @@ function rawPos(l, v) {
 // Für das Eingabefeld: Struktur-Auszeichnung am Zeilenanfang und -ende bleibt unsichtbar und wird beim Speichern wieder angefügt
 const STRUCT = '(?:</?(?:table|tr|td|th|h[1-6]|p|blockquote)>)*';
 function parts(l) { const m = l.match(new RegExp('^(' + STRUCT + ')([\\s\\S]*?)(' + STRUCT + ')$')); return { pre: m[1], core: m[2], post: m[3] }; }
+// Hochgestellte Zahlen (Fußnotenzeichen) zeigt das Feld als hochgestellte Ziffern: <sup>38</sup> ↔ ³⁸. Gespeichert wird wieder
+// <sup> (supMark; der Server tut es ebenso, korrlib.sup_markup). supPos rechnet Zeichenpositionen der Zeile ins Feld um.
+const SUPD = '⁰¹²³⁴⁵⁶⁷⁸⁹', SUPRE = /<sup>(\d+)<\/sup>/g;
+const toSup = s => s.replace(/\d/g, d => SUPD[d]), fromSup = s => s.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, c => SUPD.indexOf(c));
+const supShow = s => s.replace(SUPRE, (m, d) => toSup(d)), supMark = s => s.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, m => '<sup>' + fromSup(m) + '</sup>');
+function supPos(core, raw) { let d = 0; for (const m of core.matchAll(SUPRE)) if (m.index + m[0].length <= raw) d += m[0].length - m[1].length; return raw - d; }
+const fpos = f => supPos(ed.core, f.start - ed.pre.length);  // wo das markierte Wort im Feld steht
+// Strg+Umschalt++ (wie in Word): die Ziffern vor der Schreibmarke – oder die markierten – hoch- bzw. wieder tiefstellen
+function supToggle(el) {
+  let a = el.selectionStart, b = el.selectionEnd; const v = el.value;
+  if (a == b) { const re = /\d/.test(v[a - 1] || '') ? /\d/ : /[⁰¹²³⁴⁵⁶⁷⁸⁹]/; while (a > 0 && re.test(v[a - 1])) a--; }
+  const x = v.slice(a, b); if (!x) return;
+  el.setRangeText(/\d/.test(x) ? toSup(x) : fromSup(x), a, b, 'end'); el.dispatchEvent(new Event('input'));
+}
 let ed = { pre: '', post: '' }, ed2 = { pre: '', post: '' };
 // Getrenntes Wort mit der zweiten Hälfte in der Folgezeile; über die Seitengrenze (cross) steht sie auf der anderen Seite
 function isJoin(f) { return f && f.word.indexOf('¬') >= 0 && !f.cross; }
@@ -351,7 +366,7 @@ function mark(i, b) {
   let parts = [], last = l.length;
   for (const f of fs) {
     parts.unshift(fmt(l.slice(f.s + f.n, last)));
-    parts.unshift('<span class="' + (f.k == 'auto' ? 'auto' : f.k == 'found' ? 'found' : 'flag') + (f.c ? ' curflag' : '') + '">' + esc(l.slice(f.s, f.s + f.n)) + '</span>');
+    parts.unshift('<span class="' + (f.k == 'auto' ? 'auto' : f.k == 'found' ? 'found' : f.k == 'fnref' ? 'fnref' : 'flag') + (f.c ? ' curflag' : '') + '">' + esc(l.slice(f.s, f.s + f.n)) + '</span>');
     last = f.s;
   }
   parts.unshift(fmt(l.slice(0, last)));
@@ -426,7 +441,7 @@ let aheadSent = '';
 function suggestAhead() {
   const at = cf ? { line: cf.line, start: cf.start - 1 } : { line: li, start: -1 };  // beim Korrigieren: ab dem Wort, das offen ist
   const words = data.flags.filter(f => f.line > at.line || (f.line == at.line && f.start > at.start)).concat(nextD ? nextD.flags : [])
-    .filter(f => f.kind != 'page').slice(0, 3).map(f => f.word);
+    .filter(f => f.kind != 'page' && f.kind != 'fnref').slice(0, 3).map(f => f.word);
   const key = words.join('|'); if (key == aheadSent) return; aheadSent = key;
   if (words.length) fetch(BASE + '/api/suggest_ahead', { method: 'POST', body: JSON.stringify({ words }) }).catch(() => {});
 }
@@ -561,12 +576,17 @@ $('fnext').onclick = guarded(() => nextHit(1)); $('fprev').onclick = guarded(() 
 
 function enterFix(f) {
   mode = 'fix'; cf = f; li = f.line;
-  $('word').innerHTML = (f.kind == 'page' ? t('kind_page', { n: f.expect }) : t(f.kind == 'auto' ? 'kind_auto' : 'kind_oov')) + '<b>' + esc(f.word) + '</b>' + (f.cross ? t('cross_' + f.cross) : '');
+  $('word').innerHTML = (f.kind == 'page' ? t('kind_page', { n: f.expect }) : f.kind == 'fnref' ? t('kind_fnref', { n: toSup(String(f.expect)) })
+    : t(f.kind == 'auto' ? 'kind_auto' : 'kind_oov')) + '<b>' + esc(f.word) + '</b>' + (f.cross ? t('cross_' + f.cross) : '');
   const e1 = $('edit'), e2 = $('edit2');
-  ed = parts(data.lines[f.line]); e1.style.display = ''; e1.value = ed.core;
-  const j = isJoin(f); e2.style.display = j ? '' : 'none'; if (j) { ed2 = parts(data.lines[f.line + 1]); e2.value = ed2.core; }
-  sug = null; if (f.kind != 'page') loadSuggestions(f);  // eine Seitenzahl hat ihren Vorschlag schon im Hinweis
-  render(); e1.focus(); setTimeout(() => e1.setSelectionRange(f.start - ed.pre.length, f.start - ed.pre.length + f.len), 0); bookmark();
+  ed = parts(data.lines[f.line]); e1.style.display = ''; e1.value = supShow(ed.core);
+  const j = isJoin(f); e2.style.display = j ? '' : 'none'; if (j) { ed2 = parts(data.lines[f.line + 1]); e2.value = supShow(ed2.core); }
+  let n = f.len; sug = null;
+  if (f.kind == 'fnref') {  // Fußnotenzeichen: die Nummer steht gleich hochgestellt im Feld, Enter übernimmt sie
+    const s = toSup(String(f.expect)), fs = fpos(f); n = s.length;
+    e1.value = e1.value.slice(0, fs) + s + e1.value.slice(fs + f.len); sug = { word: f.word, items: [s], i: 0, orig: f.word, seq: ++sugSeq };
+  } else if (f.kind != 'page') loadSuggestions(f);  // eine Seitenzahl hat ihren Vorschlag schon im Hinweis
+  render(); e1.focus(); setTimeout(() => e1.setSelectionRange(fpos(f), fpos(f) + n), 0); bookmark();
 }
 // ---- Korrekturvorschläge zum roten Wort (#41): erst, was in diesem Buch schon einmal daraus gemacht wurde, dann typische
 // Lesefehler der Fraktur-OCR, zuletzt das Wörterbuch. Zwei Anfragen: die schnelle zeigt sofort etwas, die vollständige
@@ -576,7 +596,7 @@ let sug = null, sugSeq = 0;  // word, items, i (gewählt, -1 = wie erkannt), ori
 function renderSug() {
   const box = $('sugbox');
   if (mode != 'fix' || !sug || !sug.items.length || !cf) { box.style.display = 'none'; return; }
-  const f = cf, e1 = $('edit'), fs = f.start - ed.pre.length;
+  const f = cf, e1 = $('edit'), fs = fpos(f);
   // unter dem Wort: die Breite des Textes davor im Feld messen (Rahmen und Innenabstand des Felds: 7 px)
   const c = document.createElement('canvas').getContext('2d'); c.font = getComputedStyle(e1).font;
   const x = e1.offsetLeft + 7 + c.measureText(e1.value.slice(0, fs)).width, under = isJoin(f) ? $('edit2') : e1;
@@ -599,8 +619,8 @@ async function loadSuggestions(f) {
 function applySug(k) {
   const f = cf, e1 = $('edit'); if (!sug || !f || mode != 'fix') return;
   sug.i = Math.max(-1, Math.min(sug.items.length - 1, k));
-  let nw = sug.i < 0 ? sug.orig : sug.items[sug.i]; const fs = f.start - ed.pre.length;
-  const cur = (e1.value.slice(fs).match(WRE) || [''])[0];  // das Wort, das dort gerade steht (der Nutzer kann schon getippt haben)
+  let nw = sug.i < 0 ? sug.orig : sug.items[sug.i]; const fs = fpos(f);
+  const cur = (e1.value.slice(fs).match(f.kind == 'fnref' ? /^[*\d⁰¹²³⁴⁵⁶⁷⁸⁹]+/ : WRE) || [''])[0];  // was dort gerade steht (der Nutzer kann schon getippt haben)
   if (isJoin(f)) {  // getrenntes Wort: die erste Hälfte bleibt so lang wie bisher, der Rest kommt in die Folgezeile
     const e2 = $('edit2'), cur2 = (e2.value.match(WRE) || [''])[0];
     e1.setRangeText(nw.slice(0, f.len), fs, fs + cur.length, 'select'); e2.setRangeText(nw.slice(f.len), 0, cur2.length, 'select');
@@ -614,8 +634,8 @@ function enterFree(sel) {
   if (skippable(li)) return;
   mode = 'free'; cf = null; sug = null;
   $('word').innerHTML = t('edit_line', { n: li + 1 });
-  ed = parts(data.lines[li]); const e1 = $('edit'); e1.style.display = ''; e1.value = ed.core; $('edit2').style.display = 'none';
-  const o = ed.pre.length, n = ed.core.length, at = x => Math.max(0, Math.min(n, x - o));
+  ed = parts(data.lines[li]); const e1 = $('edit'); e1.style.display = ''; e1.value = supShow(ed.core); $('edit2').style.display = 'none';
+  const o = ed.pre.length, n = ed.core.length, at = x => supPos(ed.core, Math.max(0, Math.min(n, x - o)));
   render(); e1.focus(); setTimeout(() => e1.setSelectionRange(sel ? at(sel[0]) : 0, sel ? at(sel[1]) : 0), 0);
 }
 // Getrenntes Wort: Die zweite Hälfte steht im Feld darunter. Tab, ↓ und → am Zeilenende führen hin (wie in einem Text, der
@@ -648,12 +668,12 @@ function afterFix(line, start) {
 }
 async function commit() {
   const line = mode == 'fix' ? cf.line : li, f = cf, edits = [];
-  const v = $('edit').value, full = ed.pre + v + ed.post; if (full !== data.lines[line]) edits.push({ line, old: data.lines[line], new: full });
-  if (mode == 'fix' && isJoin(f)) { const v2 = ed2.pre + $('edit2').value + ed2.post; if (v2 !== data.lines[line + 1]) edits.push({ line: line + 1, old: data.lines[line + 1], new: v2 }); }
+  const v = $('edit').value, full = supMark(ed.pre + v + ed.post); if (full !== data.lines[line]) edits.push({ line, old: data.lines[line], new: full });
+  if (mode == 'fix' && isJoin(f)) { const v2 = supMark(ed2.pre + $('edit2').value + ed2.post); if (v2 !== data.lines[line + 1]) edits.push({ line: line + 1, old: data.lines[line + 1], new: v2 }); }
   let oldW = '', newW = '', neu = false;
-  if (mode == 'fix' && f.kind != 'page' && !f.cross) {  // eine Seitenzahl ist kein Wort für die Serienkorrektur, eine halbe Seite auch nicht
+  if (mode == 'fix' && f.kind != 'page' && f.kind != 'fnref' && !f.cross) {  // Seitenzahl und Fußnotenzeichen sind keine Wörter für die Serienkorrektur, eine halbe Seite auch nicht
     oldW = f.word.replace('¬', '');
-    const fs = f.start - ed.pre.length, a = (v.slice(fs).match(WRE) || [''])[0];
+    const fs = fpos(f), a = (v.slice(fs).match(WRE) || [''])[0];
     newW = isJoin(f) && v.trimEnd().endsWith('¬') && v.trimEnd().length - 1 == fs + a.length ? a + (($('edit2').value.match(WRE) || [''])[0]) : a;
   }
   if (edits.length) {
@@ -671,7 +691,7 @@ async function commit() {
   if (neu) { pending.pg = pg; pending.line = li; pending.auto = mode == 'fix' ? cf : null; render(); }  // wo das Angebot für F9 gilt
 }
 async function whitelist() {
-  const f = cf; if (!f || f.kind == 'page') return;  // eine falsche Seitenzahl lässt sich nur berichtigen
+  const f = cf; if (!f || f.kind == 'page' || f.kind == 'fnref') return;  // Seitenzahl und Fußnotenzeichen lassen sich nur berichtigen
   await fetch(BASE + '/api/whitelist', { method: 'POST', body: JSON.stringify({ word: f.word.replace('¬', '') }) });
   data = await (await fetch(BASE + '/api/page/' + pg)).json(); updateCount();
   afterFix(f.line, f.start);
@@ -1095,11 +1115,11 @@ function startSeries() {
 // Wort, auf dem er steht (beim Lesen das der Lesezeile), und was er schon ins Feld getippt hat, als Ersetzung.
 function seriesStart() {
   if (pending && pg == pending.pg && (mode == 'fix' ? cf == pending.auto : mode == 'read' && li == pending.line)) return pending;
-  if (mode == 'fix' && cf && cf.kind != 'page') {
-    const old = cf.word.replace('¬', ''), a = isJoin(cf) || cf.cross ? '' : ($('edit').value.slice(cf.start - ed.pre.length).match(WRE) || [''])[0];
+  if (mode == 'fix' && cf && cf.kind != 'page' && cf.kind != 'fnref') {
+    const old = cf.word.replace('¬', ''), a = isJoin(cf) || cf.cross ? '' : ($('edit').value.slice(fpos(cf)).match(WRE) || [''])[0];
     return { old, new: a != old ? a : '' };
   }
-  const own = x => x.line == li && x.kind != 'page';
+  const own = x => x.line == li && x.kind != 'page' && x.kind != 'fnref';
   const f = mode == 'read' && (data.flags.find(x => own(x) && !(passed && passed.line == li && x.start <= passed.start)) || data.flags.find(own));
   if (f) return { old: f.word.replace('¬', ''), new: '' };
   return pending || { old: '', new: '' };
@@ -1109,7 +1129,7 @@ async function whitelistRead() {
   // von links nach rechts; ohne rotes Wort in der Lesezeile: das nächste weiter unten auf der Seite, diese Zeile wird Lesezeile
   const f = data.flags.find(x => isJoin(x) && x.line + 1 == li) || data.flags.find(x => x.line == li) || data.flags.find(x => x.line > li);
   if (!f) { msg = t('no_red'); render(); return; }
-  if (f.kind == 'page') { enterFix(f); return; }
+  if (f.kind == 'page' || f.kind == 'fnref') { enterFix(f); return; }
   if (f.line > li) { li = f.line; bookmark(); }
   const w = f.word.replace('¬', '');
   await fetch(BASE + '/api/whitelist', { method: 'POST', body: JSON.stringify({ word: w }) });
@@ -1180,6 +1200,8 @@ async function onKey(e) {
   if (e.key == 'F1') { e.preventDefault(); window.open($('helplink').href, '_blank'); return; }
   // Strg+F (Mac: Cmd+F) ist die gewohnte Suche – beim Lesen unsere statt der des Browsers
   if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key == 'f' || e.key == 'F') && data && mode == 'read') { e.preventDefault(); askOpen('find'); return; }
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && (e.key == '+' || e.key == '*' || e.code == 'NumpadAdd') && e.target.tagName == 'INPUT'
+      && (mode == 'fix' || mode == 'free')) { e.preventDefault(); supToggle(e.target); return; }  // DE-Tastatur: Umschalt++ ist »*«
   // Strg + / − / 0: Schriftgröße des Textes (statt des Browser-Zooms, der auch Leisten und Bild vergrößert)
   if ((e.ctrlKey || e.metaKey) && !e.altKey && data && ['+', '-', '0', '='].includes(e.key)) { e.preventDefault(); setTextZoom(e.key == '0' ? null : e.key == '-' ? tzoom / 1.15 : tzoom * 1.15); return; }
   // Strg/⌘+⌫ löscht Rauschzeilen, Strg/⌘+Z holt sie zurück – nur beim Lesen; im Eingabefeld gelten sie wie gewohnt.
@@ -1366,6 +1388,7 @@ $('text').addEventListener('wheel', onWheel, { passive: false }); $('imgpane').a
                                                        clientY: r.top + pane.clientTop + s.ty + (q.y + (g.y0 + g.y1) / 2) * s.k }));
     }
     else if (k.startsWith('Shift+') || k.startsWith('Shift ')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(6), shiftKey: true, bubbles: true }));
+    else if (k.startsWith('CtrlShift:')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(10), ctrlKey: true, shiftKey: true, bubbles: true }));  // z. B. CtrlShift:* (Strg+Umschalt++)
     else if (k.startsWith('Ctrl+') || k.startsWith('Ctrl ')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(5), ctrlKey: true, bubbles: true }));  // »+« wird in der Adresse zum Leerzeichen
     else if (k.includes('=')) $(k.split('=')[0]).value = k.split('=')[1];
     else (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k == 'Space' ? ' ' : k, bubbles: true }));

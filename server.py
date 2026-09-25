@@ -152,6 +152,7 @@ class Book:
         self.pages, self.mt, self.freq, self.wl, self.wlmt, self.fcache, self.size = {}, {}, {}, set(), None, {}, {}
         self.feet = {}  # Seitenzahlen unten auf der Seite: {seite: (zahl, zeile, position, länge)}, nur in Büchern, die sie dort tragen
         self.heads = {}  # Kolumnentitel als Textzeile oben: {seite: (seitenzahl oder None, [zeilen])}, nur in Büchern, die sie tragen
+        self.fnrefs = {}  # Fußnotenzeichen, die noch hochzustellen sind: {seite: [flag]} (footnote_refs)
         self.prog = None  # [geprüfte Seiten, Seiten] während overview() läuft – für den Ladebalken (/api/progress)
         self.gelernt = None  # Korrekturvorschläge: (mtime des Protokolls, Wortpaare)
         self.para_checked = False  # Absätze (#67): in dieser Sitzung schon geprüft, ob sie noch zu erkennen sind
@@ -227,7 +228,7 @@ class Book:
         err = notes_ready(folder)
         if err:
             return None, err
-        text = korrlib.TAG.sub('', text)
+        text = korrlib.TAG.sub('', re.sub(r'<sup>\d+</sup>|[⁰¹²³⁴⁵⁶⁷⁸⁹]+', '', text))  # Fußnotenzeichen gehören nicht ins Zitat
         text = re.sub(r'¬\s*\n\s*', '', text)  # getrennte Wörter zusammenziehen, Zeilen zu einem Absatz
         text = ' '.join(text.split()).strip()
         if not text:
@@ -336,6 +337,7 @@ class Book:
             self.freq = corpus_freq(self.pages)
             self.heads = korrlib.head_lines(self.pages)
             self.feet = korrlib.foot_numbers(self.pages, self.heads)
+            self.fnrefs = self.footnote_refs()
         wlmt = os.path.getmtime(self.wlpath) if os.path.exists(self.wlpath) else None
         if wlmt != self.wlmt:
             self.wl = set(open(self.wlpath, encoding='utf-8').read().split()) if wlmt else set()
@@ -346,6 +348,66 @@ class Book:
         """Die Zeilen des Kolumnentitels, den die Erkennung als Text gelesen hat (korrlib.head_lines): Sie gehören wie die
         Kopfzeile nicht zum Text – nicht geprüft, nicht Teil eines getrennten Worts, eines Absatzes, einer Löschung."""
         return set(self.heads[pg][1]) if pg in self.heads else set()
+
+    def footnote_anchors(self):
+        """{seite: kleinste verlässliche Fußnotennummer unten auf der Seite}. Lesbar ist eine Nummer am Anfang einer
+        Fußnotenzeile; verlässlich, wenn sie zur längsten Folge solcher Nummern gehört, die mit den Seiten wächst (höchstens
+        15 je Seite) – verstümmelte (»3« statt 36, »190« statt 109) passen in keine lange Folge."""
+        keys, cand = list(self.pages), []
+        for k, pg in enumerate(keys):
+            lines = self.pages[pg]
+            if '---' in lines:
+                cand += sorted((k, int(m.group(1))) for l in lines[lines.index('---') + 1:] for m in [re.match(r'\s*(\d{1,3})\s', l)] if m)
+        best, prev = [1] * len(cand), [-1] * len(cand)
+        for i, (ki, ni) in enumerate(cand):
+            for j in range(i):
+                kj, nj = cand[j]
+                if kj <= ki and nj < ni <= nj + 15 * max(1, ki - kj) and best[j] + 1 > best[i]:
+                    best[i], prev[i] = best[j] + 1, j
+        out, i = {}, max(range(len(cand)), key=lambda i: best[i], default=-1)
+        while i >= 0:
+            out[keys[cand[i][0]]] = cand[i][1]  # rückwärts: am Ende steht die kleinste der Seite
+            i = prev[i]
+        return out
+
+    def footnote_refs(self):
+        """Fußnotenzeichen im Text, die noch nicht hochgestellt sind: {seite: [flag]} mit kind 'fnref' und expect = der
+        Nummer, die dort stehen müsste. Die Erkennung liest hochgestellte Zahlen oft als »*« oder klebt sie ans Wort
+        (»beziffert.36«). Fußnoten sind fortlaufend nummeriert: Das Programm geht das Buch in Lesereihenfolge durch, merkt
+        sich die letzte Nummer und schlägt für ein »*« die nächste vor. Verankert wird die Zählung an schon hochgestellten
+        Nummern, an angeklebten Ziffern und an der kleinsten lesbaren Nummer der Fußnoten unten auf der Seite – beide nur,
+        wenn sie nach vorn passen (höchstens 40 weiter; 1 bei neuer Zählung je Kapitel). Viele Zeichen verschluckt die
+        Erkennung ganz, dann liegt der Vorschlag daneben; hat der Nutzer eine Nummer richtig hochgestellt, folgen die
+        nächsten aus ihr. Nur im Haupttext von Seiten mit Fußnoten (»---«) – dort stehen ihre Zeichen."""
+        out, last, anchor = {}, None, self.footnote_anchors()
+        fits = lambda n: last is None or last < n <= last + 40  # weiter vorn in der Folge, ohne großen Sprung
+        for pg, lines in self.pages.items():
+            if '---' not in lines:
+                continue
+            end = lines.index('---')
+            if pg in anchor:
+                last = anchor[pg] - 1
+            if pg in self.feet:
+                end = min(end, self.feet[pg][1])
+            kopf = self.kopf(pg)
+            for i in range(end):
+                l = lines[i]
+                if (i == 0 and l.startswith('#')) or i in kopf:
+                    continue
+                for m in korrlib.FNREF.finditer(l):
+                    if m.group(1):
+                        last = int(m.group(1))
+                    elif m.group(2):
+                        last = (last or 0) + 1
+                        out.setdefault(pg, []).append(dict(line=i, start=m.start(2), len=len(m.group(2)), word=m.group(2), kind='fnref', expect=last))
+                    else:
+                        n, before = int(m.group(3)), l[:m.start()]
+                        if (before[-1:] in '.,;:' and before[-2:-1].isdigit()) or korrlib.REFABBR.search(before):
+                            continue  # »10.000«, »S.12«
+                        if fits(n) or n == 1:  # 1: neue Zählung je Kapitel
+                            last = n
+                            out.setdefault(pg, []).append(dict(line=i, start=m.start(3), len=len(m.group(3)), word=m.group(3), kind='fnref', expect=n))
+        return out
 
     def edge_word(self, pg, last):
         """(zeile, start, wort) des letzten Worts im Haupttext einer Seite, wenn die Zeile mit ¬ endet – bzw. des ersten,
@@ -394,7 +456,9 @@ class Book:
         k = keys.index(pg)
         prev, nxt = keys[k - 1] if k else None, keys[k + 1] if k + 1 < len(keys) else None
         kopf = self.kopf(pg)
-        key = (self.mt[pg], self.wlmt, dics, exp, n, self.mt.get(prev), self.mt.get(nxt), tuple(sorted(kopf)))  # exp und Trennungen hängen an den Nachbarseiten
+        refs = self.fnrefs.get(pg, [])  # ihre Nummer hängt an den Seiten davor
+        key = (self.mt[pg], self.wlmt, dics, exp, n, self.mt.get(prev), self.mt.get(nxt), tuple(sorted(kopf)),
+               tuple((f['line'], f['start'], f['expect']) for f in refs))  # exp und Trennungen hängen an den Nachbarseiten
         c = self.fcache.get(pg)
         if c and c[0] == key:
             return c[1]
@@ -433,6 +497,7 @@ class Book:
                     out.append(dict(line=ii, start=hit[0][0], len=len(cand), word=cand, kind='auto'))
                     have.add((ii, hit[0][0]))
                     break
+        out += [dict(f) for f in refs]
         out.sort(key=lambda f: (f['line'], f['start']))
         self.fcache[pg] = (key, out)
         return out
@@ -822,6 +887,7 @@ class Book:
                 if not (0 <= e['line'] < len(lines)) or lines[e['line']] != e['old'] or '\n' in e['new']:
                     return None
             for e in edits:
+                e['new'] = korrlib.sup_markup(e['new'])  # ³⁸ aus dem Bearbeitungsfeld → <sup>38</sup>
                 lines[e['line']] = e['new']
             self.write_page(pg, lines)
             for e in edits:
@@ -851,7 +917,7 @@ class Book:
                 return None, 409
             if any(m.start() < pos < m.end() for m in korrlib.TAG.finditer(text)):
                 return None, 400  # mitten in einer Auszeichnung
-            left, right = text[:pos].rstrip(), text[pos:].lstrip()
+            left, right = korrlib.sup_markup(text[:pos].rstrip()), korrlib.sup_markup(text[pos:].lstrip())
             if not korrlib.TAG.sub('', left).strip() or not korrlib.TAG.sub('', right).strip():  # am sichtbaren Text gemessen
                 return None, 400
             seq = self.geo_seq(pg, lines)

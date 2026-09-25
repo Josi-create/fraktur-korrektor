@@ -398,6 +398,17 @@ MARKUP = 'table|tr|td|th|h[1-6]|em|strong|i|b|sup|sub|p|blockquote|br'
 TAG = re.compile(r'</?(?:%s)\s*/?>' % MARKUP)
 TABLETAG = re.compile(r'</?(?:table|tr|td|th)>')
 HEADTAG = re.compile(r'</?h[1-6]>')
+SUPD = '⁰¹²³⁴⁵⁶⁷⁸⁹'
+def sup_markup(s):
+    """Hochgestellte Ziffern – so zeigt sie das Bearbeitungsfeld, so kommen sie beim Einfügen – als Auszeichnung wie im
+    EPUB: »eingewiesen.³⁸« → »eingewiesen.<sup>38</sup>«."""
+    return re.sub('[%s]+' % SUPD, lambda m: '<sup>%s</sup>' % m.group().translate(str.maketrans(SUPD, '0123456789')), s)
+# Fußnotenzeichen im Text: schon hochgestellt (<sup>38</sup>), von der Erkennung als »*« gelesen oder als Ziffern, die ohne
+# Leerzeichen am Wort oder Satzzeichen kleben (»beziffert.36«). Nicht »*)« und »*1890« (Stern vor dem Geburtsjahr).
+FNREF = re.compile(r'<sup>(\d{1,3})</sup>|(?<=[A-Za-zÄÖÜäöüßſ.,;:!?“”"»«\'’)\]])(?:(\*+)(?![)\d*])|(\d{1,3})(?=[\s,.;:!?)“”"»«]|$))')
+# davor eine Abkürzung: »S.12«, »Nr.5« – das ist eine Stellenangabe, kein Fußnotenzeichen
+REFABBR = re.compile(r'(?:^|[\s(])(?:S|Nr|Bd|Bde|Abs|Art|Anm|Kap|Tab|Abb|Jg|Jh|Bl|fol|Taf|Fig|Vol|No|St|Str|ca|Heft|Hft|Teil|Tl|'
+                     r'Band|Seite|Ziff|Aufl|Ausg)\.?$', re.I)
 def mask(l):
     """Auszeichnung durch Leerzeichen ersetzen – die Zeichenpositionen bleiben, die Wortprüfung sieht kein 'td'."""
     return TAG.sub(lambda m: ' ' * len(m.group()), l)
