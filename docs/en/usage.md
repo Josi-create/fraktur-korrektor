@@ -44,9 +44,11 @@ is being changed – and **Edit line** (orange).
 | Reading | `H` | heading: level 1 → 2 → 3 → none (see below) |
 | Reading | `I` | contents: all headings of the book, `Enter` goes there (see below) |
 | Reading | `V` | join the reading line with the next line |
+| Reading | `Ctrl`+`⌫` (Mac: `⌘`+`⌫`) | delete the reading line, or all lines marked with `Shift`+`↓`/`↑` – for noise from the scan edge (see below) |
+| Reading | `Ctrl`+`Z` (Mac: `⌘`+`Z`) | bring back the lines deleted last |
 | Reading | `W` | show the whitelist |
 | Reading | `D` | dictionary: which spelling applies to this book (see below) |
-| Reading | `Shift`+`↓` / `↑` | select lines for a note (within the page); any other key clears the selection |
+| Reading | `Shift`+`↓` / `↑` | select lines, for a note or to delete them (within the page); any other key clears the selection |
 | Reading / Correction | `F4` or right-click the selection | note for Obsidian from the selected passage, otherwise from the reading line (see below) |
 | Reading | `Z` | after merging two states of a book: to the next line that was corrected differently on both computers; `1` keeps this version, `2` takes the other (see [Saving a book as PDF](pdf-sichern.md)) |
 | Reading | `O` | set the notes folder for this book |
@@ -150,6 +152,20 @@ Sometimes text recognition misses a line break – two lines (or two table cells
 The program also splits or merges the **image area** of the line (when splitting, proportionally at the split point). This
 way every line of text keeps its place in the page image – unlike changing the number of lines in another editor. Inside a
 table, the table is renumbered afterwards: shifted columns fall back into place.
+
+## Deleting noise from the scan edge
+
+With scans that have a dark edge or a cut-off neighbouring page, text recognition sometimes reads lines that are not text
+at all – at the top, or below the page number, there are strings like `BTB`, `LLL AAA` or `E NN SE HE K`. Delete such lines
+in reading mode with `Ctrl`+`⌫` (on a Mac `⌘`+`⌫`, the *delete* key): the reading line disappears without asking. Several
+lines at once: mark them with `Shift`+`↓`/`↑`, then `Ctrl`+`⌫`.
+
+Deleted by mistake? `Ctrl`+`Z` (on a Mac `⌘`+`Z`) puts the lines deleted last back in their place, also several times in a
+row. The Del key on its own deliberately deletes nothing – it is too easy to hit while reading.
+
+The running head, the footnote rule, the page number at the bottom and lines of a table cannot be deleted this way. As
+with splitting and joining, the image area of the line goes too, and the other lines keep their place in the page image;
+every deletion is recorded in the log `korrekturen.log`.
 
 ## Tables (T)
 

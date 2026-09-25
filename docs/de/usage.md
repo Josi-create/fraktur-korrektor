@@ -44,9 +44,11 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `H` | Überschrift: Ebene 1 → 2 → 3 → keine (siehe unten) |
 | Lesen | `I` | Inhalt: alle Überschriften des Buchs, `Enter` springt hin (siehe unten) |
 | Lesen | `V` | Lesezeile mit der nächsten Zeile verbinden |
+| Lesen | `Strg`+`⌫` (Mac: `⌘`+`⌫`) | Lesezeile löschen, bzw. alle mit `Umschalt`+`↓`/`↑` markierten – für Rauschen vom Scanrand (siehe unten) |
+| Lesen | `Strg`+`Z` (Mac: `⌘`+`Z`) | zuletzt gelöschte Zeilen zurückholen |
 | Lesen | `W` | Whitelist anzeigen |
 | Lesen | `D` | Wörterbuch: welche Rechtschreibung gilt in diesem Buch (siehe unten) |
-| Lesen | `Umschalt`+`↓` / `↑` | Zeilen für eine Notiz markieren (innerhalb der Seite); jede andere Taste hebt die Markierung auf |
+| Lesen | `Umschalt`+`↓` / `↑` | Zeilen markieren, für eine Notiz oder zum Löschen (innerhalb der Seite); jede andere Taste hebt die Markierung auf |
 | Lesen / Korrektur | `F4` oder Rechtsklick auf die Markierung | Notiz für Obsidian aus der markierten Passage, sonst aus der Lesezeile (siehe unten) |
 | Lesen | `Z` | nach dem Zusammenführen zweier Arbeitsstände: zur nächsten Zeile, die an beiden Rechnern anders berichtigt wurde; `1` behält die hiesige Fassung, `2` nimmt die andere (siehe [Ein Buch als PDF sichern](pdf-sichern.md)) |
 | Lesen | `O` | Notizordner für dieses Buch festlegen |
@@ -155,6 +157,20 @@ sie macht einen zu viel.
 Das Programm teilt bzw. vereinigt dabei auch den **Bildausschnitt** der Zeile (beim Teilen anteilig an der Trennstelle).
 So behält jede Textzeile ihre Stelle im Seitenbild – anders als beim Ändern der Zeilenzahl in einem fremden Editor.
 Innerhalb einer Tabelle wird die Tabelle danach neu durchgezählt: Verrutschte Spalten stehen wieder richtig.
+
+## Rauschen vom Scanrand löschen
+
+Bei Scans mit dunklem Rand oder angeschnittener Nachbarseite liest die Texterkennung manchmal Zeilen, die gar kein Text
+sind – oben oder unter der Seitenzahl stehen dann Buchstabenketten wie `BTB`, `LLL AAA` oder `E NN SE HE K`. Solche Zeilen
+löschen Sie im Lesemodus mit `Strg`+`⌫` (am Mac `⌘`+`⌫`, die Taste *delete*): Die Lesezeile verschwindet, ohne
+Rückfrage. Mehrere Zeilen auf einmal: mit `Umschalt`+`↓`/`↑` markieren, dann `Strg`+`⌫`.
+
+Versehentlich gelöscht? `Strg`+`Z` (am Mac `⌘`+`Z`) holt die zuletzt gelöschten Zeilen an ihre Stelle zurück, auch
+mehrmals hintereinander. Die Entf-Taste allein löscht absichtlich nichts – auf sie gerät man beim Lesen zu leicht.
+
+Die Kopfzeile, der Fußnotenstrich, die Seitenzahl unten und Zeilen einer Tabelle lassen sich so nicht löschen. Wie beim
+Teilen und Verbinden fällt der Bildausschnitt der Zeile mit weg, die übrigen Zeilen behalten ihre Stelle im Seitenbild;
+jede Löschung steht im Protokoll `korrekturen.log`.
 
 ## Tabellen (T)
 

@@ -5,6 +5,17 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Rauschen vom Scanrand löschen** (#73): Zeilen, die die Texterkennung aus einem dunklen Rand oder einer
+  angeschnittenen Nachbarseite gelesen hat (`BTB`, `LLL AAA`), löscht im Lesemodus `Strg`+`⌫` (Mac: `⌘`+`⌫`) – die
+  Lesezeile oder alle mit `Umschalt`+`↓`/`↑` markierten, ohne Rückfrage; `Strg`/`⌘`+`Z` holt die zuletzt gelöschten
+  Zeilen zurück, auch mehrmals hintereinander. `Entf` allein bleibt absichtlich ohne Wirkung. Kopfzeile,
+  Fußnotenstrich, Seitenzahl unten und Tabellenzeilen sind geschützt. Die Bildzeilen fallen aus `lines.json` mit weg und
+  kommen beim Zurückholen an ihren Platz in der Folge zurück (Zeilenzahl = Bildzuordnung); gemerkt wird das in
+  `geloescht.json` samt Nachbarzeilen – hat sich die Seite so verändert, dass die Stelle unklar ist, bleibt die Zeile
+  gelöscht und eine Meldung sagt es. Protokoll: `loeschen:ID` bzw. `zurueck:ID`, eine Zeile je Eintrag. Das
+  Zusammenführen zweier Arbeitsstände spielt beides nach; eine Zeile, die hier inzwischen anders lautet, wird nicht
+  gelöscht, sondern als Konflikt gezeigt. `/api/lines/<seite>` mit `kind=delete`, `/api/undelete`. Am Mac zeigt die
+  Tastenleiste jetzt `⌘` statt `Strg`. Hilfe *Bedienung* (DE/EN): Abschnitt *Rauschen vom Scanrand löschen*.
 - **Seitenzahl unten auf der Seite**: Neuere Bücher (und ältere auf Kapitelanfängen) tragen die Seitenzahl unten. Das
   Programm erkennt sie dort jetzt von selbst – eine kurze Zeile unter den letzten drei, die fast nur aus einer Zahl
   besteht, Rauschen vom Seitenrand daneben (»i 20«, »44ä«, »— 137 —«) inbegriffen, Bogensignaturen (»4 *«) nicht. Das

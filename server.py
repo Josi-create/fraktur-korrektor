@@ -299,7 +299,8 @@ class Book:
         korrlib.VORSCHLAEGE.vorausrechnen([w.replace('¬', '') for w in words if len(w.replace('¬', '')) > 2][:5], dics)
 
     def klog(self, kind, pg, line, old, new, when=None):
-        """Korrekturprotokoll: Zeit, Art (edit | serie:ID | undo:ID | teilen | verbinden | fnsep | seite | whitelist+/-),
+        """Korrekturprotokoll: Zeit, Art (edit | serie:ID | undo:ID | teilen | verbinden | fnsep | seite | whitelist+/- |
+        loeschen:ID | zurueck:ID),
         Seite, Zeile (1-basiert), alte Zeile, neue Zeile. when: die Zeit eines nachgespielten Eintrags vom anderen
         Rechner (merge.py) – der Eintrag wird dann wortgleich zu dem im PDF."""
         with open(self.klogpath, 'a', encoding='utf-8') as f:
@@ -307,6 +308,7 @@ class Book:
 
     def write_page(self, pg, lines):
         write_atomic(os.path.join(self.folder, pg + '.txt'), '\n'.join(lines) + '\n')
+        self.mt.pop(pg, None)  # sicher neu lesen, auch wenn die Datei zweimal in derselben Sekunde geschrieben wird (HFS+)
 
     def refresh(self):
         changed = False
@@ -320,7 +322,8 @@ class Book:
                 self.mt[pg] = mt
                 changed = True
         for pg in set(self.pages) - seen:
-            del self.pages[pg], self.mt[pg]
+            del self.pages[pg]
+            self.mt.pop(pg, None)
             changed = True
         if changed:
             self.pages = dict(sorted(self.pages.items()))
@@ -755,6 +758,134 @@ class Book:
             self.write_page(pg, lines)
             self.klog('verbinden', pg, n, old[0] + ' ⏎ ' + old[1], joined, when=when)
             return self.page_data(pg), None
+
+    def deletable(self, lines, pg, i):
+        """Darf Zeile i weg? Kopfzeile, Fußnotenstrich und die Seitenzahl unten nicht (sie tragen Seitenangabe und
+        Fußnoten), Tabellenzeilen nicht (die Auszeichnung ginge kaputt – erst die Tabelle aufheben)."""
+        foot = self.feet[pg][1] if pg in self.feet else None
+        return not (lines[i] == '---' or (i == 0 and lines[i].startswith('#')) or i == foot or korrlib.table_block(lines, i))
+
+    def delete_lines(self, pg, n, old, when=None, kind=None):
+        """Zeilen n … n+len(old)-1 löschen – Rauschen vom Scanrand, das die Texterkennung für Text hielt (#73). Ihre
+        Bildzeilen fallen aus lines.json mit weg, damit die folgenden Zeilen ihre behalten. Was gelöscht wurde, merkt sich
+        geloescht.json samt Bildzeile und Nachbarzeilen, damit Strg+Z es an seine Stelle zurücksetzen kann. kind: die Art
+        eines nachgespielten Eintrags vom anderen Rechner (loeschen:ID). Liefert (seitendaten, fehler)."""
+        with self.lock:
+            self.refresh()
+            lines, old = list(self.pages[pg]), list(old or [])
+            if not old or not (0 <= n and n + len(old) <= len(lines)) or lines[n:n + len(old)] != old:
+                return None, 409
+            if not all(self.deletable(lines, pg, i) for i in range(n, n + len(old))):
+                return None, 400
+            seq = self.geo_seq(pg, lines)
+            geos = [seq[i] if seq else None for i in range(n, n + len(old))]
+            if any(geos):
+                G = self.geo[pg]['lines']
+                G[:] = [x for x in G if not any(x is e for e in geos)]
+                self.save_geo()
+            del lines[n:n + len(old)]
+            self.write_page(pg, lines)
+            kind = kind or 'loeschen:%s-%s' % (time.strftime('%Y%m%d-%H%M%S'), uuid.uuid4().hex[:4])
+            for l in old:  # je Zeile ein Eintrag, jeder an n: nacheinander nachgespielt, ergibt das dieselbe Seite
+                self.klog(kind, pg, n, l, '', when=when)
+            stack = self.deleted()
+            stack.append(dict(id=kind[9:], page=pg, line=n, lines=old, geo=geos,
+                              before=lines[n - 1] if n else None, after=lines[n] if n < len(lines) else None))
+            write_atomic(os.path.join(self.folder, 'geloescht.json'), json.dumps(stack[-200:], ensure_ascii=False))
+            return self.page_data(pg), None
+
+    def deleted(self):
+        """Die gemerkten Löschungen (geloescht.json), die jüngste zuletzt."""
+        try:
+            s = json.load(open(os.path.join(self.folder, 'geloescht.json'), encoding='utf-8'))
+            return s if isinstance(s, list) else []
+        except (OSError, ValueError):
+            return []
+
+    def insert_lines(self, pg, e, lines):
+        """Die gelöschten Zeilen des Eintrags e wieder einsetzen: an ihrer alten Stelle, wenn dort noch eine der
+        Nachbarzeilen steht, sonst dort, wo beide stehen; mit ihrer Bildzeile an der Stelle der Folge, die ihrer Lage im
+        Text entspricht. Liefert die Zeile oder None, wenn sich die Seite so verändert hat, dass die Stelle unklar ist."""
+        fits = lambda i: (i == 0 if e['before'] is None else 0 < i <= len(lines) and lines[i - 1] == e['before'],
+                          i == len(lines) if e['after'] is None else i < len(lines) and lines[i] == e['after'])
+        n = e['line']
+        if not (0 <= n <= len(lines) and any(fits(n))):
+            n = next((i for i in sorted(range(len(lines) + 1), key=lambda i: abs(i - e['line'])) if all(fits(i))), None)
+            if n is None:
+                return None
+        seq = self.geo_seq(pg, lines)
+        if seq is not None and any(e['geo']):
+            G = self.geo[pg]['lines']
+            # geo_seq legt die Textzeilen der Reihe nach auf Haupttext + Fußnoten: Die Bildzeile kommt an Platz k dieser
+            # Folge, k = Zahl der zugeordneten Textzeilen davor
+            k = sum(1 for i, x in enumerate(seq[:n]) if x is not None and not (i == 0 and lines[0].startswith('#')))
+            index = lambda y: next(i for i, x in enumerate(G) if x is y)
+            for g in e['geo']:
+                if g is None:
+                    continue
+                body, fn = [x for x in G if x['kind'] == 'body'], [x for x in G if x['kind'] == 'fn']
+                if not (g['kind'] == 'body' and k <= len(body) or g['kind'] == 'fn' and k >= len(body)):
+                    g['kind'] = 'body' if k < len(body) else 'fn'  # passt die Art nicht mehr zur Lage, gilt die Lage
+                part, j = (body, k) if g['kind'] == 'body' else (fn, k - len(body))
+                if j < len(part):
+                    G.insert(index(part[j]), g)
+                elif part:
+                    G.insert(index(part[-1]) + 1, g)
+                else:  # die erste ihrer Art: Haupttext vor die Fußnoten, Fußnoten ans Ende
+                    G.insert(next((i for i, x in enumerate(G) if x['kind'] == 'fn'), len(G)) if g['kind'] == 'body' else len(G), g)
+                k += 1
+            self.save_geo()
+        lines[n:n] = e['lines']
+        self.write_page(pg, lines)
+        return n
+
+    def undelete(self):
+        """Strg+Z: die jüngste Löschung zurückholen – alle Zeilen, die zusammen gelöscht wurden. Liefert
+        dict(page, line, n) oder dict(error=…)."""
+        with self.lock:
+            self.refresh()
+            stack = self.deleted()
+            if not stack:
+                return dict(error='nichts')
+            sid, done = stack[-1]['id'], None
+            while stack and stack[-1]['id'] == sid:  # nachgespielte Löschungen kommen zeilenweise, mit derselben ID
+                e = stack[-1]
+                if e['page'] not in self.pages:
+                    stack.pop()
+                    continue
+                lines = list(self.pages[e['page']])
+                n = self.insert_lines(e['page'], e, lines)
+                if n is None:
+                    break
+                stack.pop()
+                for k, l in enumerate(e['lines']):
+                    self.klog('zurueck:' + sid, e['page'], n + k, '', l)
+                self.refresh()
+                done = dict(page=e['page'], line=n, n=len(e['lines']) + (done['n'] if done and done['page'] == e['page'] else 0))
+            write_atomic(os.path.join(self.folder, 'geloescht.json'), json.dumps(stack, ensure_ascii=False))
+            return done or dict(error='verschoben')
+
+    def replay_undelete(self, pg, n, text, when, kind):
+        """Ein Eintrag zurueck:ID vom anderen Rechner: die Zeile samt Bildzeile aus der hier nachgespielten (oder hier
+        selbst gemachten) Löschung wieder einsetzen. False, wenn es diese Löschung hier nicht gibt."""
+        stack = self.deleted()
+        for j in range(len(stack) - 1, -1, -1):
+            e = stack[j]
+            if e['page'] == pg and text in e['lines']:
+                k = e['lines'].index(text)
+                one = dict(e, lines=[text], geo=[e['geo'][k]], line=n,
+                           before=self.pages[pg][n - 1] if 0 < n <= len(self.pages[pg]) else None,
+                           after=self.pages[pg][n] if 0 <= n < len(self.pages[pg]) else None)
+                if self.insert_lines(pg, one, list(self.pages[pg])) is None:
+                    return False
+                del e['lines'][k], e['geo'][k]
+                if not e['lines']:
+                    del stack[j]
+                write_atomic(os.path.join(self.folder, 'geloescht.json'), json.dumps(stack, ensure_ascii=False))
+                self.klog(kind, pg, n, '', text, when=when)
+                self.refresh()
+                return True
+        return False
 
     def markup(self, pg, body):
         """Tabelle setzen/entfernen bzw. Überschrift: baut die Änderungen und schickt sie durch edit() – mit derselben Prüfung
@@ -1979,6 +2110,8 @@ class H(BaseHTTPRequestHandler):
             try:
                 if body.get('kind') == 'split':
                     r, err = book.split_line(m.group(1), body.get('line', -1), body.get('old'), body.get('text') or '', int(body.get('pos') or 0))
+                elif body.get('kind') == 'delete':
+                    r, err = book.delete_lines(m.group(1), int(body.get('line', -1)), body.get('old'))
                 else:
                     r, err = book.join_lines(m.group(1), body.get('line', -1), body.get('old'))
             except KeyError:
@@ -2030,6 +2163,8 @@ class H(BaseHTTPRequestHandler):
             return self.sendjson(r)
         if rest == '/api/series_undo':
             return self.sendjson(book.series_undo())
+        if rest == '/api/undelete':
+            return self.sendjson(book.undelete())
         if rest == '/api/whitelist_remove':
             with book.lock:
                 write_atomic(book.wlpath, ''.join(w + '\n' for w in book.whitelist() if w != body['word']))

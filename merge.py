@@ -12,7 +12,7 @@ anderen Rechner) ins hiesige Protokoll: So enthält es danach alles, was das PDF
 die andere Richtung genügt wieder das einfache Ersetzen.
 
 Das Modul kennt kein PDF und keinen Server: Es bekommt den anderen Stand als Texte und arbeitet über ein
-server.Book, dessen edit/split_line/join_lines/fnsep Seiten und lines.json wie gewohnt zusammenhalten."""
+server.Book, dessen edit/split_line/join_lines/fnsep/delete_lines Seiten und lines.json wie gewohnt zusammenhalten."""
 import os, json, collections
 
 KONFLIKTE = 'konflikte.json'
@@ -162,6 +162,23 @@ class Merge:
                         self._conflict(pg, n, 'edit', r['lines'][n], new, when)
                     return self._done(pg)
             return self._conflict(pg, n, 'verbinden', old, new, when)
+        if kind.startswith('loeschen:'):
+            # Gelöscht wird nur die Zeile mit genau diesem Wortlaut – an n oder, wenn sich die Seite hier verschoben hat,
+            # der nächstgelegenen. Fehlt sie und wurde sie hier selbst gelöscht, ist nichts zu tun; wurde sie hier
+            # geändert, entscheidet der Nutzer
+            k = n if 0 <= n < len(lines) and lines[n] == old else \
+                min((i for i, l in enumerate(lines) if l == old), key=lambda i: abs(i - n), default=None)
+            if k is not None and book.delete_lines(pg, k, [old], when=when, kind=kind)[0]:
+                return self._done(pg)
+            if k is None and self._deleted_here(pg, old):
+                return self._same(row, when, kind, pg, n, old, new)
+            return self._conflict(pg, min(max(0, n), len(lines) - 1), 'loeschen', old, new, when)
+        if kind.startswith('zurueck:'):
+            if 0 <= n < len(lines) and lines[n] == new:
+                return self._same(row, when, kind, pg, n, old, new)
+            if book.replay_undelete(pg, n, new, when, kind):
+                return self._done(pg)
+            return self._conflict(pg, min(max(0, n), len(lines) - 1), 'zurueck', old, new, when)
         if kind == 'fnsep':
             return self._fnsep(row, when, pg, n, old, new)
         if kind == 'seite':
@@ -203,6 +220,10 @@ class Merge:
     def _done(self, pg):
         self.applied += 1
         self.pages.add(pg)
+
+    def _deleted_here(self, pg, text):
+        """Wurde diese Zeile auch hier gelöscht? Dann steht es im hiesigen Protokoll."""
+        return any(p and p[1].startswith('loeschen:') and p[2] == pg and p[4] == text for p in map(parse, rows(_read(self.book.klogpath))))
 
     def _same(self, row, when, kind, pg, n, old, new):
         """Die Änderung ist hier schon so geschehen (beide haben dasselbe berichtigt): nur ins Protokoll, damit es

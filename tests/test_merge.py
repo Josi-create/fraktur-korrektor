@@ -171,6 +171,27 @@ def test_teilen_nicht_moeglich_wird_konflikt(lib, tmp_path):
     assert p['conflicts'][0]['art'] == 'teilen' and p['conflicts'][0]['line'] == 3 and p['conflicts'][0]['dort'] == 'kunft lag vor ⏎ ihnen, baß sie'
 
 
+def test_geloeschte_zeilen_nachspielen(lib, tmp_path):
+    """#73: Am Laptop gelöschte Zeilen fallen beim Zusammenführen auch hier weg, samt Bildzeile; dort zurückgeholte kommen
+    wieder; eine Zeile, die hier inzwischen berichtigt wurde, wird nicht gelöscht, sondern dem Nutzer gezeigt."""
+    pc, lap, pdf2 = hin_und_zurueck(lib, tmp_path)
+    lib.lpost('/api/open', dict(folder=str(tmp_path / 'laptop')))
+    delete = lambda n, old: lib.lpost('/buch/%s/api/lines/001' % lap, dict(kind='delete', line=n, old=old))[0]
+    t = lines(lib, lap, '001')  # ['# 5', L1, L2, L3, L4, '---', L6]
+    assert delete(4, [t[4]]) == 200
+    assert delete(1, t[1:3]) == 200 and lib.lpost('/buch/%s/api/undelete' % lap, {})[1]['n'] == 2
+    assert delete(3, [t[3]]) == 200 and lines(lib, lap, '001') == t[:3] + t[5:]
+    pdf3 = job(lib, '/api/export_pdf', dict(id=lap, target=str(tmp_path / 'stick')))['file']
+    lib.lpost('/api/forget', dict(id=lap))
+    edit(lib, pc, '001', 3, t[3], 'kunft lag vor ihnen, daß sie')  # hier inzwischen berichtigt
+    r = job(lib, '/api/import_pdfbuch', dict(source=pdf3, into=pc, merge=True))
+    assert (r['merged']['applied'], r['merged']['conflicts']) == (6, 1), r['merged']  # 002, L4, L1+L2 weg und zurück
+    p = lib.lget('/buch/%s/api/page/001' % pc)[1]
+    assert p['lines'] == t[:3] + ['kunft lag vor ihnen, daß sie', '---', t[6]]
+    assert len(p['geo']) == len(p['lines']) and [g['y0'] if g else None for g in p['geo']] == [50, 80, 110, 140, None, 200]
+    assert p['conflicts'][0]['art'] == 'loeschen' and p['conflicts'][0]['line'] == 3 and p['conflicts'][0]['alt'] == t[3]
+
+
 def test_altes_pdf_ohne_kennung_und_fremdes_buch(lib, tmp_path):
     """Ein PDF ohne Kennung (frühere Fassung) und ein PDF eines unbekannten Buchs: wie bisher ein neues Buch."""
     import server, pdfbuch

@@ -238,7 +238,9 @@ const WRE = /^[A-Za-zÄÖÜäöüß]+/;
 const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
-const HELP = { read: t('help_read'), fix: t('help_fix'), free: t('help_free'), table: t('help_table'), konf: t('help_konf') };
+// Am Mac heißt die Taste zu Strg+F, Strg+⌫ usw. ⌘ (onKey nimmt metaKey wie ctrlKey)
+const MAC = /Mac/i.test(navigator.platform), macKeys = s => MAC ? s.replace(/<kbd>(Strg|Ctrl)<\/kbd>/g, '<kbd>⌘</kbd>') : s;
+const HELP = { read: macKeys(t('help_read')), fix: t('help_fix'), free: t('help_free'), table: t('help_table'), konf: t('help_konf') };
 
 function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 // Auszeichnung: dieselben Elemente wie der Server (korrlib.MARKUP)
@@ -785,6 +787,24 @@ async function joinLine() {
   if (!r.ok) { await loadPage(pg, li); msg = t('changed_outside'); render(); return; }
   data = await r.json(); updateCount(); renderText(); pending = null; msg = t('join_done'); render(); bookmark();
 }
+// ---- Rauschen vom Scanrand löschen (#73): Strg/⌘+⌫ nimmt die Lesezeile bzw. die mit Umschalt+↓/↑ markierten Zeilen
+// weg, ohne Rückfrage – Strg/⌘+Z holt sie zurück. Der Server nimmt die Bildzeilen mit, die Bildzuordnung bleibt.
+async function deleteLines() {
+  const a = nsel == null ? li : Math.min(nsel, li), b = nsel == null ? li : Math.max(nsel, li);
+  nsel = null;
+  const r = await fetch(BASE + '/api/lines/' + pg, { method: 'POST', body: JSON.stringify({ kind: 'delete', line: a, old: data.lines.slice(a, b + 1) }) });
+  if (r.status == 400) { msg = t('del_no'); render(); return; }
+  if (!r.ok) { await loadPage(pg, li); msg = t('changed_outside'); render(); return; }
+  data = await r.json(); updateCount(); renderText(); pending = null;
+  li = Math.min(a, data.lines.length - 1); while (li < data.lines.length - 1 && skippable(li)) li++; while (li > 0 && skippable(li)) li--;
+  msg = t(b > a ? 'del_done_n' : 'del_done', { n: b - a + 1, keys: t(MAC ? 'key_undo_mac' : 'key_undo') }); render(); bookmark();
+}
+async function undeleteLines() {
+  const r = await (await fetch(BASE + '/api/undelete', { method: 'POST', body: '{}' })).json();
+  if (r.error) { msg = t(r.error == 'nichts' ? 'undel_none' : 'undel_moved'); render(); return; }
+  await loadOverview(); await loadPage(r.page, r.line);
+  msg = t(r.n > 1 ? 'undel_done_n' : 'undel_done', { n: r.n }); render(); bookmark();
+}
 async function headingKey() {
   if (!plainLine(li)) return;
   if (lineEls[li].classList.contains('intable')) { msg = t('hd_in_table'); render(); return; }
@@ -1080,9 +1100,10 @@ async function openConflict() {
 function renderConflict() {
   const k = conflictAt(li); if (!k) { mode = 'read'; return; }
   const what = k.art == 'edit' ? t('konf_edit') : k.art == 'teilen' ? t('konf_teilen') : k.art == 'verbinden' ? t('konf_verbinden')
-    : k.art == 'fnsep' ? t(k.alt == 'gesetzt' ? 'konf_fn_set' : 'konf_fn_removed') : k.art == 'seite' ? t('konf_seite') : t('konf_sonst');
+    : k.art == 'fnsep' ? t(k.alt == 'gesetzt' ? 'konf_fn_set' : 'konf_fn_removed') : k.art == 'seite' ? t('konf_seite')
+    : k.art == 'loeschen' ? macKeys(t('konf_loeschen')) : k.art == 'zurueck' ? t('konf_zurueck') : t('konf_sonst');
   let h = '<div class="kbox">' + what + '<br>' + t('konf_here') + ' <b>' + esc(k.hier || data.lines[li]) + '</b>';
-  if (k.art == 'edit' || k.art == 'teilen' || k.art == 'verbinden') h += '<br>' + t('konf_there') + ' <b class="dort">' + esc(k.dort) + '</b>';
+  if (k.art == 'edit' || k.art == 'teilen' || k.art == 'verbinden' || k.art == 'zurueck') h += '<br>' + t('konf_there') + ' <b class="dort">' + esc(k.dort) + '</b>';
   h += '<br><button type="button" id="kKeep">1 · ' + t('konf_keep') + '</button>';
   if (k.art == 'edit') h += '<button type="button" id="kTake">2 · ' + t('konf_take') + '</button>';
   h += '<button type="button" id="kLater">Esc · ' + t('konf_later') + '</button></div>';
@@ -1112,6 +1133,12 @@ async function onKey(e) {
   if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key == 'f' || e.key == 'F') && data && mode == 'read') { e.preventDefault(); askOpen('find'); return; }
   // Strg + / − / 0: Schriftgröße des Textes (statt des Browser-Zooms, der auch Leisten und Bild vergrößert)
   if ((e.ctrlKey || e.metaKey) && !e.altKey && data && ['+', '-', '0', '='].includes(e.key)) { e.preventDefault(); setTextZoom(e.key == '0' ? 1 : e.key == '-' ? tzoom / 1.15 : tzoom * 1.15); return; }
+  // Strg/⌘+⌫ löscht Rauschzeilen, Strg/⌘+Z holt sie zurück – nur beim Lesen; im Eingabefeld gelten sie wie gewohnt.
+  // Bewusst nicht Entf allein: Darauf gerät man beim Lesen leicht, und die Zeile wäre weg.
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && data && mode == 'read' && e.target.tagName != 'INPUT') {
+    if (e.key == 'Backspace') { e.preventDefault(); await deleteLines(); return; }
+    if (e.key == 'z' || e.key == 'Z') { e.preventDefault(); await undeleteLines(); return; }
+  }
   if (e.ctrlKey || e.altKey || e.metaKey || !data) return;
   if (mode == 'ask') return askKey(e);
   if (mode == 'serie') return serieKey(e);
