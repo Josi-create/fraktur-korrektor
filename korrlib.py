@@ -338,13 +338,52 @@ def foot_number(lines):
             m = ms[-1]
             return int(m.group()), i, m.start(), len(m.group())
     return None
-def foot_numbers(pages):
+def head_lines(pages):
+    """{seite: (seitenzahl oder None, [zeilen])}: der lebende Kolumnentitel, den die Erkennung als gewöhnliche Zeile oben
+    auf der Seite gelesen hat – »Stalins Bauernopfer am Schwarzen Meer 9«, auch als zwei Zeilen Titel und Zahl, oder links
+    der Buchtitel, rechts der Kapiteltitel. Erkannt am Wortlaut ohne Ziffern: Er steht in einer der beiden obersten
+    Textzeilen von mindestens drei Seiten – aber nur, wenn das Buch wirklich Kolumnentitel trägt: Mindestens ein Drittel
+    der Seiten hat einen, und ihre Seitenzahlen passen zu den Nachbarseiten. Sonst ist es Zufall (»Faust.« als erste
+    Zeile einiger Seiten eines Dramas). Eine Zahl vorn oder hinten – oder als eigene Zeile daneben – ist die Seitenzahl:
+    (zahl, zeile, position, länge). Kolumnentitel ohne Zahl (sie steht dann unten) bleiben Text."""
+    key = lambda l: ' '.join(re.sub(r'[\d\W_]+', ' ', TAG.sub('', l)).lower().split())
+    tops = {}
+    for pg, lines in pages.items():
+        start, end = (1 if lines and lines[0].startswith('#') else 0), (lines.index('---') if '---' in lines else len(lines))
+        text = [i for i in range(start, end) if lines[i].strip()]
+        tops[pg] = text[:3] if len(text) >= 4 else []  # fast leere Seite: oben und unten nicht zu unterscheiden
+    count = collections.Counter(k for pg, c in tops.items() for k in {key(pages[pg][i]) for i in c[:2]
+                                                                     if len(pages[pg][i]) <= 80} if len(k) >= 4)
+    out = {}
+    for pg, c in tops.items():
+        lines = pages[pg]
+        hit = next((i for i in c[:2] if len(lines[i]) <= 80 and len(key(lines[i])) >= 4 and count[key(lines[i])] >= 3), None)
+        if hit is None:
+            continue
+        idx = [hit] + [j for j in (hit - 1, hit + 1) if j in c and len(lines[j].strip()) <= 8 and NUM.search(lines[j])
+                                                        and re.fullmatch(r'[\s\d—\-–.|]+', lines[j])]
+        num = None
+        for j in sorted(idx):
+            m = re.match(r'\s*[—\-–]?\s*(\d{1,4})\b', lines[j]) or re.search(r'\b(\d{1,4})\s*[—\-–]?\s*$', lines[j])
+            if m:
+                num = (int(m.group(1)), j, m.start(1), len(m.group(1)))
+                break
+        out[pg] = (num, sorted(idx))
+    # Wie bei der Seitenzahl unten: Nur ein Buch, dessen Kolumnentitel wirklich Seitenzahlen tragen, die zu den
+    # Nachbarseiten passen – sonst ist es eine Textzeile, die sich wiederholt (Tabellenköpfe, gleichlautende Anfänge)
+    keys = sorted(pages)
+    nums = {pg: v[0][0] for pg, v in out.items() if v[0]}
+    ok = sum(1 for k, pg in enumerate(keys) if pg in nums and
+             any(0 <= k + d < len(keys) and nums.get(keys[k + d]) == nums[pg] + d for d in (-2, -1, 1, 2)))
+    return out if len(out) * 3 >= len(pages) and ok >= 3 and ok * 3 >= len(out) else {}
+def foot_numbers(pages, heads=None):
     """{seite: foot_number} für die Seiten ohne Zahl in der Kopfzeile – aber nur, wenn das Buch seine Seitenzahlen wirklich
     unten trägt: Mindestens ein Drittel dieser Seiten (und wenigstens drei) hat unten eine Zahl, die zu einer Nachbarseite
-    passt. Sonst sind es Jahreszahlen, Fußnotennummern oder Rauschen, und eine Notiz nennte »S. 1985«."""
+    passt. Sonst sind es Jahreszahlen, Fußnotennummern oder Rauschen, und eine Notiz nennte »S. 1985«. heads: die
+    Kolumnentitel (head_lines) – deren Seitenzahl zählt wie eine in der Kopfzeile."""
     keys, feet, num = sorted(pages), {}, {}
     for pg in keys:
-        h = head_number(pages[pg])
+        h = head_number(pages[pg]) or ((heads or {}).get(pg) or (None,))[0]
         f = None if h else foot_number(pages[pg])
         if f:
             feet[pg] = f

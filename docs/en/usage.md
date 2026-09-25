@@ -6,7 +6,10 @@ places where an automatic pre-correction made an uncertain replacement. A page n
 neighbouring pages is red as well (in Fraktur, OCR likes to read “16” as “46”) – the hint names the number that should
 be there, and `Space`, `Enter` correct it like a word. The page number may be at the top in the running head or at the
 bottom of the page as in more recent books: if a book carries it at the bottom throughout, the program notices this by
-itself and shows it there in pale grey like the running head. You do not need to enter anything; if a page has no
+itself and shows it there in pale grey like the running head. Likewise the **running title** of more recent books – the
+book or chapter title with the page number at the top of every page (»Stalins Bauernopfer am Schwarzen Meer 9«) that
+text recognition read as an ordinary line: it appears in pale grey, is not checked and does not count as text; its
+number is taken as the page number. You do not need to enter anything, and the files stay as they are; if a page has no
 number (chapter opening), it follows from the neighbouring pages.
 
 The program has three states, shown in the top bar: **Reading** (green), **Correction** (red) – a red word

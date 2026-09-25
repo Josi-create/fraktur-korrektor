@@ -377,7 +377,7 @@ function renderText() {
     b.lines.forEach((l, i) => {
       const d = document.createElement('div'); d.dataset.p = b.page; d.dataset.i = i;
       if (l === '---') { d.className = 'sep'; fn = true; grid = null; }
-      else { d.innerHTML = mark(i, b); if ((l.startsWith('#') && i == 0) || i === b.foot) d.className = 'head'; else if (fn) d.className = 'fn'; }
+      else { d.innerHTML = mark(i, b); if ((l.startsWith('#') && i == 0) || i === b.foot || (b.kopf || []).includes(i)) d.className = 'head'; else if (fn) d.className = 'fn'; }
       if (l.includes('<table>') && l !== '---') {  // Tabelle: die folgenden Zeilen sind Zellen eines Gitters
         let first = ''; for (let k = i; k < b.lines.length && !first.includes('</tr>'); k++) first += b.lines[k];
         grid = document.createElement('div'); grid.className = 'tblgrid';

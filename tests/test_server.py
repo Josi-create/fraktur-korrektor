@@ -306,3 +306,31 @@ def test_zeilenlaenge_fuer_die_schriftgroesse(app):
     """Die Übersicht nennt, wie lang eine volle Zeile des Buchs ist – danach wählt der Reader die Schriftgröße, damit eine
     gedruckte Zeile rechts in eine Zeile passt. Kopfzeile und Fußnoten zählen nicht."""
     assert app.get('/api/overview')[1]['zeichen'] == len('Die Kolonisten zogen nach Rußland und')
+
+
+def test_kolumnentitel_als_textzeile(tmp_path):
+    """Der lebende Kolumnentitel, von der Erkennung als gewöhnliche Zeile oben gelesen (»Stalins Bauernopfer am Schwarzen
+    Meer 9«, auch Titel und Zahl als zwei Zeilen, die Zahl links oder rechts): Er gilt wie die Kopfzeile – blass, nicht
+    geprüft, nicht zu löschen, seine Zahl ist die Seitenzahl. Die Dateien ändern sich nicht."""
+    import korrlib, server
+    folder = tmp_path / 'buch'
+    folder.mkdir()
+    for i in range(6):
+        n, t = 9 + i, 'Chronik von Qwxyzdorf'
+        top = [t + ' %d' % n] if i % 3 == 0 else (['%d' % n, t] if i % 3 == 1 else [t, '%d' % n])
+        body = ['Die Kolonisten zogen nach Rußland.', 'Der Weg war weit.', 'Sie kamen im Winter an.']
+        (folder / ('%03d.txt' % (i + 1))).write_text('\n'.join(['# '] + top + body) + '\n', encoding='utf-8')
+    before = {p.name: p.read_text(encoding='utf-8') for p in folder.iterdir()}
+    b = server.Book(str(folder))
+    b.refresh()
+    assert b.heads['001'] == ((9, 1, 22, 1), [1]) and b.heads['002'] == ((10, 1, 0, 2), [1, 2]) and b.heads['003'][1] == [1, 2]
+    assert [b.printed_page(pg) for pg in b.pages] == [str(9 + i) for i in range(6)]
+    d = b.page_data('002')
+    assert d['kopf'] == [1, 2] and d['flags'] == []                       # Qwxyzdorf wird nicht rot
+    assert b.delete_lines('001', 1, [b.pages['001'][1]]) == (None, 400)
+    assert {p.name: p.read_text(encoding='utf-8') for p in folder.iterdir() if p.suffix == '.txt'} == before
+    # Kein Kolumnentitel: dieselbe erste Zeile auf zu wenigen Seiten (»Faust.« in einem Drama) oder nur auf zweien
+    drama = {'%03d' % n: ['# %d' % n, 'Faust.' if n % 4 == 0 else 'Zeile %s von Seite %d.' % ('eins' * n, n), 'Text.'] for n in range(1, 13)}
+    assert korrlib.head_lines(drama) == {}
+    zwei = {'%03d' % n: ['# ', 'Chronik von Qwxyzdorf' if n < 3 else 'Anderes %d' % n, 'Text.'] for n in range(1, 4)}
+    assert korrlib.head_lines(zwei) == {}

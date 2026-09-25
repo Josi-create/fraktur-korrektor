@@ -151,6 +151,7 @@ class Book:
         self.settings = self.load_settings()
         self.pages, self.mt, self.freq, self.wl, self.wlmt, self.fcache, self.size = {}, {}, {}, set(), None, {}, {}
         self.feet = {}  # Seitenzahlen unten auf der Seite: {seite: (zahl, zeile, position, länge)}, nur in Büchern, die sie dort tragen
+        self.heads = {}  # Kolumnentitel als Textzeile oben: {seite: (seitenzahl oder None, [zeilen])}, nur in Büchern, die sie tragen
         self.prog = None  # [geprüfte Seiten, Seiten] während overview() läuft – für den Ladebalken (/api/progress)
         self.gelernt = None  # Korrekturvorschläge: (mtime des Protokolls, Wortpaare)
         self.para_checked = False  # Absätze (#67): in dieser Sitzung schon geprüft, ob sie noch zu erkennen sind
@@ -189,9 +190,9 @@ class Book:
         return self.settings
 
     def page_number(self, pg):
-        """Gedruckte Seitenzahl als (zahl, zeile, position, länge) – aus der Kopfzeile oder, wenn das Buch sie unten trägt,
-        vom Seitenende – oder None."""
-        return korrlib.head_number(self.pages.get(pg) or []) or self.feet.get(pg)
+        """Gedruckte Seitenzahl als (zahl, zeile, position, länge) – aus der Kopfzeile, aus einem als Textzeile gelesenen
+        Kolumnentitel oder, wenn das Buch sie unten trägt, vom Seitenende – oder None."""
+        return korrlib.head_number(self.pages.get(pg) or []) or (self.heads.get(pg) or (None,))[0] or self.feet.get(pg)
 
     def expected_page(self, pg):
         """Seitenzahl, die nach den Nachbarseiten in der Kopfzeile stehen müsste – oder None, wenn die Nachbarn sich nicht
@@ -332,12 +333,18 @@ class Book:
         if changed:
             self.pages = dict(sorted(self.pages.items()))
             self.freq = corpus_freq(self.pages)
-            self.feet = korrlib.foot_numbers(self.pages)
+            self.heads = korrlib.head_lines(self.pages)
+            self.feet = korrlib.foot_numbers(self.pages, self.heads)
         wlmt = os.path.getmtime(self.wlpath) if os.path.exists(self.wlpath) else None
         if wlmt != self.wlmt:
             self.wl = set(open(self.wlpath, encoding='utf-8').read().split()) if wlmt else set()
             self.wlmt = wlmt
             self.fcache.clear()
+
+    def kopf(self, pg):
+        """Die Zeilen des Kolumnentitels, den die Erkennung als Text gelesen hat (korrlib.head_lines): Sie gehören wie die
+        Kopfzeile nicht zum Text – nicht geprüft, nicht Teil eines getrennten Worts, eines Absatzes, einer Löschung."""
+        return set(self.heads[pg][1]) if pg in self.heads else set()
 
     def edge_word(self, pg, last):
         """(zeile, start, wort) des letzten Worts im Haupttext einer Seite, wenn die Zeile mit ¬ endet – bzw. des ersten,
@@ -347,8 +354,9 @@ class Book:
         end = lines.index('---') if '---' in lines else len(lines)
         if pg in self.feet:  # die Seitenzahl unten – und das Rauschen vom Seitenrand darunter – gehört nicht zum Text
             end = min(end, self.feet[pg][1])
+        kopf = self.kopf(pg)
         for i in (range(end - 1, -1, -1) if last else range(end)):
-            if i == 0 and lines[0].startswith('#'):
+            if (i == 0 and lines[0].startswith('#')) or i in kopf:
                 continue
             m = korrlib.mask(lines[i])
             toks = [(x.start(), x.group()) for x in korrlib.WORD.finditer(m)]
@@ -384,7 +392,8 @@ class Book:
         keys = list(self.pages)
         k = keys.index(pg)
         prev, nxt = keys[k - 1] if k else None, keys[k + 1] if k + 1 < len(keys) else None
-        key = (self.mt[pg], self.wlmt, dics, exp, n, self.mt.get(prev), self.mt.get(nxt))  # exp und Trennungen hängen an den Nachbarseiten
+        kopf = self.kopf(pg)
+        key = (self.mt[pg], self.wlmt, dics, exp, n, self.mt.get(prev), self.mt.get(nxt), tuple(sorted(kopf)))  # exp und Trennungen hängen an den Nachbarseiten
         c = self.fcache.get(pg)
         if c and c[0] == key:
             return c[1]
@@ -402,7 +411,7 @@ class Book:
             if not (known(w1 + w2, freq, dics) or (w1 + w2) in wl):
                 out.append(dict(line=i, start=s1, len=len(w1), word=w1 + '¬' + w2, kind='oov', start2=toks[j][0][0]))
         for i, tl in enumerate(toks):
-            if lines[i].startswith('#'):
+            if lines[i].startswith('#') or i in kopf:
                 continue
             for s, w in tl:
                 if (i, s) in cross:  # über die Seitengrenze getrennt: als Ganzes geprüft
@@ -490,7 +499,7 @@ class Book:
             # size: damit der Reader die Nachbarseiten schon richtig platziert, bevor ihre Bilder geladen sind
             # foot: Zeile der Seitenzahl unten – der Reader zeigt sie blass wie die Kopfzeile
             return dict(page=pg, lines=lines, geo=self.geo_lines(pg, lines), flags=self.flags(pg), img=self.img_url(pg), size=self.img_size(pg),
-                        conflicts=self.conflicts(pg), foot=self.feet[pg][1] if pg in self.feet else None)
+                        conflicts=self.conflicts(pg), foot=self.feet[pg][1] if pg in self.feet else None, kopf=sorted(self.kopf(pg)))
 
     def headings(self):
         """Die mit H ausgezeichneten Überschriften für die Übersicht (Taste I) und das Inhaltsverzeichnis des PDFs:
@@ -505,9 +514,9 @@ class Book:
         Großformat mit 100 Zeichen je Zeile brach sonst jede zweimal um."""
         with self.lock:
             self.refresh()
-            n = sorted(len(korrlib.TAG.sub('', l).strip()) for lines in self.pages.values()
+            n = sorted(len(korrlib.TAG.sub('', l).strip()) for pg, lines in self.pages.items()
                        for i, l in enumerate(lines[:lines.index('---') if '---' in lines else len(lines)])
-                       if l.strip() and not (i == 0 and l.startswith('#')))
+                       if l.strip() and not (i == 0 and l.startswith('#')) and i not in self.kopf(pg))
             return n[int(len(n) * 0.95)] if n else 0
 
     PARA_END = re.compile(r'[.!?:;»«"“”)—…]\s*$')
@@ -525,7 +534,8 @@ class Book:
             end = lines.index('---') if '---' in lines else len(lines)
             if pg in self.feet:
                 end = min(end, self.feet[pg][1])
-            text = [i for i in range(end) if lines[i].strip() and not (i == 0 and lines[0].startswith('#'))]
+            kopf = self.kopf(pg)
+            text = [i for i in range(end) if lines[i].strip() and not (i == 0 and lines[0].startswith('#')) and i not in kopf]
             body = [i for i in text if seq and seq[i] is not None]
             if len(body) >= 5:
                 lh = statistics.median(seq[i]['y1'] - seq[i]['y0'] for i in body) or 1
@@ -900,10 +910,11 @@ class Book:
             return self.page_data(pg), None
 
     def deletable(self, lines, pg, i):
-        """Darf Zeile i weg? Kopfzeile, Fußnotenstrich und die Seitenzahl unten nicht (sie tragen Seitenangabe und
+        """Darf Zeile i weg? Kopfzeile, Kolumnentitel, Fußnotenstrich und die Seitenzahl unten nicht (sie tragen Seitenangabe und
         Fußnoten), Tabellenzeilen nicht (die Auszeichnung ginge kaputt – erst die Tabelle aufheben)."""
         foot = self.feet[pg][1] if pg in self.feet else None
-        return not (lines[i] == '---' or (i == 0 and lines[i].startswith('#')) or i == foot or korrlib.table_block(lines, i))
+        return not (lines[i] == '---' or (i == 0 and lines[i].startswith('#')) or i == foot or i in self.kopf(pg)
+                    or korrlib.table_block(lines, i))
 
     def delete_lines(self, pg, n, old, when=None, kind=None):
         """Zeilen n … n+len(old)-1 löschen – Rauschen vom Scanrand, das die Texterkennung für Text hielt (#73). Ihre

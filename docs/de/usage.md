@@ -6,7 +6,10 @@ Stellen, die eine automatische Vorkorrektur unsicher ersetzt hat. Rot wird auch 
 Nachbarseiten passt (die OCR liest in Fraktur gern „16“ als „46“) – der Hinweis nennt die Zahl, die dort stehen müsste,
 und `Leertaste`, `Enter` berichtigen sie wie ein Wort. Die Seitenzahl darf oben in der Kopfzeile stehen oder unten auf
 der Seite wie in neueren Büchern: Trägt ein Buch sie durchgehend unten, erkennt das Programm das von selbst und zeigt
-sie dort blass wie die Kopfzeile. Eintragen müssen Sie nichts; fehlt die Zahl auf einer Seite (Kapitelanfang), ergibt
+sie dort blass wie die Kopfzeile. Ebenso den **Kolumnentitel** neuerer Bücher – oben auf jeder Seite der Buch- oder
+Kapiteltitel mit der Seitenzahl (»Stalins Bauernopfer am Schwarzen Meer 9«), den die Texterkennung als gewöhnliche
+Zeile gelesen hat: Er erscheint blass, wird nicht geprüft und gehört nicht zum Text; seine Zahl gilt als Seitenzahl.
+Eintragen müssen Sie nichts, die Dateien bleiben, wie sie sind; fehlt die Zahl auf einer Seite (Kapitelanfang), ergibt
 sie sich aus den Nachbarseiten.
 
 Das Programm kennt drei Zustände, oben in der Leiste angezeigt: **Lesen** (grün), **Korrektur** (rot) –

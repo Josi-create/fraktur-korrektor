@@ -5,6 +5,16 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Kolumnentitel als Textzeile erkennen**: Neuere Bücher tragen oben auf jeder Seite Buch- oder Kapiteltitel und
+  Seitenzahl (»Stalins Bauernopfer am Schwarzen Meer 9«, auch »28 …« auf linken Seiten). Die Texterkennung liest das
+  als gewöhnliche Zeile – oft auch Titel und Zahl als zwei –, die Kopfzeile blieb leer: Der Titel stand im Fließtext,
+  wurde auf jeder Seite geprüft, und Notizen nannten die Dateiseite. Genau wie die Seitenzahl unten erkennt das
+  Programm ihn jetzt beim Lesen am Muster des ganzen Buchs (`korrlib.head_lines`): derselbe Wortlaut ohne Ziffern in
+  einer der beiden obersten Textzeilen von mindestens drei Seiten, auf mindestens einem Drittel der Seiten, und die
+  Seitenzahlen darin passen zu den Nachbarseiten. Er erscheint blass wie die Kopfzeile, wird nicht geprüft, gehört
+  nicht zu Absätzen, getrennten Wörtern über die Seitengrenze oder der Zeilenlänge und lässt sich nicht löschen; seine
+  Zahl ist die Seitenzahl (auch für die Warnung vor Lesefehlern). Die Dateien ändern sich nicht. Ein Kolumnentitel
+  ohne Zahl bleibt Text.
 - **Schriftgröße passend zur Zeilenlänge des Buchs**: Bei Büchern im Großformat mit rund 100 Zeichen je Zeile brach
   rechts jede gedruckte Zeile zweimal um – Text und Seitenbild liefen auseinander, und das Eingabefeld zeigte nur einen
   Teil der Zeile. Jetzt wählt der Reader die Schriftgröße je Buch so, dass eine volle Zeile (95 % der Zeilen im
