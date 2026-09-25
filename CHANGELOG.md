@@ -5,6 +5,17 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Fußnoten ohne Fußnotenstrich erkennen**: Hat die Texterkennung die Fußnoten nicht abgetrennt – ihre hochgestellten
+  Nummern liest sie oft als »3!«, »°«, »S,«, an denen die Erkennung beim Einlesen scheitert –, setzt das Programm beim
+  ersten Öffnen eines Buchs (auch eines vorhandenen) den Trenner `---` selbst, als gewöhnlichen Eintrag wie mit `F`.
+  Erkannt am Seitenbild (`Book.footnote_starts`): Vor dem Block steht der größte Abstand der Seite (mindestens 1,8
+  Zeilenabstände – dort sitzt im Druck der Strich), und die kleinere Schrift fasst mehr Zeichen je Bildpunkt
+  Zeilenbreite. In einem Buch mit 279 Seiten lag das Verhältnis im Fußnotenblock bei 1,20–1,28, auf Seiten ohne
+  Fußnoten um 1,0; verlangt wird 1,12. Nur auf Seiten ohne Trenner und nur in Büchern mit Fußnoten (Muster auf
+  wenigstens drei Seiten, und mindestens ein Zehntel der Seiten hat Fußnoten) – in einem Roman ohne Fußnoten wäre es
+  Rauschen unter Bildern. Einmal je Buch (Merkzeile `fussnoten` im Protokoll); `F` verschiebt oder entfernt den Strich,
+  das Zusammenführen spielt ihn nach. Die Statuszeile sagt, auf wie vielen Seiten. Danach erst werden die Absätze
+  erkannt, die so vor den Fußnoten enden.
 - **Kolumnentitel als Textzeile erkennen**: Neuere Bücher tragen oben auf jeder Seite Buch- oder Kapiteltitel und
   Seitenzahl (»Stalins Bauernopfer am Schwarzen Meer 9«, auch »28 …« auf linken Seiten). Die Texterkennung liest das
   als gewöhnliche Zeile – oft auch Titel und Zahl als zwei –, die Kopfzeile blieb leer: Der Titel stand im Fließtext,

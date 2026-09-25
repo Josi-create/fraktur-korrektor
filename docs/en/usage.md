@@ -144,6 +144,12 @@ In the text file, footnotes follow a line `---` and always run to the end of the
 this separator to just before the reading line. If the reading line is the first footnote line, `F` removes
 the separator again.
 
+If text recognition did not separate the footnotes – it often reads their superscript numbers as »3!«, »°« or »S,« –,
+the program detects them itself when the book is first opened: by the larger gap that precedes the footnote rule in
+print, and by the smaller type. It then sets the separator on those pages and says in the status line at the bottom on
+how many. Where it got it wrong, correct it with `F` as above. This happens only in books that really have footnotes,
+and only on pages that do not have a separator yet.
+
 ## Splitting and joining lines
 
 Sometimes text recognition misses a line break – two lines (or two table cells) end up in one – or it makes one too many.

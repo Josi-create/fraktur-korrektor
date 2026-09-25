@@ -148,6 +148,12 @@ Fußnoten stehen in der Textdatei unter einer Zeile `---` und laufen immer bis z
 oder verschiebt diesen Trenner vor die Lesezeile. Steht die Lesezeile auf der ersten Fußnotenzeile, nimmt
 `F` den Trenner wieder weg.
 
+Hat die Texterkennung die Fußnoten nicht abgetrennt – oft liest sie ihre hochgestellten Nummern als »3!«, »°« oder
+»S,« –, erkennt das Programm sie beim ersten Öffnen des Buchs selbst: am größeren Abstand, der im Druck vor dem
+Fußnotenstrich steht, und an der kleineren Schrift. Es setzt den Trenner dann auf diesen Seiten und sagt unten in der
+Statuszeile, auf wie vielen. Wo es sich geirrt hat, berichtigen Sie es mit `F` wie oben. Das geschieht nur in Büchern,
+die wirklich Fußnoten haben, und nur auf Seiten, die noch keinen Trenner haben.
+
 ## Zeilen teilen und verbinden
 
 Manchmal übersieht die Texterkennung einen Zeilenwechsel – zwei Zeilen (oder zwei Tabellenzellen) stehen in einer – oder

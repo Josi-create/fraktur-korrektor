@@ -155,6 +155,7 @@ class Book:
         self.prog = None  # [geprüfte Seiten, Seiten] während overview() läuft – für den Ladebalken (/api/progress)
         self.gelernt = None  # Korrekturvorschläge: (mtime des Protokolls, Wortpaare)
         self.para_checked = False  # Absätze (#67): in dieser Sitzung schon geprüft, ob sie noch zu erkennen sind
+        self.fn_checked = False  # ebenso Fußnoten ohne Fußnotenstrich
 
     def load_settings(self):
         """buch.json: year (Erscheinungsjahr, geraten oder None), dics (welche Rechtschreibung gilt), notizen (Ordner für
@@ -518,6 +519,52 @@ class Book:
                        for i, l in enumerate(lines[:lines.index('---') if '---' in lines else len(lines)])
                        if l.strip() and not (i == 0 and l.startswith('#')) and i not in self.kopf(pg))
             return n[int(len(n) * 0.95)] if n else 0
+
+    def footnote_starts(self):
+        """Fußnoten ohne Fußnotenstrich (die Erkennung hat sie nicht abgetrennt, ihre hochgestellten Nummern liest sie als
+        »3!«, »°«, »S,«): {seite: erste Fußnotenzeile}. Erkannt an der Zeilenlage: Vor dem Block steht der größte Abstand
+        der Seite (mindestens 1,8 Zeilenabstände – dort sitzt der Strich im Druck), und die kleinere Schrift fasst mehr
+        Zeichen je Bildpunkt Zeilenbreite. In einem Buch lag das Verhältnis im Block bei 1,2–1,28, auf Seiten ohne Fußnoten
+        um 1,0; verlangt wird 1,12. Nur Seiten ohne »---«, und nur in einem Buch mit Fußnoten: das Muster auf wenigstens
+        drei Seiten, und mindestens ein Zehntel der Seiten hat Fußnoten (erkannte oder schon abgetrennte). Sonst ist es
+        Rauschen unter Bildern und Karten, wie in einem Roman ohne Fußnoten."""
+        out, sep = {}, sum('---' in lines for lines in self.pages.values())
+        for pg, lines in self.pages.items():
+            seq = self.geo_seq(pg, lines)
+            if '---' in lines or not seq:
+                continue
+            kopf = self.kopf(pg)
+            rows = [i for i, g in enumerate(seq) if g and lines[i].strip() and i not in kopf and not (i == 0 and lines[0].startswith('#'))]
+            if len(rows) < 6:
+                continue
+            steps = [seq[b]['y0'] - seq[a]['y0'] for a, b in zip(rows, rows[1:])]
+            mp = statistics.median(steps)
+            k = max((j + 1 for j, s in enumerate(steps) if s >= 1.8 * mp), default=None)
+            if k is None or k < 3:
+                continue
+            dens = lambda idx, w: [len(korrlib.TAG.sub('', lines[i])) / (seq[i]['x1'] - seq[i]['x0']) for i in idx if seq[i]['x1'] - seq[i]['x0'] > w]
+            body, fn = dens(rows[:k], 800), dens(rows[k:], 300)
+            if len(body) >= 3 and fn and statistics.median(fn) >= 1.12 * statistics.median(body):
+                out[pg] = rows[k]
+        return out if len(out) >= 3 and (len(out) + sep) * 10 >= len(self.pages) else {}
+
+    def auto_footnotes(self):
+        """Beim ersten Öffnen den Fußnotenstrich setzen, wo footnote_starts Fußnoten ohne Strich findet – einmal je Buch
+        (Merkzeile »fussnoten« im Protokoll). Jeder Strich ist ein gewöhnlicher Eintrag wie mit F: Mit F lässt er sich
+        verschieben oder entfernen, das Zusammenführen spielt ihn nach. Liefert die Zahl der Seiten."""
+        with self.lock:
+            if self.fn_checked:
+                return 0
+            self.fn_checked = True
+            self.refresh()
+            if os.path.exists(self.klogpath) and '\tfussnoten\t' in open(self.klogpath, encoding='utf-8').read():
+                return 0
+            starts = self.footnote_starts()
+            for pg, i in starts.items():
+                self.fnsep(pg, i, self.pages[pg][i])
+            if starts:
+                self.klog('fussnoten', '-', -1, str(len(starts)), '')
+            return len(starts)
 
     PARA_END = re.compile(r'[.!?:;»«"“”)—…]\s*$')
 
@@ -2098,10 +2145,12 @@ class H(BaseHTTPRequestHandler):
             return self.send(404, '{}')
         if rest == '/api/overview':
             # images/local: die Leseansicht bietet an, Seitenbilder oder einen Transkribus-Text nachzulegen
-            absaetze = book.auto_paragraphs()  # beim ersten Öffnen: Absatzanfänge setzen (#67)
+            # beim ersten Öffnen: Fußnotenstrich, wo er fehlt, dann Absatzanfänge (#67) – die enden vor den Fußnoten
+            fussnoten = book.auto_footnotes()
+            absaetze = book.auto_paragraphs()
             r = dict(title=book.title, pages=book.overview(), id=book.id, local=self.local(),
                      images=len(glob.glob(os.path.join(book.imgdir, '*.*'))), conflicts=book.conflicts(), absaetze=absaetze,
-                     zeichen=book.line_chars())
+                     fussnoten=fussnoten, zeichen=book.line_chars())
             korrlib.save_cache()
             return self.sendjson(r)
         if rest == '/api/progress':  # ohne Sperre: der Ladebalken fragt, während overview() die Sperre hält
