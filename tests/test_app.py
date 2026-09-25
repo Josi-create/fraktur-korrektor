@@ -253,6 +253,16 @@ def test_ressourcen_liegen_beim_programm():
     assert os.path.isdir(os.path.join(ocr.korrlib.HERE, 'dict'))
 
 
+def test_alle_module_im_paket():
+    """pyproject.toml zählt die Module einzeln auf: Fehlt eines, bricht eine gewöhnliche Installation (pip, später pipx)
+    beim Start ab – die editierbare der Tests merkt es nicht (so wäre es epubbuch.py fast ergangen)."""
+    import re
+    from conftest import ROOT
+    toml = open(os.path.join(ROOT, 'pyproject.toml'), encoding='utf-8').read()
+    listed = set(re.findall(r'"(\w+)"', re.search(r'^py-modules = \[(.*)\]', toml, re.M).group(1)))
+    assert listed == {f[:-3] for f in os.listdir(ROOT) if f.endswith('.py')}
+
+
 # ---- Linux: Tesseract aus dem Paketmanager, Umgebung der Kindprozesse, Fenster des Starters
 
 def test_linux_findet_tesseract_aus_dem_paket(monkeypatch):
