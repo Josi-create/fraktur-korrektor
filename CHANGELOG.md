@@ -5,6 +5,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Schriftgröße passend zur Zeilenlänge des Buchs**: Bei Büchern im Großformat mit rund 100 Zeichen je Zeile brach
+  rechts jede gedruckte Zeile zweimal um – Text und Seitenbild liefen auseinander, und das Eingabefeld zeigte nur einen
+  Teil der Zeile. Jetzt wählt der Reader die Schriftgröße je Buch so, dass eine volle Zeile (95 % der Zeilen im
+  Haupttext sind höchstens so lang, `zeichen` in `/api/overview`) auch rechts in eine Zeile passt, beim Ändern der
+  Fenstergröße neu; nie größer als bisher eingestellt, nicht kleiner als 60 %. `Strg`+`+`/`−` stellen die Größe für
+  dieses Buch fest ein, `Strg`+`0` wieder auf passend. Das Eingabefeld hat jetzt dieselbe Schriftgröße wie der Text
+  (bisher immer 19 Pixel).
 - **Verbundene Zeilen wieder trennen (`Umschalt`+`V`)**: Wer mit `V` gedruckte Zeilen verbunden hatte – etwa, um einen
   Absatz zu kennzeichnen –, bekam eine überlange Zeile, die im Text viermal umbrach, im Seitenbild einen hohen Rahmen
   und sich im Eingabefeld kaum bearbeiten ließ. `Umschalt`+`V` trennt eine so verbundene Zeile genau an der Stelle, die

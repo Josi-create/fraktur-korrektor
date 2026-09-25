@@ -300,3 +300,9 @@ def test_gleiche_aenderungszeit_beim_zweiten_schreiben(tmp_path, monkeypatch):
     d, err = b.join_lines('001', 1, b.pages['001'][1:3])
     assert err is None and d['lines'] == t and b.pages['001'] == t
     assert b.fnsep('001', 6, t[6])['data']['lines'] == t[:5] + t[6:]  # arbeitet auf der verbundenen Fassung
+
+
+def test_zeilenlaenge_fuer_die_schriftgroesse(app):
+    """Die Übersicht nennt, wie lang eine volle Zeile des Buchs ist – danach wählt der Reader die Schriftgröße, damit eine
+    gedruckte Zeile rechts in eine Zeile passt. Kopfzeile und Fußnoten zählen nicht."""
+    assert app.get('/api/overview')[1]['zeichen'] == len('Die Kolonisten zogen nach Rußland und')

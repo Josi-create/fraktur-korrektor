@@ -27,7 +27,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `G` | gehe zu Seite: oben erscheint eine Eingabezeile für die Seitenzahl |
 | Lesen | `S` (oder `/`, `Strg`+`F`, am Mac auch `Cmd`+`F`) | im ganzen Buch suchen; `N` nächste, `Umschalt`+`N` vorige Fundstelle (siehe unten) |
 | Lesen | `+` `−` `0` | Zoom des Seitenbildes (auch `Strg`+Mausrad über dem Bild) |
-| Lesen | `Strg`+`+` `Strg`+`−` `Strg`+`0` | Schriftgröße des Textes (auch `Strg`+Mausrad über dem Text); bleibt gespeichert |
+| Lesen | `Strg`+`+` `Strg`+`−` `Strg`+`0` | Schriftgröße des Textes für dieses Buch (auch `Strg`+Mausrad über dem Text); bleibt gespeichert. Von selbst wählt das Programm sie so, dass eine gedruckte Zeile auch rechts in eine Zeile passt – `Strg`+`0` stellt das wieder ein |
 | Lesen | `Umschalt`+Mausrad | eine breite Tabelle seitwärts rollen; mit der Lesezeile rollt sie von selbst |
 | Lesen | `R` | Seite neu laden (nach Änderungen in einem anderen Editor) |
 | Korrektur | `Enter` | übernehmen und weiterlesen (steht in derselben Zeile noch ein rotes Wort, kommt dieses zuerst) |

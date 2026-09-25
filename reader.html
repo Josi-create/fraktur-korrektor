@@ -52,7 +52,7 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #word{font-size:17px;margin-bottom:2px}
 #word b{color:#c00}
 /* Eingabefelder liegen im Textfenster genau über der Lesezeile (und der Folgezeile bei getrennten Wörtern) */
-#edit,#edit2{position:absolute;left:21px;right:21px;z-index:3;margin:0;padding:0 5px;box-sizing:border-box;border:2px solid #c33;border-radius:3px;background:#fffbe6;color:#000;font-family:Georgia,'Times New Roman',serif;font-size:19px;outline:none;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+#edit,#edit2{position:absolute;left:21px;right:21px;z-index:3;margin:0;padding:0 5px;box-sizing:border-box;border:2px solid #c33;border-radius:3px;background:#fffbe6;color:#000;font-family:Georgia,'Times New Roman',serif;font-size:calc(19px * var(--tz, 1));outline:none;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 #edit2{border-color:#c60}
 #help{color:#666;font-size:13px;line-height:1.5}
 kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:3px;padding:0 4px;font-family:Consolas,monospace;font-size:12px;color:#222}
@@ -227,8 +227,24 @@ applyI18n();
 let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null, nsel = null;
 let konf = [];  // Zeilen aus dem Zusammenführen zweier Arbeitsstände (#66), die der Nutzer noch ansehen muss: [{page, line, …}]
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
-let tzoom = 1; try { tzoom = parseFloat(localStorage.getItem('tzoom')) || 1; } catch (e) {}  // Schriftgröße des Textes, unabhängig vom Bild
-document.documentElement.style.setProperty('--tz', tzoom);
+// Schriftgröße des Textes (--tz), unabhängig vom Bild: je Buch so, dass eine volle gedruckte Zeile auch rechts in eine
+// Zeile passt (zeichen: Länge einer vollen Zeile, vom Server). Strg + / − stellen sie für dieses Buch fest ein, Strg+0
+// wieder auf passend; eine frühere Einstellung für alle Bücher (tzoom) bleibt die Obergrenze.
+let tzoom = 1, tzFixed = null, tzAll = 1, zeichen = 0, charW = 0;
+try { tzAll = parseFloat(localStorage.getItem('tzoom')) || 1; tzFixed = parseFloat(localStorage.getItem('tzoom' + BASE)) || null; } catch (e) {}
+function fitText() {
+  let z = tzFixed || tzAll;
+  if (!tzFixed && zeichen) {
+    if (!charW) {  // mittlere Zeichenbreite der Textschrift bei 19px, an gewöhnlichem deutschem Text gemessen
+      const c = document.createElement('canvas').getContext('2d'), s = 'Die vorliegende Studie erzählt von den deutschen Kolonien am Nordrand des Schwarzen Meeres. Sie berichtet, wie die Revolution über diese Region hereinbrach;';
+      c.font = "19px Georgia, 'Times New Roman', serif"; charW = c.measureText(s).width / s.length;
+    }
+    const avail = $('lines').clientWidth - 44 - 12 - 8;  // ohne den Innenabstand des Textfensters und der Zeile
+    if (avail > 100) z = Math.min(z, Math.max(0.6, avail / (zeichen * charW)));
+  }
+  tzoom = z; document.documentElement.style.setProperty('--tz', tzoom);
+}
+fitText();
 let prevD = null, nextD = null, nbEls = {}, wheelAcc = 0;
 let imgEls = {}, imgState = null, imgKeep = null;  // Seitenbilder im Stapel, letzte Lage des Stapels, beim Seitenwechsel: das bisherige Bild festhalten
 const IMG_GAP = 60;  // Abstand zwischen den Seitenbildern, in Bildpixeln
@@ -275,6 +291,7 @@ async function loadOverview() {
   }, 300);
   let o; try { o = await (await fetch(BASE + '/api/overview')).json(); } finally { clearInterval(tick); }
   ov = o.pages; konf = o.conflicts || [];
+  if (o.zeichen && o.zeichen != zeichen) { zeichen = o.zeichen; fitText(); }
   if (o.absaetze) msg = t('para_auto', { n: o.absaetze });  // beim ersten Öffnen erkannt (#67)
   $('konflink').style.display = konf.length ? '' : 'none'; $('konflink').textContent = t(konf.length == 1 ? 'konf_link_1' : 'konf_link_n', { n: konf.length });
   $('title').textContent = o.title; document.title = o.title + ' – Fraktur-Korrektor'; $('loading').style.display = 'none';
@@ -1108,9 +1125,10 @@ async function footnoteSep() {
   updateCount(); renderText(); render(); bookmark();
 }
 function setZoom(z) { zoom = Math.min(4, Math.max(0.4, z)); try { localStorage.setItem('zoom', zoom); } catch (e) {} layoutImage(); }
-function setTextZoom(z) {
-  tzoom = Math.min(2.5, Math.max(0.6, z)); try { localStorage.setItem('tzoom', tzoom); } catch (e) {}
-  document.documentElement.style.setProperty('--tz', tzoom); layoutText(); layoutImage();
+function setTextZoom(z) {  // z = null: wieder passend zur Zeilenlänge des Buchs
+  tzFixed = z == null ? null : Math.min(2.5, Math.max(0.6, z));
+  try { if (tzFixed) localStorage.setItem('tzoom' + BASE, tzFixed); else localStorage.removeItem('tzoom' + BASE); } catch (e) {}
+  fitText(); layoutText(); layoutImage();
 }
 
 // ---- Zusammenführen zweier Arbeitsstände (#66): Zeilen, an denen beide Rechner etwas anderes gemacht haben.
@@ -1161,7 +1179,7 @@ async function onKey(e) {
   // Strg+F (Mac: Cmd+F) ist die gewohnte Suche – beim Lesen unsere statt der des Browsers
   if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key == 'f' || e.key == 'F') && data && mode == 'read') { e.preventDefault(); askOpen('find'); return; }
   // Strg + / − / 0: Schriftgröße des Textes (statt des Browser-Zooms, der auch Leisten und Bild vergrößert)
-  if ((e.ctrlKey || e.metaKey) && !e.altKey && data && ['+', '-', '0', '='].includes(e.key)) { e.preventDefault(); setTextZoom(e.key == '0' ? 1 : e.key == '-' ? tzoom / 1.15 : tzoom * 1.15); return; }
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && data && ['+', '-', '0', '='].includes(e.key)) { e.preventDefault(); setTextZoom(e.key == '0' ? null : e.key == '-' ? tzoom / 1.15 : tzoom * 1.15); return; }
   // Strg/⌘+⌫ löscht Rauschzeilen, Strg/⌘+Z holt sie zurück – nur beim Lesen; im Eingabefeld gelten sie wie gewohnt.
   // Bewusst nicht Entf allein: Darauf gerät man beim Lesen leicht, und die Zeile wäre weg.
   if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && data && mode == 'read' && e.target.tagName != 'INPUT') {
@@ -1253,7 +1271,7 @@ $('notelink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !
 for (const [id, d] of [['pprev', -1], ['pnext', 1]]) $(id).onclick = e => { e.currentTarget.blur(); guarded(() => gotoPage(d))(); };
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
 $('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });
-window.addEventListener('resize', () => { layoutText(); layoutImage(); renderSug(); });
+window.addEventListener('resize', () => { fitText(); layoutText(); layoutImage(); renderSug(); });
 let lastClick = null;
 function charOffset(d, x, y) {
   // Zeichenposition in der Zeile unter dem Mauszeiger

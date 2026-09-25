@@ -499,6 +499,17 @@ class Book:
             self.refresh()
             return [dict(page=pg, line=i, level=lv, text=tx, printed=self.printed_page(pg)) for pg, i, lv, tx in korrlib.headings(self.pages)]
 
+    def line_chars(self):
+        """Wie viele Zeichen eine volle Zeile des Buchs hat (95 % der Zeilen im Haupttext sind höchstens so lang). Danach
+        wählt der Reader die Schriftgröße: Eine gedruckte Zeile soll auch rechts in eine Zeile passen – bei Büchern im
+        Großformat mit 100 Zeichen je Zeile brach sonst jede zweimal um."""
+        with self.lock:
+            self.refresh()
+            n = sorted(len(korrlib.TAG.sub('', l).strip()) for lines in self.pages.values()
+                       for i, l in enumerate(lines[:lines.index('---') if '---' in lines else len(lines)])
+                       if l.strip() and not (i == 0 and l.startswith('#')))
+            return n[int(len(n) * 0.95)] if n else 0
+
     PARA_END = re.compile(r'[.!?:;»«"“”)—…]\s*$')
 
     def paragraph_starts(self):
@@ -2078,7 +2089,8 @@ class H(BaseHTTPRequestHandler):
             # images/local: die Leseansicht bietet an, Seitenbilder oder einen Transkribus-Text nachzulegen
             absaetze = book.auto_paragraphs()  # beim ersten Öffnen: Absatzanfänge setzen (#67)
             r = dict(title=book.title, pages=book.overview(), id=book.id, local=self.local(),
-                     images=len(glob.glob(os.path.join(book.imgdir, '*.*'))), conflicts=book.conflicts(), absaetze=absaetze)
+                     images=len(glob.glob(os.path.join(book.imgdir, '*.*'))), conflicts=book.conflicts(), absaetze=absaetze,
+                     zeichen=book.line_chars())
             korrlib.save_cache()
             return self.sendjson(r)
         if rest == '/api/progress':  # ohne Sperre: der Ladebalken fragt, während overview() die Sperre hält
