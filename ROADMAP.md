@@ -65,6 +65,6 @@ Transkribus- und Tesseract-Foren, CompGen/Ahnenforschung.net, Wikisource-Skripto
 
 ## Später
 
-- E-Book: Abbildungen und Tafeln aus dem Scan übernehmen (der EPUB-Export selbst ist seit #59 da)
+- E-Book: Abbildungen und Tafeln aus dem Scan übernehmen (#76; der EPUB-Export selbst ist seit #59 da)
 - Zugriffsschutz für `--lan`
 - `pipx install fraktur-korrektor` (PyPI)
