@@ -54,6 +54,7 @@ button:disabled{opacity:.5;cursor:default}
 #einfo{color:#666;font-size:14px;margin-bottom:10px} #einfo small{display:block;word-break:break-all;color:#999}
 #ewarn{margin-top:14px;padding:10px 14px;border-left:5px solid #e6a700;background:#fdf6e0;border-radius:0 4px 4px 0;line-height:1.5}
 #ewarn .radio{display:block;margin-top:8px} #ewarn .radio label{display:flex;align-items:flex-start;gap:6px;margin-top:4px;cursor:pointer}
+#eprev .why{color:#a60;margin-top:4px}
 #edone h3{margin:0 0 10px;font:19px Georgia,serif;color:#285} #edone .more{margin-top:8px;font-size:14px;color:#555;line-height:1.55}
 #eprog{margin-top:14px;display:none} #ebar{height:10px;background:#ddd;border-radius:5px;overflow:hidden} #ebar i{display:block;height:100%;width:0;background:#3a6;transition:width .4s}
 #etext{font-size:13.5px;color:#555}
@@ -182,7 +183,7 @@ async function post(path, body) {
 }
 let booksdir = '', entered = false;
 // Was mit einem Buch möglich ist – in der Reihenfolge, in der es auf der Zeile steht
-const BOOKACTS = [['open', b => true], ['pdf', b => true], ['trans', b => true], ['images', b => b.images < b.pages],
+const BOOKACTS = [['open', b => true], ['pdf', b => true], ['epub', b => true], ['trans', b => true], ['images', b => b.images < b.pages],
                   ['prep_scans', b => b.images > 0], ['prep_trans', b => b.images > 0], ['prep_st', b => b.images > 0],
                   ['restore', b => (b.backups || []).length]];
 // Vorbereiten für ein anderes Programm oder Text neu einlesen, obwohl es wenig bringt (#69): Der Knopf bleibt benutzbar, tritt
@@ -320,9 +321,10 @@ function details(f, first) {
   const d = [f.pages ? t('det_pages', { n: f.pages }) : '', f.mtime];
   if ((f.kind == 'book' || f.kind == 'pdfbuch') && f.corrections) d.push('<b>' + t('det_corr', { n: f.corrections }) + '</b>');
   if (f.kind == 'pdfbuch') d.push(t('det_saved', { d: esc((f.saved || '').slice(0, 16)) }));
+  if (f.kind == 'pdfbuch' && f.epub) d.push(t('det_epub_pdfbuch', { f: esc(base(f.epub)) }));
   if (f.kind == 'pdf') d.push(t(f.text ? 'det_text' : 'det_notext'));
   if (f.kind == 'transkribus') d.push(t(f.images || f.images_dir ? 'det_images' : 'det_noimages'));
-  if (f.kind == 'epub') d.push(f.pdf ? t('det_pair', { f: esc(base(f.pdf)) }) : t('det_nopair'));
+  if (f.kind == 'epub') d.push(f.pdf ? t('det_pair', { f: esc(base(f.pdf)) }) : f.pdfbuch ? t('det_epub_text') : t('det_nopair'));
   if (f.scantailor) d.push(t('det_scantailor'));
   if (f.prepared) d.push(t('det_prepared'));
   if (f.kind == 'kindle') d.push(kcount('det_kindle', f.books) + ', ' + kcount('kindle_h', f.highlights));
@@ -604,7 +606,7 @@ $('oST').onclick = async () => {
 // ---- Ein Buch weiterbearbeiten: Text aus Transkribus nachlegen, Bilder ergänzen, die anderen Programme vorbereiten.
 // Wer sein Buch schon einmal eingelesen hat, soll nicht wieder von vorn anfangen – und seine Seitenbilder nicht suchen müssen.
 let eb = null, eact = null, enext = null, enextOpen = null, epv = null, eauto = false;
-const ACTS = { pdf: ['📕', b => true], trans: ['🗂️', b => true], addpdf: ['📄', b => b.textbook], images: ['🖼️', b => b.images < b.pages && !b.textbook],
+const ACTS = { pdf: ['📕', b => true], epub: ['📗', b => true], trans: ['🗂️', b => true], addpdf: ['📄', b => b.textbook], images: ['🖼️', b => b.images < b.pages && !b.textbook],
                prep_scans: ['✂️', b => b.images > 0], prep_trans: ['⬆️', b => b.images > 0], prep_st: ['🧹', b => b.images > 0],
                restore: ['⏪', b => (b.backups || []).length], rename: ['✏️', b => true] };
 
@@ -616,15 +618,16 @@ function openEdit(b, act) {
     b.images >= b.pages ? t('ed_imgs') : b.images ? t('ed_someimgs', { n: b.images, p: b.pages }) : t('ed_noimgs')];
   if (b.corrections) d.push(t('ed_corr', { n: b.corrections }));
   $('einfo').innerHTML = esc(d.join(' · ')) + '<small>' + esc(b.folder) + '</small>';
-  editPick();
-  if (act) editAct(act);
+  // »Sichern …« aus der Leseansicht: nur die beiden Wege, das Buch zu sichern – dort ist kein Platz für zwei Links
+  editPick(act == 'sichern' ? ['pdf', 'epub'] : null);
+  if (act && act != 'sichern') editAct(act);
 }
-function editPick() {
-  eact = null; $('emsg').textContent = ''; $('ehead').textContent = t('ed_what');
+function editPick(only) {
+  eact = null; $('emsg').textContent = ''; $('ehead').textContent = t(only ? 'ed_save_what' : 'ed_what');
   $('ebody').style.display = ''; $('edone').style.display = 'none';
   $('eBack').style.display = $('eGo').style.display = $('eBook').style.display = 'none';
   $('eClose').textContent = t('cancel');
-  $('ebody').innerHTML = Object.keys(ACTS).filter(k => ACTS[k][1](eb)).map(k => { const w = unneeded(k, eb);
+  $('ebody').innerHTML = Object.keys(ACTS).filter(k => ACTS[k][1](eb) && (!only || only.includes(k))).map(k => { const w = unneeded(k, eb);
     return '<a href="#" class="act' + (w ? ' muted' : '') + '" data-a="' + k + '"><span class="ic">' + ACTS[k][0] + '</span><span><b>' + t('act_' + k) + '</b><small>' +
       t('act_' + k + '_hint') + '</small>' + (w ? '<small class="why">' + t(w, { n: eb.corrections }) + '</small>' : '') + '</span></a>'; }).join('');
   for (const el of $('ebody').querySelectorAll('a[data-a]')) el.onclick = ev => { ev.preventDefault(); if (stillWant(el.dataset.a, eb)) editAct(el.dataset.a); };
@@ -635,6 +638,7 @@ function editAct(a) {
   if (a == 'prep_scans') return editScans();
   if (a == 'restore') return editRestore();
   if (a == 'pdf') return editPdf();
+  if (a == 'epub') return editEpub();
   if (a == 'addpdf') return editAddPdf();
   if (a == 'rename') return editRename();
   const img = a == 'images', many = eb.corrections >= CORR_MANY;  // nach viel Arbeit rät das Programm zum neuen Buch daneben
@@ -658,6 +662,38 @@ function editPdf() {
   $('eSrc').value = eb.pdfdir || '';
   $('eDir').onclick = () => editChoose('folder');
   $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t('ed_pdf_go');
+}
+async function editEpub() {
+  // Ein E-Book für jede Lese-App (#59). Vorher zeigt der Dialog, was hineinkommt – und was fehlt, mit der Taste, die es
+  // nachholt. Das PDF daneben (vorausgewählt) trägt Seitenbilder und Arbeitsstand; beide Dateien heißen gleich
+  $('ebody').innerHTML = '<div>' + t('ed_epub_intro') + '</div><div class="hint" id="eprev">' + t('ed_epub_checking') + '</div>' +
+    '<label class="f">' + t('ed_epub_author') + '</label><input type="text" id="eAutor" spellcheck="false">' +
+    '<label class="f">' + t('ed_epub_target') + '</label>' +
+    '<div class="row"><input type="text" id="eSrc" spellcheck="false"><button type="button" id="eDir">📁 ' + t('pick_folder') + '</button></div>' +
+    '<div class="radio"><label><input type="checkbox" id="ePdf" checked> ' + t('ed_epub_pdf') + '</label></div>' +
+    '<div class="hint">' + t('ed_epub_hint') + ' ' + help('epub-sichern', t('help')) + '</div>';
+  $('eAutor').value = eb.autor || ''; $('eSrc').value = eb.pdfdir || '';
+  $('eDir').onclick = () => editChoose('folder');
+  $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t('ed_epub_go');
+  try {
+    const r = await post('/api/epub_preview', { id: eb.id });
+    if (eact == 'epub' && $('eprev')) $('eprev').innerHTML = epubSummary(r);
+  } catch (err) { if ($('eprev')) fail('eprev', err); }
+}
+function epubSummary(r) {
+  const d = [t('ep_pages', { n: r.pages }), r.headings ? t('ep_heads', { n: r.headings, c: r.files }) : '', t('ep_paras', { n: r.paragraphs }),
+    r.notes ? t('ep_notes', { n: r.notes, l: r.linked }) : '', r.marked ? t('ep_marked', { n: r.marked }) : ''].filter(x => x);
+  const w = [r.headings ? '' : t('ep_no_heads'), r.fallback ? t('ep_no_paras') : '', r.notes > r.linked ? t('ep_unlinked', { n: r.notes - r.linked }) : '',
+    r.marked ? '' : t('ep_no_pages')].filter(x => x);
+  return t('ep_inside') + ' ' + d.join(' · ') + w.map(x => '<div class="why">' + x + '</div>').join('');
+}
+const fsize = s => s >= 1048576 ? (s / 1048576).toFixed(1) + ' MB' : Math.round(s / 1024) + ' KB';
+function revealLink(folder) {  // »Ordner zeigen« nach dem Sichern
+  $('showPdf').onclick = async ev => {
+    ev.preventDefault();
+    try { await post('/api/reveal', { path: folder }); $('shownPdf').textContent = t('shown_clip'); }
+    catch (err) { fail('shownPdf', err); }
+  };
 }
 function editAddPdf() {
   // Textbuch aus einem EPUB ohne PDF (#40): der Scan kommt nachträglich dazu. Es entsteht ein neues Buch – die Seiten des
@@ -762,7 +798,7 @@ $('eform').onsubmit = async ev => {
     return;
   }
   const src = $('eSrc') ? $('eSrc').value.trim() : '';
-  if (!src && eact != 'pdf' && eact != 'prep_scans') return;
+  if (!src && eact != 'pdf' && eact != 'epub' && eact != 'prep_scans') return;
   const mode = document.querySelector('input[name=emode]:checked');
   try {
     if (eact == 'prep_scans') {
@@ -774,14 +810,18 @@ $('eform').onsubmit = async ev => {
     } else if (eact == 'pdf') {
       const r = await editJob('/api/export_pdf', { id: eb.id, target: src });
       enext = eb.id;
-      editDone('<h3>✔ ' + t('ed_pdf_done', { n: r.pages, s: r.size >= 1048576 ? (r.size / 1048576).toFixed(1) + ' MB' : Math.round(r.size / 1024) + ' KB' }) + '</h3><p><code>' + esc(r.file) + '</code> ' +
+      editDone('<h3>✔ ' + t('ed_pdf_done', { n: r.pages, s: fsize(r.size) }) + '</h3><p><code>' + esc(r.file) + '</code> ' +
         '<a href="#" id="showPdf">' + t('btn_show_folder') + '</a> <span id="shownPdf"></span></p>' +
         '<div class="hint">' + t('ed_pdf_inside', { n: r.corrections }) + '</div><div class="hint">' + t('ed_pdf_other') + '</div>');
-      $('showPdf').onclick = async ev => {
-        ev.preventDefault();
-        try { await post('/api/reveal', { path: r.folder }); $('shownPdf').textContent = t('shown_clip'); }
-        catch (err) { fail('shownPdf', err); }
-      };
+      revealLink(r.folder);
+    } else if (eact == 'epub') {
+      const r = await editJob('/api/export_epub', { id: eb.id, target: src, autor: $('eAutor').value, pdf: $('ePdf').checked });
+      enext = eb.id;
+      editDone('<h3>✔ ' + t('ed_epub_done', { n: r.pages, s: fsize(r.size) }) + '</h3><p><code>' + esc(r.file) + '</code> ' +
+        '<a href="#" id="showPdf">' + t('btn_show_folder') + '</a> <span id="shownPdf"></span></p>' +
+        (r.pdf ? '<p>' + t('ed_epub_with_pdf', { s: fsize(r.pdf.size) }) + '<br><code>' + esc(r.pdf.file) + '</code></p>' : '') +
+        '<div class="hint">' + t('ed_epub_read') + '</div>');
+      revealLink(r.folder);
     } else if (eact == 'addpdf') {
       const script = document.querySelector('#ebody input[name=script]:checked');
       const r = await editJob('/api/add_pdf', { id: eb.id, source: src, script: script ? script.value : 'fraktur' });

@@ -18,8 +18,8 @@ which you carry on exactly where you left off.
 
 ## How to save
 
-1. In the **library**, click **Save as PDF** next to the book – or the link of the same name at the top of the
-   reading view.
+1. In the **library**, click **Save as PDF** next to the book – or **Save …** at the top of the reading view and then
+   **Save as PDF**.
 2. The PDF goes into the folder that also holds the book folder. If it should go straight to a USB stick or a
    cloud folder, pick another folder there.
 3. **Write the PDF.** For a book of 300 pages this takes a few seconds. Afterwards the program shows where the file
@@ -74,5 +74,7 @@ fixed identifier that travels in the PDF) and checks whether anything has happen
 - The invisible text is placed **per line**: when searching, the reader jumps to the right line, but a selection
   dragged with the mouse will not hit every word exactly.
 - A book without page images (from an EPUB, say) gets pages with visible text.
+- For reading on an e-reader, tablet or phone there is [Save as e-book](epub-sichern.md); it can save the PDF next to
+  it at the same time.
 - After merging, the correction log also contains the entries from the other computer. If you then save as PDF again
   and read it in there, a simple update suffices there – so a book can travel back and forth as often as you like.

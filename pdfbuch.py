@@ -141,7 +141,8 @@ def save(book, out, version='', progress=lambda done, total, msg: None, cancelle
     if toc:
         doc.set_toc(toc)
     doc.embfile_add(ANHANG, _anhang(folder, manifest), filename=ANHANG, ufilename=ANHANG, desc='Fraktur-Korrektor: Arbeitsstand')
-    doc.set_metadata(dict(title=book.title, creator='Fraktur-Korrektor ' + version, producer='Fraktur-Korrektor'))
+    doc.set_metadata(dict(title=book.title, author=book.settings.get('autor') or '', creator='Fraktur-Korrektor ' + version,
+                          producer='Fraktur-Korrektor'))
     doc.subset_fonts()
     tmp = out + '.tmp'
     try:

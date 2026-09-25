@@ -19,7 +19,7 @@ MINFIT, MINMATCH = 0.1, 0.05
 class _Text(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
-        self.paras, self.buf, self.skip = [], [], 0
+        self.paras, self.buf, self.skip, self.pb = [], [], 0, None
 
     def flush(self):
         t = re.sub(r'\s+', ' ', ''.join(self.buf)).strip()
@@ -28,13 +28,20 @@ class _Text(HTMLParser):
         self.buf = []
 
     def handle_starttag(self, tag, attrs):
-        if tag in SKIP:
+        a = dict(attrs)
+        if self.pb is None and ('pagebreak' in (a.get('epub:type') or '').split() or a.get('role') == 'doc-pagebreak'):
+            self.pb = tag  # Seitenmarke der Druckausgabe (»[12]« in einem E-Book dieses Programms, #59): kein Text des Buchs
+            self.skip += 1
+        elif tag in SKIP:
             self.skip += 1
         elif tag in BLOCK:
             self.flush()
 
     def handle_endtag(self, tag):
-        if tag in SKIP:
+        if tag == self.pb:
+            self.pb = None
+            self.skip = max(0, self.skip - 1)
+        elif tag in SKIP:
             self.skip = max(0, self.skip - 1)
         elif tag in BLOCK:
             self.flush()

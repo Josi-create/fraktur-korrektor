@@ -5,6 +5,35 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Als E-Book sichern** (#59): Ein Buch wird ein E-Book im Format EPUB 3 zum Lesen auf E-Book-Reader, Tablet oder
+  Handy – Knopf in der Bibliothek; in der Leseansicht ersetzt *Sichern …* den Link *Als PDF sichern* und bietet beide
+  Wege an (mit einem zweiten Link fiel bei 1366 Pixel Breite *Hilfe* aus der Kopfleiste).
+  Aus den Seiten wird fließender Text: Absätze aus dem
+  `<p>` am Zeilenanfang (#67), getrennte Wörter über Zeilen- und Seitengrenzen zusammengesetzt, ohne Kopfzeile,
+  Kolumnentitel und Seitenzahl unten samt dem Rauschen darunter. Das Inhaltsverzeichnis entsteht aus den mit `H`
+  ausgezeichneten Überschriften – dieselbe Liste wie die Übersicht `I` und die Lesezeichen des PDFs
+  (`korrlib.headings`), mit derselben Tiefe ohne übersprungene Ebene –, dazu vorn eine sichtbare Seite »Inhalt« mit
+  den gedruckten Seitenzahlen; jede Überschrift der obersten Stufe beginnt eine neue Datei (ohne Überschriften wird
+  nach Größe geteilt). An jedem Seitenwechsel steht klein die Seitenzahl der Druckausgabe (»[127]«,
+  `epub:type="pagebreak"`, dazu die Seitenliste der Lese-App), bei einem getrennten Wort hinter dessen zweiter Hälfte;
+  Seiten ohne sichere Zahl bekommen keine erfundene. Fußnoten werden EPUB-Fußnoten mit Link und Rücksprung: erkannt
+  werden `<sup>12</sup>`, »wurde 12)« wie in älteren Büchern, ein Stern am Wort (bei nummerierten Fußnoten die nächste
+  Nummer – die Erkennung liest »1)« gern als »*)«) und am Wort klebende Ziffern, zu denen es auf der Seite eine Fußnote
+  gibt; eine Fußnote, die unten auf der nächsten Seite weiterläuft, wird zusammengesetzt. Eine Fußnote ohne
+  erkennbares Zeichen steht sichtbar unter dem Absatz, verloren geht nichts. Verse, Dialoge, Namenslisten und Register
+  behalten ihre Zeilen (fast jede Zeile beginnt groß, kaum eine reicht bis zum Rand), Tabellen bleiben Tabellen,
+  verdorbene Auszeichnung wird ausgeglichen. Bücher ganz ohne Absatzmarken bekommen Absätze nach einer kurzen Zeile mit
+  Satzzeichen am Ende und an Leerzeilen. Titelseite mit Titel, Autor und Erscheinungsjahr; die erste Scanseite wird
+  das Umschlagbild. Der Dialog zeigt vorher, was ins E-Book kommt, und was fehlt mit der Taste, die es nachholt
+  (`/api/epub_preview`). Der Autor wird in `buch.json` gemerkt (`autor`) und steht auch im gesicherten PDF. In vier
+  echten Büchern (212–570 Seiten) prüft epubcheck 5.4 ohne Meldung; ein Test lässt epubcheck in der CI laufen.
+  Neues Modul `epubbuch.py` (nur Standardbibliothek, PyMuPDF für das Umschlagbild). Hilfe *Ein Buch als E-Book
+  sichern* (DE/EN).
+- **E-Book und PDF nebeneinander** (#59): Beim Sichern als E-Book ist *Das PDF gleich daneben sichern* vorausgewählt;
+  beide Dateien heißen gleich (eine fremde Datei gleichen Namens: beide »(2)«). Die Kennung des Buchs steht als
+  `dc:identifier` im EPUB. Öffnet man später das EPUB und das gesicherte PDF desselben Buchs liegt daneben, empfiehlt
+  das Programm das PDF – nur darin stecken Seitenbilder und Arbeitsstand; das EPUB bleibt zweite Wahl. Ein EPUB ohne
+  PDF liest das Programm wie bisher als Textbuch, die Seitenmarken der Druckausgabe gehören dabei nicht zum Text.
 - **Fußnotenzeichen hochstellen**: Die hochgestellten Zahlen, die im Text auf eine Fußnote verweisen, liest die
   Texterkennung oft als `*` oder klebt sie ans Wort (»beziffert.36«). Gespeichert werden sie wie im EPUB als
   `<sup>36</sup>`; das Bearbeitungsfeld zeigt sie als hochgestellte Ziffern (»³⁶«) statt der Auszeichnung, und

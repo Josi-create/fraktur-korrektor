@@ -6,7 +6,7 @@ Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
 import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse, collections, statistics
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-import korrlib, pagexml, ocr, epub, finder, pdfbuch, scans, merge, kindle
+import korrlib, pagexml, ocr, epub, finder, pdfbuch, epubbuch, scans, merge, kindle
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
 
 HERE = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))  # gepackt liegen dict/, docs/ und die HTML-Dateien im Bundle
@@ -170,7 +170,9 @@ class Book:
                 st = propose_settings(self.folder)  # vom Programm eingelesen (auch EPUB-Textbücher), aber vor dieser Funktion: Vorschlag nachholen
         dics = [d for d in st.get('dics') or korrlib.DEFAULT if d in korrlib.DICS]
         # kennung: bleibt dem Buch über das Sichern als PDF hinweg erhalten – daran erkennt ein anderer Rechner dasselbe Buch wieder
-        return dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT), notizen=st.get('notizen') or None, kennung=st.get('kennung') or None)
+        # autor: für das E-Book (#59), beim Sichern eingetragen und fürs nächste Mal gemerkt
+        return dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT), notizen=st.get('notizen') or None, kennung=st.get('kennung') or None,
+                    autor=st.get('autor') or None)
 
     def save_settings(self):
         write_atomic(self.stpath, json.dumps(self.settings, ensure_ascii=False, indent=1))
@@ -1306,6 +1308,7 @@ def lib_list():
                         pending=bool(qj.get('pending')), backups=pagexml.backups(e['folder']) if n else [],
                         unknown=None if unbekannt is None else round(100 * (1 - unbekannt)),
                         images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*'))), pdfdir=pdf_target(e['folder']),
+                        autor=pagexml.load_json(e['folder'], 'buch.json', {}).get('autor') or '' if n else '',
                         # Textbuch aus einem EPUB ohne PDF: Seiten ohne Bild und ohne Zeilenlage – dazu lässt sich das PDF nachreichen (#40)
                         textbook=bool(n) and not os.path.exists(os.path.join(e['folder'], 'lines.json')) and not os.path.isdir(os.path.join(e['folder'], 'img'))))
     out.sort(key=lambda b: b['last'], reverse=True)
@@ -1598,26 +1601,62 @@ def pdf_target(folder):
     return os.path.dirname(t)
 
 
-def export_pdf(bid, target, progress, cancelled):
-    """Ein Buch als PDF sichern (#58): Seitenbilder, unsichtbare Textebene, Arbeitsstand als Anhang. Läuft als Auftrag.
-    Ein PDF, das dieses Programm von demselben Buch geschrieben hat, wird ersetzt – alles andere bekommt »(2)«."""
+def export_prepare(bid, target, autor=None):
+    """Vor dem Sichern: Das Buch bekommt seine feste Kennung (daran erkennt ein anderer Rechner es wieder, und daran das
+    Programm seine eigenen Dateien), autor wird gemerkt. Liefert (buchordner, buch, zielordner)."""
     folder = book_folder(bid)
     book = get_book(bid)
     with book.lock:
-        if not book.settings.get('kennung'):
-            book.settings['kennung'] = uuid.uuid4().hex
+        if not book.settings.get('kennung') or autor is not None:
+            book.settings['kennung'] = book.settings.get('kennung') or uuid.uuid4().hex
+            if autor is not None:
+                book.settings['autor'] = ' '.join(autor.split())[:200] or None
             book.save_settings()
     target = target or pdf_target(folder)
     if not os.path.isdir(target):
         raise ValueError('kein_ordner')
+    return folder, book, target
+
+
+def export_stem(book, target, exts):
+    """Pfad ohne Endung für die gesicherten Dateien; sie heißen wie das Buch. Eine Datei, die dieses Programm von demselben
+    Buch geschrieben hat, wird ersetzt – alles andere bekommt »(2)«. EPUB und PDF nebeneinander (#59) heißen gleich: Beim
+    Öffnen des EPUB empfiehlt das Programm dann das PDF mit Seitenbildern und Arbeitsstand."""
+    own = {'.pdf': lambda p: (pdfbuch.info(p) or {}).get('kennung'), '.epub': epubbuch.kennung}
     name = re.sub(r'[\\/:*?"<>|]+', ' ', book.title).strip()[:80].rstrip(' .') or 'Buch'
-    out, n = os.path.join(target, name + '.pdf'), 1
-    while os.path.exists(out) and (pdfbuch.info(out) or {}).get('kennung') != book.settings['kennung']:
+    stem, n = os.path.join(target, name), 1
+    while any(os.path.exists(stem + e) and own[e](stem + e) != book.settings['kennung'] for e in exts):
         n += 1
-        out = os.path.join(target, '%s (%d).pdf' % (name, n))
-    r = pdfbuch.save(book, out, version(), progress, cancelled)
+        stem = os.path.join(target, '%s (%d)' % (name, n))
+    return stem
+
+
+def export_pdf(bid, target, progress, cancelled):
+    """Ein Buch als PDF sichern (#58): Seitenbilder, unsichtbare Textebene, Arbeitsstand als Anhang. Läuft als Auftrag."""
+    folder, book, target = export_prepare(bid, target)
+    r = pdfbuch.save(book, export_stem(book, target, ('.pdf',)) + '.pdf', version(), progress, cancelled)
     lib_touch(folder)
     return dict(id=bid, folder=target, **r)
+
+
+def export_epub(bid, target, autor, with_pdf, progress, cancelled):
+    """Ein Buch als E-Book sichern (#59), auf Wunsch das PDF gleich daneben: Im E-Book liest es sich bequem, das PDF trägt
+    Seitenbilder und Arbeitsstand. Läuft als Auftrag."""
+    folder, book, target = export_prepare(bid, target, autor)
+    stem = export_stem(book, target, ('.epub', '.pdf') if with_pdf else ('.epub',))
+    r = epubbuch.save(book, stem + '.epub', version(), progress, cancelled)
+    if with_pdf:
+        r['pdf'] = pdfbuch.save(book, stem + '.pdf', version(), progress, cancelled)
+    lib_touch(folder)
+    return dict(id=bid, folder=target, **r)
+
+
+def epub_preview(bid):
+    """Was das E-Book enthalten wird, für den Dialog vor dem Sichern – samt gemerktem Autor."""
+    book = get_book(bid or '')
+    if not book:
+        raise ValueError('quelle_fehlt')
+    return dict(epubbuch.preview(book), autor=book.settings.get('autor') or '', title=book.title)
 
 
 def update_check(folder, pdf):
@@ -2064,7 +2103,7 @@ pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} 
 <div id="wrap"><nav>%(nav)s</nav><main>%(body)s</main></div></body></html>'''
 
 
-HELP_ORDER = ['index', 'add-book', 'fotografieren', 'pdf-import','transkribus', 'usage', 'kindle', 'pdf-sichern', 'install', 'install-tools', 'vergleich', 'faq']
+HELP_ORDER = ['index', 'add-book', 'fotografieren', 'pdf-import','transkribus', 'usage', 'kindle', 'pdf-sichern', 'epub-sichern', 'install', 'install-tools', 'vergleich', 'faq']
 
 
 def help_pages(lang):
@@ -2268,7 +2307,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/rename', '/api/kindle_scan', '/api/kindle_notes'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/export_epub', '/api/epub_preview', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/rename', '/api/kindle_scan', '/api/kindle_notes'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -2320,6 +2359,17 @@ class H(BaseHTTPRequestHandler):
                 if not get_book(body.get('id') or ''):
                     return self.sendjson(dict(error='quelle_fehlt'), 400)
                 return self.sendjson(dict(job=start_job(export_pdf, body['id'], (body.get('target') or '').strip())))
+            if u.path == '/api/export_epub':
+                if not get_book(body.get('id') or ''):
+                    return self.sendjson(dict(error='quelle_fehlt'), 400)
+                autor = body.get('autor')
+                return self.sendjson(dict(job=start_job(export_epub, body['id'], (body.get('target') or '').strip(),
+                                                        autor if isinstance(autor, str) else None, bool(body.get('pdf')))))
+            if u.path == '/api/epub_preview':
+                try:
+                    return self.sendjson(epub_preview(body.get('id')))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
             if u.path == '/api/import_pdfbuch':
                 return self.sendjson(dict(job=start_job(import_pdfbuch, body.get('source'), body.get('title'), body.get('target'), body.get('into'), bool(body.get('merge')))))
             if u.path == '/api/restore':

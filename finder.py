@@ -4,8 +4,10 @@ Funde – der Nutzer soll nicht wissen müssen, was ein "Transkribus-Export" ode
 Fund = dict(kind, path, name, pages, mtime, …):
   book         Buchordner des Fraktur-Korrektors (NNN.txt) – corrections = Zeilen in korrekturen.log
   transkribus  Export als ZIP oder Ordner (PAGE-XML) – images = Seitenbilder liegen bei; images_dir = passender Bilderordner
-  epub         EPUB – pdf = gleichlautendes PDF (dann: links das PDF, rechts der EPUB-Text)
-  pdfbuch      PDF, das dieses Programm gesichert hat (Arbeitsstand im Anhang) – corrections, saved, kennung
+  epub         EPUB – pdf = gleichlautendes PDF (dann: links das PDF, rechts der EPUB-Text); kennung, wenn dieses Programm es
+               geschrieben hat (#59)
+  pdfbuch      PDF, das dieses Programm gesichert hat (Arbeitsstand im Anhang) – corrections, saved, kennung; epub = das E-Book
+               desselben Buchs, das daneben liegt
   pdf          PDF – text = durchsuchbar
   images       Ordner mit Seitenbildern – scantailor = Ergebnis von ScanTailor, prepared = vom Programm aufbereitet
                (Doppelseiten geteilt, geradegerichtet); beide gehen vor den unbearbeiteten Seiten
@@ -134,6 +136,8 @@ def epub_info(path):
                 d['name'] = t.text.strip()
     except Exception:
         return None
+    import epubbuch
+    d['kennung'] = epubbuch.kennung(path)
     return d
 
 
@@ -182,9 +186,22 @@ def scan_file(path):
         return keep + [found[0]]  # gibt es ein gleichlautendes EPUB, wird es mit angeboten
     if ext == '.epub':
         e = epub_info(path)
-        found = ([e] if e else []) + [pdf_info(f) for f in glob.glob(os.path.join(folder, '*.pdf'))[:12]]
+        key = stem_key(os.path.basename(path))
+        pdfs = sorted(glob.glob(os.path.join(folder, '*.pdf')), key=lambda f: stem_key(os.path.basename(f)) != key)  # gleichnamige zuerst
+        found = ([e] if e else []) + [pdf_info(f) for f in pdfs[:12]]
         _pair(found)
-        return found[:1] if e else []
+        if not e:
+            return []
+        # Daneben das gesicherte PDF desselben Buchs (#59, »Als E-Book sichern« legt es auf Wunsch dazu): Es trägt Seitenbilder
+        # und Arbeitsstand und wird empfohlen; das EPUB bleibt die zweite Wahl. Dasselbe Buch: gleiche Kennung, sonst gleicher Name
+        own = [f for f in found if f['kind'] == 'pdfbuch' and ((e.get('kennung') and f.get('kennung') == e['kennung'])
+                                                              or stem_key(os.path.basename(f['path'])) == key)]
+        if own:
+            best = max(own, key=lambda f: (bool(e.get('kennung')) and f.get('kennung') == e['kennung'],
+                                           os.path.splitext(f['path'])[0] == os.path.splitext(path)[0], f['mtime']))
+            best['epub'], e['pdfbuch'] = path, best['path']
+            return [best, e]
+        return [e]
     if ext == '.zip':
         t = transkribus_zip(path)
         return [t] if t else []

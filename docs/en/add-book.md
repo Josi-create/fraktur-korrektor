@@ -13,7 +13,7 @@ You do not need to know in which form your book exists. Click **Open …** and s
 | 📖 **Book** – a folder you have already worked on with Fraktur-Korrektor | is opened immediately |
 | 📕 **Saved book (PDF)** – a PDF written by Fraktur-Korrektor, on another computer too | is created as a book with everything in it. See [Saving a book as PDF](pdf-sichern.md) |
 | 📄 **PDF** | If it is already searchable, its text is taken over within seconds; otherwise Tesseract recognises the text. See [Reading in a PDF or images](pdf-import.md) |
-| 📗 **EPUB** | If a **PDF of the same name** lies next to it, the scan appears on the left and the EPUB text on the right. If it lies elsewhere, fetch it with **Choose the matching PDF …**. Without a PDF the book is opened without page images |
+| 📗 **EPUB** | If a **PDF of the same name** lies next to it, the scan appears on the left and the EPUB text on the right. If it lies elsewhere, fetch it with **Choose the matching PDF …**. Without a PDF the book is opened without page images. If the saved PDF of the same book lies next to it, the program recommends the PDF (see [Saving a book as e-book](epub-sichern.md)) |
 | 🖼️ **Page images** – a folder with JPG, PNG or TIF | Tesseract recognises the text |
 | 🗂️ **Export from Transkribus** – ZIP file or unpacked folder | is imported. See [Working with Transkribus](transkribus.md) |
 

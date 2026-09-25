@@ -23,7 +23,9 @@ lediglich als Fenster.
 3. **Lesen und korrigieren** – [Bedienung](usage.md). Alles geht mit der Tastatur; die wichtigsten Tasten
    stehen immer unten im Fenster, unter Bild und Text.
 4. **Mitnehmen** – [Ein Buch als PDF sichern](pdf-sichern.md): eine Datei mit Seitenbildern, durchsuchbarem Text und
-   Ihrem ganzen Arbeitsstand, lesbar in jedem PDF-Reader und auf einem anderen Rechner wieder ein Buch.
+   Ihrem ganzen Arbeitsstand, lesbar in jedem PDF-Reader und auf einem anderen Rechner wieder ein Buch. Zum Lesen auf
+   E-Book-Reader, Tablet oder Handy: [Ein Buch als E-Book sichern](epub-sichern.md), mit Inhaltsverzeichnis, den
+   Seitenzahlen der Druckausgabe und Fußnoten als Links.
 
 ## Zettel für Obsidian
 

@@ -249,12 +249,12 @@ gleich: Kapitel Ebene 1, Abschnitte darin Ebene 2; hat das Buch Teile, sind die 
 **Inhalt (`I`)** zeigt alle Überschriften des Buchs, eingerückt nach Ebene, mit der gedruckten Seitenzahl – so sehen
 Sie, ob ein Kapitel fehlt. `↓` `↑` wählen, `Enter` oder ein Klick springt hin, `Esc` schließt. Beim
 [Sichern als PDF](pdf-sichern.md) werden die Überschriften das Inhaltsverzeichnis des PDFs, das jeder PDF-Reader in der
-Seitenleiste zeigt. Ein späterer EPUB-Export bildet daraus Kapitel und ein anklickbares Inhaltsverzeichnis.
+Seitenleiste zeigt. Beim [Sichern als E-Book](epub-sichern.md) bilden sie Kapitel und ein anklickbares Inhaltsverzeichnis.
 
 ## Absätze (A)
 
-Im Druck endet jede Zeile am Rand; wo ein Absatz beginnt, zeigt nur der Einzug seiner ersten Zeile. Für ein späteres
-E-Book, in dem der Text frei fließt, muss das Programm die Absätze kennen. Beim ersten Öffnen eines Buchs erkennt es
+Im Druck endet jede Zeile am Rand; wo ein Absatz beginnt, zeigt nur der Einzug seiner ersten Zeile. Für das
+[E-Book](epub-sichern.md), in dem der Text frei fließt, muss das Programm die Absätze kennen. Beim ersten Öffnen eines Buchs erkennt es
 sie selbst am Einzug im Seitenbild und rückt die erste Zeile jedes Absatzes auch im Text ein; unten in der Statuszeile
 steht, wie viele es gefunden hat.
 

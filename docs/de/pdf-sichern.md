@@ -18,8 +18,8 @@ ein Buch, in dem Sie genau dort weiterarbeiten, wo Sie aufgehört haben.
 
 ## So sichern Sie
 
-1. In der **Bibliothek** beim Buch auf **Als PDF sichern** klicken – oder in der Leseansicht oben auf den gleichnamigen
-   Link.
+1. In der **Bibliothek** beim Buch auf **Als PDF sichern** klicken – oder in der Leseansicht oben auf **Sichern …**
+   und dort auf **Als PDF sichern**.
 2. Das PDF kommt in den Ordner, in dem auch der Buchordner liegt. Soll es gleich auf einen USB-Stick oder in
    einen Cloud-Ordner, wählen Sie dort einen anderen Ordner.
 3. **PDF schreiben.** Bei einem Buch mit 300 Seiten dauert das wenige Sekunden. Danach zeigt das Programm, wo die
@@ -76,6 +76,8 @@ feste Kennung, die im PDF mitreist), und sieht nach, ob hier seit dem Sichern et
 - Der unsichtbare Text sitzt **zeilengenau**: Beim Suchen springt der Reader zur richtigen Zeile, die Markierung
   beim Ziehen mit der Maus trifft aber nicht jedes Wort genau.
 - Ein Buch ohne Seitenbilder (etwa aus einem EPUB) bekommt Seiten mit sichtbarem Text.
+- Zum Lesen auf E-Book-Reader, Tablet oder Handy gibt es [Als E-Book sichern](epub-sichern.md); dort lässt sich das PDF
+  gleich daneben sichern.
 - Nach dem Zusammenführen enthält das Korrekturprotokoll auch die Einträge vom anderen Rechner. Sichern Sie danach
   wieder als PDF und lesen es dort ein, genügt dort das einfache Aktualisieren – so pendelt ein Buch beliebig oft
   zwischen zwei Rechnern.

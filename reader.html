@@ -141,7 +141,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <a href="#" id="toclink" data-t="toc_link"></a>
  <a href="#" id="diclink" data-t="dic_link"></a>
  <a href="#" id="notelink" data-t="note_link"></a>
- <a href="#" id="savePdf" data-t="act_pdf" style="display:none"></a>
+ <a href="#" id="saveBook" data-t="act_save" data-t-title="act_save_t" style="display:none"></a>
  <a href="#" id="addTrans" data-t="act_trans" style="display:none"></a>
  <a href="#" id="addImg" data-t="act_images" style="display:none"></a>
  <a href="#" id="replPage" data-t="act_page" style="display:none"></a>
@@ -329,7 +329,8 @@ async function loadOverview() {
   if (o.local && o.id) {
     const weiter = was => ev => { ev.preventDefault(); location.href = '/bibliothek#edit=' + o.id + '|' + was; };
     $('addTrans').style.display = ''; $('addTrans').onclick = weiter('trans');
-    $('savePdf').style.display = ''; $('savePdf').onclick = weiter('pdf');
+    // Als PDF oder als E-Book: ein Link, die Wahl im Dialog – in der Kopfleiste ist kein Platz für zwei (#59)
+    $('saveBook').style.display = ''; $('saveBook').onclick = weiter('sichern');
     if (!o.images) {
       $('addImg').style.display = ''; $('addImg').onclick = weiter('images');
       $('noimg').style.display = 'flex'; $('noimgBtn').onclick = weiter('images');

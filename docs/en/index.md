@@ -23,7 +23,9 @@ as its window.
 3. **Read and correct** – [Usage](usage.md). Everything works from the keyboard; the most important keys
    are always shown at the bottom of the window, below the image and the text.
 4. **Take it along** – [Saving a book as PDF](pdf-sichern.md): one file with page images, searchable text and all
-   your work, readable in any PDF reader and a book again on another computer.
+   your work, readable in any PDF reader and a book again on another computer. For reading on an e-reader, tablet or
+   phone: [Saving a book as e-book](epub-sichern.md), with a table of contents, the page numbers of the printed edition
+   and footnotes as links.
 
 ## Notes for Obsidian
 

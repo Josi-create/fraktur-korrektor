@@ -241,12 +241,13 @@ within them level 2; if the book has parts, the parts are level 1 and the chapte
 **Contents (`I`)** shows all headings of the book, indented by level, with the printed page number – so you can see
 whether a chapter is missing. `↓` `↑` select, `Enter` or a click goes there, `Esc` closes. When you
 [save the book as a PDF](pdf-sichern.md), the headings become the PDF's table of contents, which every PDF reader shows
-in its sidebar. A later EPUB export will build chapters and a clickable table of contents from them.
+in its sidebar. When you [save the book as an e-book](epub-sichern.md), they become chapters and a clickable table of
+contents.
 
 ## Paragraphs (A)
 
-In print every line runs to the margin; only the indentation of its first line shows where a paragraph begins. For a
-later e-book, where the text flows freely, the program has to know the paragraphs. When a book is opened for the first
+In print every line runs to the margin; only the indentation of its first line shows where a paragraph begins. For the
+[e-book](epub-sichern.md), where the text flows freely, the program has to know the paragraphs. When a book is opened for the first
 time, it detects them itself from the indentation in the page image and indents the first line of each paragraph in the
 text too; the status line at the bottom says how many it found.
 
