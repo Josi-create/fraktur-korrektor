@@ -53,6 +53,7 @@ installers are built is described in [RELEASE.md](RELEASE.md) (German).
 
     python server.py                  library; "Open …" works out what it is: book folder, PDF, EPUB (+ PDF of the same name), images, Transkribus export
     python server.py <book-folder>    open a book directly
+    python server.py beispiel         the sample book: eight pages of Goethe's Faust, public domain (beispiel/README.md)
 
 Options: `--port 8765`, `--dic <hunspell-path-without-extension>`, `--title "…"`, `--no-browser`, `--lan`,
 `--last` (without a book folder: the browser opens the book read last instead of the library).
@@ -74,7 +75,8 @@ So when trying things out, always use:
 
 - a **separate instance on another port** (`--port 8899`), not the one you are reading in;
 - `FRAKTUR_HOME` pointing to a **throwaway folder**, so your everyday settings and library stay untouched;
-- a **copy** of a book folder or the throwaway book from `tests/conftest.py`, never the book you are working on.
+- a **copy** of a book folder, of the sample book `beispiel/` or the throwaway book from `tests/conftest.py`, never
+  the book you are working on.
 
 `tests/conftest.py` shows the pattern: it builds a small book in a temp folder, finds a free port and starts its own
 server for it.

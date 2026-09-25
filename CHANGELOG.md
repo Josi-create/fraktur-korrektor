@@ -5,6 +5,12 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Beispielbuch** (#4): `beispiel/` enthält acht Seiten aus Goethes *Faust* (Cotta 1862, gemeinfrei; Scan der
+  University of Toronto bei archive.org) – Titelblatt mit Bibliotheksstempel, der Anfang von »Nacht« und die
+  Prosaszene »Trüber Tag. Feld.« mit Silbentrennung. Eingelesen mit dem eigenen Weg (Tesseract, frak2021), unkorrigiert:
+  Ampel grün, ein paar rote Wörter zum Ausprobieren. `python server.py beispiel`; Quelle und Rechte in
+  `beispiel/README.md`. Was beim Lesen darin entsteht (Lesezeichen, Protokoll …), übergeht Git. Ein Test prüft, dass
+  jede Textzeile ihre Bildzeile hat.
 - **Rauschen vom Scanrand löschen** (#73): Zeilen, die die Texterkennung aus einem dunklen Rand oder einer
   angeschnittenen Nachbarseite gelesen hat (`BTB`, `LLL AAA`), löscht im Lesemodus `Strg`+`⌫` (Mac: `⌘`+`⌫`) – die
   Lesezeile oder alle mit `Umschalt`+`↓`/`↑` markierten, ohne Rückfrage; `Strg`/`⌘`+`Z` holt die zuletzt gelöschten
@@ -329,6 +335,10 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
 ### Behoben
+- **Silbentrennung nach der Erkennung mit Tesseract**: Das Frakturmodell frak2021 liest den Doppelstrich ⸗ am
+  Zeilenende oft als Gedankenstrich (»unend—« / »licher«, auch »ver—-«). Das Einlesen machte daraus bisher kein `¬`,
+  das getrennte Wort war dann rot. Jetzt gilt ein Strich direkt am Wort, auf den klein weitergeschrieben wird, als
+  Trennung; ein Gedankenstrich mit Leerzeichen davor bleibt einer. Betrifft neu eingelesene Bücher.
 - **Zwei Änderungen an derselben Seite kurz hintereinander** (#72): Windows vergibt Änderungszeiten von Dateien in
   Schritten von bis zu etwa 15 ms (HFS+ am Mac in Sekunden). Wurde eine Seite zweimal so schnell geschrieben – beim
   Zusammenführen etwa Teilen und gleich danach Verbinden –, bekam sie dieselbe Zeit, und das Programm arbeitete mit

@@ -1,0 +1,63 @@
+{
+ "model": "frak2021",
+ "rating": {
+  "level": "gruen",
+  "conf": 94.1,
+  "dict": 0.972,
+  "weak": [],
+  "ends": []
+ },
+ "quelle": [
+  "tesseract"
+ ],
+ "pages": {
+  "001": {
+   "conf": 78.2,
+   "words": 16,
+   "dict": 0.75,
+   "ends": -25.4
+  },
+  "002": {
+   "conf": 94.1,
+   "words": 151,
+   "dict": 0.974,
+   "ends": 1.4
+  },
+  "003": {
+   "conf": 94.1,
+   "words": 175,
+   "dict": 0.926,
+   "ends": -0.1
+  },
+  "004": {
+   "conf": 94.4,
+   "words": 198,
+   "dict": 0.949,
+   "ends": 0.3
+  },
+  "005": {
+   "conf": 94.3,
+   "words": 215,
+   "dict": 0.977,
+   "ends": -0.1
+  },
+  "006": {
+   "conf": 92.7,
+   "words": 200,
+   "dict": 0.94,
+   "ends": 1.8
+  },
+  "007": {
+   "conf": 93.7,
+   "words": 204,
+   "dict": 0.98,
+   "ends": 0.3
+  },
+  "008": {
+   "conf": 93.4,
+   "words": 141,
+   "dict": 0.972,
+   "ends": 2.3
+  }
+ }
+}

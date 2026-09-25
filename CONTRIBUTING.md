@@ -55,6 +55,7 @@ laufen. Wie die Installer entstehen, steht in [RELEASE.md](RELEASE.md).
 
     python server.py                  Bibliothek; »Öffnen …« erkennt selbst: Buchordner, PDF, EPUB (+ gleichnamiges PDF), Bilder, Transkribus-Export
     python server.py <buchordner>     direkt ein Buch öffnen
+    python server.py beispiel         das Beispielbuch: acht Seiten Goethes Faust, gemeinfrei (beispiel/README.md)
 
 Optionen: `--port 8765`, `--dic <hunspell-pfad-ohne-endung>`, `--title "…"`, `--no-browser`, `--lan`,
 `--last` (ohne Buchordner: im Browser gleich das zuletzt gelesene Buch statt der Bibliothek).
@@ -76,7 +77,8 @@ Das Programm schreibt in Buchordner (Textdateien, Protokoll, Lesezeichen) und in
 
 - eine **eigene Instanz auf einem anderen Port** (`--port 8899`), nicht die, in der Sie gerade lesen;
 - `FRAKTUR_HOME` auf einen **Wegwerfordner**, damit Einstellungen und Bibliothek des Alltags unberührt bleiben;
-- eine **Kopie** eines Buchordners oder das Wegwerf-Buch aus `tests/conftest.py`, nie das Buch, an dem Sie arbeiten.
+- eine **Kopie** eines Buchordners, des Beispielbuchs `beispiel/` oder das Wegwerf-Buch aus `tests/conftest.py`, nie
+  das Buch, an dem Sie arbeiten.
 
 `tests/conftest.py` zeigt das Muster: Es baut ein kleines Buch im Temp-Ordner, sucht sich einen freien Port und startet
 dafür einen eigenen Server.

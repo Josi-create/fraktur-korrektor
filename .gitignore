@@ -11,6 +11,13 @@ buecher/
 # Das Programmsymbol und die Bildschirmfotos der Anleitungen gehören aber dazu
 !icon.png
 !docs/*/img/*.png
+# Das Beispielbuch (gemeinfrei, beispiel/README.md) gehört dazu – was beim Lesen darin entsteht, nicht
+beispiel/buch.json
+beispiel/lesezeichen.json
+beispiel/korrekturen.log
+beispiel/whitelist.txt
+beispiel/geloescht.json
+beispiel/konflikte.json
 # Bauen: PyInstaller, mitgeliefertes Tesseract, aus icon.png erzeugtes Mac-Symbol
 build/
 dist/
