@@ -285,6 +285,19 @@ const toSup = s => s.replace(/\d/g, d => SUPD[d]), fromSup = s => s.replace(/[�
 const supShow = s => s.replace(SUPRE, (m, d) => toSup(d)), supMark = s => s.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, m => '<sup>' + fromSup(m) + '</sup>');
 function supPos(core, raw) { let d = 0; for (const m of core.matchAll(SUPRE)) if (m.index + m[0].length <= raw) d += m[0].length - m[1].length; return raw - d; }
 const fpos = f => supPos(ed.core, f.start - ed.pre.length);  // wo das markierte Wort im Feld steht
+// Am blauen Fußnotenzeichen: ↑ ↓ zählen die Nummer hoch oder runter, eine getippte Ziffer ist gleich hochgestellt
+const fnTok = (v, fs) => (v.slice(fs).match(/^[*\d⁰¹²³⁴⁵⁶⁷⁸⁹]*/) || [''])[0];
+function fnrefShow(el, fs) { const now = fnTok(el.value, fs); if (sug) { sug.items = [now]; sug.i = 0; } renderSug(); }
+function fnrefStep(d) {
+  const e1 = $('edit'), fs = fpos(cf), cur = fnTok(e1.value, fs);
+  const s = toSup(String(Math.max(1, (parseInt(fromSup(cur), 10) || cf.expect) + d)));
+  e1.setRangeText(s, fs, fs + cur.length, 'select'); fnrefShow(e1, fs);
+}
+function fnrefDigit(el, k) {
+  const fs = fpos(cf), cur = fnTok(el.value, fs);
+  if (el.selectionStart < fs || el.selectionEnd > fs + cur.length) return false;  // anderswo in der Zeile: eine gewöhnliche Ziffer
+  el.setRangeText(SUPD[k], el.selectionStart, el.selectionEnd, 'end'); el.dispatchEvent(new Event('input')); fnrefShow(el, fs); return true;
+}
 // Strg+Umschalt++ (wie in Word): die Ziffern vor der Schreibmarke – oder die markierten – hoch- bzw. wieder tiefstellen
 function supToggle(el) {
   let a = el.selectionStart, b = el.selectionEnd; const v = el.value;
@@ -600,7 +613,7 @@ function renderSug() {
   // unter dem Wort: die Breite des Textes davor im Feld messen (Rahmen und Innenabstand des Felds: 7 px)
   const c = document.createElement('canvas').getContext('2d'); c.font = getComputedStyle(e1).font;
   const x = e1.offsetLeft + 7 + c.measureText(e1.value.slice(0, fs)).width, under = isJoin(f) ? $('edit2') : e1;
-  box.innerHTML = sug.items.map((s, k) => '<div class="' + (k == sug.i ? 'on' : '') + '" data-k="' + k + '">' + esc(s) + '</div>').join('') + '<small>' + t('sug_keys') + '</small>';
+  box.innerHTML = sug.items.map((s, k) => '<div class="' + (k == sug.i ? 'on' : '') + '" data-k="' + k + '">' + esc(s) + '</div>').join('') + '<small>' + t(f.kind == 'fnref' ? 'sug_keys_fn' : 'sug_keys') + '</small>';
   for (const el of box.querySelectorAll('div[data-k]')) el.onmousedown = ev => { ev.preventDefault(); applySug(+el.dataset.k); };  // mousedown: das Feld behält den Fokus
   box.style.display = 'block';
   box.style.left = Math.max(0, Math.min(x, $('text').clientWidth - box.offsetWidth - 8)) + 'px';
@@ -1262,6 +1275,10 @@ async function onKey(e) {
     else return;
     e.preventDefault();
   } else {
+    if (mode == 'fix' && cf && cf.kind == 'fnref' && e.target.id == 'edit') {  // Fußnotenzeichen: Nummer einstellen oder tippen
+      if (e.key == 'ArrowUp' || e.key == 'ArrowDown') { e.preventDefault(); fnrefStep(e.key == 'ArrowUp' ? 1 : -1); return; }
+      if (/^\d$/.test(e.key) && fnrefDigit(e.target, e.key)) { e.preventDefault(); return; }
+    }
     // ↓ ↑ gehen durch die Vorschläge (bei getrenntem Wort führen Tab und → weiter in die zweite Hälfte)
     if (mode == 'fix' && sug && sug.items.length && (e.key == 'ArrowDown' || e.key == 'ArrowUp')) { e.preventDefault(); applySug(sug.i + (e.key == 'ArrowDown' ? 1 : -1)); return; }
     if (hopJoin(e)) return;

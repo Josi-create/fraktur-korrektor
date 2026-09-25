@@ -155,10 +155,11 @@ and only on pages that do not have a separator yet.
 as `*`, or stuck to the word as ordinary digits (»beziffert.36«). To enter them raised: type the number and press
 `Ctrl`+`Shift`+`+` (as in Word; on a Mac `⌘`+`Shift`+`+`) – in the field it then appears raised (»beziffert.³⁶«), in
 the text file as `<sup>36</sup>` as in an e-book. The same keys again make it normal. The suggestions make it easier:
-on pages with footnotes the program marks such places in blue, `Space` goes there as to a red word, and the number is
-already in the field, raised – `Enter` accepts it. The number follows from the numbering: the previous footnote and
-the readable numbers of the footnotes at the bottom of the page. Where text recognition swallowed many marks, it is
-off; then type the correct number and raise it – the following suggestions go by it. The quotation of a note (`F4`)
+on pages with footnotes the program marks such places in blue, `Space` (or `Enter` in the line) goes there as to a red
+word, and the number is already in the field, raised – `Enter` accepts it. If it is wrong, `↑` and `↓` count it up or
+down, or you type the correct number: at this place it is raised straight away. The number follows from the
+numbering: the previous footnote and the readable numbers of the footnotes at the bottom of the page. Where text
+recognition swallowed many marks, it is off – once one is set correctly, the following suggestions go by it. The quotation of a note (`F4`)
 contains no footnote marks.
 
 ## Splitting and joining lines

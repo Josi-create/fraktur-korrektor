@@ -160,10 +160,11 @@ Texterkennung oft als `*` oder klebt sie als gewöhnliche Ziffern ans Wort (»be
 sie so ein: die Zahl tippen und `Strg`+`Umschalt`+`+` drücken (wie in Word; am Mac `⌘`+`Umschalt`+`+`) – im Feld
 steht sie dann hochgestellt (»beziffert.³⁶«), in der Textdatei als `<sup>36</sup>` wie im E-Book. Noch einmal die Tasten
 stellt sie wieder normal. Einfacher geht es mit den Vorschlägen: Auf Seiten mit Fußnoten markiert das Programm solche
-Stellen blau, `Leertaste` springt hin wie zu einem roten Wort, und die Nummer steht schon hochgestellt im Feld –
-`Enter` übernimmt sie. Die Nummer ergibt sich aus der Zählung: der vorigen Fußnote und den lesbaren Nummern der
-Fußnoten unten auf der Seite. Wo die Texterkennung viele Zeichen verschluckt hat, liegt sie daneben; dann die richtige
-Zahl eintippen und hochstellen – die folgenden Vorschläge richten sich nach ihr. Im Zitat einer Notiz (`F4`) stehen
+Stellen blau, `Leertaste` (oder `Enter` in der Zeile) springt hin wie zu einem roten Wort, und die Nummer steht schon
+hochgestellt im Feld – `Enter` übernimmt sie. Stimmt sie nicht, zählen `↑` und `↓` sie weiter oder zurück, oder Sie
+tippen die richtige Zahl: An dieser Stelle ist sie gleich hochgestellt. Die Nummer ergibt sich aus der Zählung: der
+vorigen Fußnote und den lesbaren Nummern der Fußnoten unten auf der Seite. Wo die Texterkennung viele Zeichen
+verschluckt hat, liegt sie daneben – ist eine richtig gesetzt, richten sich die folgenden Vorschläge nach ihr. Im Zitat einer Notiz (`F4`) stehen
 keine Fußnotenzeichen.
 
 ## Zeilen teilen und verbinden

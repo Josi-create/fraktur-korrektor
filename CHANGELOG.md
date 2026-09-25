@@ -13,7 +13,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Teilen zu `<sup>` (`korrlib.sup_markup`, im Reader `supMark`).
 - **Fußnotenzeichen vorschlagen**: Auf Seiten mit Fußnoten markiert das Programm ein `*` direkt am Wort und am Wort
   klebende Ziffern blau (Markierung `fnref`, nicht `*)` und nicht Stellenangaben wie »S.12«); `Leertaste` springt hin,
-  die vermutete Nummer steht schon hochgestellt im Feld, `Enter` übernimmt sie. Die Nummer ergibt sich aus der
+  die vermutete Nummer steht schon hochgestellt im Feld, `Enter` übernimmt sie. Stimmt sie nicht, zählen `↑`/`↓` sie
+  weiter oder zurück, und eine an dieser Stelle getippte Zahl ist gleich hochgestellt (vorher musste man sie erst
+  speichern und dann mit `Strg`+`Umschalt`+`+` hochstellen). Die Nummer ergibt sich aus der
   Zählung in Lesereihenfolge (`Book.footnote_refs`), verankert an schon hochgestellten Nummern, an passenden
   angeklebten Ziffern und an den lesbaren Nummern der Fußnoten unten – von diesen gilt nur die längste Folge, die mit
   den Seiten wächst (`footnote_anchors`), damit verstümmelte (»3« statt 36) nicht stören. In einem Buch mit 279 Seiten
