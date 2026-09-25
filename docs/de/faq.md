@@ -153,6 +153,11 @@ es vorher und nachher gibt. Namen und Orte bestätigen Sie einmal mit `F8` – d
 Sie passt nicht zu den Nachbarseiten – die Texterkennung liest in Fraktur gern „16“ als „46“. Der Hinweis nennt die
 Zahl, die dort stehen müsste; `Leertaste` und `Enter` berichtigen sie wie ein Wort.
 
+**Die Seitenzahlen stehen unten auf der Seite – muss ich sie in die Kopfzeile eintragen?**
+Nein. Trägt ein Buch seine Seitenzahlen durchgehend unten, erkennt das Programm sie dort von selbst – auch mit etwas
+Rauschen vom Seitenrand daneben – und nimmt sie für Notizen und das Inhaltsverzeichnis. Seiten ohne Zahl
+(Kapitelanfänge, Tafeln) bekommen die Zahl, die sich aus den Nachbarseiten ergibt.
+
 **Zeilen sind orange umrandet, oben steht eine Zahl.**
 Nach dem Zusammenführen zweier Arbeitsstände wurden diese Zeilen an beiden Rechnern verschieden berichtigt. `Z`
 springt zur nächsten, `1` behält die hiesige Fassung, `2` nimmt die andere – siehe

@@ -149,6 +149,11 @@ Confirm names and places once with `F8` – that then applies to the whole book.
 It does not fit the neighbouring pages – OCR likes to read “16” as “46” in Fraktur. The hint gives the number that
 should be there; `Space` and `Enter` correct it like a word.
 
+**The page numbers are at the bottom of the page – do I have to enter them in the header?**
+No. If a book carries its page numbers at the bottom throughout, the program finds them there by itself – even with
+some noise from the page edge next to them – and uses them for notes and the table of contents. Pages without a number
+(chapter openings, plates) get the number implied by the neighbouring pages.
+
 **Lines have an orange frame, and there is a count at the top.**
 After merging two working copies, these lines were corrected differently on the two computers. `Z` jumps to the next
 one, `1` keeps the version here, `2` takes the other – see [Saving a book as PDF](pdf-sichern.md).

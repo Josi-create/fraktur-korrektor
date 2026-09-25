@@ -314,6 +314,45 @@ def read_page(path):
 def read_pages(folder):
     """{ 'NNN': [zeilen] } aus NNN.txt"""
     return {os.path.basename(f)[:3]: read_page(f) for f in sorted(glob.glob(os.path.join(folder, '[0-9][0-9][0-9].txt')))}
+# ---- Gedruckte Seitenzahl: in der Kopfzeile (# 23) oder unten auf der Seite – so in neueren Büchern, in älteren oft auf
+# Kapitelanfängen. Unten ist es eine kurze Zeile unter den letzten drei, die fast nur aus einer Zahl besteht; Rauschen vom
+# Seitenrand darf danebenstehen (»i 20«, »44ä«, »— 137 —«), eine Bogensignatur (»4 *«) ist keine Seitenzahl.
+NUM = re.compile(r'\d+')
+def head_number(lines):
+    """(zahl, zeile, position, länge) aus der Kopfzeile oder None."""
+    m = NUM.search(lines[0]) if lines and lines[0].startswith('#') else None
+    return (int(m.group()), 0, m.start(), len(m.group())) if m else None
+def foot_number(lines):
+    """(zahl, zeile, position, länge) einer Zahl am Seitenende oder None. Von zwei Zahlen gilt die hintere (»8 | 4«)."""
+    top, seen = (1 if lines and lines[0].startswith('#') else 0), 0
+    for i in range(len(lines) - 1, top - 1, -1):
+        s = lines[i].strip()
+        if not s or s == '---':
+            continue
+        seen += 1
+        if seen > 3:
+            return None
+        ms = list(NUM.finditer(lines[i]))
+        if len(s) <= 8 and 1 <= len(ms) <= 2 and max(len(m.group()) for m in ms) <= 4 and '*' not in s and '<' not in s \
+                and sum(c.isalpha() for c in s) <= 1:
+            m = ms[-1]
+            return int(m.group()), i, m.start(), len(m.group())
+    return None
+def foot_numbers(pages):
+    """{seite: foot_number} für die Seiten ohne Zahl in der Kopfzeile – aber nur, wenn das Buch seine Seitenzahlen wirklich
+    unten trägt: Mindestens ein Drittel dieser Seiten (und wenigstens drei) hat unten eine Zahl, die zu einer Nachbarseite
+    passt. Sonst sind es Jahreszahlen, Fußnotennummern oder Rauschen, und eine Notiz nennte »S. 1985«."""
+    keys, feet, num = sorted(pages), {}, {}
+    for pg in keys:
+        h = head_number(pages[pg])
+        f = None if h else foot_number(pages[pg])
+        if f:
+            feet[pg] = f
+        num[pg] = (h or f or (None,))[0]
+    ok = sum(1 for k, pg in enumerate(keys) if pg in feet and
+             any(0 <= k + d < len(keys) and num[keys[k + d]] == feet[pg][0] + d for d in (-2, -1, 1, 2)))
+    without = sum(1 for pg in keys if num[pg] is None or pg in feet)
+    return feet if ok >= 3 and ok * 3 >= without else {}
 # ---- Auszeichnung im Text: dieselben Elemente wie im EPUB (XHTML), nichts Eigenes. Die Zeilenzahl einer Seite bleibt dabei
 # gleich (sonst ginge die Bildzuordnung verloren): Jede Zeile bleibt eine Zeile, eine Tabellenzelle ist eine Zeile.
 MARKUP = 'table|tr|td|th|h[1-6]|em|strong|i|b|sup|sub|p|blockquote|br'
@@ -354,6 +393,28 @@ def heading(line, level):
     """Zeile als Überschrift der Ebene 1–6 auszeichnen; level 0 nimmt die Auszeichnung weg."""
     t = HEADTAG.sub('', line)
     return '<h%d>%s</h%d>' % (level, t, level) if level and t.strip() else t
+HLINE = re.compile(r'<h([1-6])>(.*)</h\1>$')
+def headings(pages):
+    """Die Überschriften in Lesereihenfolge: [(seite, zeile, ebene, text)] – für die Übersicht im Reader und das
+    Inhaltsverzeichnis. Zeilen derselben Ebene unmittelbar untereinander (»Drittes Kapitel.« / »Die Reise nach Odessa.«)
+    sind eine Überschrift; eine Trennung ¬ am Zeilenende wird zusammengezogen, Schrift-Auszeichnung fällt weg."""
+    out = []
+    for pg in sorted(pages):
+        prev = None  # (ebene, zeile) der letzten Überschriftszeile dieser Seite
+        for i, l in enumerate(pages[pg]):
+            m = HLINE.match(l.strip())
+            text = ' '.join(TAG.sub('', m.group(2)).split()) if m else ''
+            if not text:
+                prev = None
+                continue
+            level = int(m.group(1))
+            if prev == (level, i - 1):
+                p = out[-1]
+                out[-1] = (p[0], p[1], level, p[3][:-1] + text if p[3].endswith('¬') else p[3] + ' ' + text)
+            else:
+                out.append((pg, i, level, text))
+            prev = (level, i)
+    return out
 def corpus_freq(pages):
     c = collections.Counter()
     for lines in pages.values():

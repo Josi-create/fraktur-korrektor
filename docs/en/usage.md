@@ -2,9 +2,12 @@
 
 Page image on the left, text on the right. The **reading line**, highlighted in yellow, always stays at the
 same height; image and text move together. Red marks words the dictionary does not know; orange marks
-places where an automatic pre-correction made an uncertain replacement. A page number in the running head that does
-not fit the neighbouring pages is red as well (in Fraktur, OCR likes to read “16” as “46”) – the hint names the number
-that should be there, and `Space`, `Enter` correct it like a word.
+places where an automatic pre-correction made an uncertain replacement. A page number that does not fit the
+neighbouring pages is red as well (in Fraktur, OCR likes to read “16” as “46”) – the hint names the number that should
+be there, and `Space`, `Enter` correct it like a word. The page number may be at the top in the running head or at the
+bottom of the page as in more recent books: if a book carries it at the bottom throughout, the program notices this by
+itself and shows it there in pale grey like the running head. You do not need to enter anything; if a page has no
+number (chapter opening), it follows from the neighbouring pages.
 
 The program has three states, shown in the top bar: **Reading** (green), **Correction** (red) – a red word
 is being changed – and **Edit line** (orange).
@@ -39,6 +42,7 @@ is being changed – and **Edit line** (orange).
 | Reading | `F` | footnotes start at the reading line (see below) |
 | Reading | `T` | table: turn separate lines into a table, or dissolve it again (see below) |
 | Reading | `H` | heading: level 1 → 2 → 3 → none (see below) |
+| Reading | `I` | contents: all headings of the book, `Enter` goes there (see below) |
 | Reading | `V` | join the reading line with the next line |
 | Reading | `W` | show the whitelist |
 | Reading | `D` | dictionary: which spelling applies to this book (see below) |
@@ -185,8 +189,16 @@ be marked up this way.
 ## Headings (H)
 
 `H` marks the reading line as a heading: level 1 the first time (`<h1>…</h1>`), the next level with each further press,
-ordinary text again after level 3. Headings are shown larger and bold, without visible control characters. A later EPUB export can build chapters and the table
-of contents from them.
+ordinary text again after level 3. Headings are shown larger and bold, without visible control characters.
+
+If a heading runs over two lines (“Chapter Three.” / “The Journey to Odessa.”), give both lines the same level – the
+program joins them into one heading. Best use the levels the same way throughout the book: chapters level 1, sections
+within them level 2; if the book has parts, the parts are level 1 and the chapters level 2.
+
+**Contents (`I`)** shows all headings of the book, indented by level, with the printed page number – so you can see
+whether a chapter is missing. `↓` `↑` select, `Enter` or a click goes there, `Esc` closes. When you
+[save the book as a PDF](pdf-sichern.md), the headings become the PDF's table of contents, which every PDF reader shows
+in its sidebar. A later EPUB export will build chapters and a clickable table of contents from them.
 
 If you like, you can also enter further markup by hand with `F2`; the program knows `<em>`, `<strong>`, `<i>`, `<b>`,
 `<sup>`, `<sub>`, `<p>`, `<blockquote>` and `<br/>`, does not treat them as words, and shows font markup (italic, bold,
@@ -244,7 +256,7 @@ The program creates a file in that folder, numbered consecutively, for example `
     Page 57, Line 3–4, [[0 Source|Leibbrandt 1928]]
 
 At the top room for your own remark, below the rule the quotation (words hyphenated at line ends are joined) and the
-page – the printed page number from the running head; if it is missing or does not fit the neighbouring pages, the
+page – the printed page number from the running head or the foot of the page; if it is missing or does not fit the neighbouring pages, the
 number the neighbouring pages imply; otherwise the PDF page –, the lines (counted as in “Line 3/42” in
 the program's top bar) and a link to the book's source note. The program creates that file, `0 Source.md`, as a template with the first note; enter there where the book comes from
 (university library, interlibrary loan …) and the citation as Zotero gives it. This way every note is one click away

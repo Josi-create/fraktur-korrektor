@@ -100,9 +100,16 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .stext{font-family:Georgia,serif;font-size:16px;white-space:pre-wrap}
 #wlist{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
 #wlist.on{display:flex}
-#dics,#notes,#repl{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
-#dics.on,#notes.on,#repl.on{display:flex}
-#dhead,#nhead,#rhead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
+#dics,#notes,#repl,#toc{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
+#dics.on,#notes.on,#repl.on,#toc.on{display:flex}
+#dhead,#nhead,#rhead,#ihead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
+/* Inhalt (I): die Überschriften des Buchs, eingerückt nach Ebene, rechts die gedruckte Seitenzahl */
+#ilist{flex:1;overflow:auto;padding:8px 0}
+.irow{display:flex;gap:16px;padding:3px 14px;border-left:6px solid transparent;cursor:pointer;font-family:Georgia,serif;font-size:17px}
+.irow:hover{background:#faf8f2} .irow.sel{background:#fff3b8;border-left-color:#c90}
+.irow .itxt{flex:1} .irow .ipg{color:#888;font:14px Segoe UI,Arial,sans-serif;white-space:nowrap;padding-top:3px}
+.irow.l1{font-weight:bold} .irow.l2 .itxt{padding-left:26px} .irow.l3 .itxt{padding-left:52px}
+#iempty{padding:18px 22px;max-width:760px;font-size:16px;line-height:1.5;color:#555}
 #dbody,#nbody,#rbody{padding:18px 22px;max-width:760px;font-size:16px;line-height:1.5}
 #nbody input,#rbody #rsrc{flex:1;font-size:16px;padding:4px 6px} #nbody button,#rbody button{font-size:15px} #ninfo,#rinfo{margin-top:14px;color:#a40;min-height:24px}
 #rgo{padding:8px 18px;border:1px solid #285;border-radius:4px;background:#3a6;color:#fff;cursor:pointer} #rgo:disabled{opacity:.5}
@@ -129,6 +136,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <span id="pos"></span>
  <span id="qbar"><span id="qlabel"></span><input id="qinp" type="text" spellcheck="false"></span>
  <span id="find"><span id="findq"></span><button type="button" id="fprev"></button><b id="findn"></b><button type="button" id="fnext"></button><button type="button" id="fclose" data-t-title="find_close">×</button></span>
+ <a href="#" id="toclink" data-t="toc_link"></a>
  <a href="#" id="diclink" data-t="dic_link"></a>
  <a href="#" id="notelink" data-t="note_link"></a>
  <a href="#" id="savePdf" data-t="act_pdf" style="display:none"></a>
@@ -191,6 +199,12 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
    <div style="margin-top:16px"><button id="rgo" data-t="repl_go"></button></div>
    <div id="rinfo"></div>
   </div>
+ </div>
+ <div id="toc">
+  <div id="ihead"><span data-t="toc_head"></span><span id="iinfo" style="margin-left:14px;color:#a40"></span>
+   <div style="color:#666;font-size:13.5px;margin-top:6px" data-t="toc_help"></div></div>
+  <div id="iempty" data-t="toc_empty"></div>
+  <div id="ilist"></div>
  </div>
  <div id="wlist">
   <div id="whead"><span data-t="wl_head"></span> <input id="wfilter" spellcheck="false" data-t-ph="filter"><span id="winfo" style="margin-left:14px;color:#a40"></span>
@@ -341,7 +355,7 @@ function renderText() {
     b.lines.forEach((l, i) => {
       const d = document.createElement('div'); d.dataset.p = b.page; d.dataset.i = i;
       if (l === '---') { d.className = 'sep'; fn = true; grid = null; }
-      else { d.innerHTML = mark(i, b); if (l.startsWith('#') && i == 0) d.className = 'head'; else if (fn) d.className = 'fn'; }
+      else { d.innerHTML = mark(i, b); if ((l.startsWith('#') && i == 0) || i === b.foot) d.className = 'head'; else if (fn) d.className = 'fn'; }
       if (l.includes('<table>') && l !== '---') {  // Tabelle: die folgenden Zeilen sind Zellen eines Gitters
         let first = ''; for (let k = i; k < b.lines.length && !first.includes('</tr>'); k++) first += b.lines[k];
         grid = document.createElement('div'); grid.className = 'tblgrid';
@@ -926,6 +940,45 @@ $('rchoose').onclick = async () => {
 };
 $('rsrc').addEventListener('change', () => replaceSource($('rsrc').value.trim()));
 $('rgo').onclick = async () => { if (!busy) { busy = true; try { await runReplace(); } finally { busy = false; } } };
+// ---- Inhalt (I): die mit H ausgezeichneten Überschriften des ganzen Buchs – zum Hinspringen und um zu sehen, ob ein
+// Kapitel fehlt oder eine Ebene nicht stimmt. Dieselbe Liste wird das Inhaltsverzeichnis des gesicherten PDFs.
+let toc = null;
+async function openToc() {
+  const r = await (await fetch(BASE + '/api/headings')).json();
+  toc = { items: r.items, sel: 0 };
+  r.items.forEach((h, n) => { if (h.page < pg || (h.page == pg && h.line <= li)) toc.sel = n; });  // das Kapitel, in dem man gerade liest
+  mode = 'toc'; cf = null; $('toc').classList.add('on'); $('edit').style.display = 'none'; $('edit2').style.display = 'none'; document.activeElement.blur();
+  renderToc();
+}
+function renderToc() {
+  const box = $('ilist'); box.innerHTML = '';
+  $('iempty').style.display = toc.items.length ? 'none' : '';
+  $('iinfo').textContent = toc.items.length ? t('toc_count', { n: toc.items.length }) : '';
+  toc.items.forEach((h, n) => {
+    const d = document.createElement('div'); d.className = 'irow l' + Math.min(3, h.level) + (n == toc.sel ? ' sel' : '');
+    const a = document.createElement('span'), b = document.createElement('span');
+    a.className = 'itxt'; a.textContent = h.text; b.className = 'ipg'; b.textContent = t('p_abbr') + ' ' + h.printed;
+    d.append(a, b);
+    d.onclick = async () => { if (busy) return; busy = true; try { toc.sel = n; await tocJump(); } finally { busy = false; } };
+    box.appendChild(d);
+  });
+  const el = box.children[toc.sel]; if (el) el.scrollIntoView({ block: 'nearest' });
+}
+function closeToc() { $('toc').classList.remove('on'); toc = null; mode = 'read'; document.activeElement.blur(); render(); }
+async function tocJump() {
+  const h = toc.items[toc.sel]; if (!h) return;
+  closeToc(); await loadPage(h.page, h.line); bookmark();
+}
+async function tocKey(e) {
+  const k = e.key;
+  if (k == 'Escape' || k == 'i' || k == 'I') { e.preventDefault(); closeToc(); return; }
+  if (k == 'Enter') { e.preventDefault(); await tocJump(); return; }
+  if (k == 'ArrowDown' || k == 'j') toc.sel++; else if (k == 'ArrowUp' || k == 'k') toc.sel--;
+  else if (k == 'PageDown') toc.sel += 10; else if (k == 'PageUp') toc.sel -= 10;
+  else if (k == 'Home') toc.sel = 0; else if (k == 'End') toc.sel = toc.items.length - 1;
+  else return;
+  e.preventDefault(); toc.sel = Math.max(0, Math.min(toc.items.length - 1, toc.sel)); renderToc();
+}
 let wl = null;
 async function openWhitelist() {
   const r = await (await fetch(BASE + '/api/whitelist')).json();
@@ -1064,6 +1117,7 @@ async function onKey(e) {
   if (mode == 'serie') return serieKey(e);
   if (mode == 'table') return tbKey(e);
   if (mode == 'wlist') return wlKey(e);
+  if (mode == 'toc') return tocKey(e);
   if (mode == 'dics') return dicsKey(e);
   if (mode == 'notes') return notesKey(e);
   if (mode == 'repl') return replKey(e);
@@ -1098,6 +1152,7 @@ async function onKey(e) {
     else if (k == 'f' || k == 'F') await footnoteSep();
     else if (k == 't' || k == 'T') await tableKey();
     else if (k == 'h' || k == 'H') await headingKey();
+    else if (k == 'i' || k == 'I') await openToc();
     else if (k == 'v' || k == 'V') await joinLine();
     else if (k == 'z' || k == 'Z') await openConflict();  // K geht wie ↑ eine Zeile hoch (j/k)
     else if (k == 'r' || k == 'R') { await loadOverview(); await loadPage(pg, li); }
@@ -1133,6 +1188,7 @@ document.addEventListener('keydown', e => {
 }, true);
 document.addEventListener('keydown', async e => { if (busy) { e.preventDefault(); return; } busy = true; try { await onKey(e); } finally { busy = false; } });
 for (const b of dicBoxes()) b.onchange = async () => { if (!busy) { busy = true; try { await saveDics(); } finally { busy = false; } } };
+$('toclink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !busy) { busy = true; try { await openToc(); } finally { busy = false; } } };
 $('diclink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !busy) { busy = true; try { await openDics(); } finally { busy = false; } } };
 $('notelink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !busy) { busy = true; try { await openNotes(); } finally { busy = false; } } };
 // blur: ein Knopf, der den Fokus behält (und am Buchende gesperrt wird), würde die Tasten schlucken

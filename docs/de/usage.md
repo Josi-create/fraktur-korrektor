@@ -2,9 +2,12 @@
 
 Links das Seitenbild, rechts der Text. Die gelb hinterlegte **Lesezeile** steht immer auf derselben Höhe;
 Bild und Text wandern gemeinsam. Rot markiert sind Wörter, die das Wörterbuch nicht kennt; orange sind
-Stellen, die eine automatische Vorkorrektur unsicher ersetzt hat. Rot wird auch eine Seitenzahl in der Kopfzeile, die
-nicht zu den Nachbarseiten passt (die OCR liest in Fraktur gern „16“ als „46“) – der Hinweis nennt die Zahl, die dort
-stehen müsste, und `Leertaste`, `Enter` berichtigen sie wie ein Wort.
+Stellen, die eine automatische Vorkorrektur unsicher ersetzt hat. Rot wird auch eine Seitenzahl, die nicht zu den
+Nachbarseiten passt (die OCR liest in Fraktur gern „16“ als „46“) – der Hinweis nennt die Zahl, die dort stehen müsste,
+und `Leertaste`, `Enter` berichtigen sie wie ein Wort. Die Seitenzahl darf oben in der Kopfzeile stehen oder unten auf
+der Seite wie in neueren Büchern: Trägt ein Buch sie durchgehend unten, erkennt das Programm das von selbst und zeigt
+sie dort blass wie die Kopfzeile. Eintragen müssen Sie nichts; fehlt die Zahl auf einer Seite (Kapitelanfang), ergibt
+sie sich aus den Nachbarseiten.
 
 Das Programm kennt drei Zustände, oben in der Leiste angezeigt: **Lesen** (grün), **Korrektur** (rot) –
 ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
@@ -39,6 +42,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `F` | Fußnoten beginnen mit der Lesezeile (siehe unten) |
 | Lesen | `T` | Tabelle: aus getrennten Zeilen eine Tabelle machen bzw. wieder auflösen (siehe unten) |
 | Lesen | `H` | Überschrift: Ebene 1 → 2 → 3 → keine (siehe unten) |
+| Lesen | `I` | Inhalt: alle Überschriften des Buchs, `Enter` springt hin (siehe unten) |
 | Lesen | `V` | Lesezeile mit der nächsten Zeile verbinden |
 | Lesen | `W` | Whitelist anzeigen |
 | Lesen | `D` | Wörterbuch: welche Rechtschreibung gilt in diesem Buch (siehe unten) |
@@ -190,8 +194,17 @@ gelesen, lässt sie sich so nicht auszeichnen.
 ## Überschriften (H)
 
 `H` zeichnet die Lesezeile als Überschrift aus: beim ersten Mal Ebene 1 (`<h1>…</h1>`), bei jedem weiteren Druck die
-nächste Ebene, nach Ebene 3 wieder gewöhnlicher Text. Überschriften erscheinen größer und fett, ohne sichtbare Steuerzeichen. Ein späterer EPUB-Export
-kann daraus Kapitel und Inhaltsverzeichnis bilden.
+nächste Ebene, nach Ebene 3 wieder gewöhnlicher Text. Überschriften erscheinen größer und fett, ohne sichtbare
+Steuerzeichen.
+
+Steht eine Überschrift über zwei Zeilen („Drittes Kapitel.“ / „Die Reise nach Odessa.“), geben Sie beiden Zeilen
+dieselbe Ebene – das Programm fasst sie zu einer Überschrift zusammen. Die Ebenen vergeben Sie am besten im ganzen Buch
+gleich: Kapitel Ebene 1, Abschnitte darin Ebene 2; hat das Buch Teile, sind die Teile Ebene 1 und die Kapitel Ebene 2.
+
+**Inhalt (`I`)** zeigt alle Überschriften des Buchs, eingerückt nach Ebene, mit der gedruckten Seitenzahl – so sehen
+Sie, ob ein Kapitel fehlt. `↓` `↑` wählen, `Enter` oder ein Klick springt hin, `Esc` schließt. Beim
+[Sichern als PDF](pdf-sichern.md) werden die Überschriften das Inhaltsverzeichnis des PDFs, das jeder PDF-Reader in der
+Seitenleiste zeigt. Ein späterer EPUB-Export bildet daraus Kapitel und ein anklickbares Inhaltsverzeichnis.
 
 Wer mag, kann mit `F2` auch weitere Auszeichnung von Hand eintragen; das Programm kennt `<em>`, `<strong>`, `<i>`, `<b>`,
 `<sup>`, `<sub>`, `<p>`, `<blockquote>` und `<br/>`, behandelt sie nicht als Wörter und stellt Schrift-Auszeichnung
@@ -248,7 +261,7 @@ Das Programm legt im Ordner eine Datei an, fortlaufend nummeriert, zum Beispiel 
     Seite 57, Zeile 3–4, [[0 Quellenangabe|Leibbrandt 1928]]
 
 Oben Platz für die eigene Anmerkung, unter dem Strich das Zitat (am Zeilenende getrennte Wörter sind zusammengezogen) und die
-Seite – die gedruckte Seitenzahl aus der Kopfzeile; fehlt sie oder passt sie nicht zu den Nachbarseiten, die Zahl, die
+Seite – die gedruckte Seitenzahl aus der Kopfzeile oder vom Seitenende; fehlt sie oder passt sie nicht zu den Nachbarseiten, die Zahl, die
 sich aus den Nachbarseiten ergibt; sonst die PDF-Seite –, die Zeilen (gezählt wie „Zeile 3/42“ in der
 Kopfleiste des Programms) und der Verweis auf die Quellenangabe des Buchs.
 Diese Datei `0 Quellenangabe.md` legt das Programm beim ersten Zettel als Vorlage an; tragen Sie dort ein, woher das Buch

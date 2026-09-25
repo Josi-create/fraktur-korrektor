@@ -209,6 +209,39 @@ def test_seitenzahl_passt_nicht_zu_nachbarn(tmp_path):
     assert b.flags('003') == [] and b.printed_page('003') == '45'
 
 
+def test_seitenzahl_unten_auf_der_seite(tmp_path):
+    """Neuere Bücher tragen die Seitenzahl unten, oft mit Rauschen vom Seitenrand (»i 12«, »BTB«). Sie gilt wie die aus der
+    Kopfzeile: für Notizen, gegen Lesefehler (»44« statt 14), und ein über die Seitengrenze getrenntes Wort bleibt ganz."""
+    import korrlib, server
+    assert korrlib.foot_number(['# ', 'Text der Seite.', 'i 20', 'BTB']) == (20, 2, 2, 2)
+    assert korrlib.foot_number(['# ', 'Text der Seite.', '— 137 —'])[0] == 137 and korrlib.foot_number(['Text', '8 | 4'])[0] == 4
+    assert korrlib.foot_number(['# ', 'Text der Seite.', '4 *']) is None           # Bogensignatur
+    assert korrlib.foot_number(['# ', 'im Jahre 1985.']) is None                   # Text, keine Seitenzahl
+    assert korrlib.foot_number(['# ', '17', 'Text', 'noch Text', 'und noch mehr Text']) is None  # nur die letzten drei Zeilen
+    folder = tmp_path / 'buch'
+    folder.mkdir()
+    pages = [['Die Kolonisten zogen.', '11'], ['Die Kolonisten zogen.', 'i 12', 'BTB'], ['durch die Ge¬', '— 13 —'],
+             ['walt der Musik.', '44ä'], ['Erstes Kapitel.'], ['Die Kolonisten zogen.', '16'], ['Die Kolonisten zogen.', '17'],
+             ['Die Kolonisten zogen.', '18']]
+    for i, p in enumerate(pages):
+        (folder / ('%03d.txt' % (i + 1))).write_text('\n'.join(['# '] + p) + '\n', encoding='utf-8')
+    b = server.Book(str(folder))
+    b.refresh()
+    assert sorted(b.feet) == ['001', '002', '003', '004', '006', '007', '008']
+    assert [b.printed_page(pg) for pg in b.pages] == ['11', '12', '13', '14', '15', '16', '17', '18']  # 005: Kapitelanfang ohne Zahl
+    assert [f for f in b.flags('004') if f['kind'] == 'page'] == [dict(line=2, start=0, len=2, word='44', kind='page', expect=14)]
+    assert b.flags('003') == [] and [f['kind'] for f in b.flags('004')] == ['page']  # Ge¬walt über »— 13 —« hinweg als ein Wort
+    assert b.page_data('002')['foot'] == 2 and b.page_data('005')['foot'] is None
+    # Jahreszahlen und Fußnotennummern am Seitenende machen noch kein Buch mit Seitenzahlen unten
+    other = tmp_path / 'jahre'
+    other.mkdir()
+    for i, n in enumerate(['1985.', '1963.', '15.', 'Text.', '53.']):
+        (other / ('%03d.txt' % (i + 1))).write_text('# \nDie Kolonisten zogen.\n%s\n' % n, encoding='utf-8')
+    o = server.Book(str(other))
+    o.refresh()
+    assert o.feet == {} and o.printed_page('001') == '1' and all(f['kind'] != 'page' for pg in o.pages for f in o.flags(pg))
+
+
 def test_korrekturvorschlaege(app):
     """#41: gelernt aus dem Protokoll, dann OCR-Verwechslungen (häufige im Buch zuerst), zuletzt Hunspell."""
     old = app.text('001')[2]

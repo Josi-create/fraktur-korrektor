@@ -31,6 +31,19 @@ def test_ueberschrift():
     assert korrlib.heading('<h3>Erstes Kapitel</h3>', 0) == 'Erstes Kapitel' and korrlib.heading('  ', 1) == '  '
 
 
+def test_ueberschriften_fuer_das_inhaltsverzeichnis(app):
+    """Taste I und die Lesezeichen im PDF: alle Überschriften in Lesereihenfolge; zwei Zeilen derselben Ebene untereinander
+    sind eine Überschrift (auch über eine Trennung hinweg), Schrift-Auszeichnung fällt weg, eine Leerzeile trennt."""
+    pages = {'002': ['# 8', '<h1>Drittes Kapitel.</h1>', '<h1>Die Reise nach <em>Odessa</em>.</h1>', 'Text.', '<h2>Die Ge¬</h2>', '<h2>fahren</h2>'],
+             '001': ['# 7', '<h1>Vorwort</h1>', '', '<h1>zur zweiten Auflage</h1>', '<h2>Anmerkung</h2>', '<h1></h1>']}
+    assert korrlib.headings(pages) == [('001', 1, 1, 'Vorwort'), ('001', 3, 1, 'zur zweiten Auflage'), ('001', 4, 2, 'Anmerkung'),
+                                       ('002', 1, 1, 'Drittes Kapitel. Die Reise nach Odessa.'), ('002', 4, 2, 'Die Gefahren')]
+    assert app.get('/api/headings')[1]['items'] == []
+    old = app.text('002')[1]
+    app.post('/api/markup/002', dict(kind='heading', line=1, level=1, old=old))
+    assert app.get('/api/headings')[1]['items'] == [dict(page='002', line=1, level=1, text=old, printed='6')]  # gedruckte Seite aus »# 6«
+
+
 def test_wortpruefung_uebergeht_die_auszeichnung():
     toks, joined = korrlib.joined_tokens(['<table><tr><td>ber Eimer</td>', '<td>Zu¬</td>', '<h2>kunft</h2>', 'a < b und <unbekannt>'])
     assert toks[0] == [(15, 'ber'), (19, 'Eimer')]                # Positionen gelten für die echte Zeile

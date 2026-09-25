@@ -5,6 +5,19 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Seitenzahl unten auf der Seite**: Neuere Bücher (und ältere auf Kapitelanfängen) tragen die Seitenzahl unten. Das
+  Programm erkennt sie dort jetzt von selbst – eine kurze Zeile unter den letzten drei, die fast nur aus einer Zahl
+  besteht, Rauschen vom Seitenrand daneben (»i 20«, »44ä«, »— 137 —«) inbegriffen, Bogensignaturen (»4 *«) nicht. Das
+  gilt nur, wenn das ganze Buch das Muster zeigt (mindestens ein Drittel der Seiten ohne Zahl in der Kopfzeile hat unten
+  eine, die zu einer Nachbarseite passt); Jahreszahlen und Fußnotennummern am Seitenende bleiben so außen vor. Die Zahl
+  gilt dann wie die aus der Kopfzeile: für die Seitenangabe in Notizen, für die Warnung vor Lesefehlern (»35« statt 39
+  wird rot, bei gleicher Stellenzahl), und ein über die Seitengrenze getrenntes Wort wird über sie hinweg als Ganzes
+  geprüft. Der Reader zeigt sie blass wie die Kopfzeile. Dateien ändern sich dabei nicht.
+- **Inhalt (Taste `I`)**: alle mit `H` ausgezeichneten Überschriften des Buchs, eingerückt nach Ebene, mit gedruckter
+  Seitenzahl; `Enter` oder Klick springt hin. Zwei Zeilen derselben Ebene untereinander (»Drittes Kapitel.« / »Die Reise
+  nach Odessa.«) sind eine Überschrift. Schnittstelle `/api/headings`.
+- **Inhaltsverzeichnis im gesicherten PDF**: Die Überschriften werden die Lesezeichen des PDFs (Seitenleiste jedes
+  PDF-Readers); die Tiefe ergibt sich aus der Abfolge der Ebenen, damit keine übersprungen wird.
 - **`--last`**: Ohne Buchordner gestartet, öffnet der Browser gleich das zuletzt gelesene Buch (Lesezeichen, Öffnen
   und Einlesen merken sich das) statt der Bibliothek; ein Buch, dessen Ordner fehlt, wird übergangen, ohne Bücher
   bleibt es bei der Bibliothek. Die Bibliothek bleibt unter `/` erreichbar. Gedacht für eine Startdatei wie

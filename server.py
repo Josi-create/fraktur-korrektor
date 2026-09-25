@@ -150,6 +150,7 @@ class Book:
         self.unsicher = self.autokorr_unsicher()
         self.settings = self.load_settings()
         self.pages, self.mt, self.freq, self.wl, self.wlmt, self.fcache, self.size = {}, {}, {}, set(), None, {}, {}
+        self.feet = {}  # Seitenzahlen unten auf der Seite: {seite: (zahl, zeile, position, länge)}, nur in Büchern, die sie dort tragen
         self.prog = None  # [geprüfte Seiten, Seiten] während overview() läuft – für den Ladebalken (/api/progress)
         self.gelernt = None  # Korrekturvorschläge: (mtime des Protokolls, Wortpaare)
 
@@ -187,10 +188,9 @@ class Book:
         return self.settings
 
     def page_number(self, pg):
-        """Gedruckte Seitenzahl aus der Kopfzeile als (zahl, position, länge) – oder None."""
-        lines = self.pages.get(pg) or []
-        m = re.search(r'\d+', lines[0]) if lines and lines[0].startswith('#') else None
-        return (int(m.group()), m.start(), len(m.group())) if m else None
+        """Gedruckte Seitenzahl als (zahl, zeile, position, länge) – aus der Kopfzeile oder, wenn das Buch sie unten trägt,
+        vom Seitenende – oder None."""
+        return korrlib.head_number(self.pages.get(pg) or []) or self.feet.get(pg)
 
     def expected_page(self, pg):
         """Seitenzahl, die nach den Nachbarseiten in der Kopfzeile stehen müsste – oder None, wenn die Nachbarn sich nicht
@@ -325,6 +325,7 @@ class Book:
         if changed:
             self.pages = dict(sorted(self.pages.items()))
             self.freq = corpus_freq(self.pages)
+            self.feet = korrlib.foot_numbers(self.pages)
         wlmt = os.path.getmtime(self.wlpath) if os.path.exists(self.wlpath) else None
         if wlmt != self.wlmt:
             self.wl = set(open(self.wlpath, encoding='utf-8').read().split()) if wlmt else set()
@@ -337,6 +338,8 @@ class Book:
         ist, endet vor den Fußnoten und beginnt hinter der Seitenzahl. Sonst None."""
         lines = self.pages[pg]
         end = lines.index('---') if '---' in lines else len(lines)
+        if pg in self.feet:  # die Seitenzahl unten – und das Rauschen vom Seitenrand darunter – gehört nicht zum Text
+            end = min(end, self.feet[pg][1])
         for i in (range(end - 1, -1, -1) if last else range(end)):
             if i == 0 and lines[0].startswith('#'):
                 continue
@@ -374,14 +377,16 @@ class Book:
         keys = list(self.pages)
         k = keys.index(pg)
         prev, nxt = keys[k - 1] if k else None, keys[k + 1] if k + 1 < len(keys) else None
-        key = (self.mt[pg], self.wlmt, dics, exp, self.mt.get(prev), self.mt.get(nxt))  # exp und Trennungen hängen an den Nachbarseiten
+        key = (self.mt[pg], self.wlmt, dics, exp, n, self.mt.get(prev), self.mt.get(nxt))  # exp und Trennungen hängen an den Nachbarseiten
         c = self.fcache.get(pg)
         if c and c[0] == key:
             return c[1]
         lines, wl, freq = self.pages[pg], self.wl, self.freq
         out = []
-        if n and exp is not None and exp != n[0]:  # Seitenzahl, die nicht zu den Nachbarseiten passt
-            out.append(dict(line=0, start=n[1], len=n[2], word=str(n[0]), kind='page', expect=exp))
+        # Seitenzahl, die nicht zu den Nachbarseiten passt. Unten nur bei gleicher Stellenzahl: »35« statt 39 ist ein Lesefehler,
+        # »3« oder »10« unter Seite 146 eher eine Kapitelnummer oder Bogensignatur, die sich nicht »berichtigen« lässt
+        if n and exp is not None and exp != n[0] and (n[1] == 0 or len(str(exp)) == len(str(n[0]))):
+            out.append(dict(line=n[1], start=n[2], len=n[3], word=str(n[0]), kind='page', expect=exp))
         toks, joined = joined_tokens(lines)
         jstart = {(i, s1) for i, s1, w1, j, w2 in joined}
         jend = {(j, toks[j][0][0]) for i, s1, w1, j, w2 in joined}  # der zweite Teil beginnt hinter etwaiger Auszeichnung (<td>)
@@ -476,8 +481,16 @@ class Book:
             self.refresh()
             lines = self.pages[pg]
             # size: damit der Reader die Nachbarseiten schon richtig platziert, bevor ihre Bilder geladen sind
+            # foot: Zeile der Seitenzahl unten – der Reader zeigt sie blass wie die Kopfzeile
             return dict(page=pg, lines=lines, geo=self.geo_lines(pg, lines), flags=self.flags(pg), img=self.img_url(pg), size=self.img_size(pg),
-                        conflicts=self.conflicts(pg))
+                        conflicts=self.conflicts(pg), foot=self.feet[pg][1] if pg in self.feet else None)
+
+    def headings(self):
+        """Die mit H ausgezeichneten Überschriften für die Übersicht (Taste I) und das Inhaltsverzeichnis des PDFs:
+        [dict(page, line, level, text, printed)] – printed ist die gedruckte Seitenzahl, wie sie auch eine Notiz nennt."""
+        with self.lock:
+            self.refresh()
+            return [dict(page=pg, line=i, level=lv, text=tx, printed=self.printed_page(pg)) for pg, i, lv, tx in korrlib.headings(self.pages)]
 
     def conflicts(self, pg=None):
         """Zeilen, an denen das Zusammenführen zweier Arbeitsstände (#66) nicht entscheiden konnte – bis der Nutzer sie
@@ -1806,6 +1819,8 @@ class H(BaseHTTPRequestHandler):
             return self.sendjson(book.settings)
         if rest == '/api/whitelist':
             return self.sendjson(dict(words=list(dict.fromkeys(book.whitelist()))))
+        if rest == '/api/headings':
+            return self.sendjson(dict(items=book.headings()))
         if rest == '/api/bookmark':
             return self.send(200, open(book.bmpath, encoding='utf-8').read() if os.path.exists(book.bmpath) else '{}')
         if rest == '/api/occurrences':

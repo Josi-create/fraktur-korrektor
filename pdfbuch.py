@@ -128,6 +128,18 @@ def save(book, out, version='', progress=lambda done, total, msg: None, cancelle
                     tw.append((60, 60 + k * step), text, font=font, fontsize=min(11.0, _fit(font, text, A4[0] - 120, step)))
             tw.write_text(page)
         progress(n + 1, len(pages), 'pdf')
+    # Die mit H ausgezeichneten Überschriften werden die Lesezeichen des PDFs – das Inhaltsverzeichnis in der Seitenleiste.
+    # Ein PDF-Lesezeichen darf keine Ebene überspringen, die Tiefe ergibt sich deshalb aus der Abfolge: Ebene 1 → 3 wird
+    # 1 → 2, ein Buch nur mit Ebene 2 hat lauter Einträge der obersten Stufe.
+    index, toc, stack = {pg: n + 1 for n, pg in enumerate(pages)}, [], []
+    for h in book.headings():
+        if h['page'] in index:
+            while stack and stack[-1] >= h['level']:
+                stack.pop()
+            stack.append(h['level'])
+            toc.append([len(stack), h['text'], index[h['page']]])
+    if toc:
+        doc.set_toc(toc)
     doc.embfile_add(ANHANG, _anhang(folder, manifest), filename=ANHANG, ufilename=ANHANG, desc='Fraktur-Korrektor: Arbeitsstand')
     doc.set_metadata(dict(title=book.title, creator='Fraktur-Korrektor ' + version, producer='Fraktur-Korrektor'))
     doc.subset_fonts()

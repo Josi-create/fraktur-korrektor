@@ -46,6 +46,7 @@ def test_hin_und_zurueck(lib, tmp_path):
         w = [x for x in d[0].get_text('words') if x[4] == 'Kolonisten'][0]
         assert 18 < w[1] < 21 and 22.5 < w[3] < 24.5 and 12 < w[0] < 24, w  # x: Rahmen ab 100 px -> 12 pt, dann „Die “
         assert d[1].get_images()[0][8] == 'DCTDecode'
+        assert d.get_toc() == [[1, 'Die Kolonisten zogen nach Rußland und', 1]]  # die Überschrift (Ebene 2) als Lesezeichen
     m = pdfbuch.info(pdf)
     assert m['titel'] == 'Probebuch' and m['kennung'] == kennung and m['korrekturen'] == 3 and m['seiten'] == {'001': '001.png', '002': '002.jpg'}
     assert pdfbuch.info(str(tmp_path / 'Probebuch' / '001.txt')) is None

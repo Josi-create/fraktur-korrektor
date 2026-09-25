@@ -10,6 +10,7 @@ einem Kollegen, in eine Sicherung –, packt das Programm alles in **eine einzig
 |---|---|
 | **Seitenbilder** | Jede Buchseite ist eine PDF-Seite, das Bild unverändert – nichts wird neu berechnet oder verkleinert. |
 | **Der Text** | liegt unsichtbar über dem Bild, Zeile für Zeile an der richtigen Stelle. In jedem PDF-Reader können Sie damit **suchen, Text kopieren** oder sich das Buch **vorlesen** lassen – mit Ihren Korrekturen. |
+| **Inhaltsverzeichnis** | Die Überschriften, die Sie mit `H` ausgezeichnet haben, stehen im Inhaltsverzeichnis des PDFs (in der Seitenleiste des PDF-Readers, oft „Lesezeichen“ genannt) – ein Klick springt zum Kapitel. |
 | **Ihr Arbeitsstand** | hängt als Anhang `fraktur-korrektor.zip` im PDF: die Texte aller Seiten, die Lage der Zeilen im Bild, Wortliste, Lesezeichen, Korrekturprotokoll, Erscheinungsjahr und Rechtschreibung. Acrobat und Firefox zeigen den Anhang in der Seitenleiste; andere Reader lassen ihn einfach unbeachtet. |
 
 Das PDF lässt sich also mit jedem Programm lesen, das PDF kann – und der Fraktur-Korrektor macht daraus wieder

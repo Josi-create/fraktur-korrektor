@@ -10,6 +10,7 @@ the program packs all of it into **a single PDF file**.
 |---|---|
 | **Page images** | Every book page is a PDF page, the image unchanged – nothing is recalculated or shrunk. |
 | **The text** | lies invisibly on top of the image, line by line in the right place. In any PDF reader you can **search**, **copy text** or have the book **read aloud** – with your corrections. |
+| **Table of contents** | The headings you marked with `H` make up the PDF's table of contents (in the PDF reader's sidebar, often called “bookmarks”) – one click takes you to the chapter. |
 | **Your work** | travels as the attachment `fraktur-korrektor.zip` inside the PDF: the texts of all pages, the position of the lines in the image, word list, bookmark, correction log, year of publication and spelling. Acrobat and Firefox show the attachment in the sidebar; other readers simply ignore it. |
 
 So the PDF can be read with any program that handles PDF – and Fraktur-Korrektor turns it back into a book in
