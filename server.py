@@ -1612,7 +1612,7 @@ def export_prepare(bid, target, autor=None):
             if autor is not None:
                 book.settings['autor'] = ' '.join(autor.split())[:200] or None
             book.save_settings()
-    target = target or pdf_target(folder)
+    target = os.path.normpath(target or pdf_target(folder))  # auch von Hand getippt »C:/…«
     if not os.path.isdir(target):
         raise ValueError('kein_ordner')
     return folder, book, target
@@ -2076,7 +2076,10 @@ def choose(kind):
     try:
         subprocess.run(cmd, capture_output=True, timeout=900)
         with open(out, encoding='utf-8') as f:
-            return f.read().strip()
+            p = f.read().strip()
+        # Der Dialog von Tk liefert auch unter Windows »C:/…«: so zeigte das Programm gemischte Pfade, und der Explorer
+        # öffnete damit »Dokumente« statt des gewählten Ordners
+        return os.path.normpath(p) if p else ''
     except (OSError, subprocess.TimeoutExpired):
         return ''
     finally:
@@ -2313,11 +2316,12 @@ class H(BaseHTTPRequestHandler):
             if u.path == '/api/choose':
                 return self.sendjson(dict(path=choose(body.get('kind') if body.get('kind') in ('folder', 'pdf', 'exe', 'any', 'page') else 'zip')))
             if u.path == '/api/reveal':
-                # Ordner im Dateifenster zeigen und den Pfad in die Zwischenablage – zum Hochladen bei Transkribus
-                p = body.get('path') or ''
-                if not os.path.isdir(p):
+                # Ordner im Dateifenster zeigen und den Pfad in die Zwischenablage – zum Hochladen bei Transkribus.
+                # Eine Datei (gesichertes E-Book oder PDF) wird in ihrem Ordner markiert, ohne Zwischenablage
+                p = os.path.normpath(body['path']) if body.get('path') else ''
+                if not (os.path.isdir(p) or os.path.isfile(p)):
                     return self.sendjson(dict(error='quelle_fehlt'), 400)
-                return self.sendjson(dict(clipboard=ocr.to_clipboard(p), shown=ocr.reveal(p)))
+                return self.sendjson(dict(clipboard=os.path.isdir(p) and ocr.to_clipboard(p), shown=ocr.reveal(p)))
             if u.path == '/api/set_tool':
                 if body.get('tool') not in ('tesseract', 'scantailor') or not os.path.isfile(body.get('path') or ''):
                     return self.sendjson(dict(error='quelle_fehlt'), 400)

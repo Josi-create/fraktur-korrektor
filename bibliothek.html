@@ -55,7 +55,7 @@ button:disabled{opacity:.5;cursor:default}
 #ewarn{margin-top:14px;padding:10px 14px;border-left:5px solid #e6a700;background:#fdf6e0;border-radius:0 4px 4px 0;line-height:1.5}
 #ewarn .radio{display:block;margin-top:8px} #ewarn .radio label{display:flex;align-items:flex-start;gap:6px;margin-top:4px;cursor:pointer}
 #eprev .why{color:#a60;margin-top:4px}
-#edone h3{margin:0 0 10px;font:19px Georgia,serif;color:#285} #edone .more{margin-top:8px;font-size:14px;color:#555;line-height:1.55}
+#edone h3{margin:0 0 10px;font:19px Georgia,serif;color:#285} #edone .files{line-height:1.6} #edone .files small{display:block;color:#777;overflow-wrap:anywhere} #edone .more{margin-top:8px;font-size:14px;color:#555;line-height:1.55}
 #eprog{margin-top:14px;display:none} #ebar{height:10px;background:#ddd;border-radius:5px;overflow:hidden} #ebar i{display:block;height:100%;width:0;background:#3a6;transition:width .4s}
 #etext{font-size:13.5px;color:#555}
 #opts{margin-top:6px} #tl,#pair,#upd{margin-top:12px;padding:8px 12px;background:#eaf5ee;border:1px solid #9c9;border-radius:4px;font-size:14.5px;line-height:1.5}
@@ -147,7 +147,8 @@ button:disabled{opacity:.5;cursor:default}
  <div id="edone" style="display:none"></div>
  <div id="eprog"><div id="ebar"><i></i></div><span id="etext"></span></div>
  <div class="msg" id="emsg"></div>
- <div class="btns"><button type="button" id="eBack" data-t="back" style="display:none"></button><span class="sp"></span>
+ <div class="btns"><button type="button" id="eBack" data-t="back" style="display:none"></button>
+  <button type="button" id="eShow" data-t="btn_show_folder" style="display:none"></button><span class="sp"></span>
   <button type="button" id="eClose" data-t="cancel"></button><button type="submit" id="eGo" class="main" style="display:none"></button>
   <button type="button" id="eBook" data-t="btn_open_book" style="display:none"></button></div>
 </form></div>
@@ -625,7 +626,7 @@ function openEdit(b, act) {
 function editPick(only) {
   eact = null; $('emsg').textContent = ''; $('ehead').textContent = t(only ? 'ed_save_what' : 'ed_what');
   $('ebody').style.display = ''; $('edone').style.display = 'none';
-  $('eBack').style.display = $('eGo').style.display = $('eBook').style.display = 'none';
+  $('eBack').style.display = $('eGo').style.display = $('eBook').style.display = $('eShow').style.display = 'none';
   $('eClose').textContent = t('cancel');
   $('ebody').innerHTML = Object.keys(ACTS).filter(k => ACTS[k][1](eb) && (!only || only.includes(k))).map(k => { const w = unneeded(k, eb);
     return '<a href="#" class="act' + (w ? ' muted' : '') + '" data-a="' + k + '"><span class="ic">' + ACTS[k][0] + '</span><span><b>' + t('act_' + k) + '</b><small>' +
@@ -688,11 +689,17 @@ function epubSummary(r) {
   return t('ep_inside') + ' ' + d.join(' · ') + w.map(x => '<div class="why">' + x + '</div>').join('');
 }
 const fsize = s => s >= 1048576 ? (s / 1048576).toFixed(1) + ' MB' : Math.round(s / 1024) + ' KB';
-function revealLink(folder) {  // »Ordner zeigen« nach dem Sichern
-  $('showPdf').onclick = async ev => {
-    ev.preventDefault();
-    try { await post('/api/reveal', { path: folder }); $('shownPdf').textContent = t('shown_clip'); }
-    catch (err) { fail('shownPdf', err); }
+// Nach dem Sichern: die Dateinamen gut lesbar, der Ordner klein darunter – der lange Pfad als ein Stück Code brach um
+// und riss den Link »Ordner zeigen« mit. Der ist jetzt ein Knopf unten im Dialog und markiert die Datei im Ordner.
+function savedFiles(folder, files) {
+  return '<p class="files">' + files.filter(x => x).map(([f, note]) => '<b>' + esc(base(f)) + '</b>' + (note ? ' – ' + note : '')).join('<br>') +
+    '<small>' + t('ed_saved_in', { f: esc(folder) }) + '</small></p><div class="hint" id="eShown"></div>';
+}
+function showButton(file) {
+  $('eShow').style.display = '';
+  $('eShow').onclick = async () => {
+    try { await post('/api/reveal', { path: file }); $('eShown').textContent = t('shown_file'); }
+    catch (err) { fail('eShown', err); }
   };
 }
 function editAddPdf() {
@@ -785,7 +792,7 @@ async function editJob(path, body) {
 }
 function editDone(h) {
   $('ebody').style.display = 'none'; $('ehead').textContent = '';
-  $('eGo').style.display = $('eBack').style.display = 'none';
+  $('eGo').style.display = $('eBack').style.display = $('eShow').style.display = 'none';
   $('edone').style.display = ''; $('edone').innerHTML = h;
   $('eBook').style.display = ''; $('eBook').className = 'main'; $('eBook').textContent = t('btn_open_book'); $('eClose').textContent = t('close');
 }
@@ -810,18 +817,16 @@ $('eform').onsubmit = async ev => {
     } else if (eact == 'pdf') {
       const r = await editJob('/api/export_pdf', { id: eb.id, target: src });
       enext = eb.id;
-      editDone('<h3>✔ ' + t('ed_pdf_done', { n: r.pages, s: fsize(r.size) }) + '</h3><p><code>' + esc(r.file) + '</code> ' +
-        '<a href="#" id="showPdf">' + t('btn_show_folder') + '</a> <span id="shownPdf"></span></p>' +
+      editDone('<h3>✔ ' + t('ed_pdf_done', { n: r.pages, s: fsize(r.size) }) + '</h3>' + savedFiles(r.folder, [[r.file]]) +
         '<div class="hint">' + t('ed_pdf_inside', { n: r.corrections }) + '</div><div class="hint">' + t('ed_pdf_other') + '</div>');
-      revealLink(r.folder);
+      showButton(r.file);
     } else if (eact == 'epub') {
       const r = await editJob('/api/export_epub', { id: eb.id, target: src, autor: $('eAutor').value, pdf: $('ePdf').checked });
       enext = eb.id;
-      editDone('<h3>✔ ' + t('ed_epub_done', { n: r.pages, s: fsize(r.size) }) + '</h3><p><code>' + esc(r.file) + '</code> ' +
-        '<a href="#" id="showPdf">' + t('btn_show_folder') + '</a> <span id="shownPdf"></span></p>' +
-        (r.pdf ? '<p>' + t('ed_epub_with_pdf', { s: fsize(r.pdf.size) }) + '<br><code>' + esc(r.pdf.file) + '</code></p>' : '') +
+      editDone('<h3>✔ ' + t('ed_epub_done', { n: r.pages, s: fsize(r.size) }) + '</h3>' +
+        savedFiles(r.folder, [[r.file], r.pdf && [r.pdf.file, t('ed_epub_pdf_beside', { s: fsize(r.pdf.size) })]]) +
         '<div class="hint">' + t('ed_epub_read') + '</div>');
-      revealLink(r.folder);
+      showButton(r.file);
     } else if (eact == 'addpdf') {
       const script = document.querySelector('#ebody input[name=script]:checked');
       const r = await editJob('/api/add_pdf', { id: eb.id, source: src, script: script ? script.value : 'fraktur' });

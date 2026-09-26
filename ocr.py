@@ -609,9 +609,15 @@ def to_clipboard(text):
         return False
 
 
-def reveal(folder):
-    """Ordner im Dateimanager zeigen – von dort lässt er sich in das andere Programm ziehen."""
-    cmd = dict(darwin=['open', folder], win32=['explorer', folder]).get(sys.platform) or ['xdg-open', folder]
+def reveal(path):
+    """Ordner im Dateimanager zeigen – von dort lässt er sich in das andere Programm ziehen. Eine Datei (nach dem Sichern:
+    E-Book, PDF) wird in ihrem Ordner markiert gezeigt. Der Pfad wird erst normalisiert: Der Dateidialog unter Windows
+    liefert »C:/…«, und damit öffnete der Explorer »Dokumente« statt des Ordners."""
+    path = os.path.normpath(path)
+    if os.path.isfile(path):
+        cmd = dict(darwin=['open', '-R', path], win32='explorer /select,"%s"' % path).get(sys.platform) or ['xdg-open', os.path.dirname(path)]
+    else:
+        cmd = dict(darwin=['open', path], win32=['explorer', path]).get(sys.platform) or ['xdg-open', path]
     try:
         subprocess.Popen(cmd, **NOWIN)
         return True

@@ -236,7 +236,8 @@ def test_als_ebook_sichern_mit_pdf_daneben(lib, tmp_path):
     assert (p['pages'], p['headings'], p['notes'], p['marked'], p['autor'], p['title']) == (2, 1, 1, 2, '', 'Probebuch')
     assert lib.lpost('/api/epub_preview', dict(id='00000000'))[0] == 400
 
-    r = job(lib, '/api/export_epub', dict(id=bid, target=str(tmp_path), autor='  Georg   Leibbrandt ', pdf=True))
+    # der Zielordner so, wie ihn der Dateidialog unter Windows liefert (»C:/…«): Pfade im Ergebnis sind die des Systems
+    r = job(lib, '/api/export_epub', dict(id=bid, target=str(tmp_path).replace(os.sep, '/'), autor='  Georg   Leibbrandt ', pdf=True))
     epub_, pdf = str(tmp_path / 'Probebuch.epub'), str(tmp_path / 'Probebuch.pdf')
     assert r['file'] == epub_ and r['pdf']['file'] == pdf and r['folder'] == str(tmp_path) and r['pages'] == 2
     st = json.load(open(tmp_path / 'Probebuch' / 'buch.json', encoding='utf-8'))

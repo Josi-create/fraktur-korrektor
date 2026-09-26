@@ -164,7 +164,8 @@ def test_choose_liest_das_ergebnis_aus_der_datei(monkeypatch, tmp_path):
             f.write('C:/Buecher/Mein Buch\n')
         return lauf()
     monkeypatch.setattr(server.subprocess, 'run', run)
-    assert server.choose('folder') == 'C:/Buecher/Mein Buch'
+    # Tk liefert »C:/…« – mit dem Pfad des Systems (unter Windows »C:\…«) zeigt der Explorer den richtigen Ordner
+    assert server.choose('folder') == os.path.normpath('C:/Buecher/Mein Buch')
     assert not os.path.exists(benutzt[0])  # aufgeräumt
 
 
@@ -209,7 +210,22 @@ def test_zwischenablage_und_ordner_zeigen(monkeypatch):
     monkeypatch.setattr(ocr.subprocess, 'Popen', lambda cmd, **kw: aufrufe.append(cmd))
     assert ocr.to_clipboard('/pfad/zum/ordner') is True
     assert ocr.reveal('/pfad/zum/ordner') is True
-    assert aufrufe == [['pbcopy'], ['open', '/pfad/zum/ordner']]
+    assert aufrufe == [['pbcopy'], ['open', os.path.normpath('/pfad/zum/ordner')]]
+
+
+@pytest.mark.parametrize('platform', ['win32', 'darwin', 'linux'])
+def test_gesicherte_datei_im_ordner_zeigen(monkeypatch, tmp_path, platform):
+    """Nach dem Sichern zeigt »Ordner zeigen« den Ordner mit der Datei markiert. Ein Pfad »C:/…« aus dem Dateidialog wird
+    erst normalisiert – damit öffnete der Explorer »Dokumente« statt des Ordners."""
+    aufrufe = []
+    monkeypatch.setattr(ocr.sys, 'platform', platform)
+    monkeypatch.setattr(ocr.subprocess, 'Popen', lambda cmd, **kw: aufrufe.append(cmd))
+    f = tmp_path / 'Buch.epub'
+    f.write_bytes(b'PK')
+    ocr.reveal(str(f).replace(os.sep, '/'))
+    ocr.reveal(str(tmp_path).replace(os.sep, '/'))
+    assert aufrufe == [dict(win32='explorer /select,"%s"' % f, darwin=['open', '-R', str(f)], linux=['xdg-open', str(tmp_path)])[platform],
+                       dict(win32=['explorer', str(tmp_path)], darwin=['open', str(tmp_path)], linux=['xdg-open', str(tmp_path)])[platform]]
 
 
 def test_reveal_nur_fuer_vorhandene_ordner(lib, tmp_path):

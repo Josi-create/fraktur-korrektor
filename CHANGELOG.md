@@ -432,6 +432,14 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - Der fest eingetragene Pfad zu einem Wörterbuch aus Adobe Photoshop ist entfernt.
 
 ### Behoben
+- **»Ordner zeigen« öffnete unter Windows »Dokumente«**: Der Dateidialog (Tk) liefert auch unter Windows Pfade mit
+  Schrägstrichen (»C:/…«); damit zeigte der Explorer seinen Standardordner statt des gewählten, und nach dem Sichern
+  standen gemischte Pfade im Dialog (»C:/…/Ordner\Buch.epub«). Der gewählte Pfad wird jetzt gleich in die Schreibweise
+  des Systems gebracht, ebenso ein von Hand getippter Zielordner und jeder Pfad, den »Ordner zeigen« öffnet. Betraf
+  auch Kindle-Notizordner und die Seitenbilder für Transkribus. Nach dem Sichern als PDF oder E-Book ist »Ordner
+  zeigen …« ein Knopf unten im Dialog (bisher ein Link hinter dem langen Pfad, der mit ihm umbrach); er öffnet den
+  Ordner mit der gesicherten Datei markiert (Windows `explorer /select`, Mac `open -R`). Darüber stehen die Dateinamen
+  fett, der Ordner klein darunter.
 - **Silbentrennung nach der Erkennung mit Tesseract**: Das Frakturmodell frak2021 liest den Doppelstrich ⸗ am
   Zeilenende oft als Gedankenstrich (»unend—« / »licher«, auch »ver—-«). Das Einlesen machte daraus bisher kein `¬`,
   das getrennte Wort war dann rot. Jetzt gilt ein Strich direkt am Wort, auf den klein weitergeschrieben wird, als
