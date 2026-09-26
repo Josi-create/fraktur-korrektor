@@ -37,8 +37,10 @@ Zertifizierungsinstanz anfordern*, „Auf der Festplatte sichern“) → das her
 
     security find-identity -v -p codesigning
 
-Die Zeile `Developer ID Application: Vorname Name (TEAMID)` ist der Wert für `MACOS_CODESIGN_IDENTITY`; in
-Klammern steht die **Team-ID** (`APPLE_TEAM_ID`). Erscheint hier nur „Apple Development“ oder „Apple
+Die Zeile `Developer ID Application: Vorname Name (TEAMID)` ist die gesuchte; in Klammern steht die **Team-ID**
+(`APPLE_TEAM_ID`). Als `MACOS_CODESIGN_IDENTITY` taugt der Name, sicherer ist aber der 40-stellige Fingerabdruck
+am Zeilenanfang: Ein eingetippter Umlaut im Namen kann anders kodiert sein als im Zertifikat, dann findet
+`codesign` die Identität nicht. Erscheint hier nur „Apple Development“ oder „Apple
 Distribution“, fehlt das Developer-ID-Zertifikat noch – diese beiden taugen nicht zur Notarisierung.
 
 ### 3. Zertifikat mit privatem Schlüssel als `.p12` sichern
@@ -71,7 +73,7 @@ landen die Geheimnisse weder in der Shell-Geschichte noch in einer Datei im Repo
     for repo in Josi-create/fraktur-korrektor Josi-create/PDF_Sortier_Meister; do
       gh secret set MACOS_CERTIFICATE_P12      --repo $repo < ~/Desktop/developer-id.p12.b64
       gh secret set MACOS_CERTIFICATE_PASSWORD --repo $repo   # Passwort aus Schritt 3
-      gh secret set MACOS_CODESIGN_IDENTITY    --repo $repo   # "Developer ID Application: … (TEAMID)"
+      gh secret set MACOS_CODESIGN_IDENTITY    --repo $repo   # Fingerabdruck oder "Developer ID Application: … (TEAMID)"
       gh secret set APPLE_ID                   --repo $repo   # die Apple-ID (E-Mail)
       gh secret set APPLE_TEAM_ID              --repo $repo   # die TEAMID aus Schritt 2
       gh secret set APPLE_APP_SPECIFIC_PASSWORD --repo $repo  # aus Schritt 5

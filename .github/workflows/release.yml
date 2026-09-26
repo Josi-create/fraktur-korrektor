@@ -12,7 +12,7 @@ name: Installer bauen
 #   MACOS_CERTIFICATE_PASSWORD   das Passwort dieser .p12-Datei
 #   MACOS_CODESIGN_IDENTITY      z. B. "Developer ID Application: Vorname Name (TEAMID)"
 #   APPLE_ID, APPLE_TEAM_ID, APPLE_APP_SPECIFIC_PASSWORD   für die Notarisierung
-# Siehe docs/de/signatur.md.
+# Siehe RELEASE.md, »Einmalig: Apple-Signatur einrichten«.
 
 on:
   push:
