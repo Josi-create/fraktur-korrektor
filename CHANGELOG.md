@@ -5,6 +5,27 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Auf dem Tablet lesen** (#63), gebaut für das iPad über das Heimnetz (`--lan`), alles mit dem Finger:
+  - **Ansicht:** Im Hochformat steht nur der Text da, ein Reiter wechselt zum Seitenbild. Im Querformat stehen Bild und
+    Text nebeneinander; *Nur Text / Bild und Text* schaltet um und wird je Lage des Geräts gemerkt. Was nicht in die
+    Kopfleiste passt, steht im Menü ☰. Das gilt auch für PC-Fenster unter 700 Pixel Breite, sonst bleibt die Kopfleiste
+    am PC, wie sie war.
+  - **Lesen wie ein Kassenbon:** Der Text rollt fließend und mit Schwung durch das ganze Buch, ohne Halt an den
+    Seitengrenzen. Die Zeile auf der Lesehöhe wird Lesezeile, das Lesezeichen geht mit, das Bild daneben rollt mit.
+    Zwei Finger ändern Schriftgröße bzw. Bild-Zoom.
+  - **Korrigieren ohne Tastatur:** Ein rotes Wort antippen oder *Nächstes rotes Wort*. Oben erscheint der Ausschnitt der
+    Zeile aus dem Seitenbild (wie in der Serienkorrektur), darunter die Vorschläge als große Knöpfe, dazu *Richtig so*,
+    *Überspringen*, *Selbst tippen*, *Alle gleichen ändern* und *Zeile bearbeiten*. Die Bildschirmtastatur kommt erst
+    auf Wunsch. Mit angesteckter Tastatur gelten alle Kürzel wie am PC.
+  - **Zettel für Obsidian auf dem iPad:** Passage mit dem Finger markieren, *Notiz* antippen. Obsidian auf dem iPad legt
+    den Zettel an (`obsidian://new`), Obsidian Sync bringt ihn auf den Rechner. Inhalt, Nummer und Ort im Vault liefert
+    der Server (`/api/notiz` mit `geraet`; der Vault ist der nächste Ordner mit `.obsidian`). Die zuletzt vergebene
+    Nummer merkt sich `buch.json` (`notiz_nr`), damit ein Zettel, der am Rechner noch fehlt, keine doppelte Nummer
+    verursacht. Je Gerät abschaltbar, der Vault-Name je Gerät änderbar.
+  - Bibliothek und Hilfe mit Viewport-Angabe und fingerbreiten Knöpfen.
+  - Hilfe *Auf dem Tablet lesen* (DE/EN), zwei Fragen in den FAQ. Selbsttest: `?touch` (Fingerbedienung), `?remote`
+    (wie über das Heimnetz), `keys=roll=1500`, `tapred:N`, `click:<Selektor>`.
+  - Offen: Freigabe fürs Heimnetz ohne Kommandozeile, mit QR-Code und Zugriffsschutz (#77).
 - **Als E-Book sichern** (#59): Ein Buch wird ein E-Book im Format EPUB 3 zum Lesen auf E-Book-Reader, Tablet oder
   Handy – Knopf in der Bibliothek; in der Leseansicht ersetzt *Sichern …* den Link *Als PDF sichern* und bietet beide
   Wege an (mit einem zweiten Link fiel bei 1366 Pixel Breite *Hilfe* aus der Kopfleiste).

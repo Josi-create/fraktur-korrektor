@@ -2124,7 +2124,7 @@ def choose(kind):
 
 # ---- Hilfe: docs/<sprache>/*.md als HTML
 
-HELP_PAGE = '''<!DOCTYPE html><html lang="%(lang)s"><head><meta charset="utf-8"><title>%(title)s – Fraktur-Korrektor</title><style>
+HELP_PAGE = '''<!DOCTYPE html><html lang="%(lang)s"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>%(title)s – Fraktur-Korrektor</title><style>
 body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#222;line-height:1.6}
 #top{display:flex;gap:16px;align-items:center;padding:8px 16px;background:#2b2b2b;color:#eee;font-size:14px}
 #top a{color:#eee} #top .sp{flex:1}
@@ -2135,6 +2135,7 @@ main{flex:1;min-width:0;background:#fff;border:1px solid #bbb;border-radius:4px;
 main img{max-width:100%%} table{border-collapse:collapse} td,th{border:1px solid #ccc;padding:4px 9px;vertical-align:top;text-align:left}
 main table{display:block;max-width:100%%;overflow-x:auto} th{background:#f6f3ea} table.kurz td:first-child{white-space:nowrap} code,kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:0 4px;font-family:Consolas,monospace;font-size:.9em}
 pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} h1{margin-top:.6em}
+@media (max-width:760px) { #wrap{flex-direction:column} nav{width:auto} main{padding:6px 16px 20px} }
 </style></head><body><div id="top"><b>Fraktur-Korrektor</b><a href="%(home_url)s">%(home)s</a><span class="sp"></span>%(langs)s</div>
 <div id="wrap"><nav>%(nav)s</nav><main>%(body)s</main></div></body></html>'''
 
@@ -2299,6 +2300,9 @@ class H(BaseHTTPRequestHandler):
             return self.sendjson(dict(done=p[0], total=p[1]) if p else dict(done=1, total=1))
         if rest == '/api/settings':
             return self.sendjson(book.settings)
+        if rest == '/api/vault':  # der Vault des Notizordners – für den Notiz-Dialog am Tablet (#63)
+            v = obsidian_vault(book.settings['notizen']) if book.settings.get('notizen') else None
+            return self.sendjson(dict(vault=v[0] if v else None))
         if rest == '/api/whitelist':
             return self.sendjson(dict(words=list(dict.fromkeys(book.whitelist()))))
         if rest == '/api/headings':

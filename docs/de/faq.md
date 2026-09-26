@@ -20,7 +20,7 @@ Startversuch. Denselben Weg brauchen Sie für ScanTailor, siehe [Werkzeuge insta
 Beim gewöhnlichen Start fragt Windows nicht, denn das Programm ist dann nur auf Ihrem eigenen Rechner erreichbar.
 Die Nachfrage kommt nur, wenn Sie es mit der Option `--lan` für andere Geräte im Heimnetz gestartet haben. Erlauben Sie
 den Zugriff für *private Netzwerke*, sonst erreichen die anderen Geräte das Programm nicht. Ins Internet geht in
-keinem Fall etwas – siehe [Über das Heimnetz mitlesen](usage.md).
+keinem Fall etwas – siehe [Auf dem Tablet lesen](usage.md).
 
 **„Der Port 8765 ist belegt: ein anderes Programm benutzt ihn.“**
 Das Programm braucht auf Ihrem Rechner eine Adresse, und die hat bereits ein anderes Programm. Prüfen Sie zuerst,
@@ -207,10 +207,15 @@ wurde – *Zusammenführen*. Siehe [Ein Buch als PDF sichern](pdf-sichern.md).
 Hier wurde seit dem Sichern weitergearbeitet, oder es ist ein anderes Buch. Wählen Sie *Zusammenführen*, wenn das
 Programm es anbietet, sonst legen Sie das PDF als neues Buch an.
 
-**Kann jemand anders vom eigenen Gerät aus mitlesen?**
+**Kann jemand anders vom eigenen Gerät aus mitlesen? Geht es auf dem iPad?**
 Ja, im selben Heimnetz: Starten Sie das Programm mit der Option `--lan`; die Adresse für die anderen Geräte steht beim
-Start. Es gibt keinen Passwortschutz, darum nur im eigenen Netz verwenden. Bücher hinzufügen geht nur am Rechner selbst
-– siehe [Bedienung](usage.md).
+Start. Es gibt keinen Passwortschutz, darum nur im eigenen Netz verwenden. Bücher hinzufügen geht nur am Rechner selbst.
+Auf dem Tablet bedienen Sie alles mit dem Finger – siehe [Auf dem Tablet lesen](usage.md).
+
+**Auf dem iPad passiert bei „Notiz“ nichts, oder Safari meldet eine ungültige Adresse.**
+Der Zettel soll in Obsidian auf dem iPad entstehen, aber Obsidian ist dort nicht installiert oder kennt den Vault nicht
+unter diesem Namen. Tippen Sie auf **☰ → Notizen**: Tragen Sie den Namen des Vaults auf dem iPad ein, oder nehmen Sie
+den Haken bei *Zettel in Obsidian auf diesem Gerät anlegen* weg – dann entsteht der Zettel am Rechner.
 
 **Darf ich die Textdateien in einem anderen Programm bearbeiten?**
 Ja, jederzeit; das Programm liest geänderte Dateien von selbst neu (`R` lädt die Seite neu). Zwei Dinge beachten:

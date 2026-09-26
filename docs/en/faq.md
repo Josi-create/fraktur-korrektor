@@ -19,7 +19,7 @@ route, see [Installing the tools](install-tools.md).
 With a normal start Windows does not ask, because the program can then only be reached from your own computer. The
 question comes up only when you started it with the `--lan` option for other devices on your home network. Allow
 access for *private networks*, otherwise the other devices will not reach the program. Nothing goes to the internet
-in either case – see [Reading along on the home network](usage.md).
+in either case – see [Reading on a tablet](usage.md).
 
 **“Port 8765 is in use: another program is using it.”**
 The program needs an address on your computer, and another program already has it. First check whether
@@ -202,10 +202,15 @@ the program recognises the book and recommends *Update* or – if both sides wer
 Work has continued here since it was saved, or it is a different book. Choose *Merge* if the program offers it;
 otherwise create the PDF as a new book.
 
-**Can someone else read along from their own device?**
+**Can someone else read along from their own device? Does it work on an iPad?**
 Yes, on the same home network: start the program with the `--lan` option; the address for the other devices is shown
 at start-up. There is no password protection, so use it only on your own network. Adding books is only possible on
-the computer itself – see [Usage](usage.md).
+the computer itself. On a tablet you work with your finger – see [Reading on a tablet](usage.md).
+
+**On the iPad nothing happens on “Note”, or Safari reports an invalid address.**
+The note is meant to be created in Obsidian on the iPad, but Obsidian is not installed there or does not know the
+vault by that name. Tap **☰ → Notes**: enter the name of the vault on the iPad, or untick *Create notes in Obsidian on
+this device* – the note is then created on the computer.
 
 **May I edit the text files in another program?**
 Yes, at any time; the program re-reads changed files by itself (`R` reloads the page). Two things to keep in mind:

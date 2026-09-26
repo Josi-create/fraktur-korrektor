@@ -168,7 +168,9 @@ def test_notiz_fuer_obsidian_auf_dem_tablet(app, tmp_path):
     (vault / '.obsidian').mkdir(parents=True)
     folder = vault / 'Recherche' / 'Leibbrandt 1928'
     folder.parent.mkdir()
+    assert app.get('/api/vault')[1] == dict(vault=None)  # noch kein Notizordner
     app.post('/api/settings', dict(notizen=str(folder)))
+    assert app.get('/api/vault')[1] == dict(vault='Mein Vault')
     code, r = app.post('/api/notiz', dict(page='001', text='Die Kolonisten', lines=[2, 2], geraet=True))
     assert code == 200 and r['vault'] == 'Mein Vault' and r['file'] == 'Recherche/Leibbrandt 1928/01 Seite 5' and r['name'] == '01 Seite 5'
     assert r['content'] == '**Anmerkung**\n\n\n\n---\n\n> Die Kolonisten\n\nSeite 5, Zeile 2, [[0 Quellenangabe|buch]]\n'
@@ -184,6 +186,7 @@ def test_notiz_fuer_obsidian_auf_dem_tablet(app, tmp_path):
     (tmp_path / 'Lose').mkdir()
     app.post('/api/settings', dict(notizen=str(tmp_path / 'Lose' / 'Buch')))
     assert app.post('/api/notiz', dict(page='001', text='x', geraet=True)) == (400, dict(error='kein_vault'))
+    assert app.get('/api/vault')[1] == dict(vault=None)
     assert not (tmp_path / 'Lose' / 'Buch').exists()
     assert app.post('/api/notiz', dict(page='001', text='x'))[1]['name'] == '01 Seite 5'
 

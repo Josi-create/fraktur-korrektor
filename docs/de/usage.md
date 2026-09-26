@@ -335,6 +335,7 @@ Ist Obsidian installiert, öffnet es den neuen Zettel sofort und kommt unter Win
 Ohne Obsidian bleibt die Datei einfach im Ordner – es ist gewöhnliches Markdown.
 
 Markierungen, die Sie auf dem Kindle gemacht haben, werden auf dieselbe Weise zu Zetteln: [Markierungen vom Kindle](kindle.md).
+Wie Zettel auf dem iPad gleich in Obsidian entstehen, steht unten bei *Auf dem Tablet lesen*.
 
 ## Eine Seite ersetzen
 
@@ -351,8 +352,49 @@ Text, den ein durchsuchbares PDF schon mitbringt. Alle anderen Seiten bleiben, w
 dort. Die bisherige Fassung der Seite – Text, Zeilenlage und Bild – liegt danach gesichert im Buchordner
 (`vorher-<Datum>.zip`); in der Bibliothek holt **Frühere Fassung** sie zurück.
 
-## Über das Heimnetz mitlesen
+## Auf dem Tablet lesen
 
-Wird das Programm mit der Option `--lan` gestartet, ist es auch von anderen Geräten im selben Netz
-erreichbar (die Adresse steht beim Start im Fenster). Es gibt keinen Passwortschutz – nur im eigenen
-Heimnetz verwenden. Bücher hinzufügen kann man nur an dem Rechner, auf dem das Programm läuft.
+Vom Tablet – etwa dem iPad auf dem Sofa – oder von einem zweiten Rechner aus lesen Sie über das Heimnetz mit. Dafür
+muss das Programm am Rechner mit der Option `--lan` gestartet sein; die Adresse für das Tablet steht beim Start im
+Fenster, zum Beispiel `http://192.168.1.20:8765`. Geben Sie sie in Safari ein und legen Sie ein Lesezeichen an. Es gibt
+keinen Passwortschutz – nur im eigenen Heimnetz verwenden. Bücher hinzufügen kann man nur an dem Rechner, auf dem das
+Programm läuft.
+
+Auf dem Tablet bedienen Sie alles mit dem Finger:
+
+- **Ansicht:** Im Hochformat steht nur der Text da; oben rechts wechseln Sie zwischen **Text** und **Seitenbild**. Im
+  Querformat stehen Bild und Text nebeneinander wie am Rechner. Das Menü **☰** schaltet zwischen **Nur Text** und
+  **Bild und Text** um; das Tablet merkt sich die Wahl, getrennt für Hoch- und Querformat. Im Menü stehen auch
+  **Suchen**, **Inhalt**, **Notizen** und die Hilfe.
+- **Lesen:** Mit dem Finger rollen Sie den Text durch das ganze Buch – wie einen langen Kassenbon, ohne an den
+  Seitengrenzen anzuhalten. Die Zeile auf der Höhe der kleinen orangen Marke am linken Rand ist die Lesezeile; das
+  Programm merkt sich die Stelle. Eine Zeile antippen macht sie zur Lesezeile, im Text wie im Seitenbild. Mit zwei
+  Fingern auseinanderziehen oder zusammenschieben: im Text die Schrift, im Bild das Bild größer oder kleiner.
+- **Korrigieren:** Ein rotes Wort antippen – oder unten **Nächstes rotes Wort**. Oben erscheint die Zeile als
+  Ausschnitt aus dem Seitenbild, das fragliche Wort rot umrahmt, darunter die Vorschläge. Einen Vorschlag antippen,
+  und er ist übernommen. **Richtig so** merkt sich das Wort als richtig (wie `F8`), **Überspringen** geht zum nächsten
+  roten Wort, **Selbst tippen** öffnet die Tastatur (die Eingabetaste oder **Übernehmen** speichert), **Zurück zum
+  Lesen** beendet. Haben Sie mit **Nächstes rotes Wort** begonnen, geht es nach jeder Korrektur gleich zum nächsten.
+  Kommt das berichtigte Wort noch öfter im Buch vor, erscheint **Alle gleichen ändern** – die Serienkorrektur wie mit
+  `F9`. **Zeile bearbeiten** öffnet die Lesezeile, wenn etwas anderes als ein rotes Wort falsch ist.
+- **Mit Tastatur:** Tabellen, Überschriften, Absätze, Fußnotenstrich, Zeilen teilen oder verbinden gehen nur mit den
+  Tasten. Ist am Tablet eine Tastatur angeschlossen, gelten alle Tasten wie am Rechner.
+
+### Zettel für Obsidian auf dem iPad
+
+Ist Obsidian auch auf dem Tablet installiert und gleicht es den Vault mit dem Rechner ab (Obsidian Sync), entsteht der
+Zettel gleich dort:
+
+1. Eine Passage mit dem Finger markieren: lange auf ein Wort drücken, dann die Griffe ziehen.
+2. Unten **Notiz aus Markierung** antippen (ohne Markierung heißt der Knopf **Notiz** und nimmt die Lesezeile).
+3. Obsidian öffnet den neuen Zettel mit Zitat und Quelle. Schreiben Sie Ihre Anmerkung hinein und wechseln Sie zurück
+   zu Safari. Bequem ist es, beide nebeneinander zu haben (Split View).
+
+Obsidian Sync bringt den Zettel auf den Rechner. Nummer, Zitat und Quellenangabe kommen wie immer vom Programm, der
+Ordner ist der, den Sie am Rechner für das Buch festgelegt haben (`O`). Die Nummern laufen auch dann richtig weiter,
+wenn Obsidian am Rechner gerade nicht läuft.
+
+Safari fragt beim ersten Mal, ob es Obsidian öffnen darf. Öffnet es nicht von selbst, tippen Sie unten in der Meldung
+auf **in Obsidian öffnen**. Unter **☰ → Notizen** lässt sich das je Gerät ausschalten; dann entsteht der Zettel wie
+bisher am Rechner. Heißt der Vault auf dem Tablet anders als am Rechner, tragen Sie dort seinen Namen ein. Liegt der
+Notizordner in keinem Obsidian-Vault, entsteht der Zettel ebenfalls am Rechner.

@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fraktur-Korrektor</title>
 <style>
 body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#222}
@@ -85,6 +86,9 @@ button:disabled{opacity:.5;cursor:default}
 #s4 label,#ebody label.pvopt{display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:4px}
 #extra{margin-top:14px;font-size:14.5px} #extra a{color:#456}
 #kdone h3{margin:0 0 10px;font:19px Georgia,serif;color:#285}
+/* Tablet (#63): Knöpfe fingerbreit, Bücher leichter zu treffen */
+@media (pointer: coarse) { button{min-height:44px} .book{padding:16px 18px} #top{padding:12px 16px} }
+@media (max-width: 600px) { .book .nr{display:none} }
 </style>
 <script src="/i18n.js"></script>
 </head>

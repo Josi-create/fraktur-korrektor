@@ -227,7 +227,14 @@ html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visib
    <p data-t="note_intro"></p>
    <p data-t="note_folder"></p>
    <div style="display:flex;gap:8px"><input id="nfolder" spellcheck="false" data-t-ph="note_folder_ph"><button id="nchoose" data-t="choose_folder"></button></div>
+   <div id="nremote" style="display:none;color:#666;margin-top:6px" data-t="note_remote"></div>
    <div id="ninfo"></div>
+   <div id="ndev" style="display:none;margin-top:6px;padding-top:14px;border-top:1px solid #ddd">
+    <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer"><input type="checkbox" id="ndevon" style="flex:none;margin-top:6px;transform:scale(1.4)"><span><b data-t="note_dev_on"></b><small style="display:block;color:#666;font-size:14px;margin-top:2px" data-t="note_dev_help"></small></span></label>
+    <div style="margin-top:12px"><span data-t="note_vault"></span> <input id="nvault" spellcheck="false" style="width:260px"></div>
+    <div id="nvinfo" style="color:#a40;margin-top:6px"></div>
+   </div>
+   <div class="tonly" style="margin:16px 0 0"><button type="button" class="tb go" id="nDone" data-t="note_done_btn"></button></div>
   </div>
  </div>
  <div id="repl">
@@ -270,6 +277,7 @@ applyI18n();
 // Hochformat nur den Text. ?touch erzwingt das (Selbsttest, Bildschirmfotos). Das iPad meldet sich in Safari als Mac, darum
 // die Frage nach dem Zeiger und nicht nach dem Browser.
 const TOUCH = /[?&]touch\b/.test(location.search) || matchMedia('(pointer: coarse)').matches;
+let LOCAL = true;  // läuft der Reader am Rechner selbst? Sonst liest ein anderes Gerät über das Heimnetz mit (--lan)
 const mem = {};  // darf der Browser nichts speichern (privates Fenster): wenigstens für diese Sitzung
 function stored(k) { try { const v = localStorage.getItem(k); if (v != null) return v; } catch (e) {} return mem[k] ?? null; }
 function store(k, v) { mem[k] = v; try { localStorage.setItem(k, v); } catch (e) {} }
@@ -388,7 +396,7 @@ async function loadOverview() {
       $('lprog').max = p.total; $('lprog').value = p.done; $('lprog').style.display = ''; $('lpage').textContent = t('loading_page', { n: p.done, total: p.total }); } catch (e) {}
   }, 300);
   let o; try { o = await (await fetch(BASE + '/api/overview')).json(); } finally { clearInterval(tick); }
-  ov = o.pages; konf = o.conflicts || [];
+  ov = o.pages; konf = o.conflicts || []; LOCAL = !!o.local && !/[?&]remote\b/.test(location.search);  // ?remote: Selbsttest wie über das Heimnetz
   if (o.zeichen && o.zeichen != zeichen) { zeichen = o.zeichen; fitText(); }
   // beim ersten Öffnen erkannt: Fußnoten ohne Strich, Absätze (#67)
   const auto = [o.fussnoten ? t('fn_auto', { n: o.fussnoten }) : '', o.absaetze ? t('para_auto', { n: o.absaetze }) : ''].filter(Boolean);
@@ -507,7 +515,7 @@ function render() {
   const hc = document.documentElement.classList, fixing = mode == 'fix' || mode == 'free';
   hc.toggle('fixing', TOUCH && fixing); if (!fixing) hc.remove('typing');
   $('help').innerHTML = TOUCH && (fixing || mode == 'read') ? '' : HELP[mode] || '';
-  $('shint').innerHTML = mode == 'table' ? tbPreview() : pending && seriesStart() === pending ? t(TOUCH ? 'pending_t' : 'pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
+  $('shint').innerHTML = mode == 'table' ? tbPreview() : pending && seriesStart() === pending ? t(TOUCH ? 'pending_t' : 'pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg) + msgLink();
   if (TOUCH) renderTouch();
   if (mode == 'table') { const c = tbCells().length; $('word').innerHTML = t('tbl_word', { n: c, r: Math.ceil(c / tb.cols), c: tb.cols }); }
   const e1 = $('edit'), e2 = $('edit2');
@@ -1072,28 +1080,52 @@ function markedLines() {
   return { text: out.join('\n'), lines: [a + 1, b + 1] };
 }
 let pendingNote = null;  // Notiz, die noch auf den Notizordner wartet (erstes F4: Ordner wählen, dann gleich anlegen)
-async function makeNote(req) {
+// Zettel in Obsidian auf dem Tablet (#63): Der Server liefert Inhalt, Nummer und Ort im Vault, Obsidian auf diesem Gerät legt den
+// Zettel an (obsidian://new), Obsidian Sync bringt ihn auf den Rechner. Je Gerät umschaltbar; Vorgabe: an, wenn ein Tablet über
+// das Heimnetz liest. Heißt der Vault hier anders als am Rechner, steht sein Name je Gerät in 'vault:<Name am Rechner>'.
+const onDevice = () => { const v = stored('obsidian_geraet'); return v ? v == '1' : TOUCH && !LOCAL; };
+let noteLink = null;  // {msg, href}: zur Meldung »Zettel … geht an Obsidian« der Link, falls Safari das Öffnen nicht selbst zulässt
+const postNote = body => fetch(BASE + '/api/notiz', { method: 'POST', body: JSON.stringify(body) }).then(r => r.json());
+async function makeNote(req, pre) {  // pre: die Markierung, festgehalten beim Antippen von »Notiz« (sie kann danach weg sein)
   if (!req) {
-    const sel = selectedText(), line = mode == 'fix' ? cf.line : li, ml = sel ? null : markedLines();
+    const sel = pre || selectedText(), line = mode == 'fix' ? cf.line : li, ml = sel ? null : markedLines();
     const text = sel ? sel.text : ml ? ml.text : skippable(line) ? '' : strip(data.lines[line]);
     if (!text.trim()) return;
     req = { page: sel ? sel.p : pg, text, lines: sel ? sel.lines : ml ? ml.lines : [line + 1, line + 1] };
   }
-  const r = await fetch(BASE + '/api/notiz', { method: 'POST', body: JSON.stringify({ ...req, lang: LANG, open: true }) });
-  const x = await r.json();
+  let x = await postNote({ ...req, lang: LANG, open: true, geraet: onDevice() }), novault = false;
+  if (x.error == 'kein_vault') { novault = true; x = await postNote({ ...req, lang: LANG, open: true }); }  // dann eben am Rechner
   if (x.error == 'kein_notizordner') { await openNotes(req); return; }
   if (x.error) { msg = t('err_' + x.error); render(); return; }
   try { await navigator.clipboard.writeText(x.text); } catch (e) {}
   try { getSelection().removeAllRanges(); } catch (e) {}
-  nsel = null;
-  msg = t(x.opened ? 'note_done' : 'note_done_file', { n: x.name, f: x.file }); if (mode == 'read') render(); else $('shint').textContent = msg;
+  nsel = null; noteLink = null;
+  if (x.content) {
+    const href = 'obsidian://new?vault=' + encodeURIComponent(stored('vault:' + x.vault) || x.vault) + '&file=' + encodeURIComponent(x.file) + '&content=' + encodeURIComponent(x.content);
+    msg = t('note_dev', { n: x.name }); noteLink = { msg, href };
+  } else msg = novault ? t('note_novault', { n: x.name, f: x.file }) : t(x.opened ? 'note_done' : 'note_done_file', { n: x.name, f: x.file });
+  if (mode == 'read') render(); else $('shint').innerHTML = esc(msg) + msgLink();
+  if (noteLink && !NOTRANS) location.href = noteLink.href;  // im Selbsttest nicht: Obsidian am Rechner ginge sonst auf
 }
+function msgLink() { return noteLink && noteLink.msg === msg ? ' · <a href="' + esc(noteLink.href) + '">' + t('note_open') + '</a>' : ''; }
 async function openNotes(req) {
   pendingNote = req || null;
   const st = await (await fetch(BASE + '/api/settings')).json();
   $('nfolder').value = st.notizen || ''; $('ninfo').textContent = st.notizen ? '' : t('note_none');
-  mode = 'notes'; cf = null; $('notes').classList.add('on'); $('edit').style.display = 'none'; $('edit2').style.display = 'none'; $('nfolder').focus();
+  // Über das Heimnetz legt den Ordner der Rechner fest; hier geht es darum, ob Obsidian auf diesem Gerät die Zettel anlegt
+  $('nfolder').disabled = !LOCAL; $('nchoose').style.display = LOCAL ? '' : 'none';
+  $('nremote').style.display = $('ndev').style.display = LOCAL ? 'none' : '';
+  if (!LOCAL) {
+    const v = (await (await fetch(BASE + '/api/vault')).json()).vault;
+    $('ndevon').checked = onDevice(); $('nvault').dataset.v = v || ''; $('nvault').disabled = !v;
+    $('nvault').value = v ? stored('vault:' + v) || '' : ''; $('nvault').placeholder = v ? t('note_vault_ph', { v }) : '';
+    $('nvinfo').textContent = st.notizen && !v ? t('note_vault_none') : '';
+  }
+  mode = 'notes'; cf = null; $('notes').classList.add('on'); $('edit').style.display = 'none'; $('edit2').style.display = 'none';
+  if (LOCAL) $('nfolder').focus(); else document.activeElement.blur();
 }
+$('ndevon').onchange = () => store('obsidian_geraet', $('ndevon').checked ? '1' : '0');
+$('nvault').oninput = () => { if ($('nvault').dataset.v) store('vault:' + $('nvault').dataset.v, $('nvault').value.trim()); };
 async function saveNotes() {
   const r = await fetch(BASE + '/api/settings', { method: 'POST', body: JSON.stringify({ notizen: $('nfolder').value.trim() }) });
   const x = await r.json();
@@ -1103,14 +1135,15 @@ async function saveNotes() {
 function closeNotes() { $('notes').classList.remove('on'); mode = 'read'; document.activeElement.blur(); render(); }
 async function notesKey(e) {
   if (e.key == 'Escape') { e.preventDefault(); closeNotes(); }
-  else if (e.key == 'Enter') {
-    e.preventDefault();
-    if (!await saveNotes()) return;
-    const folder = $('nfolder').value.trim(), req = pendingNote; pendingNote = null;
-    closeNotes();
-    if (req && folder) await makeNote(req);  // die wartende Notiz jetzt anlegen
-  }
+  else if (e.key == 'Enter') { e.preventDefault(); await notesDone(); }
 }
+async function notesDone() {
+  if (LOCAL && !await saveNotes()) return;  // über das Heimnetz bleibt der Ordner, wie ihn der Rechner festgelegt hat
+  const folder = $('nfolder').value.trim(), req = pendingNote; pendingNote = null;
+  closeNotes();
+  if (req && folder) await makeNote(req);  // die wartende Notiz jetzt anlegen
+}
+$('nDone').onclick = () => { if (mode == 'notes' && !busy) { busy = true; notesDone().finally(() => { busy = false; }); } };
 $('nchoose').onclick = async () => {
   const r = await (await fetch('/api/choose', { method: 'POST', body: JSON.stringify({ kind: 'folder' }) })).json();
   if (r.path) $('nfolder').value = r.path; else if (r.error) $('ninfo').textContent = t('err_' + r.error);
@@ -1446,7 +1479,14 @@ $('findlink').onclick = e => { e.preventDefault(); if (mode == 'read' && !busy) 
 // Knöpfe am Tablet (#63) – was am PC die Tasten tun
 $('tNext').onclick = guarded(async () => { fixRun = true; await toFlag(); });  // Leertaste
 $('tEdit').onclick = () => { if (!busy && mode == 'read') { fixRun = false; enterFree(); } };  // F2; ohne await, sonst öffnet Safari die Tastatur nicht
-$('tNote').onclick = guarded(() => makeNote());  // F4
+// F4: die Markierung beim Aufsetzen des Fingers festhalten – das Antippen des Knopfs kann sie aufheben
+let noteSel = null;
+$('tNote').addEventListener('pointerdown', e => { e.preventDefault(); noteSel = selectedText(); });
+$('tNote').onclick = guarded(async () => { const s = noteSel || selectedText(); noteSel = null; await makeNote(null, s); });
+document.addEventListener('selectionchange', () => {  // mit dem Finger markiert: der Knopf sagt, dass er die Markierung nimmt
+  if (!TOUCH) return;
+  const s = mode == 'read' && selectedText(); $('tNote').textContent = t(s ? 't_note_sel' : 't_note'); $('tNote').classList.toggle('go', !!s);
+});
 $('tSerieR').onclick = $('tSerieF').onclick = () => { if (!busy && (mode == 'read' || mode == 'fix')) { busy = true; startSeries().finally(() => { busy = false; }); } };  // F9
 $('tOk').onclick = inFix(() => whitelist());  // F8
 $('tSkip').onclick = inFix(async () => { const f = cf; passed = { line: f.line, start: f.start }; await toFlag({ line: f.line, start: f.start }); });  // Tab
@@ -1579,9 +1619,9 @@ function markCur() { lineEls.forEach((d, i) => d.classList.toggle('cur', i == li
 function rollBy(dy) {
   // Nicht über die erste bzw. letzte geladene Zeile hinaus: Buchanfang, Buchende oder die Nachbarseite ist noch unterwegs.
   // Liefert false, wenn es dort anstößt (dann endet der Schwung).
-  const R = $('text').clientHeight * READ_POS, bs = [prevD, data, nextD].filter(Boolean);
-  const first = readable(bs[0])[0], last = readable(bs[bs.length - 1]).pop();
-  if (!first || !last) return false;
+  const R = $('text').clientHeight * READ_POS, all = [prevD, data, nextD].filter(Boolean).flatMap(readable);
+  const first = all[0], last = all[all.length - 1];
+  if (!first) return false;
   const top = R - first.el.offsetTop - first.el.offsetHeight / 2, bottom = R - last.el.offsetTop - last.el.offsetHeight / 2;
   const want = textY + dy, to = Math.min(top, Math.max(bottom, want)); textY = to; placeText();
   const hit = lineAtReadPos();
@@ -1645,8 +1685,9 @@ function fingerDown(e) {
   const pane = e.currentTarget.id == 'text' ? 'text' : 'img';
   pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
   const stopped = stopFling();
-  if (pts.size == 2) { gest = { pane, kind: 'pinch', d0: spread(), z0: pane == 'text' ? tzoom : zoom }; return; }
+  if (pts.size == 2) { if (stopped) rollEnd(); gest = { pane, kind: 'pinch', d0: spread(), z0: pane == 'text' ? tzoom : zoom }; return; }
   if (pts.size > 2 || mode != 'read') { gest = null; return; }
+  if (pane == 'text' && selectedText()) { if (stopped) rollEnd(); gest = null; return; }  // Text ist markiert: die Griffe verschieben, nicht rollen
   if (stopped) $('lines').classList.remove('rolling');
   gest = { pane, kind: 'tap', stopped, x0: e.clientX, y0: e.clientY, y: e.clientY, tm: e.timeStamp, v: 0 };
 }

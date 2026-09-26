@@ -179,6 +179,14 @@ def test_t_wird_nicht_verdeckt():
         assert not re.search(r'\b(?:let|const|var)\s+t\b|\bt\s*=>|\(t\)\s*=>|function\s*\w*\([^)]*\bt\b[^)]*\)', html), f
 
 
+def test_seiten_passen_aufs_tablet(lib):
+    """Ohne Viewport-Angabe zeigt Safari auf dem iPad die Seite als verkleinerte PC-Ansicht (#63)."""
+    vp = '<meta name="viewport" content="width=device-width, initial-scale=1">'
+    for f in ('reader.html', 'bibliothek.html'):
+        assert vp in open(os.path.join(ROOT, f), encoding='utf-8').read(), f
+    assert vp in lib.raw('/hilfe/de/usage')[1].decode('utf-8')
+
+
 def test_spendenlink(lib):
     assert lib.lget('/api/library')[1]['donate'].startswith('https://buymeacoffee.com/')
 

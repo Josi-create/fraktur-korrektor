@@ -328,6 +328,7 @@ If Obsidian is installed, it opens the new note immediately and, on Windows, com
 Without Obsidian the file simply stays in the folder – it is plain Markdown.
 
 Highlights you made on your Kindle become notes in the same way: [Highlights from the Kindle](kindle.md).
+How notes are created in Obsidian right on the iPad is described below under *Reading on a tablet*.
 
 ## Replacing a page
 
@@ -344,8 +345,48 @@ with the text a searchable PDF already carries. All other pages stay as they are
 The previous version of the page – text, line positions and image – is backed up in the book folder
 (`vorher-<date>.zip`); **Earlier version** in the library brings it back.
 
-## Reading along on the home network
+## Reading on a tablet
 
-If the program is started with the option `--lan`, other devices on the same network can reach it (the
-address is shown in the window at start-up). There is no password protection – use it on your own home
-network only. Books can only be added on the computer the program runs on.
+From a tablet – say the iPad on the sofa – or from a second computer you read along over your home network. For this,
+the program must be started on the computer with the option `--lan`; the address for the tablet is shown in the window
+at start-up, for example `http://192.168.1.20:8765`. Type it into Safari and bookmark it. There is no password
+protection – use it on your own home network only. Books can only be added on the computer the program runs on.
+
+On the tablet you work with your finger:
+
+- **View:** In portrait only the text is shown; at the top right you switch between **Text** and **Page image**. In
+  landscape image and text stand side by side as on the computer. The **☰** menu switches between **Text only** and
+  **Image and text**; the tablet remembers the choice, separately for portrait and landscape. The menu also holds
+  **Search**, **Contents**, **Notes** and the help.
+- **Reading:** Your finger scrolls the text through the whole book – like a long till receipt, without stopping at the
+  page breaks. The line level with the small orange mark on the left edge is the reading line; the program remembers
+  the place. Tapping a line makes it the reading line, in the text as in the page image. Spreading or pinching two
+  fingers makes the text (or, on the image, the image) larger or smaller.
+- **Correcting:** Tap a red word – or **Next red word** at the bottom. At the top the line appears as a cut-out of the
+  page image with the doubtful word framed in red, and below it the suggestions. Tap a suggestion and it is applied.
+  **Correct as is** remembers the word as correct (like `F8`), **Skip** moves to the next red word, **Type it** opens
+  the keyboard (the return key or **Apply** saves), **Back to reading** ends. If you started with **Next red word**,
+  each correction takes you straight on to the next one. If the corrected word occurs more often in the book,
+  **Change everywhere** appears – the batch correction as with `F9`. **Edit line** opens the reading line when
+  something other than a red word is wrong.
+- **With a keyboard:** Tables, headings, paragraphs, the footnote rule, splitting or joining lines need the keys. With
+  a keyboard attached to the tablet, all keys work as on the computer.
+
+### Notes for Obsidian on the iPad
+
+If Obsidian is installed on the tablet too and keeps the vault in step with the computer (Obsidian Sync), the note is
+created right there:
+
+1. Select a passage with your finger: press and hold a word, then drag the handles.
+2. Tap **Note from selection** at the bottom (without a selection the button says **Note** and takes the reading line).
+3. Obsidian opens the new note with the quotation and source. Write your remark into it and switch back to Safari.
+   Having both side by side (Split View) is convenient.
+
+Obsidian Sync brings the note to the computer. Number, quotation and source come from the program as always; the folder
+is the one you set for the book on the computer (`O`). The numbers carry on correctly even while Obsidian is not
+running on the computer.
+
+The first time, Safari asks whether it may open Obsidian. If it does not open by itself, tap **open in Obsidian** in
+the message at the bottom. Under **☰ → Notes** this can be switched off per device; the note is then created on the
+computer as before. If the vault has a different name on the tablet than on the computer, enter that name there. If
+the notes folder is not inside an Obsidian vault, the note is also created on the computer.
