@@ -4,6 +4,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 
 ## [Unveröffentlicht]
 
+## [0.11.0] – 2026-09-26
+
 ### Neu
 - **Auf dem Tablet lesen** (#63), gebaut für das iPad über das Heimnetz (`--lan`), alles mit dem Finger:
   - **Ansicht:** Im Hochformat steht nur der Text da, ein Reiter wechselt zum Seitenbild. Im Querformat stehen Bild und
