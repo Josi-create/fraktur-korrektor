@@ -1,5 +1,14 @@
 # Fraktur-Korrektor
 
+[![Download – latest version](https://img.shields.io/github/v/release/Josi-create/fraktur-korrektor?label=Download&style=for-the-badge&color=2e7d32)](https://github.com/Josi-create/fraktur-korrektor/releases/latest)
+
+**Download the latest version:**
+[Windows](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor_Setup.exe) ·
+[Mac with Apple chip](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-arm64.dmg) ·
+[Mac with Intel chip](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-x86_64.dmg) ·
+[Linux](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-linux-x86_64.AppImage) –
+[how to install](docs/en/install.md)
+
 *Deutsche Fassung: [README.md](README.md)*
 
 **Read, correct and quote old books – on your own computer.**

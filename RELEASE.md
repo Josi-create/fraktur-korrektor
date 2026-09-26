@@ -5,7 +5,8 @@ Diese Seite richtet sich an die Betreuung des Projekts, nicht an die Benutzer (f
 
 Gebaut wird von GitHub Actions: [.github/workflows/release.yml](.github/workflows/release.yml). Ein Versions-Tag
 `v*` baut den Windows-Installer, das portable ZIP, je ein DMG für Apple Silicon und Intel sowie AppImage und
-tar.gz für Linux und hängt alles an ein Entwurfs-Release. **Run workflow** auf der Actions-Seite baut dieselben
+tar.gz für Linux, lässt alle Tests laufen und veröffentlicht das Release, wenn alles grün ist – siehe
+[Eine Version veröffentlichen](#eine-version-veröffentlichen). **Run workflow** auf der Actions-Seite baut dieselben
 Dateien nur zum Prüfen; mit dem Haken **nur_linux** nur den Linux-Teil (`gh workflow run release.yml -f nur_linux=true`).
 
 Ohne die unten beschriebenen Secrets entsteht ein **unsignierter** Mac-Build: Er funktioniert, aber macOS
@@ -143,22 +144,39 @@ Seiten und veröffentlicht sie, sobald GitHub Pages in den Einstellungen des Rep
 
 ## Eine Version veröffentlichen
 
-1. `version` in `pyproject.toml` hochsetzen, `CHANGELOG.md` abschließen, committen.
-2. Tag setzen und schieben:
+Voraussetzung: Unter `## [Unveröffentlicht]` im [CHANGELOG](CHANGELOG.md) steht, was sich geändert hat – dieser
+Text wird der Text des Releases. Dann auf `main`, ohne offene Änderungen:
 
-       git tag -a v0.12.0 -m "Version 0.12.0"
-       git push origin v0.12.0
+    python scripts/release.py 0.12.0
 
-3. Der Arbeitsablauf **Installer bauen** läuft (rund 20 Minuten) und legt ein **Entwurfs-Release** mit allen
-   Dateien an.
-4. Den Entwurf auf der Releases-Seite prüfen, Text ergänzen, veröffentlichen.
+Das Skript setzt die Versionsnummer in `pyproject.toml` und `CITATION.cff`, macht aus dem unveröffentlichten
+Abschnitt `## [0.12.0] – <heute>`, legt Commit und Tag `v0.12.0` an und schiebt beides nach Rückfrage hoch
+(`--ja`: ohne Rückfrage). Alles Weitere geschieht von selbst, in rund 15 Minuten:
 
-Die Dateinamen bleiben von Version zu Version gleich, darum funktionieren diese Dauerlinks in der Doku:
+1. **pruefen**: Passen Tag, `pyproject.toml` und CHANGELOG zusammen? Sonst bricht der Lauf ab, bevor gebaut wird.
+   Die Zusammenfassung des Laufs zeigt den künftigen Release-Text.
+2. **tests** (dieselben wie bei jedem Push) und die Builds für Windows, Mac und Linux samt Rauchtest laufen
+   nebeneinander.
+3. **release**: Sind alle grün, erscheint das Release – nicht als Entwurf, sondern gleich veröffentlicht – mit einer
+   Download-Tabelle und dem CHANGELOG-Abschnitt. Danach prüft der Auftrag, dass jeder Dauerlink unten auf die neue
+   Version zeigt und sich herunterladen lässt.
+
+Schlägt ein Schritt fehl, erscheint kein Release. Den Fehler auf `main` beheben, dann den Tag neu setzen:
+
+    git push origin :refs/tags/v0.12.0 && git tag -d v0.12.0
+    git tag -a v0.12.0 -m "Version 0.12.0" && git push origin v0.12.0
+
+Ein Tag mit Bindestrich (`v1.0.0-rc1`) wird eine **Vorabversion**: Sie steht auf der Releases-Seite, die
+Dauerlinks zeigen aber weiter auf die letzte richtige Version.
+
+Die Dateinamen bleiben von Version zu Version gleich, darum funktionieren diese Dauerlinks – ganz oben im README
+und in der Hilfe:
 
     https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor_Setup.exe
     https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-arm64.dmg
     https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-x86_64.dmg
     https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-linux-x86_64.AppImage
 
-Das portable ZIP und das Linux-tar.gz tragen die Versionsnummer im Namen und sind darum nur über die
-Releases-Seite erreichbar.
+Wer einen Namen ändert, ändert ihn auch in `scripts/release.py` (`DOWNLOADS`) und im Schritt *Dauerlinks prüfen*;
+`tests/test_release.py` passt auf, dass README, Hilfe und Workflow übereinstimmen. Das portable ZIP und das
+Linux-tar.gz tragen die Versionsnummer im Namen und sind darum nur über die Releases-Seite erreichbar.

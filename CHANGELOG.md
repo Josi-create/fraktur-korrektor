@@ -26,6 +26,12 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   - Hilfe *Auf dem Tablet lesen* (DE/EN), zwei Fragen in den FAQ. Selbsttest: `?touch` (Fingerbedienung), `?remote`
     (wie über das Heimnetz), `keys=roll=1500`, `tapred:N`, `click:<Selektor>`.
   - Offen: Freigabe fürs Heimnetz ohne Kommandozeile, mit QR-Code und Zugriffsschutz (#77).
+- **Veröffentlichen mit einem Befehl** (#18): `python scripts/release.py 0.12.0` setzt die Versionsnummer, schließt
+  das CHANGELOG ab und legt den Tag an; der Workflow *Installer bauen* lässt dann alle Tests und Rauchtests laufen
+  und veröffentlicht das Release selbst – mit Download-Tabelle und dem Abschnitt aus dem CHANGELOG, ohne Entwurf
+  zum Freigeben. Danach prüft er, dass die Dauerlinks auf die neue Version zeigen. Ganz oben im README (DE/EN)
+  steht jetzt der Weg zur neuesten Version: ein Knopf mit der aktuellen Versionsnummer und je ein Link für
+  Windows, Mac (Apple-Chip, Intel) und Linux. Ablauf in [RELEASE.md](RELEASE.md).
 - **Als E-Book sichern** (#59): Ein Buch wird ein E-Book im Format EPUB 3 zum Lesen auf E-Book-Reader, Tablet oder
   Handy – Knopf in der Bibliothek; in der Leseansicht ersetzt *Sichern …* den Link *Als PDF sichern* und bietet beide
   Wege an (mit einem zweiten Link fiel bei 1366 Pixel Breite *Hilfe* aus der Kopfleiste).
