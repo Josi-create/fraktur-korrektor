@@ -14,7 +14,7 @@ def repo(tmp_path):
     (tmp_path / 'CHANGELOG.md').write_text(
         '# Änderungen\n\n## [Unveröffentlicht]\n\n### Neu\n- Etwas Neues, siehe [Hilfe](docs/de/usage.md) und '
         '[Keep a Changelog](https://keepachangelog.com/de/) (#12).\n\n## [0.5.0] – 2026-09-18\n\nAlter Stand.\n',
-        encoding='utf-8')
+        encoding='utf-8', newline='\n')  # sonst unter Windows CRLF
     return str(tmp_path)
 
 
