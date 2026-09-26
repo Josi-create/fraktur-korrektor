@@ -366,7 +366,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Weil das Programm kein eigenes Fenster hat, zeigt es ein Symbol im Dock und in der Menüleiste (Windows: im
   Infobereich), über das es sich beenden lässt; ein zweiter Start öffnet nur den Browser auf die laufende Instanz.
   Auf dem Mac kommen die Dateidialoge jetzt vom System. Gebaut wird bei jedem Versions-Tag von GitHub Actions;
-  die Mac-App ist signiert und notarisiert, sobald die Apple-Zugangsdaten hinterlegt sind.
+  die Mac-App ist signiert und von Apple notarisiert (#17): Beim ersten Start fragt macOS nur noch, ob die aus dem
+  Internet geladene App geöffnet werden soll – kein Umweg über die Systemeinstellungen mehr.
   Anleitungen: [Programm installieren](docs/de/install.md), für die Betreuung [RELEASE.md](RELEASE.md).
 - **Zeilen teilen und verbinden** mit Erhalt der Bildzuordnung: `Umschalt`+`Enter` im Eingabefeld teilt die Zeile an der
   Schreibmarke, `V` verbindet die Lesezeile mit der nächsten (ein `¬` fällt dabei weg). Der Bildausschnitt in `lines.json`
