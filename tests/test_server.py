@@ -160,6 +160,34 @@ def test_notiz_titel_mit_klammern_und_ordner_als_datei(app, tmp_path):
     assert app.post('/api/notiz', dict(page='001', text='x')) == (400, dict(error='notiz_schreiben'))
 
 
+def test_notiz_fuer_obsidian_auf_dem_tablet(app, tmp_path):
+    """Vom Tablet (#63): Der Server schreibt den Zettel nicht, sondern liefert Inhalt und Ort im Vault – Obsidian dort legt ihn
+    an. Die Nummer zählt trotzdem weiter, auch solange der Zettel hier noch fehlt (Obsidian am Rechner nicht offen)."""
+    import os, json
+    vault = tmp_path / 'Mein Vault'
+    (vault / '.obsidian').mkdir(parents=True)
+    folder = vault / 'Recherche' / 'Leibbrandt 1928'
+    folder.parent.mkdir()
+    app.post('/api/settings', dict(notizen=str(folder)))
+    code, r = app.post('/api/notiz', dict(page='001', text='Die Kolonisten', lines=[2, 2], geraet=True))
+    assert code == 200 and r['vault'] == 'Mein Vault' and r['file'] == 'Recherche/Leibbrandt 1928/01 Seite 5' and r['name'] == '01 Seite 5'
+    assert r['content'] == '**Anmerkung**\n\n\n\n---\n\n> Die Kolonisten\n\nSeite 5, Zeile 2, [[0 Quellenangabe|buch]]\n'
+    assert sorted(os.listdir(folder)) == ['0 Quellenangabe.md']  # hier entsteht nur die Quellenangabe
+    assert app.post('/api/notiz', dict(page='001', text='x', geraet=True))[1]['name'] == '02 Seite 5'
+    assert app.post('/api/notiz', dict(page='002', text='Der Vater'))[1]['name'] == '03 Seite 6'  # am Rechner geht es weiter
+    (folder / '10 Eigene.md').write_text('x')  # selbst angelegte Zettel mit höherer Nummer zählen wie bisher
+    assert app.post('/api/notiz', dict(page='001', text='x', geraet=True))[1]['name'] == '11 Seite 5'
+    assert json.load(open(os.path.join(app.folder, 'buch.json'), encoding='utf-8'))['notiz_nr'] == 11
+    app.post('/api/settings', dict(notizen=str(vault)))  # der Vault selbst als Notizordner
+    assert app.post('/api/notiz', dict(page='001', text='x', geraet=True))[1]['file'] == '01 Seite 5'  # anderer Ordner: neue Zählung
+    # Notizordner in keinem Vault: Meldung – der Reader legt den Zettel dann am Rechner an
+    (tmp_path / 'Lose').mkdir()
+    app.post('/api/settings', dict(notizen=str(tmp_path / 'Lose' / 'Buch')))
+    assert app.post('/api/notiz', dict(page='001', text='x', geraet=True)) == (400, dict(error='kein_vault'))
+    assert not (tmp_path / 'Lose' / 'Buch').exists()
+    assert app.post('/api/notiz', dict(page='001', text='x'))[1]['name'] == '01 Seite 5'
+
+
 def test_suche_im_ganzen_buch(app):
     """Suchen (S im Reader): ohne Rücksicht auf Groß-/Kleinschreibung, auch über die Zeilentrennung ¬ hinweg."""
     r = app.get('/api/search?q=ber')[1]

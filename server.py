@@ -56,6 +56,19 @@ def note_number(folder):
     return max((int(m.group(1)) for n in os.listdir(folder) for m in [re.match(r'(\d+)(?:\D|$)', n)] if m), default=0) + 1
 
 
+def obsidian_vault(folder):
+    """Der Vault, in dem der Notizordner liegt – der nächste Ordner darüber mit .obsidian – als (name, wurzel), sonst None.
+    Obsidian auf dem Tablet kennt ihn nur beim Namen (#63); der Notizordner selbst darf noch fehlen."""
+    d = os.path.abspath(folder)
+    while True:
+        if os.path.isdir(os.path.join(d, '.obsidian')):
+            return os.path.basename(d), d
+        up = os.path.dirname(d)
+        if up == d:
+            return None
+        d = up
+
+
 def version():
     try:
         return re.search(r'^version\s*=\s*"([^"]+)"', open(os.path.join(HERE, 'pyproject.toml'), encoding='utf-8').read(), re.M).group(1)
@@ -171,8 +184,11 @@ class Book:
         dics = [d for d in st.get('dics') or korrlib.DEFAULT if d in korrlib.DICS]
         # kennung: bleibt dem Buch über das Sichern als PDF hinweg erhalten – daran erkennt ein anderer Rechner dasselbe Buch wieder
         # autor: für das E-Book (#59), beim Sichern eingetragen und fürs nächste Mal gemerkt
-        return dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT), notizen=st.get('notizen') or None, kennung=st.get('kennung') or None,
-                    autor=st.get('autor') or None)
+        r = dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT), notizen=st.get('notizen') or None, kennung=st.get('kennung') or None,
+                 autor=st.get('autor') or None)
+        if st.get('notiz_nr'):  # zuletzt vergebene Zettelnummer (make_note) – erst da, wenn es Zettel gibt
+            r['notiz_nr'] = st['notiz_nr']
+        return r
 
     def save_settings(self):
         write_atomic(self.stpath, json.dumps(self.settings, ensure_ascii=False, indent=1))
@@ -189,7 +205,10 @@ class Book:
     def set_notes(self, folder):
         """Ordner, in dem die Zettel dieses Buchs landen (im Obsidian-Vault); leer = keine Notizen."""
         with self.lock:
-            self.settings['notizen'] = os.path.abspath(folder) if folder else None
+            folder = os.path.abspath(folder) if folder else None
+            if folder != self.settings.get('notizen'):
+                self.settings.pop('notiz_nr', None)  # anderer Ordner: dort zählen die Zettel für sich
+            self.settings['notizen'] = folder
             self.save_settings()
         return self.settings
 
@@ -220,13 +239,18 @@ class Book:
         exp = self.expected_page(pg)
         return str(exp if exp is not None else n[0] if n else int(pg))
 
-    def make_note(self, pg, text, lang='de', lines=None):
+    def make_note(self, pg, text, lang='de', lines=None, device=False):
         """Ein Zettel nach Luhmanns Art im Notizordner: fortlaufend nummeriert, oben Platz für die eigene Anmerkung, unter dem
         Strich das Zitat und die Quelle – Seite, Zeilen (lines = (von, bis), gezählt wie in der Leiste des Readers) und Verweis auf die
         Quellenangabe des Buchs (Datei „0 Quellenangabe“, wird bei Bedarf als Vorlage angelegt; dort trägt der Nutzer Herkunft und
-        Zotero-Zitierweise ein). Liefert (ergebnis, fehler)."""
+        Zotero-Zitierweise ein). Liefert (ergebnis, fehler).
+        device: den Zettel nicht schreiben, sondern Inhalt und Ort im Vault liefern – Obsidian auf dem Tablet legt ihn an, Obsidian
+        Sync bringt ihn auf den Rechner (#63). Die Quellenangabe entsteht trotzdem hier, sie ist für alle Zettel dieselbe."""
         W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
         folder = self.settings.get('notizen')
+        vault = obsidian_vault(folder) if device and folder else None
+        if device and folder and not vault:
+            return None, 'kein_vault'
         err = notes_ready(folder)
         if err:
             return None, err
@@ -241,7 +265,12 @@ class Book:
                 return None, 'quelle_fehlt'
             page = self.printed_page(pg)
         src = note_source(folder, W, W['template'] % self.title)
-        n = note_number(folder)
+        with self.lock:
+            # Die zuletzt vergebene Nummer merkt sich das Buch: Zettel vom Tablet sind hier erst, wenn Obsidian am Rechner
+            # synchronisiert hat – ohne das bekäme der nächste Zettel dieselbe Nummer
+            n = max(note_number(folder), (self.settings.get('notiz_nr') or 0) + 1)
+            self.settings['notiz_nr'] = n
+            self.save_settings()
         name = '%02d %s %s' % (n, W['page'], page)
         path = os.path.join(folder, name + '.md')
         where = '%s %s' % (W['page'], page)
@@ -249,6 +278,10 @@ class Book:
             a, b = int(lines[0]), int(lines[-1])
             where += ', %s %s' % (W['line'], str(a) if a == b else '%d–%d' % (a, b))
         body = '**%s**\n\n\n\n---\n\n> %s\n\n%s, [[%s|%s]]\n' % (W['note'], text, where, src, link_title(self.title))
+        if vault:
+            # Pfad ab der Wurzel des Vaults, mit / wie in Obsidian; ohne .md (Obsidian hängt es an)
+            file = os.path.relpath(os.path.join(os.path.abspath(folder), name), vault[1]).replace(os.sep, '/')
+            return dict(name=name, number=n, page=page, text=text, content=body, vault=vault[0], file=file), None
         with open(path, 'x', encoding='utf-8', newline='\n') as f:  # 'x': nie überschreiben
             f.write(body)
         return dict(file=path, name=name, number=n, page=page, text=text), None
@@ -2488,7 +2521,8 @@ class H(BaseHTTPRequestHandler):
             return self.sendjson(dict(st, total=total))
         if rest == '/api/notiz':
             try:
-                r, err = book.make_note(str(body.get('page') or ''), body.get('text') or '', body.get('lang') or 'de', body.get('lines'))
+                r, err = book.make_note(str(body.get('page') or ''), body.get('text') or '', body.get('lang') or 'de', body.get('lines'),
+                                        device=bool(body.get('geraet')))
             except OSError:  # der Notizordner ist eine Datei oder schreibgeschützt: eine Meldung statt einer abgerissenen Verbindung
                 r, err = None, 'notiz_schreiben'
             if err:
