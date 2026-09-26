@@ -144,7 +144,19 @@ html.single #main{grid-template-columns:1fr} html.single #imgpane,html.single #r
 html.single #imgpane,html.single.showimg #right{display:none} html.single.showimg #imgpane{display:block}
 html.touch #text,html.touch #imgpane{touch-action:none}  /* Rollen und Zoomen mit den Fingern macht der Reader selbst */
 #lines.rolling{transition:none}
-html.touch #top{padding:8px 12px} html.touch #pnav button{padding:4px 14px;font-size:15px} html.touch #pagesel{font-size:15px}
+html.touch #lines{cursor:pointer}  /* Safari schickt Klicks nur an Elemente, die danach aussehen */
+/* Knöpfe statt Tastenkürzel: unten beim Lesen (#tbar), oben beim Korrigieren (#tfix) mit dem Ausschnitt der Zeile */
+#tfix,#tbar,.tonly{display:none} html.touch .tonly{display:inline-flex;gap:8px;margin-left:14px;vertical-align:middle}
+.tbtns{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.tb{font:16px Segoe UI,Arial,sans-serif;min-height:44px;padding:8px 16px;border:1px solid #999;border-radius:6px;background:#fff;color:#222;cursor:pointer}
+.tb.go{background:#3a6;border-color:#285;color:#fff} .tb:disabled{opacity:.45}
+.tclose{float:right;margin:-4px 0 0 12px;font-size:22px;line-height:1;padding:6px 14px}
+#tsug{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 2px} #tsug small{color:#888;align-self:center}
+#tsug .tb{font:20px Georgia,'Times New Roman',serif;background:#fffbe6;border-color:#c90;padding:6px 16px} #tsug .tb.on{background:#c90;color:#fff}
+#tcrop .crop{margin:4px 0 2px;border-color:#bbb;max-width:100%}
+html.touch.fixing #main{grid-template-rows:auto 1fr} html.touch.fixing #korr{grid-row:1;background:#fff;border:1px solid #bbb;padding:8px 12px;min-height:0}
+html.touch.fixing #imgpane,html.touch.fixing #right{grid-row:2}
+html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visibility:hidden}  /* erst »Selbst tippen« holt die Tastatur */html.touch #top{padding:8px 12px} html.touch #pnav button{padding:4px 14px;font-size:15px} html.touch #pagesel{font-size:15px}
 </style>
 <script src="/i18n.js"></script>
 </head>
@@ -180,6 +192,9 @@ html.touch #top{padding:8px 12px} html.touch #pnav button{padding:4px 14px;font-
  <div id="loading"><div data-t="loading"></div><progress id="lprog" max="1" value="0" style="display:none"></progress><div id="lpage"></div></div>
  <div class="pane" id="korr">
   <div id="word"></div>
+  <div id="tfix"><div id="tcrop"></div><div id="tsug"></div>
+   <div class="tbtns"><button type="button" class="tb go" id="tSave" data-t="t_save"></button><button type="button" class="tb" id="tOk" data-t="t_ok"></button><button type="button" class="tb" id="tSkip" data-t="t_skip"></button><button type="button" class="tb" id="tType" data-t="t_type"></button><button type="button" class="tb" id="tSerieF" data-t="t_serie"></button><button type="button" class="tb" id="tBack" data-t="t_back"></button></div></div>
+  <div id="tbar" class="tbtns"><button type="button" class="tb go" id="tNext" data-t="t_next"></button><button type="button" class="tb" id="tEdit" data-t="t_edit"></button><button type="button" class="tb" id="tNote" data-t="t_note"></button><button type="button" class="tb" id="tSerieR" data-t="t_serie"></button></div>
   <div id="help"></div>
   <div id="shint"></div>
  </div>
@@ -206,7 +221,7 @@ html.touch #top{padding:8px 12px} html.touch #pnav button{padding:4px 14px;font-
   </div>
  </div>
  <div id="notes">
-  <div id="nhead"><span data-t="note_head"></span>
+  <div id="nhead"><button type="button" class="tb tonly tclose" id="nClose" data-t-title="close">×</button><span data-t="note_head"></span>
    <div style="color:#666;font-size:13.5px;margin-top:6px" data-t="note_help"></div></div>
   <div id="nbody">
    <p data-t="note_intro"></p>
@@ -228,7 +243,7 @@ html.touch #top{padding:8px 12px} html.touch #pnav button{padding:4px 14px;font-
   </div>
  </div>
  <div id="toc">
-  <div id="ihead"><span data-t="toc_head"></span><span id="iinfo" style="margin-left:14px;color:#a40"></span>
+  <div id="ihead"><button type="button" class="tb tonly tclose" id="iClose" data-t-title="close">×</button><span data-t="toc_head"></span><span id="iinfo" style="margin-left:14px;color:#a40"></span>
    <div style="color:#666;font-size:13.5px;margin-top:6px" data-t="toc_help"></div></div>
   <div id="iempty" data-t="toc_empty"></div>
   <div id="ilist"></div>
@@ -241,6 +256,7 @@ html.touch #top{padding:8px 12px} html.touch #pnav button{padding:4px 14px;font-
  </div>
  <div id="serie">
   <div id="shead"><span data-t="ser_head"></span> <input id="sOld" spellcheck="false" data-t-ph="ser_word"> → <input id="sNew" spellcheck="false" data-t-ph="ser_new"><span id="sinfo"></span>
+   <span class="tonly"><button type="button" class="tb go" id="sGo" data-t="ser_go"></button><button type="button" class="tb" id="sCancel" data-t="ser_cancel"></button></span>
    <div id="shelp" style="color:#666;font-size:13.5px;margin-top:6px" data-t="ser_help"></div>
   </div>
   <div id="slist"></div>
@@ -487,9 +503,12 @@ function render() {
   const m = $('mode'); m.className = mode == 'read' ? '' : mode == 'table' ? 'free' : mode;
   m.textContent = t(mode == 'read' ? 'mode_read' : mode == 'fix' ? 'mode_fix' : mode == 'table' ? 'mode_table' : mode == 'konf' ? 'mode_konf' : 'mode_free');
   showPos();
-  // Korrekturfeld
-  $('help').innerHTML = HELP[mode] || '';
-  $('shint').innerHTML = mode == 'table' ? tbPreview() : pending && seriesStart() === pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
+  // Korrekturfeld; am Tablet Knöpfe statt der Tastenkürzel (mit Tastatur gelten sie trotzdem)
+  const hc = document.documentElement.classList, fixing = mode == 'fix' || mode == 'free';
+  hc.toggle('fixing', TOUCH && fixing); if (!fixing) hc.remove('typing');
+  $('help').innerHTML = TOUCH && (fixing || mode == 'read') ? '' : HELP[mode] || '';
+  $('shint').innerHTML = mode == 'table' ? tbPreview() : pending && seriesStart() === pending ? t(TOUCH ? 'pending_t' : 'pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
+  if (TOUCH) renderTouch();
   if (mode == 'table') { const c = tbCells().length; $('word').innerHTML = t('tbl_word', { n: c, r: Math.ceil(c / tb.cols), c: tb.cols }); }
   const e1 = $('edit'), e2 = $('edit2');
   if (mode == 'read') {
@@ -524,9 +543,9 @@ function layoutText() {
   textY = H * READ_POS - (el.offsetTop + el.offsetHeight / 2); placeText();
   // Eingabefelder deckungsgleich über Lesezeile und Folgezeile
   const top = H * READ_POS - el.offsetHeight / 2, e1 = $('edit'), e2 = $('edit2'), nx = lineEls[li + 1];
-  const fs = getComputedStyle(el).fontSize;
+  const fs = TOUCH ? 'max(16px, ' + getComputedStyle(el).fontSize + ')' : getComputedStyle(el).fontSize;  // kleiner zoomt Safari beim Tippen hinein
   e1.style.top = (top - 2) + 'px'; e1.style.height = (el.offsetHeight + 4) + 'px'; e1.style.fontSize = fs;
-  e2.style.top = (top + el.offsetHeight + 3) + 'px'; e2.style.height = ((nx ? nx.offsetHeight : el.offsetHeight) + 4) + 'px'; e2.style.fontSize = nx ? getComputedStyle(nx).fontSize : fs;
+  e2.style.top = (top + el.offsetHeight + 3) + 'px'; e2.style.height = ((nx ? nx.offsetHeight : el.offsetHeight) + 4) + 'px'; e2.style.fontSize = nx && !TOUCH ? getComputedStyle(nx).fontSize : fs;
 }
 function stackImages() {
   // Vorgänger, aktuelle Seite und Nachfolger untereinander – wie rechts im Textfenster, damit das Mausrad ohne Sprung über die
@@ -655,15 +674,49 @@ function enterFix(f) {
     const s = toSup(String(f.expect)), fs = fpos(f); n = s.length;
     e1.value = e1.value.slice(0, fs) + s + e1.value.slice(fs + f.len); sug = { word: f.word, items: [s], i: 0, orig: f.word, seq: ++sugSeq };
   } else if (f.kind != 'page') loadSuggestions(f);  // eine Seitenzahl hat ihren Vorschlag schon im Hinweis
-  render(); e1.focus(); setTimeout(() => e1.setSelectionRange(fpos(f), fpos(f) + n), 0); bookmark();
+  // Am Tablet kommt die Bildschirmtastatur erst mit »Selbst tippen« – sie verdeckte sonst die halbe Seite (#63)
+  const typing = !TOUCH || viaKey; document.documentElement.classList.toggle('typing', typing);
+  render(); if (typing) { e1.focus(); setTimeout(() => e1.setSelectionRange(fpos(f), fpos(f) + n), 0); } bookmark();
 }
 // ---- Korrekturvorschläge zum roten Wort (#41): erst, was in diesem Buch schon einmal daraus gemacht wurde, dann typische
 // Lesefehler der Fraktur-OCR, zuletzt das Wörterbuch. Zwei Anfragen: die schnelle zeigt sofort etwas, die vollständige
 // (Hunspell, dauert Sekunden) ergänzt. Sie stehen als Aufklappmenü unter dem Wort; ↓ ↑ wählt und setzt den Vorschlag
 // ins Feld, Klick ebenso.
-let sug = null, sugSeq = 0;  // word, items, i (gewählt, -1 = wie erkannt), orig
+let sug = null, sugSeq = 0;  // word, items, i (gewählt, -1 = wie erkannt), orig, done (auch Hunspell hat geantwortet)
+// ---- Korrigieren am Tablet (#63): oben der Ausschnitt der Zeile aus dem Seitenbild, die Vorschläge als große Knöpfe; ein
+// Vorschlag übernimmt gleich. fixRun: mit »Nächstes rotes Wort« begonnen – nach jeder Korrektur geht es zum nächsten.
+// viaKey: kam die letzte Eingabe von einer Tastatur (iPad mit Tastatur)? Dann wie am PC, mit Schreibmarke im Feld.
+let fixRun = false, viaKey = false;
+document.addEventListener('keydown', e => { if (e.target.tagName != 'INPUT') { viaKey = true; fixRun = false; } }, true);
+document.addEventListener('pointerdown', () => { viaKey = false; }, true);
+function renderTouch() {
+  const fixing = mode == 'fix' || mode == 'free', offer = !!pending && seriesStart() === pending;
+  const typing = document.documentElement.classList.contains('typing'), f = mode == 'fix' ? cf : null;
+  $('tbar').style.display = mode == 'read' ? 'flex' : 'none'; $('tfix').style.display = fixing ? 'block' : 'none';
+  $('tSerieR').style.display = offer ? '' : 'none';
+  if (!fixing) return;
+  const i = f ? f.line : li, g = data.geo && data.geo[i], j = f && isJoin(f);
+  $('tcrop').innerHTML = g && data.img && data.size ? cropHtml({ geo: g, text: data.lines[i], start: f ? f.start : 0, len: f ? f.len : 0, img: data.img,
+    geo2: j ? data.geo[i + 1] : null, text2: j ? data.lines[i + 1] : '', start2: j ? f.start2 || 0 : 0, len2: j ? part2len(f) : 0 }, data.size, $('tfix').clientWidth - 2) : '';
+  $('tOk').style.display = f && f.kind != 'page' && f.kind != 'fnref' ? '' : 'none';
+  $('tSkip').style.display = f ? '' : 'none'; $('tType').style.display = typing ? 'none' : '';
+  $('tSave').style.display = typing ? '' : 'none'; $('tSerieF').style.display = offer ? '' : 'none';
+  renderTsug();
+}
+function renderTsug() {
+  const box = $('tsug'); box.innerHTML = '';
+  if (mode != 'fix' || !sug) return;
+  sug.items.forEach((s, k) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'tb' + (k == sug.i ? ' on' : ''); b.textContent = s;
+    b.onclick = inFix(async () => { applySug(k); await commit(); });
+    box.appendChild(b);
+  });
+  if (!sug.items.length) box.innerHTML = '<small>' + t(sug.done ? 'sug_none' : 'sug_wait') + '</small>';
+}
+const inFix = fn => async () => { if (busy || (mode != 'fix' && mode != 'free')) return; busy = true; try { await fn(); } finally { busy = false; } };
 function renderSug() {
   const box = $('sugbox');
+  if (TOUCH) { box.style.display = 'none'; renderTsug(); return; }  // am Tablet: große Knöpfe oben (#63)
   if (mode != 'fix' || !sug || !sug.items.length || !cf) { box.style.display = 'none'; return; }
   const f = cf, e1 = $('edit'), fs = fpos(f);
   // unter dem Wort: die Breite des Textes davor im Feld messen (Rahmen und Innenabstand des Felds: 7 px)
@@ -682,7 +735,7 @@ async function loadSuggestions(f) {
     let r; try { r = await (await fetch(BASE + '/api/suggest?word=' + encodeURIComponent(w) + q)).json(); } catch (e) { return; }
     if (!sug || sug.seq != my || mode != 'fix') return;
     if (sug.i < 0) sug.items = r.items; else for (const s of r.items) if (!sug.items.includes(s)) sug.items.push(s);  // schon gewählt: nur ergänzen
-    renderSug();
+    sug.done = !q; renderSug();
   }
 }
 function applySug(k) {
@@ -705,7 +758,7 @@ function enterFree(sel) {
   $('word').innerHTML = t('edit_line', { n: li + 1 });
   ed = parts(data.lines[li]); const e1 = $('edit'); e1.style.display = ''; e1.value = supShow(ed.core); $('edit2').style.display = 'none';
   const o = ed.pre.length, n = ed.core.length, at = x => supPos(ed.core, Math.max(0, Math.min(n, x - o)));
-  render(); e1.focus(); setTimeout(() => e1.setSelectionRange(sel ? at(sel[0]) : 0, sel ? at(sel[1]) : 0), 0);
+  document.documentElement.classList.add('typing'); render(); e1.focus(); setTimeout(() => e1.setSelectionRange(sel ? at(sel[0]) : 0, sel ? at(sel[1]) : 0), 0);
 }
 // Getrenntes Wort: Die zweite Hälfte steht im Feld darunter. Tab, ↓ und → am Zeilenende führen hin (wie in einem Text, der
 // in der nächsten Zeile weitergeht), Umschalt+Tab, ↑ und ← am Zeilenanfang zurück.
@@ -727,13 +780,13 @@ async function toFlag(from) {
   if (from) n = data.flags.find(x => x.line > from.line || (x.line == from.line && x.start > from.start));
   if (n) { enterFix(n); return; }
   const r = await (await fetch(BASE + '/api/nextflag?after=' + pg)).json();
-  if (!r.page) { alert(t('no_more')); return; }
+  if (!r.page) { fixRun = false; alert(t('no_more')); return; }
   await loadPage(r.page, 0);
   if (data.flags.length) enterFix(data.flags[0]);
 }
-function afterFix(line, start) {
+async function afterFix(line, start) {
   const n = data.flags.find(x => x.line == line && x.start > start);
-  if (n) enterFix(n); else { passed = { line, start }; toRead(line); }
+  if (n) enterFix(n); else { passed = { line, start }; toRead(line); if (fixRun) await toFlag(); }  // am Tablet mit »Nächstes rotes Wort« begonnen: gleich weiter
 }
 async function commit() {
   const line = mode == 'fix' ? cf.line : li, f = cf, edits = [];
@@ -756,14 +809,14 @@ async function commit() {
       if (c.n > 0) { pending = { old: oldW, new: newW, n: c.n }; neu = true; }
     }
   }
-  if (mode == 'fix') afterFix(f.line, f.start); else toRead(line);
+  if (mode == 'fix') await afterFix(f.line, f.start); else toRead(line);
   if (neu) { pending.pg = pg; pending.line = li; pending.auto = mode == 'fix' ? cf : null; render(); }  // wo das Angebot für F9 gilt
 }
 async function whitelist() {
   const f = cf; if (!f || f.kind == 'page' || f.kind == 'fnref') return;  // Seitenzahl und Fußnotenzeichen lassen sich nur berichtigen
   await fetch(BASE + '/api/whitelist', { method: 'POST', body: JSON.stringify({ word: f.word.replace('¬', '') }) });
   data = await (await fetch(BASE + '/api/page/' + pg)).json(); updateCount();
-  afterFix(f.line, f.start);
+  await afterFix(f.line, f.start);
   loadOverview();  // das Wort kann auch auf anderen Seiten vorkommen
 }
 async function openSeries(oldW, newW) {
@@ -778,6 +831,26 @@ async function loadOcc() {
   ser.items = r.items.map(o => ({ ...o, on: true })); ser.sizes = r.sizes; ser.sel = 0; ser.word = w;
   renderSeries();
 }
+// Ausschnitt einer Zeile aus dem Seitenbild, das Wort rot umrahmt – für die Serienkorrektur und für die Korrektur am Tablet
+// (#63). o: {geo, text, start, len, img}, bei einem getrennten Wort dazu {geo2, text2, start2, len2} (die zweite Hälfte in der
+// Folgezeile). sz: Bildgröße, CW: Breite in px. K: Maßstab, der Ausschnitt folgt dann dem Wort; ohne K passt die ganze Zeile hinein.
+function cropHtml(o, sz, CW, K) {
+  const g = o.geo, g2 = o.geo2, L = strip(o.text).length || 1, v0 = vis(o.text, o.start), lh = g.y1 - g.y0, pad = lh * 0.35;
+  const wx0 = g.x0 + (g.x1 - g.x0) * v0 / L, wx1 = g.x0 + (g.x1 - g.x0) * (v0 + o.len) / L;
+  const x0 = Math.min(g.x0, g2 ? g2.x0 : g.x0), lw = Math.max(g.x1, g2 ? g2.x1 : g.x1) - x0;
+  let left;
+  if (K) left = (wx0 + wx1) / 2 - CW / K / 2;
+  else { K = Math.min(1.6, CW / (lw * 1.06)); left = x0 - (CW / K - lw) / 2; }
+  left = Math.max(0, Math.min(left, sz[0] - CW / K));
+  const top = g.y0 - pad, h = ((g2 ? g2.y1 : g.y1) - g.y0 + 2 * pad) * K;
+  const box = (x, y, w, bh) => '<i style="left:' + ((x - left) * K - 4) + 'px;top:' + ((y - top) * K - 2) + 'px;width:' + (w * K + 8) + 'px;height:' + (bh * K + 4) + 'px"></i>';
+  let marks = o.len ? box(wx0, g.y0, wx1 - wx0, lh) : '';
+  if (g2 && o.len2) {
+    const L2 = strip(o.text2).length || 1, s2 = vis(o.text2, o.start2 || 0), w2 = g2.x1 - g2.x0;
+    marks += box(g2.x0 + w2 * s2 / L2, g2.y0, w2 * o.len2 / L2, g2.y1 - g2.y0);
+  }
+  return '<div class="crop" style="width:' + CW + 'px;height:' + h + 'px;background-image:url(' + o.img + ');background-size:' + (sz[0] * K) + 'px ' + (sz[1] * K) + 'px;background-position:' + (-left * K) + 'px ' + (-top * K) + 'px">' + marks + '</div>';
+}
 function renderSeries() {
   const box = $('slist'); box.innerHTML = '';
   const CW = 460, K = 0.95;
@@ -785,14 +858,7 @@ function renderSeries() {
     const row = document.createElement('div'); row.className = 'srow';
     let crop = '<div class="crop" style="width:' + CW + 'px;height:36px"></div>';
     const sz = ser.sizes[o.page];
-    if (o.geo && sz) {
-      const g = o.geo, L = strip(o.text).length || 1, v0 = vis(o.text, o.start), lh = g.y1 - g.y0, pad = lh * 0.35;
-      const wx0 = g.x0 + (g.x1 - g.x0) * v0 / L, wx1 = g.x0 + (g.x1 - g.x0) * (v0 + o.len) / L;
-      let left = (wx0 + wx1) / 2 - CW / K / 2; left = Math.max(0, Math.min(left, sz[0] - CW / K));
-      const top = g.y0 - pad, h = (lh + 2 * pad) * K;
-      crop = '<div class="crop" style="width:' + CW + 'px;height:' + h + 'px;background-image:url(' + o.img + ');background-size:' + (sz[0] * K) + 'px ' + (sz[1] * K) + 'px;background-position:' + (-left * K) + 'px ' + (-top * K) + 'px">' +
-        '<i style="left:' + ((wx0 - left) * K - 4) + 'px;top:' + (pad * K - 2) + 'px;width:' + ((wx1 - wx0) * K + 8) + 'px;height:' + (lh * K + 4) + 'px"></i></div>';
-    }
+    if (o.geo && sz) crop = cropHtml(o, sz, CW, K);
     const a = Math.max(0, o.start - 40), b = Math.min(o.text.length, o.start + o.len + 40);
     let tx = (a > 0 ? '…' : '') + esc(o.text.slice(a, o.start)) + '<span class="flag">' + esc(o.text.slice(o.start, o.start + o.len)) + '</span>' + esc(o.text.slice(o.start + o.len, b)) + (b < o.text.length ? '…' : '');
     if (o.join) tx += ' <span style="color:#999">⏎</span> <span class="flag">' + esc((o.text2.match(WRE) || [''])[0]) + '</span>' + esc(o.text2.slice((o.text2.match(WRE) || [''])[0].length, 30)) + '…';
@@ -1377,6 +1443,24 @@ const relayout = () => { setLayout(); fitText(); if (data) render(); };
 for (const [id, img] of [['vtext', false], ['vimg', true]]) $(id).onclick = e => { e.currentTarget.blur(); showImg = img; relayout(); };
 $('viewlink').onclick = e => { e.preventDefault(); store(viewKey(), document.documentElement.classList.contains('single') ? 'beide' : 'text'); showImg = false; relayout(); };
 $('findlink').onclick = e => { e.preventDefault(); if (mode == 'read' && !busy) askOpen('find'); };
+// Knöpfe am Tablet (#63) – was am PC die Tasten tun
+$('tNext').onclick = guarded(async () => { fixRun = true; await toFlag(); });  // Leertaste
+$('tEdit').onclick = () => { if (!busy && mode == 'read') { fixRun = false; enterFree(); } };  // F2; ohne await, sonst öffnet Safari die Tastatur nicht
+$('tNote').onclick = guarded(() => makeNote());  // F4
+$('tSerieR').onclick = $('tSerieF').onclick = () => { if (!busy && (mode == 'read' || mode == 'fix')) { busy = true; startSeries().finally(() => { busy = false; }); } };  // F9
+$('tOk').onclick = inFix(() => whitelist());  // F8
+$('tSkip').onclick = inFix(async () => { const f = cf; passed = { line: f.line, start: f.start }; await toFlag({ line: f.line, start: f.start }); });  // Tab
+$('tSave').onclick = inFix(() => commit());  // Enter
+$('tBack').onclick = () => { if (busy || (mode != 'fix' && mode != 'free')) return; fixRun = false; if (mode == 'fix') passed = { line: cf.line, start: cf.start }; toRead(mode == 'fix' ? cf.line : li); };  // Esc
+$('tType').onclick = () => {  // Schreibmarke ins Feld, noch während des Antippens – nur dann öffnet Safari die Tastatur
+  if (busy || mode != 'fix') return;
+  document.documentElement.classList.add('typing'); renderTouch();
+  const e1 = $('edit'), fs = fpos(cf); e1.focus(); e1.setSelectionRange(fs, fs + (e1.value.slice(fs).match(WRE) || [''])[0].length);
+};
+$('sGo').onclick = () => { if (!busy && mode == 'serie') { busy = true; applySeries().finally(() => { busy = false; }); } };
+$('sCancel').onclick = () => { if (mode == 'serie') closeSeries(); };
+$('iClose').onclick = () => { if (mode == 'toc') closeToc(); };
+$('nClose').onclick = () => { if (mode == 'notes') closeNotes(); };
 let lastClick = null;
 function charOffset(d, x, y) {
   // Zeichenposition in der Zeile unter dem Mauszeiger
@@ -1392,7 +1476,7 @@ $('lines').addEventListener('dblclick', async e => {
   for (let n = 0; n < 80 && busy; n++) await new Promise(r => setTimeout(r, 25));
   if (mode != 'read' || busy || pg != c.p || c.i >= data.lines.length) return;
   li = c.i; const l = data.lines[li]; c.off = rawPos(l, c.off);
-  const f = data.flags.find(x => x.line == li && c.off >= x.start && c.off <= x.start + x.len) || data.flags.find(x => isJoin(x) && x.line + 1 == li && c.off >= (x.start2 || 0) && c.off <= (x.start2 || 0) + part2len(x));
+  const f = flagAt(li, c.off);
   if (f) { enterFix(f); return; }
   let a = c.off, b = c.off; const W = /[A-Za-zÄÖÜäöüß]/;
   if (a > 0 && !W.test(l[a] || '') && W.test(l[a - 1])) { a--; b--; }
@@ -1410,9 +1494,23 @@ $('lines').addEventListener('click', async e => {
   if (e.detail <= 1) lastClick = { p: d.dataset.p, i: +d.dataset.i, off: charOffset(d, e.clientX, e.clientY) };
   else return;  // zweiter Klick eines Doppelklicks: der Text ist schon gerollt, nicht nochmal springen
   const i = +d.dataset.i;
+  if (TOUCH && e.target.closest('.flag,.auto,.fnref') && lastClick.off != null) { await tapFlag(lastClick); return; }
   if (d.dataset.p == pg) { if (!skippable(i)) { li = i; msg = ''; render(); bookmark(); } }
   else { busy = true; try { await loadPage(d.dataset.p, i, true); bookmark(); } finally { busy = false; } }
 });
+// Rotes Wort unter einer Zeichenposition der Zeile (mit Auszeichnung gezählt), auch die zweite Hälfte eines getrennten Worts
+function flagAt(i, off) {
+  return data.flags.find(x => x.line == i && off >= x.start && off <= x.start + x.len) || data.flags.find(x => isJoin(x) && x.line + 1 == i && off >= (x.start2 || 0) && off <= (x.start2 || 0) + part2len(x));
+}
+async function tapFlag(c) {  // Tablet: ein rotes Wort antippen heißt es korrigieren (#63), wie der Doppelklick am PC
+  busy = true;
+  try {
+    if (c.p != pg) await loadPage(c.p, c.i, true);
+    fixRun = false; li = c.i;
+    const f = flagAt(c.i, rawPos(data.lines[c.i], c.off));
+    if (f) enterFix(f); else { render(); bookmark(); }
+  } finally { busy = false; }
+}
 function lineInImage(x, y, anyDist) {
   // Zeile unter einem Punkt im Bildstapel (Bildpixel): die Zeile, deren Kasten ihn enthält, sonst die nächstgelegene – aber
   // höchstens eine Zeilenhöhe entfernt, damit ein Doppelklick auf eine Abbildung oder den leeren Rand nichts verstellt.
@@ -1589,8 +1687,12 @@ for (const id of ['text', 'imgpane']) {
   const ks = new URLSearchParams(location.search).get('keys');
   for (const k of ks ? ks.split(',') : []) {
     if (k.startsWith('=')) $('edit').value = k.slice(1);
-    else if (k.startsWith('click:')) $(k.slice(6)).click();  // ein Knopf oder Link der Oberfläche, z. B. click:replPage
+    else if (k.startsWith('click:')) ($(k.slice(6)) || document.querySelector(k.slice(6))).click();  // ein Knopf oder Link der Oberfläche, z. B. click:replPage, click:#tsug button
     else if (k.startsWith('caret=')) $('edit').setSelectionRange(+k.slice(6), +k.slice(6));
+    else if (k.startsWith('tapred:')) {  // das n-te rote Wort im Text antippen (#63), z. B. tapred:3
+      const el = $('lines').querySelectorAll('.flag,.auto,.fnref')[+k.slice(7)], r = el.getBoundingClientRect();
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+    }
     else if (k.startsWith('roll=')) {  // mit dem Finger rollen (#63), z. B. roll=1500 ein Stück weiter, roll=-400 zurück
       $('lines').classList.add('rolling');
       for (let n = +k.slice(5); n; ) { const d = Math.sign(n) * Math.min(Math.abs(n), 40); rollBy(-d); n -= d; await new Promise(r => setTimeout(r, 15)); }
