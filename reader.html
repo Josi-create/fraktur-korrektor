@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fraktur-Korrektor</title>
 <style>
 html,body{height:100%}
@@ -126,6 +127,24 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .wl:hover{background:#f3f3f3}
 .wl.sel{background:#fff3b8;border-color:#c90}
 .wl.gone{text-decoration:line-through;color:#c33;background:#fdeaea}
+/* ---- Tablet (#63). html.touch: Berührung ist die Hauptbedienung. html.compact: Kopfleiste mit Menü ☰ (Tablet, schmales
+   Fenster). html.single: eine Spalte – der Text, mit html.showimg stattdessen das Seitenbild. */
+@supports (height:100dvh) { body{height:100dvh} }  /* Safari: ohne die Fläche unter seinen Leisten */
+#links{display:contents} #links>*{flex-shrink:0}  /* am PC stehen die Links wie immer in der Kopfleiste */
+#menubtn,#views,.conly{display:none}
+#views button,#menubtn{font:14px Segoe UI,Arial,sans-serif;padding:3px 12px;border:1px solid #888;background:#333;color:#eee;cursor:pointer}
+#views button:first-child{border-radius:12px 0 0 12px} #views button:last-child{border-radius:0 12px 12px 0;border-left:0} #views button.on{background:#eee;color:#222}
+#menubtn{border-radius:4px;font-size:18px;line-height:1.2;padding:2px 12px}
+html.compact #menubtn{display:inline-block} html.single #views{display:inline-flex}
+html.compact #top{position:relative}
+html.compact #links{display:none;position:absolute;right:8px;top:100%;z-index:20;flex-direction:column;background:#2b2b2b;border-radius:0 0 6px 6px;box-shadow:0 6px 20px rgba(0,0,0,.35);padding:6px 0;min-width:260px}
+html.compact #links.open{display:flex} html.compact #links>*{padding:11px 20px;font-size:16px} html.compact .conly{display:block}
+html.touch #diclink{display:none}
+html.single #main{grid-template-columns:1fr} html.single #imgpane,html.single #right{grid-row:1;grid-column:1}
+html.single #imgpane,html.single.showimg #right{display:none} html.single.showimg #imgpane{display:block}
+html.touch #text,html.touch #imgpane{touch-action:none}  /* Rollen und Zoomen mit den Fingern macht der Reader selbst */
+#lines.rolling{transition:none}
+html.touch #top{padding:8px 12px} html.touch #pnav button{padding:4px 14px;font-size:15px} html.touch #pagesel{font-size:15px}
 </style>
 <script src="/i18n.js"></script>
 </head>
@@ -138,6 +157,11 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <span id="pos"></span>
  <span id="qbar"><span id="qlabel"></span><input id="qinp" type="text" spellcheck="false"></span>
  <span id="find"><span id="findq"></span><button type="button" id="fprev"></button><b id="findn"></b><button type="button" id="fnext"></button><button type="button" id="fclose" data-t-title="find_close">×</button></span>
+ <span id="views"><button type="button" id="vtext" data-t="view_tab_text"></button><button type="button" id="vimg" data-t="view_tab_img"></button></span>
+ <button type="button" id="menubtn" data-t-title="menu_t">☰</button>
+ <span id="links">
+ <a href="#" id="findlink" class="conly" data-t="find_menu"></a>
+ <a href="#" id="viewlink"></a>
  <a href="#" id="toclink" data-t="toc_link"></a>
  <a href="#" id="diclink" data-t="dic_link"></a>
  <a href="#" id="notelink" data-t="note_link"></a>
@@ -150,6 +174,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
  <a id="helplink" data-help="usage" target="_blank" data-t="help_f1"></a>
  <a data-help="faq" target="_blank" data-t="faq_link"></a>
  <span class="langsw"></span>
+ </span>
 </div>
 <div id="main">
  <div id="loading"><div data-t="loading"></div><progress id="lprog" max="1" value="0" style="display:none"></progress><div id="lpage"></div></div>
@@ -225,6 +250,25 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 const $ = id => document.getElementById(id);
 const BASE = (location.pathname.match(/^\/buch\/[0-9a-f]+/) || [''])[0];  // jedes Buch hat seine eigene Adresse
 applyI18n();
+// ---- Tablet (#63): Ist Berührung die Hauptbedienung, gibt es Knöpfe statt Tastenkürzeln und Rollen mit dem Finger, im
+// Hochformat nur den Text. ?touch erzwingt das (Selbsttest, Bildschirmfotos). Das iPad meldet sich in Safari als Mac, darum
+// die Frage nach dem Zeiger und nicht nach dem Browser.
+const TOUCH = /[?&]touch\b/.test(location.search) || matchMedia('(pointer: coarse)').matches;
+const mem = {};  // darf der Browser nichts speichern (privates Fenster): wenigstens für diese Sitzung
+function stored(k) { try { const v = localStorage.getItem(k); if (v != null) return v; } catch (e) {} return mem[k] ?? null; }
+function store(k, v) { mem[k] = v; try { localStorage.setItem(k, v); } catch (e) {} }
+let showImg = false;  // Einzelansicht: Reiter »Seitenbild« statt »Text«
+const upright = () => innerHeight > innerWidth, viewKey = () => 'ansicht_' + (upright() ? 'hoch' : 'quer');  // die Wahl gilt je Lage
+function setLayout() {
+  if (document.activeElement && document.activeElement.tagName == 'INPUT') return;  // beim Tippen nicht umspringen (Bildschirmtastatur)
+  const v = stored(viewKey()), h = document.documentElement.classList;
+  const single = v ? v == 'text' : (TOUCH && upright()) || innerWidth < 700;
+  h.toggle('touch', TOUCH); h.toggle('compact', TOUCH || innerWidth < 700);
+  h.toggle('single', single); h.toggle('showimg', single && showImg);
+  $('viewlink').textContent = t(single ? 'view_both' : 'view_text');
+  $('vtext').classList.toggle('on', !showImg); $('vimg').classList.toggle('on', showImg);
+}
+setLayout();
 let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null, nsel = null;
 let konf = [];  // Zeilen aus dem Zusammenführen zweier Arbeitsstände (#66), die der Nutzer noch ansehen muss: [{page, line, …}]
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
@@ -251,6 +295,16 @@ let imgEls = {}, imgState = null, imgKeep = null;  // Seitenbilder im Stapel, le
 const IMG_GAP = 60;  // Abstand zwischen den Seitenbildern, in Bildpixeln
 const NOTRANS = location.search.includes('notrans');
 let lineEls = [], bmTimer = null, pending = null, msg = '', ser = null;
+let textY = 0;  // Verschiebung des Textes (#lines) nach oben/unten in px – so steht die Lesezeile auf der Lesehöhe
+function placeText(instant) {  // instant: ohne Übergang (die Zeile soll an ihrer Stelle bleiben, während der Text sich darüber ändert)
+  const L = $('lines'); if (instant) L.style.transition = 'none';
+  L.style.transform = 'translateY(' + textY + 'px)';
+  if (instant) { L.offsetHeight; if (!NOTRANS) L.style.transition = ''; }
+}
+function showPos() {
+  const total = ov.reduce((a, o) => a + o.n, 0);
+  $('pos').textContent = t('pos', { a: li + 1, b: data.lines.length, c: data.flags.length, d: total }) + (data.geo ? '' : t('nogeo'));
+}
 let hits = null, hi = -1, ask = null;  // Suche: Fundstellen im ganzen Buch, die aktuelle, offene Eingabezeile (find | goto)
 const WRE = /^[A-Za-zÄÖÜäöüß]+/;
 const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
@@ -360,7 +414,7 @@ async function loadPage(p, line, smooth) {
   updateCount(); renderText();
   // fließender Seitenwechsel: erst unsichtbar auf die alte Lesezeile (jetzt in der Nachbarseite) setzen, dann weich zur neuen
   const oe = old && nbEls[old.p] ? nbEls[old.p][old.i] : null;
-  if (oe) { const L = $('lines'); L.style.transition = 'none'; L.style.transform = 'translateY(' + ($('text').clientHeight * READ_POS - (oe.offsetTop + oe.offsetHeight / 2)) + 'px)'; L.offsetHeight; if (!NOTRANS) L.style.transition = ''; }
+  if (oe) { textY = $('text').clientHeight * READ_POS - (oe.offsetTop + oe.offsetHeight / 2); placeText(true); }
   imgKeep = old ? { pg: old.p, state: imgState } : null;  // links dasselbe: das bisherige Bild bleibt erst stehen, dann rollt es weiter
   render();
   return true;
@@ -432,8 +486,7 @@ function render() {
   // Kopf
   const m = $('mode'); m.className = mode == 'read' ? '' : mode == 'table' ? 'free' : mode;
   m.textContent = t(mode == 'read' ? 'mode_read' : mode == 'fix' ? 'mode_fix' : mode == 'table' ? 'mode_table' : mode == 'konf' ? 'mode_konf' : 'mode_free');
-  const total = ov.reduce((a, o) => a + o.n, 0);
-  $('pos').textContent = t('pos', { a: li + 1, b: data.lines.length, c: data.flags.length, d: total }) + (data.geo ? '' : t('nogeo'));
+  showPos();
   // Korrekturfeld
   $('help').innerHTML = HELP[mode] || '';
   $('shint').innerHTML = mode == 'table' ? tbPreview() : pending && seriesStart() === pending ? t('pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg);
@@ -468,7 +521,7 @@ function layoutText() {
     const a = el.getBoundingClientRect(), b = g.getBoundingClientRect();
     if (a.left < b.left) g.scrollLeft += a.left - b.left - 12; else if (a.right > b.right) g.scrollLeft += a.right - b.right + 12;
   }
-  $('lines').style.transform = 'translateY(' + (H * READ_POS - (el.offsetTop + el.offsetHeight / 2)) + 'px)';
+  textY = H * READ_POS - (el.offsetTop + el.offsetHeight / 2); placeText();
   // Eingabefelder deckungsgleich über Lesezeile und Folgezeile
   const top = H * READ_POS - el.offsetHeight / 2, e1 = $('edit'), e2 = $('edit2'), nx = lineEls[li + 1];
   const fs = getComputedStyle(el).fontSize;
@@ -493,8 +546,10 @@ function layoutImage() {
   const place = stackImages(), q = data ? place[pg] : null;
   if (!q) { for (const id of ['hlLine', 'hlWord', 'hlWord2']) $(id).style.display = 'none'; imgState = null; imgKeep = null; return; }
   const pane = $('imgpane'), W = pane.clientWidth, H = pane.clientHeight;
-  // Lesezeile im Bild auf dieselbe Bildschirmhöhe wie im Textfenster (das wegen des Korrekturfelds tiefer beginnt)
-  const tr = $('text').getBoundingClientRect(), RY = tr.top + $('text').clientTop - (pane.getBoundingClientRect().top + pane.clientTop) + $('text').clientHeight * READ_POS;
+  // Lesezeile im Bild auf dieselbe Bildschirmhöhe wie im Textfenster (das wegen des Korrekturfelds tiefer beginnt); steht
+  // das Bild allein (Reiter Seitenbild), auf 1/4 seiner Höhe
+  const te = $('text'), tr = te.getBoundingClientRect();
+  const RY = te.offsetParent ? tr.top + te.clientTop - (pane.getBoundingClientRect().top + pane.clientTop) + te.clientHeight * READ_POS : H * READ_POS;
   let x0 = 0, x1 = q.w;
   const gs = data.geo ? data.geo.filter(g => g) : [];
   if (gs.length) { x0 = Math.min(...gs.map(g => g.x0)); x1 = Math.max(...gs.map(g => g.x1)); }
@@ -512,7 +567,7 @@ function layoutImage() {
     wrap.offsetHeight; if (!NOTRANS) wrap.style.transition = '';
   }
   wrap.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + k + ')';
-  imgState = { place, tx, ty, k };
+  imgState = { place, tx, ty, k, ry: RY };
   const box = (el, x, y, w, h) => { el.style.display = ''; el.style.left = (q.x + x) + 'px'; el.style.top = (q.y + y) + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px'; el.style.borderWidth = (2.5 / k) + 'px'; };
   const hl = $('hlLine'), hw = $('hlWord'), hw2 = $('hlWord2');
   hl.style.display = hw.style.display = hw2.style.display = 'none';
@@ -1313,7 +1368,15 @@ $('notelink').onclick = async e => { e.preventDefault(); if (mode == 'read' && !
 for (const [id, d] of [['pprev', -1], ['pnext', 1]]) $(id).onclick = e => { e.currentTarget.blur(); guarded(() => gotoPage(d))(); };
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
 $('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });
-window.addEventListener('resize', () => { fitText(); layoutText(); layoutImage(); renderSug(); });
+window.addEventListener('resize', () => { setLayout(); fitText(); layoutText(); layoutImage(); renderSug(); });
+// Kopfleiste auf dem Tablet: Menü ☰, Reiter Text/Seitenbild, Schalter für die Einzelansicht (#63)
+$('menubtn').onclick = e => { e.currentTarget.blur(); $('links').classList.toggle('open'); };
+$('links').addEventListener('click', () => $('links').classList.remove('open'));
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#links,#menubtn')) $('links').classList.remove('open'); });
+const relayout = () => { setLayout(); fitText(); if (data) render(); };
+for (const [id, img] of [['vtext', false], ['vimg', true]]) $(id).onclick = e => { e.currentTarget.blur(); showImg = img; relayout(); };
+$('viewlink').onclick = e => { e.preventDefault(); store(viewKey(), document.documentElement.classList.contains('single') ? 'beide' : 'text'); showImg = false; relayout(); };
+$('findlink').onclick = e => { e.preventDefault(); if (mode == 'read' && !busy) askOpen('find'); };
 let lastClick = null;
 function charOffset(d, x, y) {
   // Zeichenposition in der Zeile unter dem Mauszeiger
@@ -1342,7 +1405,7 @@ $('lines').addEventListener('contextmenu', e => {
   e.preventDefault(); busy = true; makeNote().finally(() => { busy = false; });
 });
 $('lines').addEventListener('click', async e => {
-  if (mode != 'read' || busy || !getSelection().isCollapsed) return;  // nach dem Markieren mit der Maus bleibt die Lesezeile stehen
+  if (mode != 'read' || busy || !getSelection().isCollapsed || performance.now() < noClick) return;  // nach dem Markieren mit der Maus bleibt die Lesezeile stehen
   const d = e.target.closest('#lines div[data-i]'); if (!d) return;
   if (e.detail <= 1) lastClick = { p: d.dataset.p, i: +d.dataset.i, off: charOffset(d, e.clientX, e.clientY) };
   else return;  // zweiter Klick eines Doppelklicks: der Text ist schon gerollt, nicht nochmal springen
@@ -1350,9 +1413,10 @@ $('lines').addEventListener('click', async e => {
   if (d.dataset.p == pg) { if (!skippable(i)) { li = i; msg = ''; render(); bookmark(); } }
   else { busy = true; try { await loadPage(d.dataset.p, i, true); bookmark(); } finally { busy = false; } }
 });
-function lineInImage(x, y) {
+function lineInImage(x, y, anyDist) {
   // Zeile unter einem Punkt im Bildstapel (Bildpixel): die Zeile, deren Kasten ihn enthält, sonst die nächstgelegene – aber
-  // höchstens eine Zeilenhöhe entfernt, damit ein Doppelklick auf eine Abbildung oder den leeren Rand nichts verstellt
+  // höchstens eine Zeilenhöhe entfernt, damit ein Doppelklick auf eine Abbildung oder den leeren Rand nichts verstellt.
+  // anyDist: die nächste Zeile überhaupt (das Bild wurde mit dem Finger gerollt, irgendeine muss Lesezeile werden)
   const s = imgState; let best = null;
   for (const b of [prevD, data, nextD]) {
     const q = b && b.geo && s.place[b.page]; if (!q) continue;
@@ -1360,8 +1424,8 @@ function lineInImage(x, y) {
     if (py < -IMG_GAP / 2 || py > q.h + IMG_GAP / 2) continue;
     b.geo.forEach((g, i) => {
       if (!g || skippable(i, b)) return;
-      const d = Math.hypot(Math.max(0, g.x0 - px, px - g.x1), Math.max(0, g.y0 - py, py - g.y1));
-      if (d <= g.y1 - g.y0 && (!best || d < best.d)) best = { page: b.page, i, d };
+      const d = Math.hypot(anyDist ? 0 : Math.max(0, g.x0 - px, px - g.x1), Math.max(0, g.y0 - py, py - g.y1));
+      if ((anyDist || d <= g.y1 - g.y0) && (!best || d < best.d)) best = { page: b.page, i, d };
     });
   }
   return best;
@@ -1372,22 +1436,150 @@ $('imgpane').addEventListener('dblclick', async e => {
   try { getSelection().removeAllRanges(); } catch (x) {}
   const pane = $('imgpane'), r = pane.getBoundingClientRect(), s = imgState;
   const hit = lineInImage((e.clientX - r.left - pane.clientLeft - s.tx) / s.k, (e.clientY - r.top - pane.clientTop - s.ty) / s.k);
-  if (!hit) return;
-  if (hit.page == pg) { li = hit.i; msg = ''; render(); bookmark(); }
-  else { busy = true; try { await loadPage(hit.page, hit.i, true); bookmark(); } finally { busy = false; } }
+  if (hit) await goLine(hit.page, hit.i);
 });
+async function goLine(p, i) {  // diese Zeile wird Lesezeile, auch auf einer Nachbarseite
+  if (p == pg) { if (!skippable(i)) { li = i; msg = ''; render(); bookmark(); } }
+  else { busy = true; try { await loadPage(p, i, true); bookmark(); } finally { busy = false; } }
+}
 function onWheel(e) {
   // Strg+Mausrad: über dem Text die Schriftgröße, über dem Bild der Bild-Zoom
   if (e.ctrlKey) { e.preventDefault(); const f = e.deltaY < 0 ? 1.15 : 1 / 1.15; if (e.currentTarget == $('text')) setTextZoom(tzoom * f); else setZoom(zoom * f); return; }
   if (e.shiftKey || e.deltaX) return;  // seitwärts: eine breite Tabelle rollt von selbst (Browser), wir halten uns raus
   // Mausrad: eine Raste = eine Zeile, läuft fließend über Seitengrenzen
   if (mode != 'read') return; e.preventDefault();
+  if (TOUCH && e.currentTarget == $('text')) {  // Trackpad am Tablet: rollt wie der Finger
+    if (busy) return;
+    stopFling(); $('lines').classList.add('rolling'); rollBy(-(e.deltaMode == 1 ? e.deltaY * 33 : e.deltaY));
+    clearTimeout(wheelEnd); wheelEnd = setTimeout(rollEnd, 160); return;
+  }
   wheelAcc += e.deltaMode == 1 ? e.deltaY * 33 : e.deltaY;
   if (busy) return;
   const n = Math.trunc(wheelAcc / 100); if (!n) return; wheelAcc -= n * 100;
   busy = true; (async () => { try { for (let k = 0; k < Math.min(Math.abs(n), 6); k++) await move(Math.sign(n)); } finally { busy = false; } })();
 }
 $('text').addEventListener('wheel', onWheel, { passive: false }); $('imgpane').addEventListener('wheel', onWheel, { passive: false });
+
+// ---- Lesen wie ein langer Kassenbon (#63): Auf dem Tablet rollt der Finger den Text fließend durch das ganze Buch, mit
+// Schwung und ohne Halt an den Seitengrenzen. Die Zeile auf der Lesehöhe ist die Lesezeile; rollt sie auf die Nachbarseite,
+// wird die zur aktuellen Seite, und die Seite dahinter kommt vom Server nach. Am PC bleibt das Mausrad Zeile für Zeile.
+let wheelEnd = null, flingRaf = 0, noClick = 0;
+function readable(b) {  // die Zeilen einer geladenen Seite, die Lesezeile werden können (sichtbar, nicht leer, kein Trenner)
+  return (nbEls[b.page] || []).map((el, i) => ({ el, i })).filter(o => !skippable(o.i, b) && o.el.offsetHeight);
+}
+function lineAtReadPos() {
+  const y = $('text').clientHeight * READ_POS - textY; let best = null;
+  for (const b of [prevD, data, nextD]) {
+    if (b) for (const { el, i } of readable(b)) {
+      const d = Math.max(0, el.offsetTop - y, y - el.offsetTop - el.offsetHeight);
+      if (!best || d < best.d) best = { b, i, d };
+    }
+  }
+  return best;
+}
+function markCur() { lineEls.forEach((d, i) => d.classList.toggle('cur', i == li)); }
+function rollBy(dy) {
+  // Nicht über die erste bzw. letzte geladene Zeile hinaus: Buchanfang, Buchende oder die Nachbarseite ist noch unterwegs.
+  // Liefert false, wenn es dort anstößt (dann endet der Schwung).
+  const R = $('text').clientHeight * READ_POS, bs = [prevD, data, nextD].filter(Boolean);
+  const first = readable(bs[0])[0], last = readable(bs[bs.length - 1]).pop();
+  if (!first || !last) return false;
+  const top = R - first.el.offsetTop - first.el.offsetHeight / 2, bottom = R - last.el.offsetTop - last.el.offsetHeight / 2;
+  const want = textY + dy, to = Math.min(top, Math.max(bottom, want)); textY = to; placeText();
+  const hit = lineAtReadPos();
+  if (hit && hit.b !== data) shiftTo(hit.b, hit.i);
+  else if (hit && hit.i != li) {
+    li = hit.i; markCur(); showPos();
+    if (!document.documentElement.classList.contains('single')) layoutImage();  // das Bild daneben geht mit
+  }
+  return want == to;
+}
+function shiftTo(b, i) {
+  const fwd = b === nextD, old = data, y = nbEls[b.page][i].offsetTop;
+  imgKeep = { pg: old.page, state: imgState };  // das Bild daneben rollt weiter statt zu springen
+  if (fwd) { prevD = old; nextD = null; } else { nextD = old; prevD = null; }
+  data = b; pg = b.page; li = i; lastCy = null; passed = null; nsel = null; msg = '';
+  $('pagesel').value = pg; updateCount(); renderText();
+  textY += y - lineEls[i].offsetTop; placeText(true); markCur(); showPos(); layoutImage(); bookmark();
+  const nb = ov[pageIdx() + (fwd ? 1 : -1)];
+  if (nb) fetchPage(nb.page).then(d => {
+    if (!d || pg != b.page || (fwd ? nextD : prevD)) return;  // inzwischen woanders
+    const el = lineEls[li], y0 = el.offsetTop;
+    if (fwd) nextD = d; else prevD = d;
+    renderText(); textY += y0 - lineEls[li].offsetTop; placeText(true); markCur(); if (mode == 'read') layoutImage();
+  });
+}
+function rollEnd() { $('lines').classList.remove('rolling'); msg = ''; render(); bookmark(); }  // die Lesezeile rastet auf der Lesehöhe ein
+function stopFling() { if (flingRaf) { cancelAnimationFrame(flingRaf); flingRaf = 0; return true; } return false; }
+function fling(v) {
+  // Schwung (v in px/ms): weiterrollen und langsamer werden wie auf dem iPad gewohnt, bis es steht oder anstößt
+  if (Math.abs(v) < 0.1) { rollEnd(); return; }
+  let last = performance.now();
+  const step = now => {
+    const dt = Math.min(40, now - last); last = now; v *= Math.pow(0.9975, dt);
+    if (Math.abs(v) < 0.02 || !rollBy(v * dt)) { flingRaf = 0; rollEnd(); return; }
+    flingRaf = requestAnimationFrame(step);
+  };
+  flingRaf = requestAnimationFrame(step);
+}
+// Bild mit dem Finger rollen: es folgt dem Finger, beim Loslassen wird die Zeile auf der Lesehöhe Lesezeile
+function imgDrag(dy) {
+  const s = imgState, w = $('imgwrap'); if (!s) return;
+  w.style.transition = 'none'; w.style.transform = 'translate(' + s.tx + 'px,' + (s.ty + dy) + 'px) scale(' + s.k + ')';
+}
+async function imgDrop(dy) {
+  const s = imgState, w = $('imgwrap'); if (!s) return;
+  if (!NOTRANS) w.style.transition = '';
+  const hit = lineInImage(($('imgpane').clientWidth / 2 - s.tx) / s.k, (s.ry - s.ty - dy) / s.k, true);
+  if (hit) await goLine(hit.page, hit.i); else layoutImage();
+}
+function imgTap(e) {  // Antippen einer Zeile im Bild: wie der Doppelklick am PC
+  const pane = $('imgpane'), r = pane.getBoundingClientRect(), s = imgState; if (!s) return;
+  const hit = lineInImage((e.clientX - r.left - pane.clientLeft - s.tx) / s.k, (e.clientY - r.top - pane.clientTop - s.ty) / s.k);
+  if (hit) goLine(hit.page, hit.i);
+}
+// Finger: einer rollt (Text oder Bild), zwei ändern die Größe – auf dem Text die Schrift, auf dem Bild den Zoom, wie
+// Strg+Mausrad am PC. Ein Antippen bleibt ein Klick (Zeile wählen, rotes Wort korrigieren), außer es hat einen Schwung angehalten.
+const pts = new Map(); let gest = null;
+const spread = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
+function fingerDown(e) {
+  if (!TOUCH || e.pointerType == 'mouse' || !data || busy) return;
+  const pane = e.currentTarget.id == 'text' ? 'text' : 'img';
+  pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const stopped = stopFling();
+  if (pts.size == 2) { gest = { pane, kind: 'pinch', d0: spread(), z0: pane == 'text' ? tzoom : zoom }; return; }
+  if (pts.size > 2 || mode != 'read') { gest = null; return; }
+  if (stopped) $('lines').classList.remove('rolling');
+  gest = { pane, kind: 'tap', stopped, x0: e.clientX, y0: e.clientY, y: e.clientY, tm: e.timeStamp, v: 0 };
+}
+function fingerMove(e) {
+  const p = pts.get(e.pointerId); if (!p || !gest) return;
+  p.x = e.clientX; p.y = e.clientY;
+  if (gest.kind == 'pinch') { if (pts.size == 2) { const f = spread() / gest.d0; if (gest.pane == 'text') setTextZoom(gest.z0 * f); else setZoom(gest.z0 * f); } return; }
+  if (gest.kind == 'tap') {
+    if (Math.hypot(e.clientX - gest.x0, e.clientY - gest.y0) < 10) return;
+    gest.kind = 'roll'; if (gest.pane == 'text') $('lines').classList.add('rolling');
+  }
+  const dy = e.clientY - gest.y, dt = Math.max(1, e.timeStamp - gest.tm);
+  gest.v = 0.7 * dy / dt + 0.3 * gest.v; gest.y = e.clientY; gest.tm = e.timeStamp;
+  if (gest.pane == 'text') rollBy(dy); else imgDrag(e.clientY - gest.y0);
+}
+function fingerUp(e) {
+  if (!pts.delete(e.pointerId) || !gest) return;
+  const g = gest;
+  if (g.kind == 'pinch') { if (!pts.size) gest = null; return; }
+  gest = null;
+  if (g.kind == 'roll') {
+    noClick = performance.now() + 400;  // der Klick, den mancher Browser nach dem Rollen noch schickt, wählt keine Zeile
+    if (g.pane == 'text') fling(e.type == 'pointerup' && e.timeStamp - g.tm < 80 ? g.v : 0); else imgDrop(e.clientY - g.y0);
+  } else if (g.stopped) { noClick = performance.now() + 400; rollEnd(); }
+  else if (g.pane == 'img' && e.type == 'pointerup') imgTap(e);
+}
+for (const id of ['text', 'imgpane']) {
+  const el = $(id);
+  el.addEventListener('pointerdown', fingerDown); el.addEventListener('pointermove', fingerMove);
+  el.addEventListener('pointerup', fingerUp); el.addEventListener('pointercancel', fingerUp);
+}
 
 (async () => {
   await loadOverview();
@@ -1399,6 +1591,11 @@ $('text').addEventListener('wheel', onWheel, { passive: false }); $('imgpane').a
     if (k.startsWith('=')) $('edit').value = k.slice(1);
     else if (k.startsWith('click:')) $(k.slice(6)).click();  // ein Knopf oder Link der Oberfläche, z. B. click:replPage
     else if (k.startsWith('caret=')) $('edit').setSelectionRange(+k.slice(6), +k.slice(6));
+    else if (k.startsWith('roll=')) {  // mit dem Finger rollen (#63), z. B. roll=1500 ein Stück weiter, roll=-400 zurück
+      $('lines').classList.add('rolling');
+      for (let n = +k.slice(5); n; ) { const d = Math.sign(n) * Math.min(Math.abs(n), 40); rollBy(-d); n -= d; await new Promise(r => setTimeout(r, 15)); }
+      rollEnd();
+    }
     else if (k.startsWith('imgdbl:')) {  // Doppelklick ins Seitenbild auf die Mitte einer Zeile, z. B. imgdbl:002:1 (Seite, Zeile)
       const [p, i] = k.slice(7).split(':'), g = [prevD, data, nextD].find(b => b && b.page == p).geo[+i], q = imgState.place[p];
       const pane = $('imgpane'), r = pane.getBoundingClientRect(), s = imgState;
