@@ -18,6 +18,12 @@ name: Installer bauen
 #   MACOS_CODESIGN_IDENTITY      z. B. "Developer ID Application: Vorname Name (TEAMID)"
 #   APPLE_ID, APPLE_TEAM_ID, APPLE_APP_SPECIFIC_PASSWORD   für die Notarisierung
 # Siehe RELEASE.md, »Einmalig: Apple-Signatur einrichten«.
+#
+# Genauso bleibt der Windows-Build ohne das Secret SIGNPATH_API_TOKEN unsigniert (SmartScreen warnt). Mit ihm
+# signiert die SignPath Foundation erst Fraktur-Korrektor.exe, dann den daraus gebauten Installer; bei einem
+# Versions-Tag wartet der Lauf beide Male auf die Freigabe von Hand. Dazu die Repository-Variablen
+#   SIGNPATH_ORGANIZATION_ID, SIGNPATH_PROJECT_SLUG
+# Siehe RELEASE.md, »Einmalig: Windows-Signatur einrichten«.
 
 on:
   push:
@@ -50,6 +56,11 @@ jobs:
     needs: pruefen
     if: ${{ !inputs.nur_linux }}
     runs-on: windows-latest
+    env:
+      # nur ein Schalter – den Token selbst bekommt allein die SignPath-Action, nicht jeder Schritt (pip, PyInstaller)
+      SIGNPATH_AKTIV: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
+      # Ein Versions-Tag wird echt signiert (mit Freigabe), »Run workflow« nur mit dem Testzertifikat von SignPath
+      SIGNPATH_POLICY: ${{ startsWith(github.ref, 'refs/tags/v') && 'release-signing' || 'test-signing' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -78,8 +89,74 @@ jobs:
       - name: Rauchtest der gepackten App
         run: python scripts\smoke_test.py "dist\Fraktur-Korrektor\Fraktur-Korrektor.exe"
 
+      - name: Versionsangaben des Programms prüfen
+        run: scripts\check_exe.ps1 dist\Fraktur-Korrektor\Fraktur-Korrektor.exe
+
+      # Signiert werden nur die beiden exe-Dateien, die aus diesem Quelltext entstehen; Python, Tesseract und die
+      # Bibliotheken bleiben, wie sie sind (Bedingung der SignPath Foundation). Das Programm zuerst, damit der
+      # Installer und das ZIP schon die signierte Fassung enthalten.
+      - name: Programm für SignPath bereitstellen
+        id: exe_unsigniert
+        if: env.SIGNPATH_AKTIV == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: signpath-exe
+          path: dist/Fraktur-Korrektor/Fraktur-Korrektor.exe
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Programm signieren (SignPath)
+        if: env.SIGNPATH_AKTIV == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          github-artifact-id: ${{ steps.exe_unsigniert.outputs.artifact-id }}
+          wait-for-completion-timeout-in-seconds: 3600   # Zeit für die Freigabe von Hand
+          output-artifact-directory: signiert/exe
+
+      - name: Signiertes Programm übernehmen und prüfen
+        if: env.SIGNPATH_AKTIV == 'true'
+        run: |
+          Copy-Item signiert\exe\Fraktur-Korrektor.exe dist\Fraktur-Korrektor\ -Force
+          scripts\check_exe.ps1 dist\Fraktur-Korrektor\Fraktur-Korrektor.exe -Richtlinie $env:SIGNPATH_POLICY
+          python scripts\smoke_test.py "dist\Fraktur-Korrektor\Fraktur-Korrektor.exe"
+
       - name: Installer bauen (Inno Setup)
         run: python scripts\build_installer.py
+
+      - name: Versionsangaben des Installers prüfen
+        run: scripts\check_exe.ps1 dist\installer\Fraktur-Korrektor_Setup.exe
+
+      - name: Installer für SignPath bereitstellen
+        id: setup_unsigniert
+        if: env.SIGNPATH_AKTIV == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: signpath-setup
+          path: dist/installer/Fraktur-Korrektor_Setup.exe
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Installer signieren (SignPath)
+        if: env.SIGNPATH_AKTIV == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          github-artifact-id: ${{ steps.setup_unsigniert.outputs.artifact-id }}
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signiert/setup
+
+      - name: Signierten Installer übernehmen und prüfen
+        if: env.SIGNPATH_AKTIV == 'true'
+        run: |
+          Copy-Item signiert\setup\Fraktur-Korrektor_Setup.exe dist\installer\ -Force
+          scripts\check_exe.ps1 dist\installer\Fraktur-Korrektor_Setup.exe -Richtlinie $env:SIGNPATH_POLICY
 
       - name: Portables ZIP erstellen
         run: |
@@ -227,7 +304,11 @@ jobs:
           prerelease: ${{ env.VORAB }}
           make_latest: ${{ env.VORAB == 'true' && 'false' || 'true' }}
           fail_on_unmatched_files: true
-          files: assets/**/*
+          # ausdrücklich nur diese Artefakte: signpath-exe und signpath-setup sind die unsignierten Zwischenstände
+          files: |
+            assets/windows/*
+            assets/macos-*/*
+            assets/linux/*
 
       - name: Dauerlinks prüfen
         # README und Hilfe verlinken releases/latest/download/<fester Name>: Jeder muss jetzt auf diese Version

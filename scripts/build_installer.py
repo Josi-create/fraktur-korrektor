@@ -2,7 +2,7 @@
 Baut den Windows-Installer (Inno Setup) aus dist\\Fraktur-Korrektor\\.
 
 Liest die Version aus pyproject.toml, sucht ISCC.exe und ruft
-    ISCC.exe /DMyAppVersion=<version> installer.iss
+    ISCC.exe /DMyAppVersion=<version> /DMyAppNumVersion=<x.y.z> installer.iss
 auf. Ergebnis: dist\\installer\\Fraktur-Korrektor_Setup.exe - fester Name ohne
 Version, damit der Link releases/latest/download/... stabil bleibt.
 
@@ -28,6 +28,15 @@ def read_version() -> str:
     return match.group(1)
 
 
+def numeric_version(version: str) -> str:
+    """Die Zahlen einer Version ohne Endung ("1.0.0-rc1" -> "1.0.0"): Die Datei-Eigenschaften der
+    Setup.exe nehmen nur Ziffern und Punkte."""
+    match = re.match(r"\d+\.\d+\.\d+", version)
+    if not match:
+        sys.exit(f"Version {version!r} hat nicht die Form x.y.z")
+    return match.group(0)
+
+
 def find_iscc() -> str:
     candidates = [
         Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Inno Setup 6" / "ISCC.exe",
@@ -49,7 +58,8 @@ def main() -> None:
     version = read_version()
     iscc = find_iscc()
     print(f"Inno Setup: {iscc}\nVersion:    {version}")
-    result = subprocess.run([iscc, f"/DMyAppVersion={version}", str(ROOT / "installer.iss")], cwd=ROOT)
+    result = subprocess.run([iscc, f"/DMyAppVersion={version}", f"/DMyAppNumVersion={numeric_version(version)}",
+                             str(ROOT / "installer.iss")], cwd=ROOT)
     if result.returncode != 0:
         sys.exit(result.returncode)
     print("\nInstaller: dist\\installer\\Fraktur-Korrektor_Setup.exe")

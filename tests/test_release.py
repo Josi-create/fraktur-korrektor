@@ -75,6 +75,28 @@ def test_feste_dateinamen():
             assert name in dict((n, l) for l, n in release.DOWNLOADS), (doc, name)
 
 
+def test_windows_versionsnummer():
+    """Die Datei-Eigenschaften der Setup.exe nehmen nur Ziffern: Eine Vorabversion verliert ihre Endung."""
+    import build_installer
+    assert build_installer.numeric_version('0.12.0') == '0.12.0'
+    assert build_installer.numeric_version('1.0.0-rc1') == '1.0.0'
+    with pytest.raises(SystemExit):
+        build_installer.numeric_version('1.2')
+
+
+def test_signatur_produktname():
+    """SignPath signiert nur, wenn der Produktname in den Datei-Eigenschaften stimmt – er muss überall derselbe sein."""
+    def text(*path):
+        return open(os.path.join(ROOT, *path), encoding='utf-8').read()
+    assert 'NAME = "Fraktur-Korrektor"' in text('fraktur_korrektor.spec')
+    assert '#define MyAppName "Fraktur-Korrektor"' in text('installer.iss')
+    assert 'product-name="Fraktur-Korrektor"' in text('packaging', 'windows', 'signpath-artifact-configuration.xml')
+    assert "-ne 'Fraktur-Korrektor'" in text('scripts', 'check_exe.ps1')
+    # die unsignierten Zwischenstände für SignPath dürfen nicht ins Release
+    workflow = text('.github', 'workflows', 'release.yml')
+    assert 'name: signpath-exe' in workflow and 'assets/**/*' not in workflow
+
+
 def test_readme_beginnt_mit_download():
     """Ganz oben im README steht der Weg zur neuesten Version – vor der ersten Zwischenüberschrift."""
     for doc in ('README.md', 'README.en.md'):

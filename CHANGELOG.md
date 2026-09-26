@@ -4,6 +4,14 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 
 ## [Unveröffentlicht]
 
+### Neu
+- **Windows-Signatur vorbereitet** (#78): Der Workflow lässt `Fraktur-Korrektor.exe` und den Installer von der
+  SignPath Foundation signieren, sobald das Secret `SIGNPATH_API_TOKEN` gesetzt ist; ohne es bleibt alles wie bisher.
+  Beide Dateien tragen jetzt Produktname und Version in den Datei-Eigenschaften (der Installer zeigte bisher 0.0.0.0).
+  Einrichtung: [RELEASE.md](RELEASE.md#einmalig-windows-signatur-einrichten-signpath-foundation).
+- Neue Hilfeseite [Signatur und Datenschutz](docs/de/code-signing.md): wer signiert, nach welchen Regeln, und was
+  das Programm über das Netz überträgt.
+
 ## [0.11.0] – 2026-09-26
 
 ### Neu

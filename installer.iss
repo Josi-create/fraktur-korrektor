@@ -17,6 +17,10 @@
 #ifndef MyAppVersion
   #error MyAppVersion fehlt - bitte /DMyAppVersion=x.y.z uebergeben oder scripts/build_installer.py verwenden
 #endif
+; Zahlenfassung fuer die Datei-Eigenschaften (ohne "-rc1"); build_installer.py uebergibt sie
+#ifndef MyAppNumVersion
+  #define MyAppNumVersion MyAppVersion
+#endif
 #define MyAppPublisher "Johannes Wack"
 #define MyAppUrl "https://github.com/Josi-create/fraktur-korrektor"
 #define MyAppExeName "Fraktur-Korrektor.exe"
@@ -28,6 +32,10 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppUrl}
 AppSupportURL={#MyAppUrl}/issues
+; Produktname und -version in den Datei-Eigenschaften der Setup.exe (ohne Angabe
+; stuende dort 0.0.0.0); scripts\check_exe.ps1 prueft sie vor der Code-Signatur.
+VersionInfoVersion={#MyAppNumVersion}
+VersionInfoProductName={#MyAppName}
 DefaultDirName={autopf}\Fraktur-Korrektor
 DefaultGroupName=Fraktur-Korrektor
 DisableProgramGroupPage=yes

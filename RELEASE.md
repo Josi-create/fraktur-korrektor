@@ -15,6 +15,10 @@ kann“). Erlauben lässt er sich nur über *Systemeinstellungen → Datenschutz
 früher üblichen Weg über die rechte Maustaste hat Apple abgeschafft, und der Knopf erscheint nur in der Stunde
 nach dem Startversuch. Für die Zielgruppe ist das zu viel verlangt – darum die Signatur.
 
+Unter Windows gilt dasselbe mit SmartScreen („Der Computer wurde durch Windows geschützt“). Dort signiert die
+SignPath Foundation, sobald das Secret `SIGNPATH_API_TOKEN` gesetzt ist – siehe
+[Einmalig: Windows-Signatur einrichten](#einmalig-windows-signatur-einrichten-signpath-foundation).
+
 ## Einmalig: Apple-Signatur einrichten
 
 Stand September 2026. Die Schritte 1 bis 5 macht man am Mac, Schritt 6 setzt die Secrets für **beide** Projekte
@@ -88,6 +92,87 @@ landen die Geheimnisse weder in der Shell-Geschichte noch in einer Datei im Repo
 Die Zertifikatsdateien und alle sechs Werte gehören **nie** in eine Datei des Repositorys, in einen Commit oder
 in eine Protokollausgabe.
 
+## Einmalig: Windows-Signatur einrichten (SignPath Foundation)
+
+Stand September 2026. Die [SignPath Foundation](https://signpath.org) signiert Open-Source-Projekte kostenlos, direkt
+aus GitHub Actions und ohne Hardware-Schlüssel; als Herausgeber steht dann „SignPath Foundation“ in der Signatur.
+Ganz verschwindet die SmartScreen-Warnung damit nicht sofort: Seit 2024 bekommt kein Zertifikat mehr von vornherein
+Vertrauen, das Ansehen wächst mit den Downloads – aber über alle Versionen hinweg statt bei jeder neu.
+
+Was der Workflow tut: Ohne das Secret baut er unsigniert wie bisher. Mit ihm schickt er je Version **zwei**
+Signieranfragen – erst `Fraktur-Korrektor.exe`, dann den daraus gebauten Installer (in eine Inno-Setup-Datei kann
+SignPath nicht hineinsignieren). Signiert werden nur diese beiden Dateien, denn die Foundation signiert nur, was aus
+dem eigenen Quelltext entsteht; Python, Tesseract und die Bibliotheken bleiben unsigniert, ebenso der Deinstaller
+`unins000.exe`, den Inno Setup erst bei der Installation anlegt (SmartScreen prüft ihn nicht, er wird nicht
+heruntergeladen). Vorher prüft `scripts/check_exe.ps1` Produktname und -version in den Datei-Eigenschaften; die
+Artifact Configuration lässt SignPath das Programm nur mit dem Produktnamen „Fraktur-Korrektor“ signieren. Beim
+Installer prüft SignPath den Namen nicht, denn Inno Setup füllt ihn in der Setup.exe mit Leerzeichen auf feste
+Breite auf, und ob SignPath beim Vergleich Leerzeichen abschneidet, ist nicht dokumentiert. Verlangt SignPath bei
+der Einrichtung auch dort eine Namensprüfung, erst mit einem Probelauf (Schritt 5) ausprobieren.
+
+Die Regeln, die SignPath auf der Projektseite verlangt (Rollen, Datenschutz, der Satz „Free code signing provided
+by SignPath.io, certificate by SignPath Foundation“), stehen in der Hilfeseite
+[Signatur und Datenschutz](docs/de/code-signing.md) ([englisch](docs/en/code-signing.md)); das README verlinkt sie.
+
+### 1. Zwei-Faktor-Anmeldung bei GitHub
+
+Pflicht für jeden mit Schreibrecht: <https://github.com/settings/security> → *Two-factor authentication*.
+
+### 2. Antrag stellen
+
+Formular unter <https://signpath.org/apply>:
+
+- Repository: `https://github.com/Josi-create/fraktur-korrektor`, Lizenz GPL-3.0-or-later
+- Download-Seite: `https://github.com/Josi-create/fraktur-korrektor/releases/latest`
+- Code signing policy: `https://github.com/Josi-create/fraktur-korrektor/blob/main/docs/en/code-signing.md`
+- Autor, Prüfer und Freigabe: Johannes Wack
+
+Die Prüfung kann dauern; bis dahin läuft alles unsigniert weiter wie bisher.
+
+### 3. In SignPath einrichten (nach der Zusage)
+
+Auf <https://app.signpath.io>:
+
+- Zwei-Faktor-Anmeldung für das SignPath-Konto einschalten.
+- Unter *Trusted Build Systems* „GitHub.com“ mit dem Projekt verknüpfen (und die GitHub-App von SignPath für das
+  Repository installieren, wenn SignPath darum bittet).
+- *Artifact Configuration*: den Inhalt von
+  [packaging/windows/signpath-artifact-configuration.xml](packaging/windows/signpath-artifact-configuration.xml)
+  übernehmen und als Standard setzen.
+- *Signing Policies*: Der Workflow erwartet `release-signing` (echtes Zertifikat, Freigabe von Hand) und
+  `test-signing` (Testzertifikat, ohne Freigabe). Heißen sie anders, die Zeile `SIGNPATH_POLICY` im Job `windows`
+  von `release.yml` anpassen.
+- Einen API-Token für einen Benutzer anlegen, der bei beiden Richtlinien einreichen darf (*Submitter*); er wird nur
+  einmal angezeigt. Dazu die *Organization ID* und den *Project Slug* notieren.
+
+### 4. Variablen und Secret hinterlegen
+
+Die Variablen zuerst – das Secret schaltet die Signatur ein:
+
+    gh variable set SIGNPATH_ORGANIZATION_ID --repo Josi-create/fraktur-korrektor --body "<Organization ID>"
+    gh variable set SIGNPATH_PROJECT_SLUG    --repo Josi-create/fraktur-korrektor --body "<Project Slug>"
+    gh secret set SIGNPATH_API_TOKEN         --repo Josi-create/fraktur-korrektor   # fragt nach dem Token
+
+Der Token gehört wie die Apple-Werte **nie** in eine Datei des Repositorys.
+
+### 5. Probelauf
+
+    gh workflow run release.yml
+
+Ohne Tag signiert der Lauf mit dem Testzertifikat, ohne Freigabe. Im Job `windows` müssen *Signiertes Programm
+übernehmen und prüfen* und *Signierten Installer übernehmen und prüfen* grün sein; dass Windows dem Testzertifikat
+nicht traut, ist hier richtig so.
+
+### 6. Die erste signierte Version
+
+Wie gewohnt mit `python scripts/release.py …` (siehe unten). Der Job `windows` wartet dann **zweimal** auf eine
+Freigabe; SignPath meldet jede Anfrage per E-Mail, freigegeben wird auf app.signpath.io. Vorher im Actions-Lauf
+nachsehen, dass nichts rot ist. Jede Anfrage wartet höchstens 60 Minuten; danach bricht der Lauf ab, und es erscheint
+kein Release. Dann den Job neu starten – lehnt SignPath die Wiederholung ab, eine neue Patch-Version veröffentlichen.
+
+Danach unter Windows 11 prüfen: Setup herunterladen, *Eigenschaften → Digitale Signaturen* zeigt „SignPath
+Foundation“; installieren, starten, deinstallieren.
+
 ## Lokal bauen
 
     pip install -e ".[build]"
@@ -105,8 +190,10 @@ Die Notarisierung dauert meist wenige Minuten (`xcrun notarytool … --wait`). E
     spctl --assess --type execute -vvv dist/Fraktur-Korrektor.app     # soll "accepted, source=Notarized Developer ID" sagen
     xcrun stapler validate dist/Fraktur-Korrektor.app
 
-Unter Windows macht `build.bat` dasselbe (Installer nur, wenn Inno Setup 6 installiert ist). Der Windows-Build
-bleibt unsigniert; SmartScreen warnt darum beim ersten Start, siehe [docs/de/install.md](docs/de/install.md).
+Unter Windows macht `build.bat` dasselbe (Installer nur, wenn Inno Setup 6 installiert ist). Lokal gebaut bleibt
+der Windows-Build unsigniert – signiert wird nur in GitHub Actions, siehe
+[Windows-Signatur einrichten](#einmalig-windows-signatur-einrichten-signpath-foundation); SmartScreen warnt darum
+beim ersten Start, siehe [docs/de/install.md](docs/de/install.md).
 
 ### Linux
 
@@ -156,7 +243,8 @@ Abschnitt `## [0.12.0] – <heute>`, legt Commit und Tag `v0.12.0` an und schieb
 1. **pruefen**: Passen Tag, `pyproject.toml` und CHANGELOG zusammen? Sonst bricht der Lauf ab, bevor gebaut wird.
    Die Zusammenfassung des Laufs zeigt den künftigen Release-Text.
 2. **tests** (dieselben wie bei jedem Push) und die Builds für Windows, Mac und Linux samt Rauchtest laufen
-   nebeneinander.
+   nebeneinander. Ist die Windows-Signatur eingerichtet, wartet der Windows-Build zweimal auf die Freigabe bei
+   SignPath (E-Mail).
 3. **release**: Sind alle grün, erscheint das Release – nicht als Entwurf, sondern gleich veröffentlicht – mit einer
    Download-Tabelle und dem CHANGELOG-Abschnitt. Danach prüft der Auftrag, dass jeder Dauerlink unten auf die neue
    Version zeigt und sich herunterladen lässt.

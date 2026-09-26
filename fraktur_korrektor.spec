@@ -69,6 +69,30 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data)
 
+# Windows: Versionsangaben in der exe (Datei-Eigenschaften). Die Code-Signatur ueber SignPath signiert das Programm
+# nur mit diesem Produktnamen (packaging/windows/signpath-artifact-configuration.xml, RELEASE.md).
+version_info = None
+if not IS_MAC and not IS_LINUX:
+    from PyInstaller.utils.win32.versioninfo import (
+        FixedFileInfo, StringFileInfo, StringStruct, StringTable, VarFileInfo, VarStruct, VSVersionInfo)
+    NUMBERS = tuple(int(n) for n in re.match(r"\d+\.\d+\.\d+", VERSION).group(0).split(".")) + (0,)  # ohne "-rc1"
+    version_info = VSVersionInfo(
+        ffi=FixedFileInfo(filevers=NUMBERS, prodvers=NUMBERS),
+        kids=[
+            StringFileInfo([StringTable("040904B0", [
+                StringStruct("CompanyName", "Johannes Wack"),
+                StringStruct("FileDescription", NAME),
+                StringStruct("FileVersion", VERSION),
+                StringStruct("InternalName", NAME),
+                StringStruct("LegalCopyright", "GPL-3.0-or-later"),
+                StringStruct("OriginalFilename", NAME + ".exe"),
+                StringStruct("ProductName", NAME),
+                StringStruct("ProductVersion", VERSION),
+            ])]),
+            VarFileInfo([VarStruct("Translation", [0x0409, 1200])]),
+        ],
+    )
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -86,6 +110,7 @@ exe = EXE(
     codesign_identity=None,   # signiert wird nach dem Build (scripts/macos/sign_app.sh)
     entitlements_file=None,
     icon=str(ICON) if ICON.exists() and not IS_LINUX else None,   # Linux kennt kein Symbol in der Datei
+    version=version_info,
 )
 
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name=NAME)

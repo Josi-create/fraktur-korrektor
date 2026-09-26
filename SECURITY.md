@@ -7,8 +7,10 @@
 Der Fraktur-Korrektor ist ein lokales Programm: Ein kleiner Server auf dem eigenen Rechner, der Browser ist nur das
 Fenster. Beim gewöhnlichen Start lauscht er ausschließlich auf `127.0.0.1` und ist von keinem anderen Rechner aus zu
 erreichen. Er lädt nichts aus dem Internet nach und schickt nichts weg – weder Texte noch Wörter zur Prüfung noch
-Nutzungsdaten. Die einzige Ausnahme ist das Fraktur-Modell für Tesseract, das auf ausdrücklichen Wunsch von der
-UB Mannheim geholt wird (bei den fertigen Programmen ist es schon dabei).
+Nutzungsdaten. Die einzige Ausnahme ist das Fraktur-Modell für Tesseract: Unter Linux und beim Start aus dem
+Quelltext holt das Programm es beim ersten Einlesen mit Texterkennung von der UB Mannheim; übertragen wird dabei
+nichts außer dem Abruf dieser Datei. Die Programme für Windows und Mac bringen es schon mit. Die ganze
+Datenschutzerklärung steht unter [Signatur und Datenschutz](docs/de/code-signing.md).
 
 Alle Daten bleiben in Buchordnern auf der Platte und in `~/.fraktur-korrektor` (Einstellungen, Zwischenspeicher der
 Wortprüfung). Was ein Buchordner enthält, steht in der [README](README.md#buchordner); nichts davon ist verschlüsselt,

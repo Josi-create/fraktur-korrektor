@@ -7,8 +7,10 @@
 Fraktur-Korrektor is a local program: a small server on your own computer, the browser is just its window. Started
 normally, it listens on `127.0.0.1` only and cannot be reached from any other machine. It downloads nothing from the
 internet and sends nothing away – no texts, no words for checking, no usage data. The one exception is the Fraktur
-model for Tesseract, fetched from the Mannheim University Library on explicit request (the packaged programs already
-include it).
+model for Tesseract: on Linux and when run from source, the program fetches it from the Mannheim University Library
+the first time text recognition is used; nothing is transmitted apart from the request for this file. The Windows
+and Mac programs already include it. The full privacy statement is in
+[Code signing and privacy](docs/en/code-signing.md).
 
 All data stays in book folders on disk and in `~/.fraktur-korrektor` (settings, spell-check cache). What a book
 folder contains is described in the [README](README.md#buchordner) (German); none of it is encrypted, none of it

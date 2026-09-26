@@ -131,7 +131,8 @@ def release(version, yes):
     # --atomic: Commit und Tag kommen zusammen an oder gar nicht
     git('push', '--atomic', 'origin', 'main', tag)
     print(f'Hochgeladen. Fortschritt: {REPO}/actions/workflows/release.yml\n'
-          f'In gut 15 Minuten steht die Version unter {REPO}/releases/latest')
+          f'In gut 15 Minuten steht die Version unter {REPO}/releases/latest\n'
+          f'Ist die Windows-Signatur eingerichtet, wartet der Lauf zweimal auf Ihre Freigabe bei SignPath (E-Mail).')
 
 
 def main(argv=None):

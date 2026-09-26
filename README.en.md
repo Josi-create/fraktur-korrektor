@@ -106,6 +106,13 @@ expected to follow the [code of conduct](CODE_OF_CONDUCT.en.md); please report s
 The program is written in spare time. If you like, buy me a coffee: <https://buymeacoffee.com/josicreate> ☕
 Bug reports, wishes and contributions are just as welcome (see above).
 
+## Code signing
+
+The Windows version is signed by SignPath Foundation – free code signing provided by
+[SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org). The signing rules
+and what the program sends over the network (nothing unless you ask for it) are described in
+[Code signing and privacy](docs/en/code-signing.md).
+
 ## Licence
 
 [GPL-3.0-or-later](LICENSE). The bundled dictionaries have their own licence notes, see [dict/](dict/README.md). PDF

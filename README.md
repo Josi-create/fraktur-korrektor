@@ -110,6 +110,13 @@ melden, nicht als öffentliches Issue. Zitieren: [CITATION.cff](CITATION.cff).
 Das Programm entsteht in der Freizeit. Wer mag, spendiert einen Kaffee: <https://buymeacoffee.com/josicreate> ☕
 Genauso willkommen sind Fehlerberichte, Wünsche und Mitarbeit (siehe oben).
 
+## Code-Signatur
+
+Die Windows-Fassung signiert die SignPath Foundation – kostenlose Code-Signatur durch [SignPath.io](https://signpath.io),
+Zertifikat der [SignPath Foundation](https://signpath.org). Nach welchen Regeln signiert wird und was das Programm
+über das Netz überträgt (nichts ohne Ihren ausdrücklichen Wunsch), steht unter
+[Signatur und Datenschutz](docs/de/code-signing.md).
+
 ## Lizenz
 
 [GPL-3.0-or-later](LICENSE). Das mitgelieferte Wörterbuch hat eigene Lizenzangaben, siehe [dict/](dict/README.md).

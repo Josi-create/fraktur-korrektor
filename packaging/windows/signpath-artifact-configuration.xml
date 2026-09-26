@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Artifact Configuration für die SignPath Foundation (in SignPath unter Project → Artifact Configurations
+  einfügen und als Standard setzen). Eine für beide Signieranfragen aus .github/workflows/release.yml: Jede schickt
+  ein ZIP mit genau einer exe, erst Fraktur-Korrektor.exe, dann Fraktur-Korrektor_Setup.exe.
+
+  Das Programm wird nur signiert, wenn sein Produktname stimmt (fraktur_korrektor.spec). Beim Installer prüft
+  SignPath den Namen nicht: Inno Setup füllt Produktname und Version in der Setup.exe mit Leerzeichen auf feste
+  Breite auf ("Fraktur-Korrektor" + 43 Leerzeichen), und ob SignPath beim Vergleich Leerzeichen abschneidet, ist
+  nicht dokumentiert. scripts/check_exe.ps1 prüft beide Dateien vor dem Einreichen.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="Fraktur-Korrektor.exe" product-name="Fraktur-Korrektor" min-matches="0">
+      <authenticode-sign/>
+    </pe-file>
+    <pe-file path="Fraktur-Korrektor_Setup.exe" min-matches="0">
+      <authenticode-sign/>
+    </pe-file>
+  </zip-file>
+</artifact-configuration>
