@@ -936,6 +936,8 @@ $('kform').onsubmit = async ev => {
 };
 document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) { $('dlg').classList.remove('on'); $('edlg').classList.remove('on'); $('kdlg').classList.remove('on'); } if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
 load();
+// Link aus einem Zettel (#74), dessen Buch hier nicht (mehr) liegt: sagen, wie es wieder hineinkommt
+if (location.hash == '#stelle') $('note').textContent = t('stelle_unbekannt');
 // Einstieg aus der Hilfe: #open bzw. #open=<pfad>; #auto=<pfad> liest die Empfehlung gleich ein, #scans=<pfad> zeigt die
 // Vorschau »Scans vorbereiten« (Selbsttest, wie ?keys im Reader)
 // #kindle=<datei> öffnet den Kindle-Dialog mit dieser Datei, #kindle=<datei>|<ordner> legt die Zettel zum ersten Buch gleich an

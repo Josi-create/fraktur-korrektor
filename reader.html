@@ -46,6 +46,7 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 .hl{position:absolute;pointer-events:none;box-sizing:border-box}
 #hlLine{background:rgba(255,220,60,.28)}
 #hlWord,#hlWord2{border:solid red}
+.hl.stelle{border:solid #1780c0}
 #right{display:flex;flex-direction:column;gap:10px;min-height:0}
 /* Wort und Tastaturhilfe über beide Spalten: nimmt links dem Bild etwas Höhe, gibt sie rechts dem Text (#55) */
 /* Kürzel unten ohne Rahmen; Mindesthöhe = Lesemodus-Kürzel, damit Bild und Text beim Moduswechsel nicht springen */
@@ -78,6 +79,9 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 #lines .tblgrid > div.cur{background:#fff3b8;color:#000}
 #lines .tblgrid > div.blank{display:none}
 #lines div.tsel{background:#d6eaff !important;color:#000}
+/* Rücksprung vom Zettel (#74): die zitierten Zeilen blau wie ein Suchtreffer, im Bild blau umrahmt; die Lesezeile darin bleibt gelb */
+#lines div.stelle{background:#e1f0ff;color:#0d4d85;box-shadow:inset 4px 0 #1780c0}
+#lines div.stelle.cur{background:#fff3b8}
 #lines div.para{text-indent:1.5em}
 #lines div.hd1{font-size:calc(27px * var(--tz, 1));font-weight:bold;color:#222} #lines div.hd2{font-size:calc(23px * var(--tz, 1));font-weight:bold;color:#222} #lines div.hd3{font-size:calc(20px * var(--tz, 1));font-weight:bold;color:#222}
 #tprev{border-collapse:collapse;font:14px Georgia,serif;margin-top:6px;color:#222} #tprev td,#tprev th{border:1px solid #9bc;padding:1px 9px} #tprev th{background:#e3eefa}
@@ -330,6 +334,7 @@ function showPos() {
   $('pos').textContent = t('pos', { a: li + 1, b: data.lines.length, c: data.flags.length, d: total }) + (data.geo ? '' : t('nogeo'));
 }
 let hits = null, hi = -1, ask = null;  // Suche: Fundstellen im ganzen Buch, die aktuelle, offene Eingabezeile (find | goto)
+let stelle = null;  // Rücksprung vom Zettel (#74): {page, a, b} – diese Zeilen (ab 0) sind hervorgehoben
 const WRE = /^[A-Za-zÄÖÜäöüß]+/;
 const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
@@ -475,6 +480,7 @@ function decorate(els, b) {
     const m = l.match(/^<h([1-6])>/);
     for (const n of [1, 2, 3]) d.classList.toggle('hd' + n, !!m && Math.min(3, +m[1]) == n);
     d.classList.toggle('para', l.startsWith('<p>'));  // Absatzanfang (#67): eingerückt wie im Druck
+    d.classList.toggle('stelle', !!stelle && stelle.page == b.page && i >= stelle.a && i <= stelle.b && l !== '---');
   });
 }
 function renderText() {
@@ -571,7 +577,7 @@ function stackImages() {
 }
 function layoutImage() {
   const place = stackImages(), q = data ? place[pg] : null;
-  if (!q) { for (const id of ['hlLine', 'hlWord', 'hlWord2']) $(id).style.display = 'none'; imgState = null; imgKeep = null; return; }
+  if (!q) { for (const id of ['hlLine', 'hlWord', 'hlWord2']) $(id).style.display = 'none'; stelleBoxes({}, 1); imgState = null; imgKeep = null; return; }
   const pane = $('imgpane'), W = pane.clientWidth, H = pane.clientHeight;
   // Lesezeile im Bild auf dieselbe Bildschirmhöhe wie im Textfenster (das wegen des Korrekturfelds tiefer beginnt); steht
   // das Bild allein (Reiter Seitenbild), auf 1/4 seiner Höhe
@@ -595,6 +601,7 @@ function layoutImage() {
   }
   wrap.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + k + ')';
   imgState = { place, tx, ty, k, ry: RY };
+  stelleBoxes(place, k);
   const box = (el, x, y, w, h) => { el.style.display = ''; el.style.left = (q.x + x) + 'px'; el.style.top = (q.y + y) + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px'; el.style.borderWidth = (2.5 / k) + 'px'; };
   const hl = $('hlLine'), hw = $('hlWord'), hw2 = $('hlWord2');
   hl.style.display = hw.style.display = hw2.style.display = 'none';
@@ -614,6 +621,38 @@ function layoutImage() {
   }
 }
 
+// Die Zeilen aus dem Zettel im Bild blau umrahmen: aufeinanderfolgende Zeilen einer Spalte in einem Rahmen. Springt die
+// nächste Zeile nach oben oder zur Seite (zweispaltiger Satz), beginnt ein neuer.
+function stelleBoxes(place, k) {
+  for (const el of document.querySelectorAll('#imgwrap .stelle')) el.remove();
+  const b = stelle && [prevD, data, nextD].find(x => x && x.page == stelle.page), q = b && place[b.page];
+  if (!q || !b.geo) return;
+  const rs = [];
+  for (let i = stelle.a; i <= stelle.b; i++) {
+    const g = b.geo[i], r = rs[rs.length - 1]; if (!g || skippable(i, b)) continue;
+    if (r && g.y0 >= r.last && g.x0 < r.x1 && g.x1 > r.x0) { r.x0 = Math.min(r.x0, g.x0); r.x1 = Math.max(r.x1, g.x1); r.y1 = Math.max(r.y1, g.y1); r.last = g.y0; }
+    else rs.push({ x0: g.x0, y0: g.y0, x1: g.x1, y1: g.y1, last: g.y0 });
+  }
+  for (const r of rs) {
+    const el = document.createElement('div'); el.className = 'hl stelle';
+    el.style.left = (q.x + r.x0 - 8) + 'px'; el.style.top = (q.y + r.y0 - 5) + 'px'; el.style.width = (r.x1 - r.x0 + 16) + 'px';
+    el.style.height = (r.y1 - r.y0 + 10) + 'px'; el.style.borderWidth = (2.5 / k) + 'px'; $('imgwrap').appendChild(el);
+  }
+}
+// ---- Rücksprung vom Zettel (#74): Der Link im Zettel führt über /stelle hierher, mit ?seite=057&zeile=3-4 – die Seite der Datei,
+// die Zeilen gezählt wie in der Kopfleiste. Das Lesezeichen bleibt, wo es war: Ein Blick in die Quelle verstellt die
+// Leseposition nicht, erst eine eigene Bewegung tut es. Liefert false (und einen Hinweis in msg), wenn es die Stelle nicht gibt.
+async function openStelle(seite, zeile) {
+  const p = /^\d{1,4}$/.test(seite) ? String(+seite).padStart(3, '0') : null, m = (zeile || '').match(/^(\d+)(?:[-–](\d+))?$/);
+  const d = p && ov.some(o => o.page == p) ? await fetchPage(p) : null;
+  if (!d) { msg = t('stelle_seite', { p: seite }); return false; }
+  const a = m ? +m[1] : 0, n = d.lines.length;
+  if (zeile && !(a >= 1 && a <= n)) { msg = t('stelle_zeile', { p, z: zeile }); return false; }
+  stelle = zeile ? { page: p, a: a - 1, b: Math.min(n, Math.max(a, +(m[2] || a))) - 1 } : null;
+  await loadPage(p, stelle ? stelle.a : 0);
+  if (stelle) { msg = t('stelle_da'); render(); }
+  return true;
+}
 function bookmark() {
   clearTimeout(bmTimer);
   bmTimer = setTimeout(() => fetch(BASE + '/api/bookmark', { method: 'POST', body: JSON.stringify({ page: pg, line: li }) }), 600);
@@ -1722,8 +1761,14 @@ for (const id of ['text', 'imgpane']) {
 
 (async () => {
   await loadOverview();
-  let bm = {}; try { bm = await (await fetch(BASE + '/api/bookmark')).json(); } catch (e) {}
-  if (!(bm.page && await loadPage(bm.page, bm.line))) { const first = ov.find(o => o.n > 0) || ov[0]; await loadPage(first.page, 0); }
+  const par = new URLSearchParams(location.search);
+  if (!(par.has('seite') && await openStelle(par.get('seite'), par.get('zeile')))) {
+    let bm = {}; try { bm = await (await fetch(BASE + '/api/bookmark')).json(); } catch (e) {}
+    if (!(bm.page && await loadPage(bm.page, bm.line))) { const first = ov.find(o => o.n > 0) || ov[0]; await loadPage(first.page, 0); }
+  }
+  if (par.has('seite')) {  // die Adresse wird die des Buchs: Neu laden führt dann zur Leseposition, nicht noch einmal zur Stelle
+    par.delete('seite'); par.delete('zeile'); const rest = par.toString(); history.replaceState(null, '', location.pathname + (rest ? '?' + rest : ''));
+  }
   // Selbsttest: ?keys=Space,Tab,Escape,ArrowDown spielt Tasten ab; "=text" setzt das Eingabefeld
   const ks = new URLSearchParams(location.search).get('keys');
   for (const k of ks ? ks.split(',') : []) {

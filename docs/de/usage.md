@@ -321,18 +321,32 @@ Das Programm legt im Ordner eine Datei an, fortlaufend nummeriert, zum Beispiel 
 
     > Die Kolonisten zogen nach Rußland und der Weg war weit.
 
-    Seite 57, Zeile 3–4, [[0 Quellenangabe|Leibbrandt 1928]]
+    Seite 57, Zeile 3–4, [[0 Quellenangabe|Leibbrandt 1928]] · [Scan](http://localhost:8765/stelle?buch=6b8d…&seite=057&zeile=3-4)
 
 Oben Platz für die eigene Anmerkung, unter dem Strich das Zitat (am Zeilenende getrennte Wörter sind zusammengezogen) und die
 Seite – die gedruckte Seitenzahl aus der Kopfzeile oder vom Seitenende; fehlt sie oder passt sie nicht zu den Nachbarseiten, die Zahl, die
 sich aus den Nachbarseiten ergibt; sonst die PDF-Seite –, die Zeilen (gezählt wie „Zeile 3/42“ in der
-Kopfleiste des Programms) und der Verweis auf die Quellenangabe des Buchs.
+Kopfleiste des Programms), der Verweis auf die Quellenangabe des Buchs und der Link zurück zum Scan (siehe unten).
 Diese Datei `0 Quellenangabe.md` legt das Programm beim ersten Zettel als Vorlage an; tragen Sie dort ein, woher das Buch
 stammt (Universitätsbibliothek, Fernleihe …) und die Zitierweise, wie Zotero sie liefert. So hat jeder Zettel per Klick
 seine vollständige Quelle. Das Zitat liegt außerdem in der Zwischenablage.
 
 Ist Obsidian installiert, öffnet es den neuen Zettel sofort und kommt unter Windows in den Vordergrund (der Ordner muss in einem Vault liegen, den Obsidian kennt).
 Ohne Obsidian bleibt die Datei einfach im Ordner – es ist gewöhnliches Markdown.
+
+**Zurück zur Quelle:** Ein Klick auf *Scan* am Ende der Quellenzeile öffnet das Buch im Fraktur-Korrektor genau an
+dieser Stelle – links das Seitenbild, rechts der Text, die zitierten Zeilen blau hervorgehoben und im Bild blau
+umrahmt. So prüfen Sie beim Schreiben ohne Suchen, ob das Zitat stimmt, was davor und danach steht und was die Fußnote
+dazu sagt. Ihr Lesezeichen bleibt dabei, wo es war; es rückt erst weiter, wenn Sie im Buch selbst weiterlesen.
+
+- Der Fraktur-Korrektor muss dafür laufen. Meldet der Browser, dass er die Seite nicht erreicht, starten Sie das
+  Programm und klicken Sie den Link noch einmal.
+- Der Link findet das Buch auch, wenn Sie seinen Ordner verschoben oder das als PDF gesicherte Buch auf einem anderen
+  Rechner eingelesen haben. Ist es nicht in der Bibliothek, sagt das Programm, wie es wieder hineinkommt.
+- Die Zeilen gelten für den Stand beim Anlegen des Zettels. Haben Sie auf dieser Seite danach Zeilen verbunden oder
+  geteilt, kann die Hervorhebung um eine Zeile verrutschen.
+- Zettel, die schon vorher angelegt waren, bleiben ohne Link – das Programm ändert keine Datei, die Sie bearbeitet haben
+  können. Zettel aus Kindle-Markierungen haben keinen Link, zu ihnen gibt es kein Seitenbild.
 
 Markierungen, die Sie auf dem Kindle gemacht haben, werden auf dieselbe Weise zu Zetteln: [Markierungen vom Kindle](kindle.md).
 Wie Zettel auf dem iPad gleich in Obsidian entstehen, steht unten bei *Auf dem Tablet lesen*.
@@ -392,7 +406,8 @@ Zettel gleich dort:
 
 Obsidian Sync bringt den Zettel auf den Rechner. Nummer, Zitat und Quellenangabe kommen wie immer vom Programm, der
 Ordner ist der, den Sie am Rechner für das Buch festgelegt haben (`O`). Die Nummern laufen auch dann richtig weiter,
-wenn Obsidian am Rechner gerade nicht läuft.
+wenn Obsidian am Rechner gerade nicht läuft. Den Link *Scan* im Zettel klicken Sie am Rechner: Er führt zum Programm,
+das dort läuft; auf dem iPad öffnet er nichts.
 
 Safari fragt beim ersten Mal, ob es Obsidian öffnen darf. Öffnet es nicht von selbst, tippen Sie unten in der Meldung
 auf **in Obsidian öffnen**. Unter **☰ → Notizen** lässt sich das je Gerät ausschalten; dann entsteht der Zettel wie

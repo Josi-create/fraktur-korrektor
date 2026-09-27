@@ -5,12 +5,26 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Rücksprung vom Zettel zur Quelle** (#74): Die Quellenzeile eines Zettels (`F4`) endet mit einem Link *Scan*. Ein
+  Klick darauf in Obsidian öffnet das Buch im Reader genau an dieser Stelle: Seitenbild und Text, die zitierten Zeilen
+  blau hervorgehoben, im Bild blau umrahmt – im zweispaltigen Satz je Spalte ein Rahmen. Das Lesezeichen bleibt, wo es
+  war, bis der Nutzer selbst weiterliest. Der Link geht über die feste Kennung des Buchs (`buch.json`, jetzt schon beim
+  ersten Zettel angelegt, mit dem PDF gesichert): `/stelle?buch=<kennung>&seite=057&zeile=3-4` sucht das Buch in der
+  Bibliothek und leitet zu `/buch/<id>?seite=…&zeile=…` weiter. So findet er es auch, wenn der Ordner umgezogen ist; fehlt
+  es, sagt die Bibliothek, wie es wieder hineinkommt. Eine Seite oder Zeile, die es nicht gibt, führt zum Lesezeichen
+  mit einem Hinweis. Vorhandene Zettel und Kindle-Zettel bleiben ohne Link.
 - **Windows-Signatur vorbereitet** (#78): Der Workflow lässt `Fraktur-Korrektor.exe` und den Installer von der
   SignPath Foundation signieren, sobald das Secret `SIGNPATH_API_TOKEN` gesetzt ist; ohne es bleibt alles wie bisher.
   Beide Dateien tragen jetzt Produktname und Version in den Datei-Eigenschaften (der Installer zeigte bisher 0.0.0.0).
   Einrichtung: [RELEASE.md](RELEASE.md#einmalig-windows-signatur-einrichten-signpath-foundation).
 - Neue Hilfeseite [Signatur und Datenschutz](docs/de/code-signing.md): wer signiert, nach welchen Regeln, und was
   das Programm über das Netz überträgt.
+
+### Behoben
+- **Zwei Programme auf demselben Port:** Lief die installierte App (auf `127.0.0.1:8765`) noch im Infobereich, startete
+  `server.py --lan` (auf `0.0.0.0:8765`) trotzdem – Windows und macOS teilen den Port dann. Der Browser landete still
+  bei der alten Fassung, neue Funktionen fehlten scheinbar. Jetzt kommt wie sonst die Meldung »Port 8765 ist belegt«
+  (Windows: `SO_EXCLUSIVEADDRUSE`; sonst fragt der Server vorher, ob auf `127.0.0.1` schon jemand antwortet).
 
 ## [0.11.0] – 2026-09-26
 

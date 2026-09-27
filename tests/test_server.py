@@ -5,6 +5,27 @@ def words(data, kind=None):
     return [f['word'] for f in data['flags'] if kind in (None, f['kind'])]
 
 
+def port(app):
+    return app.base.rsplit(':', 1)[1]
+
+
+def kennung(app):
+    import os, json
+    return json.load(open(os.path.join(app.folder, 'buch.json'), encoding='utf-8'))['kennung']
+
+
+def weiter(app, path):
+    """Wohin eine Adresse weiterleitet – ohne der Weiterleitung zu folgen, wie urllib es täte."""
+    import http.client
+    c = http.client.HTTPConnection('127.0.0.1', int(port(app)), timeout=30)
+    try:
+        c.request('GET', path)
+        r = c.getresponse()
+        return r.status, r.getheader('Location')
+    finally:
+        c.close()
+
+
 def test_uebersicht_und_markierungen(app):
     code, ov = app.get('/api/overview')
     assert code == 200 and [p['page'] for p in ov['pages']] == ['001', '002']
@@ -99,9 +120,12 @@ def test_zweiter_start_auf_gleichem_port_scheitert_verstaendlich(app):
     import subprocess, sys, os
     from conftest import ROOT
     port = app.base.rsplit(':', 1)[1]
-    r = subprocess.run([sys.executable, os.path.join(ROOT, 'server.py'), app.folder, '--port', port, '--no-browser'],
-                       capture_output=True, timeout=60, env=dict(os.environ, PYTHONIOENCODING='utf-8'))
-    assert r.returncode != 0 and 'ist belegt' in r.stderr.decode('utf-8')
+    # auch mit --lan (0.0.0.0) neben dem Server auf 127.0.0.1: Windows und macOS teilten den Port sonst, und der Browser
+    # landete still beim ersten – etwa bei der installierten App, während lesen.bat die neue Fassung startet
+    for lan in ([], ['--lan']):
+        r = subprocess.run([sys.executable, os.path.join(ROOT, 'server.py'), app.folder, '--port', port, '--no-browser'] + lan,
+                           capture_output=True, timeout=60, env=dict(os.environ, PYTHONIOENCODING='utf-8'))
+        assert r.returncode != 0 and 'ist belegt' in r.stderr.decode('utf-8'), lan
 
 
 def test_rechtschreibung_je_buch(app):
@@ -130,11 +154,13 @@ def test_notizen_fuer_obsidian(app, tmp_path):
     code, r = app.post('/api/notiz', dict(page='001', text='ber Weg war weit. Die Zu¬\nkunft lag  vor ihnen, baß sie\nber Heimat gedachten.', lines=[3, 5]))
     assert code == 200 and r['name'] == '01 Seite 5' and r['page'] == '5' and not r['opened']  # gedruckte Seitenzahl aus der Kopfzeile
     note = open(folder / '01 Seite 5.md', encoding='utf-8').read()
-    assert note == '**Anmerkung**\n\n\n\n---\n\n> ber Weg war weit. Die Zukunft lag vor ihnen, baß sie ber Heimat gedachten.\n\nSeite 5, Zeile 3–5, [[0 Quellenangabe|buch]]\n'
+    # Der Link zurück zur Stelle im Scan (#74) nennt die Seite der Datei und das Buch bei seiner festen Kennung
+    scan = ' · [Scan](http://localhost:%s/stelle?buch=%s&seite=001' % (port(app), kennung(app))
+    assert note == '**Anmerkung**\n\n\n\n---\n\n> ber Weg war weit. Die Zukunft lag vor ihnen, baß sie ber Heimat gedachten.\n\nSeite 5, Zeile 3–5, [[0 Quellenangabe|buch]]' + scan + '&zeile=3-5)\n'
     code, r = app.post('/api/notiz', dict(page='001', text='Die Kolonisten', lines=[2, 2], lang='en'))  # eine Zeile, englisch
-    assert code == 200 and open(folder / '02 Page 5.md', encoding='utf-8').read().endswith('\n\nPage 5, Line 2, [[0 Source|buch]]\n')
+    assert code == 200 and open(folder / '02 Page 5.md', encoding='utf-8').read().endswith('\n\nPage 5, Line 2, [[0 Source|buch]]' + scan + '&zeile=2)\n')
     code, r = app.post('/api/notiz', dict(page='001', text='Die Kolonisten'))  # ohne Zeilenangabe (ältere Aufrufer)
-    assert code == 200 and open(folder / '03 Seite 5.md', encoding='utf-8').read().endswith('\n\nSeite 5, [[0 Quellenangabe|buch]]\n')
+    assert code == 200 and open(folder / '03 Seite 5.md', encoding='utf-8').read().endswith('\n\nSeite 5, [[0 Quellenangabe|buch]]' + scan + ')\n')
     src = open(folder / '0 Quellenangabe.md', encoding='utf-8').read()
     assert src.startswith('# buch\n') and 'Zotero' in src
     open(folder / '0 Quellenangabe.md', 'w', encoding='utf-8').write('# Eigene Angaben\n')  # wird nie überschrieben
@@ -153,7 +179,7 @@ def test_notiz_titel_mit_klammern_und_ordner_als_datei(app, tmp_path):
     (tmp_path / 'Vault').mkdir()
     app.post('/api/settings', dict(notizen=str(tmp_path / 'Vault' / 'Reise')))
     assert app.post('/api/notiz', dict(page='001', text='Die Kolonisten', lines=[2, 2]))[0] == 200
-    assert open(tmp_path / 'Vault' / 'Reise' / '01 Seite 5.md', encoding='utf-8').read().endswith(', [[0 Quellenangabe|Reise (Band 2)]]\n')
+    assert ', [[0 Quellenangabe|Reise (Band 2)]] · [Scan](' in open(tmp_path / 'Vault' / 'Reise' / '01 Seite 5.md', encoding='utf-8').read()
     # Ist der Notizordner in Wahrheit eine Datei: Meldung statt abgerissener Verbindung
     (tmp_path / 'Vault' / 'Datei').write_text('x')
     app.post('/api/settings', dict(notizen=str(tmp_path / 'Vault' / 'Datei')))
@@ -173,7 +199,8 @@ def test_notiz_fuer_obsidian_auf_dem_tablet(app, tmp_path):
     assert app.get('/api/vault')[1] == dict(vault='Mein Vault')
     code, r = app.post('/api/notiz', dict(page='001', text='Die Kolonisten', lines=[2, 2], geraet=True))
     assert code == 200 and r['vault'] == 'Mein Vault' and r['file'] == 'Recherche/Leibbrandt 1928/01 Seite 5' and r['name'] == '01 Seite 5'
-    assert r['content'] == '**Anmerkung**\n\n\n\n---\n\n> Die Kolonisten\n\nSeite 5, Zeile 2, [[0 Quellenangabe|buch]]\n'
+    assert r['content'] == ('**Anmerkung**\n\n\n\n---\n\n> Die Kolonisten\n\nSeite 5, Zeile 2, [[0 Quellenangabe|buch]] · '
+                            '[Scan](http://localhost:%s/stelle?buch=%s&seite=001&zeile=2)\n' % (port(app), kennung(app)))
     assert sorted(os.listdir(folder)) == ['0 Quellenangabe.md']  # hier entsteht nur die Quellenangabe
     assert app.post('/api/notiz', dict(page='001', text='x', geraet=True))[1]['name'] == '02 Seite 5'
     assert app.post('/api/notiz', dict(page='002', text='Der Vater'))[1]['name'] == '03 Seite 6'  # am Rechner geht es weiter
@@ -189,6 +216,33 @@ def test_notiz_fuer_obsidian_auf_dem_tablet(app, tmp_path):
     assert app.get('/api/vault')[1] == dict(vault=None)
     assert not (tmp_path / 'Lose' / 'Buch').exists()
     assert app.post('/api/notiz', dict(page='001', text='x'))[1]['name'] == '01 Seite 5'
+
+
+def test_link_im_zettel_fuehrt_zur_stelle(app, tmp_path):
+    """Rücksprung vom Zettel zur Quelle (#74): /stelle findet das Buch über seine feste Kennung – auch wenn sein Ordner
+    umgezogen ist – und leitet zum Reader weiter, der Seite und Zeilen aus der Adresse nimmt."""
+    import shutil
+    (tmp_path / 'Vault').mkdir()
+    app.post('/api/settings', dict(notizen=str(tmp_path / 'Vault' / 'Buch')))
+    assert app.get('/api/settings')[1]['kennung'] is None  # die Kennung entsteht erst mit dem ersten Zettel …
+    app.post('/api/notiz', dict(page='001', text='Die Kolonisten', lines=[2, 2]))
+    k = kennung(app)
+    app.post('/api/notiz', dict(page='002', text='Der Vater', lines=[2, 2]))
+    assert kennung(app) == k and len(k) == 32  # … und bleibt dann
+    bid = app.book[len('/buch/'):]
+    assert weiter(app, '/stelle?buch=%s&seite=001&zeile=3-4' % k) == (302, '/buch/%s?seite=001&zeile=3-4' % bid)
+    assert weiter(app, '/stelle?buch=%s&seite=002' % k) == (302, '/buch/%s?seite=002' % bid)
+    assert weiter(app, '/stelle?buch=%s&seite=001&zeile=2&x=1' % k) == (302, '/buch/%s?seite=001&zeile=2' % bid)
+    # Nicht in der Bibliothek: Die Bibliothek sagt, wie das Buch hineinkommt
+    assert weiter(app, '/stelle?buch=%s&seite=001' % ('0' * 32)) == (302, '/bibliothek#stelle')
+    assert weiter(app, '/stelle') == (302, '/bibliothek#stelle')
+    assert app.raw('/buch/%s?seite=001&zeile=3-4' % bid)[0] == 200  # das Springen selbst ist Sache des Readers
+    # Der Ordner zieht um und wird dort wieder geöffnet: Der Link aus dem Zettel findet das Buch am neuen Ort
+    neu = str(tmp_path / 'umgezogen')
+    shutil.move(app.folder, neu)
+    code, r = app.lpost('/api/open', dict(folder=neu))
+    assert code == 200 and r['id'] != bid
+    assert weiter(app, '/stelle?buch=%s&seite=001&zeile=2' % k) == (302, '/buch/%s?seite=001&zeile=2' % r['id'])
 
 
 def test_suche_im_ganzen_buch(app):

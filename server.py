@@ -4,7 +4,7 @@ py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"
 Ohne Buchordner erscheint die Bibliothek (Bücher öffnen, Transkribus-Export importieren).
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png|jpg,
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
-import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socketserver, urllib.parse, webbrowser, argparse, collections, statistics
+import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socket, socketserver, urllib.parse, webbrowser, argparse, collections, statistics
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import korrlib, pagexml, ocr, epub, finder, pdfbuch, epubbuch, scans, merge, kindle
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
@@ -18,10 +18,10 @@ DEFAULT = None  # id des Buchs von der Kommandozeile
 IMGTYPES = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg'}
 # Wörter in den Zetteln für Obsidian (Dateinamen und Quellenzeile) in der Sprache der Oberfläche
 NOTE_WORDS = dict(
-    de=dict(page='Seite', line='Zeile', note='Anmerkung', src='0 Quellenangabe', pos='Position',
+    de=dict(page='Seite', line='Zeile', note='Anmerkung', src='0 Quellenangabe', pos='Position', scan='Scan',
             template='# %s\n\nHerkunft: (z. B. Universitätsbibliothek Münster, Fernleihe)\n\nZitierweise (Zotero):\n',
             kindle='# %s\n\nAutor: %s\n\nHerkunft: Kindle-Ausgabe\n\nZitierweise (Zotero):\n'),
-    en=dict(page='Page', line='Line', note='Note', src='0 Source', pos='Location',
+    en=dict(page='Page', line='Line', note='Note', src='0 Source', pos='Location', scan='Scan',
             template='# %s\n\nProvenance: (e.g. university library, interlibrary loan)\n\nCitation (Zotero):\n',
             kindle='# %s\n\nAuthor: %s\n\nProvenance: Kindle edition\n\nCitation (Zotero):\n'))
 
@@ -182,7 +182,8 @@ class Book:
             if os.path.exists(os.path.join(self.folder, 'qualitaet.json')) or os.path.normcase(self.folder).startswith(own):
                 st = propose_settings(self.folder)  # vom Programm eingelesen (auch EPUB-Textbücher), aber vor dieser Funktion: Vorschlag nachholen
         dics = [d for d in st.get('dics') or korrlib.DEFAULT if d in korrlib.DICS]
-        # kennung: bleibt dem Buch über das Sichern als PDF hinweg erhalten – daran erkennt ein anderer Rechner dasselbe Buch wieder
+        # kennung: bleibt dem Buch über das Sichern als PDF hinweg erhalten – daran erkennt ein anderer Rechner dasselbe Buch wieder,
+        # und der Link im Zettel findet es, auch wenn der Ordner umgezogen ist (#74). Angelegt beim Sichern oder beim ersten Zettel
         # autor: für das E-Book (#59), beim Sichern eingetragen und fürs nächste Mal gemerkt
         r = dict(year=st.get('year'), dics=dics or list(korrlib.DEFAULT), notizen=st.get('notizen') or None, kennung=st.get('kennung') or None,
                  autor=st.get('autor') or None)
@@ -239,13 +240,14 @@ class Book:
         exp = self.expected_page(pg)
         return str(exp if exp is not None else n[0] if n else int(pg))
 
-    def make_note(self, pg, text, lang='de', lines=None, device=False):
+    def make_note(self, pg, text, lang='de', lines=None, device=False, port=None):
         """Ein Zettel nach Luhmanns Art im Notizordner: fortlaufend nummeriert, oben Platz für die eigene Anmerkung, unter dem
         Strich das Zitat und die Quelle – Seite, Zeilen (lines = (von, bis), gezählt wie in der Leiste des Readers) und Verweis auf die
         Quellenangabe des Buchs (Datei „0 Quellenangabe“, wird bei Bedarf als Vorlage angelegt; dort trägt der Nutzer Herkunft und
         Zotero-Zitierweise ein). Liefert (ergebnis, fehler).
         device: den Zettel nicht schreiben, sondern Inhalt und Ort im Vault liefern – Obsidian auf dem Tablet legt ihn an, Obsidian
-        Sync bringt ihn auf den Rechner (#63). Die Quellenangabe entsteht trotzdem hier, sie ist für alle Zettel dieselbe."""
+        Sync bringt ihn auf den Rechner (#63). Die Quellenangabe entsteht trotzdem hier, sie ist für alle Zettel dieselbe.
+        port: der Port, auf dem das Programm läuft – dann endet die Quellenzeile mit einem Link zurück zur Stelle im Scan (#74)."""
         W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
         folder = self.settings.get('notizen')
         vault = obsidian_vault(folder) if device and folder else None
@@ -270,14 +272,19 @@ class Book:
             # synchronisiert hat – ohne das bekäme der nächste Zettel dieselbe Nummer
             n = max(note_number(folder), (self.settings.get('notiz_nr') or 0) + 1)
             self.settings['notiz_nr'] = n
+            self.settings['kennung'] = self.settings.get('kennung') or uuid.uuid4().hex  # für den Link zurück zur Quelle
             self.save_settings()
         name = '%02d %s %s' % (n, W['page'], page)
         path = os.path.join(folder, name + '.md')
-        where = '%s %s' % (W['page'], page)
+        where, q = '%s %s' % (W['page'], page), dict(buch=self.settings['kennung'], seite=pg)
         if lines:
             a, b = int(lines[0]), int(lines[-1])
             where += ', %s %s' % (W['line'], str(a) if a == b else '%d–%d' % (a, b))
-        body = '**%s**\n\n\n\n---\n\n> %s\n\n%s, [[%s|%s]]\n' % (W['note'], text, where, src, link_title(self.title))
+            q['zeile'] = str(a) if a == b else '%d-%d' % (a, b)
+        # Die gedruckte Seite bleibt die Angabe fürs Zitat; der Link braucht die Seite der Datei. Er geht über die feste Kennung
+        # des Buchs, nicht über /buch/<id>: Die hängt am Ordner, und der zieht vielleicht um oder kommt als PDF auf einen anderen Rechner
+        scan = ' · [%s](http://localhost:%d/stelle?%s)' % (W['scan'], port, urllib.parse.urlencode(q)) if port else ''
+        body = '**%s**\n\n\n\n---\n\n> %s\n\n%s, [[%s|%s]]%s\n' % (W['note'], text, where, src, link_title(self.title), scan)
         if vault:
             # Pfad ab der Wurzel des Vaults, mit / wie in Obsidian; ohne .md (Obsidian hängt es an)
             file = os.path.relpath(os.path.join(os.path.abspath(folder), name), vault[1]).replace(os.sep, '/')
@@ -1358,6 +1365,16 @@ def get_book(bid):
         return BOOKS[bid]
 
 
+def book_by_kennung(kennung):
+    """Das Buch der Bibliothek mit dieser festen Kennung (buch.json) – für den Link im Zettel (#74) – oder None. Liegt es
+    mehrmals hier (schon einmal aus dem PDF eingelesen, Kopie für einen neuen Text), gilt das zuletzt gelesene; ein Buch,
+    dessen Ordner fehlt (Stick nicht eingesteckt), wird übergangen."""
+    for e in sorted(lib_load(), key=lambda e: e.get('last', ''), reverse=True):
+        if kennung and page_files(e['folder']) and pagexml.load_json(e['folder'], 'buch.json', {}).get('kennung') == kennung:
+            return book_id(e['folder'])
+    return None
+
+
 def books_dir():
     return korrlib.config().get('buecher') or os.path.join(os.path.expanduser('~'), 'Fraktur-Korrektor')
 
@@ -2259,6 +2276,10 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, scans.preview(src, n), 'image/jpeg')
             except (ValueError, IndexError, RuntimeError):
                 return self.send(404, '{}')
+        if u.path == '/stelle':  # Link aus einem Zettel (#74): /stelle?buch=<kennung>&seite=057&zeile=3-4 – der Reader zeigt die Stelle
+            bid = book_by_kennung(q.get('buch', [''])[0])
+            where = urllib.parse.urlencode([(k, q[k][0]) for k in ('seite', 'zeile') if k in q])
+            return self.redirect('/buch/' + bid + (where and '?' + where) if bid else '/bibliothek#stelle')  # dort steht, wie das Buch hineinkommt
         if u.path in ('/hilfe', '/hilfe/', '/help'):
             return self.redirect('/hilfe/de/index')
         m = re.fullmatch(r'/hilfe/(de|en)/([\w-]+)', u.path)
@@ -2526,7 +2547,7 @@ class H(BaseHTTPRequestHandler):
         if rest == '/api/notiz':
             try:
                 r, err = book.make_note(str(body.get('page') or ''), body.get('text') or '', body.get('lang') or 'de', body.get('lines'),
-                                        device=bool(body.get('geraet')))
+                                        device=bool(body.get('geraet')), port=self.server.server_port)
             except OSError:  # der Notizordner ist eine Datei oder schreibgeschützt: eine Meldung statt einer abgerissenen Verbindung
                 r, err = None, 'notiz_schreiben'
             if err:
@@ -2568,6 +2589,15 @@ class Server(ThreadingHTTPServer):
     allow_reuse_address = os.name != 'nt'  # unter Windows ließe SO_REUSEADDR mehrere Server auf demselben Port zu
 
     def server_bind(self):
+        # Auch ohne SO_REUSEADDR teilt Windows einen Port, wenn ein Server auf 127.0.0.1 und der andere (--lan) auf 0.0.0.0
+        # lauscht: Der Browser landete dann still beim alten – etwa der installierten App im Infobereich. So kommt statt
+        # dessen die Meldung »Port belegt«. Ein Neustart gleich nach dem Beenden geht trotzdem (nachgeprüft)
+        if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        else:  # macOS teilt den Port mit SO_REUSEADDR ebenso – dort nachsehen, ob auf 127.0.0.1 schon jemand antwortet
+            with socket.socket() as so:
+                if so.connect_ex(('127.0.0.1', self.server_address[1])) == 0:
+                    raise OSError('Port %d belegt' % self.server_address[1])
         # HTTPServer.server_bind fragt mit socket.getfqdn() den Rechnernamen ab – auf dem Mac dauert das bis zu 30 s
         socketserver.TCPServer.server_bind(self)
         self.server_name, self.server_port = self.server_address[:2]
@@ -2622,7 +2652,6 @@ def main(argv=None):
         sys.exit('Port %d ist belegt – läuft der Fraktur-Korrektor schon? Sonst mit --port <nummer> einen anderen Port wählen.' % A.port)
     print('Fraktur-Korrektor: %s  (Strg+C beendet)' % url)
     if A.lan:
-        import socket
         try:
             so = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); so.connect(('10.255.255.255', 1)); ip = so.getsockname()[0]; so.close()
         except OSError:

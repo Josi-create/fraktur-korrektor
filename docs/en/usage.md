@@ -315,17 +315,32 @@ The program creates a file in that folder, numbered consecutively, for example `
 
     > Die Kolonisten zogen nach Rußland und der Weg war weit.
 
-    Page 57, Line 3–4, [[0 Source|Leibbrandt 1928]]
+    Page 57, Line 3–4, [[0 Source|Leibbrandt 1928]] · [Scan](http://localhost:8765/stelle?buch=6b8d…&seite=057&zeile=3-4)
 
 At the top room for your own remark, below the rule the quotation (words hyphenated at line ends are joined) and the
 page – the printed page number from the running head or the foot of the page; if it is missing or does not fit the neighbouring pages, the
 number the neighbouring pages imply; otherwise the PDF page –, the lines (counted as in “Line 3/42” in
-the program's top bar) and a link to the book's source note. The program creates that file, `0 Source.md`, as a template with the first note; enter there where the book comes from
+the program's top bar), a link to the book's source note and the link back to the scan (see below). The program creates that file, `0 Source.md`, as a template with the first note; enter there where the book comes from
 (university library, interlibrary loan …) and the citation as Zotero gives it. This way every note is one click away
 from its full source. The quotation is also placed on the clipboard.
 
 If Obsidian is installed, it opens the new note immediately and, on Windows, comes to the front (the folder has to be inside a vault Obsidian knows).
 Without Obsidian the file simply stays in the folder – it is plain Markdown.
+
+**Back to the source:** Clicking *Scan* at the end of the source line opens the book in Fraktur-Korrektor right at that
+passage – the page image on the left, the text on the right, the quoted lines highlighted in blue and framed in blue in
+the image. So while writing you can check without searching whether the quotation is right, what comes before and
+after, and what the footnote says. Your bookmark stays where it was; it only moves on when you read on in the book
+yourself.
+
+- Fraktur-Korrektor has to be running for this. If the browser says it cannot reach the page, start the program and
+  click the link again.
+- The link finds the book even after you have moved its folder or read the book saved as a PDF into another computer.
+  If it is not in the library, the program tells you how to get it back in.
+- The lines refer to the state when the note was made. If you later joined or split lines on that page, the highlight
+  may be one line off.
+- Notes made before this feature stay without a link – the program never changes a file you may have edited. Notes
+  from Kindle highlights have no link, as there is no page image for them.
 
 Highlights you made on your Kindle become notes in the same way: [Highlights from the Kindle](kindle.md).
 How notes are created in Obsidian right on the iPad is described below under *Reading on a tablet*.
@@ -384,7 +399,8 @@ created right there:
 
 Obsidian Sync brings the note to the computer. Number, quotation and source come from the program as always; the folder
 is the one you set for the book on the computer (`O`). The numbers carry on correctly even while Obsidian is not
-running on the computer.
+running on the computer. Click the *Scan* link in the note on the computer: it leads to the program running there; on
+the iPad it opens nothing.
 
 The first time, Safari asks whether it may open Obsidian. If it does not open by itself, tap **open in Obsidian** in
 the message at the bottom. Under **☰ → Notes** this can be switched off per device; the note is then created on the
