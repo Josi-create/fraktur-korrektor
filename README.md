@@ -117,6 +117,9 @@ Zertifikat der [SignPath Foundation](https://signpath.org). Nach welchen Regeln 
 über das Netz überträgt (nichts ohne Ihren ausdrücklichen Wunsch), steht unter
 [Signatur und Datenschutz](docs/de/code-signing.md).
 
+*Free code signing provided by [SignPath.io](https://signpath.io), certificate by
+[SignPath Foundation](https://signpath.org).*
+
 ## Lizenz
 
 [GPL-3.0-or-later](LICENSE). Das mitgelieferte Wörterbuch hat eigene Lizenzangaben, siehe [dict/](dict/README.md).
