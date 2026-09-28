@@ -20,14 +20,33 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - **Absatz und Überschrift am Tablet:** Beim Lesen stehen unten rechts **¶ Absatz** und **Überschrift 1 2 3** für die
   Lesezeile – was am Rechner `A` und `H` tun. Hervorgehoben ist, was die Zeile schon ist; noch einmal antippen nimmt es
   zurück. Beim Korrigieren ist **Richtig so** grün, solange die Tastatur zu ist.
+- **Zeile löschen am Tablet** (#79): Ein Knopf beim Lesen entfernt eine Zeile mit OCR-Rauschen, wie `Strg`+`⌫`. Danach
+  steht **↶ Zurückholen** bereit, solange es etwas zurückzuholen gibt – auch nach dem Weiterlesen (`/api/undelete`
+  meldet dafür `rest`).
 - Neue Hilfeseite [Signatur und Datenschutz](docs/de/code-signing.md): wer signiert, nach welchen Regeln, und was
   das Programm über das Netz überträgt.
+
+### Geändert
+- **Korrigieren am Tablet unten** (#80): Ausschnitt, Vorschläge und Knöpfe stehen jetzt unten, wo der Finger vom Lesen
+  schon ist, statt oben. Beim Tippen (»Selbst tippen«, »Zeile bearbeiten«) stehen sie gleich über der Bildschirmtastatur:
+  Die Seite wird so hoch wie der Teil, den die Tastatur frei lässt. Stehen Bild und Text nebeneinander (Querformat),
+  entfällt der Ausschnitt, und Vorschläge und Knöpfe stehen in einer Reihe – über der großen Tastatur bleibt so Platz
+  für Bild und Text wie am Rechner. **Richtig so** steht immer ganz links, wo der Daumen schon liegt, im Querformat
+  auch vor den Vorschlägen. **¶ Absatz** gibt es auch beim Korrigieren. Beim Selbsttippen stellt **Abbrechen** die Zeile
+  wieder her (das Wort ist beim Öffnen der Tastatur markiert und schnell versehentlich gelöscht) und schließt die Tastatur.
+- **Korrektur verlassen durch Wischen oder Doppelklick:** Wer beim Korrigieren mit dem Finger über den Text wischt, ist
+  wieder beim Lesen und rollt gleich weiter; am Rechner beendet ein Doppelklick in den Text die Korrektur. Beides wie
+  `Esc`: Übernommen wird nichts.
 
 ### Behoben
 - **Zwei Programme auf demselben Port:** Lief die installierte App (auf `127.0.0.1:8765`) noch im Infobereich, startete
   `server.py --lan` (auf `0.0.0.0:8765`) trotzdem – Windows und macOS teilen den Port dann. Der Browser landete still
   bei der alten Fassung, neue Funktionen fehlten scheinbar. Jetzt kommt wie sonst die Meldung »Port 8765 ist belegt«
   (Windows: `SO_EXCLUSIVEADDRUSE`; sonst fragt der Server vorher, ob auf `127.0.0.1` schon jemand antwortet).
+- **Tablet: Rollen wurde zum Zoomen** (#63): Rollte der Finger über eine Seitengrenze, meldete Safari sein Loslassen
+  nicht mehr. Der Reader hielt den Finger für noch aufgelegt, jeder neue galt als zweiter – ein Finger zoomte die Schrift,
+  Rollen ging nicht mehr, bis zum Neuladen. Jetzt hält das Textfenster den rollenden Finger fest, und ein Finger, der
+  allein aufsetzt, räumt Übriggebliebenes weg.
 - **Kein Traceback mehr, wenn der Browser eine Verbindung abbricht** (etwa `ConnectionResetError: [WinError 10054]`
   nach schnellem Blättern oder einer ungenutzten, vorsorglich geöffneten Verbindung). Das war nie ein Fehler; die
   Konsole bleibt jetzt ruhig, echte Fehler erscheinen weiter.

@@ -1147,7 +1147,7 @@ class Book:
 
     def undelete(self):
         """Strg+Z: die jüngste Löschung zurückholen – alle Zeilen, die zusammen gelöscht wurden. Liefert
-        dict(page, line, n) oder dict(error=…)."""
+        dict(page, line, n, rest) oder dict(error=…); rest: wie viele Löschungen noch zurückzuholen sind."""
         with self.lock:
             self.refresh()
             stack = self.deleted()
@@ -1169,7 +1169,7 @@ class Book:
                 self.refresh()
                 done = dict(page=e['page'], line=n, n=len(e['lines']) + (done['n'] if done and done['page'] == e['page'] else 0))
             write_atomic(os.path.join(self.folder, 'geloescht.json'), json.dumps(stack, ensure_ascii=False))
-            return done or dict(error='verschoben')
+            return dict(done, rest=len({e['id'] for e in stack})) if done else dict(error='verschoben')
 
     def replay_undelete(self, pg, n, text, when, kind):
         """Ein Eintrag zurueck:ID vom anderen Rechner: die Zeile samt Bildzeile aus der hier nachgespielten (oder hier

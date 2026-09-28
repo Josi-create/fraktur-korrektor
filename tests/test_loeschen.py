@@ -20,11 +20,12 @@ def test_loeschen_und_zurueckholen(app):
     code, d = app.post('/api/lines/001', dict(kind='delete', line=2, old=[t[3], t[4]]))
     assert code == 200 and d['lines'] == [t[0], t[1], '---', t[6]] and d['geo'][3] == p0['geo'][6] and geo_count(app, '001') == 3
     assert [r[2:] for r in app.log()[-2:]] == [['001', '3', t[3], ''], ['001', '3', t[4], '']] and app.log()[-1][1] != kind
-    # Strg+Z: erst die beiden zuletzt gelöschten Zeilen, dann die erste – jede an ihrer Stelle, mit ihrer Bildzeile
-    assert app.post('/api/undelete', {})[1] == dict(page='001', line=2, n=2)
+    # Strg+Z: erst die beiden zuletzt gelöschten Zeilen, dann die erste – jede an ihrer Stelle, mit ihrer Bildzeile;
+    # rest sagt dem Tablet, ob »Zurückholen« stehen bleibt (#79)
+    assert app.post('/api/undelete', {})[1] == dict(page='001', line=2, n=2, rest=1)
     d = app.get('/api/page/001')[1]
     assert d['lines'] == t[:2] + t[3:] and d['geo'][2] == p0['geo'][3] and d['geo'][3] == p0['geo'][4]
-    assert app.post('/api/undelete', {})[1] == dict(page='001', line=2, n=1)
+    assert app.post('/api/undelete', {})[1] == dict(page='001', line=2, n=1, rest=0)
     d = app.get('/api/page/001')[1]
     assert d['lines'] == t and d['geo'] == p0['geo'] and geo_count(app, '001') == 6
     assert [r[1][:8] for r in app.log()[-3:]] == ['zurueck:'] * 3 and app.log()[-1][4:] == ['', t[2]]
@@ -71,7 +72,7 @@ def test_zurueckholen_wenn_die_seite_sich_verschoben_hat(tmp_path):
     assert b.delete_lines('001', 4, [t[4]])[1] is None
     old = t[1]
     assert b.split_line('001', 1, old, old, old.index(' nach'))[1] is None  # davor eine Zeile mehr
-    assert b.undelete() == dict(page='001', line=5, n=1)
+    assert b.undelete() == dict(page='001', line=5, n=1, rest=0)
     d = b.page_data('001')
     assert d['lines'][5] == t[4] and len(d['geo']) == len(d['lines']) and d['geo'][5]['y0'] == d['geo'][4]['y0'] + 30
     # beide Nachbarn geändert: die Zeile davor berichtigt, der Fußnotenstrich danach entfernt

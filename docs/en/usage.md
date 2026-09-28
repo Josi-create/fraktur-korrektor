@@ -40,7 +40,7 @@ is being changed – and **Edit line** (orange).
 | Correction | `F8` (or `#`) | word is correct → whitelist |
 | Correction | `↓` `↑` | put a suggested correction into the field (see below); `Enter` applies it |
 | Correction | `Tab` | next red word without changing anything; for a split word, first into its second half |
-| Correction | `Esc` | back to reading without changing anything |
+| Correction | `Esc` or double-click in the text | back to reading without changing anything |
 | Reading / Correction | `F9` | batch correction (see below) |
 | Reading | `U` | undo the last batch correction |
 | Reading | `F` | footnotes start at the reading line (see below) |
@@ -377,13 +377,21 @@ On the tablet you work with your finger:
   page breaks. The line level with the small orange mark on the left edge is the reading line; the program remembers
   the place. Tapping a line makes it the reading line, in the text as in the page image. Spreading or pinching two
   fingers makes the text (or, on the image, the image) larger or smaller.
-- **Correcting:** Tap a red word – or **Next red word** at the bottom. At the top the line appears as a cut-out of the
-  page image with the doubtful word framed in red, and below it the suggestions. Tap a suggestion and it is applied.
-  **Correct as is** (green) remembers the word as correct (like `F8`), **Skip** moves to the next red word, **Type it** opens
-  the keyboard (the return key or **Apply** saves), **Back to reading** ends. If you started with **Next red word**,
+- **Correcting:** Tap a red word – or **Next red word** at the bottom. At the bottom, where your finger already is, the
+  line appears as a cut-out of the page image with the doubtful word framed in red, below it the suggestions and
+  buttons (while you type, right above the on-screen keyboard). With image and text side by side, the cut-out is left
+  out – the page image on the left already shows the line – and suggestions and buttons stand in one row. Tap a
+  suggestion and it is applied. **Correct as is** (green, always on the far left where your thumb already is) remembers
+  the word as correct (like `F8`), **Skip** moves to the next red word, **Type it** opens the keyboard (the return key
+  or **Apply** saves, **Cancel** restores the line, say if the selected word was deleted by
+  mistake), **¶ Paragraph** starts a paragraph in this line, **Back to reading** ends – as does simply
+  swiping over the text with your finger and reading on; nothing is applied then. If you started with **Next red word**,
   each correction takes you straight on to the next one. If the corrected word occurs more often in the book,
   **Change everywhere** appears – the batch correction as with `F9`. **Edit line** opens the reading line when
   something other than a red word is wrong.
+- **Delete line:** A line that is nothing but OCR noise (specks from the scan edge, jumbled letters) is removed with
+  this button – like `Ctrl`+`⌫`, without asking. If it was a mistake, **↶ Bring back** puts the most recently deleted
+  line back in its place, even if you have read on in the meantime.
 - **Paragraph and heading:** The buttons at the bottom right apply to the reading line. **¶ Paragraph** starts a new
   paragraph there (like `A`), **Heading 1 2 3** makes the line a heading of that level (like `H`) – 1 for chapters, 2
   and 3 for sections within them. What the line already is, is highlighted; tapping it again takes it back.

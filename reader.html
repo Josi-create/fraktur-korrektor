@@ -153,16 +153,21 @@ html.touch #lines{cursor:pointer}  /* Safari schickt Klicks nur an Elemente, die
 #tfix,#tbar,.tonly{display:none} html.touch .tonly{display:inline-flex;gap:8px;margin-left:14px;vertical-align:middle}
 .tbtns{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
 .tb{font:16px Segoe UI,Arial,sans-serif;min-height:44px;padding:8px 16px;border:1px solid #999;border-radius:6px;background:#fff;color:#222;cursor:pointer}
-.tb.go{background:#3a6;border-color:#285;color:#fff} .tb:disabled{opacity:.45}
+.tb.go{background:#3a6;border-color:#285;color:#fff} .tb.del{color:#b22;border-color:#d9a3a3} .tb:disabled{opacity:.45}
 .tclose{float:right;margin:-4px 0 0 12px;font-size:22px;line-height:1;padding:6px 14px}
 /* Absatz und Überschrift für die Lesezeile (A, H): rechts in der Leiste; hervorgehoben ist, was die Zeile schon ist */
 #tfmt{display:flex;gap:8px;align-items:center;margin-left:auto} #tfmt>span{color:#555;margin-left:6px}
-#tfmt [data-h]{min-width:48px;padding:8px 12px;font-family:Georgia,'Times New Roman',serif;font-weight:bold} #tfmt .tb.on{background:#c90;border-color:#c90;color:#fff}
+#tfmt [data-h]{min-width:48px;padding:8px 12px;font-family:Georgia,'Times New Roman',serif;font-weight:bold} #tfmt .tb.on,#tParaF.on{background:#c90;border-color:#c90;color:#fff}
 #tsug{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 2px} #tsug small{color:#888;align-self:center}
+/* Bild und Text nebeneinander: Vorschläge und Knöpfe in einer Reihe. »Richtig so« steht immer ganz links, wo der Daumen
+   schon liegt – auch vor den Vorschlägen, deren Zahl und Breite wechselt */
+html.touch.fixing #tfix{display:block} html.touch.fixing:not(.single) #tfix{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
+html.touch:not(.single) #tfix>div{display:contents} html.touch:not(.single) #tOk{order:-1}
 #tsug .tb{font:20px Georgia,'Times New Roman',serif;background:#fffbe6;border-color:#c90;padding:6px 16px} #tsug .tb.on{background:#c90;color:#fff}
 #tcrop .crop{margin:4px 0 2px;border-color:#bbb;max-width:100%}
-html.touch.fixing #main{grid-template-rows:auto 1fr} html.touch.fixing #korr{grid-row:1;background:#fff;border:1px solid #bbb;padding:8px 12px;min-height:0}
-html.touch.fixing #imgpane,html.touch.fixing #right{grid-row:2}
+/* Beim Korrigieren stehen Ausschnitt, Vorschläge und Knöpfe unten, wo der Finger vom Lesen schon ist (#80) – beim Tippen
+   gleich über der Bildschirmtastatur (fitKeyboard) */
+html.touch.fixing #korr{background:#fff;border:1px solid #bbb;padding:8px 12px;min-height:0}
 html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visibility:hidden}  /* erst »Selbst tippen« holt die Tastatur */html.touch #top{padding:8px 12px} html.touch #pnav button{padding:4px 14px;font-size:15px} html.touch #pagesel{font-size:15px}
 </style>
 <script src="/i18n.js"></script>
@@ -200,8 +205,8 @@ html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visib
  <div class="pane" id="korr">
   <div id="word"></div>
   <div id="tfix"><div id="tcrop"></div><div id="tsug"></div>
-   <div class="tbtns"><button type="button" class="tb go" id="tSave" data-t="t_save"></button><button type="button" class="tb" id="tOk" data-t="t_ok"></button><button type="button" class="tb" id="tSkip" data-t="t_skip"></button><button type="button" class="tb" id="tType" data-t="t_type"></button><button type="button" class="tb" id="tSerieF" data-t="t_serie"></button><button type="button" class="tb" id="tBack" data-t="t_back"></button></div></div>
-  <div id="tbar" class="tbtns"><button type="button" class="tb go" id="tNext" data-t="t_next"></button><button type="button" class="tb" id="tEdit" data-t="t_edit"></button><button type="button" class="tb" id="tNote" data-t="t_note"></button><button type="button" class="tb" id="tSerieR" data-t="t_serie"></button>
+   <div class="tbtns"><button type="button" class="tb" id="tOk" data-t="t_ok"></button><button type="button" class="tb go" id="tSave" data-t="t_save"></button><button type="button" class="tb" id="tUntype" data-t="t_untype"></button><button type="button" class="tb" id="tSkip" data-t="t_skip"></button><button type="button" class="tb" id="tType" data-t="t_type"></button><button type="button" class="tb" id="tParaF" data-t="t_para"></button><button type="button" class="tb" id="tSerieF" data-t="t_serie"></button><button type="button" class="tb" id="tBack" data-t="t_back"></button></div></div>
+  <div id="tbar" class="tbtns"><button type="button" class="tb go" id="tNext" data-t="t_next"></button><button type="button" class="tb" id="tEdit" data-t="t_edit"></button><button type="button" class="tb del" id="tDel" data-t="t_del"></button><button type="button" class="tb" id="tUndel" data-t="t_undel"></button><button type="button" class="tb" id="tNote" data-t="t_note"></button><button type="button" class="tb" id="tSerieR" data-t="t_serie"></button>
    <span id="tfmt"><button type="button" class="tb" id="tPara" data-t="t_para"></button><span data-t="t_heading"></span><button type="button" class="tb" data-h="1" data-t-title="t_heading_1">1</button><button type="button" class="tb" data-h="2" data-t-title="t_heading_2">2</button><button type="button" class="tb" data-h="3" data-t-title="t_heading_3">3</button></span></div>
   <div id="help"></div>
   <div id="shint"></div>
@@ -743,8 +748,8 @@ document.addEventListener('pointerdown', () => { viaKey = false; }, true);
 function renderTouch() {
   const fixing = mode == 'fix' || mode == 'free', offer = !!pending && seriesStart() === pending;
   const typing = document.documentElement.classList.contains('typing'), f = mode == 'fix' ? cf : null;
-  $('tbar').style.display = mode == 'read' ? 'flex' : 'none'; $('tfix').style.display = fixing ? 'block' : 'none';
-  $('tSerieR').style.display = offer ? '' : 'none';
+  $('tbar').style.display = mode == 'read' ? 'flex' : 'none'; $('tfix').style.display = fixing ? '' : 'none';
+  $('tSerieR').style.display = offer ? '' : 'none'; $('tUndel').style.display = canUndo ? '' : 'none';
   if (mode == 'read') {  // Absatz und Überschrift zeigen, was die Lesezeile schon ist
     const l = data.lines[li] || '', h = l.match(/^<h([1-6])>/), ok = plainLine(li);
     $('tPara').classList.toggle('on', l.startsWith('<p>')); $('tPara').disabled = !ok;
@@ -752,12 +757,15 @@ function renderTouch() {
   }
   if (!fixing) return;
   const i = f ? f.line : li, g = data.geo && data.geo[i], j = f && isJoin(f);
-  $('tcrop').innerHTML = g && data.img && data.size ? cropHtml({ geo: g, text: data.lines[i], start: f ? f.start : 0, len: f ? f.len : 0, img: data.img,
+  // Ausschnitt nur, wenn allein der Text dasteht – stehen Bild und Text nebeneinander (Querformat), zeigt das Bild die Zeile
+  // schon, und über der Bildschirmtastatur ist der Platz knapp
+  $('tcrop').innerHTML = document.documentElement.classList.contains('single') && g && data.img && data.size ? cropHtml({ geo: g, text: data.lines[i], start: f ? f.start : 0, len: f ? f.len : 0, img: data.img,
     geo2: j ? data.geo[i + 1] : null, text2: j ? data.lines[i + 1] : '', start2: j ? f.start2 || 0 : 0, len2: j ? part2len(f) : 0 }, data.size, $('tfix').clientWidth - 2) : '';
   $('tOk').style.display = f && f.kind != 'page' && f.kind != 'fnref' ? '' : 'none';
   $('tOk').classList.toggle('go', !typing);  // grün, solange »Übernehmen« nicht da ist – nur ein Knopf sticht hervor
   $('tSkip').style.display = f ? '' : 'none'; $('tType').style.display = typing ? 'none' : '';
-  $('tSave').style.display = typing ? '' : 'none'; $('tSerieF').style.display = offer ? '' : 'none';
+  $('tSave').style.display = typing ? '' : 'none'; $('tSerieF').style.display = offer ? '' : 'none'; $('tUntype').style.display = f && typing ? '' : 'none';
+  $('tParaF').style.display = f && !typing ? '' : 'none'; $('tParaF').classList.toggle('on', !!f && data.lines[f.line].startsWith('<p>'));
   renderTsug();
 }
 function renderTsug() {
@@ -830,6 +838,9 @@ function hopJoin(e) {
   e.preventDefault(); return true;
 }
 function toRead(line) { mode = 'read'; cf = null; sug = null; li = line; render(); bookmark(); }
+// Esc: Korrigieren bzw. Bearbeiten verlassen, ohne etwas zu übernehmen – auch mit »Zurück zum Lesen«, mit dem Finger über
+// den Text wischen (Tablet) und Doppelklick in den Text
+function leaveFix() { fixRun = false; if (mode == 'fix') passed = { line: cf.line, start: cf.start }; toRead(mode == 'fix' ? cf.line : li); }
 async function toFlag(from) {
   // nächstes rotes Wort ab Lesezeile (bzw. nach der zuletzt besuchten Stelle)
   const p = from || (passed && passed.line == li ? passed : null);
@@ -1041,7 +1052,10 @@ async function unjoinLine() {
 }
 // ---- Rauschen vom Scanrand löschen (#73): Strg/⌘+⌫ nimmt die Lesezeile bzw. die mit Umschalt+↓/↑ markierten Zeilen
 // weg, ohne Rückfrage – Strg/⌘+Z holt sie zurück. Der Server nimmt die Bildzeilen mit, die Bildzuordnung bleibt.
-async function deleteLines() {
+// Am Tablet der Knopf »Zeile löschen« (#79). Ohne Tastatur fehlt Strg+Z: Solange es etwas zurückzuholen gibt, bietet die
+// Leiste »Zurückholen« an – auch nach dem Weiterlesen, denn ein Versehen fällt oft erst ein paar Zeilen später auf.
+let canUndo = false;
+async function deleteLines(tap) {
   const a = nsel == null ? li : Math.min(nsel, li), b = nsel == null ? li : Math.max(nsel, li);
   nsel = null;
   const r = await fetch(BASE + '/api/lines/' + pg, { method: 'POST', body: JSON.stringify({ kind: 'delete', line: a, old: data.lines.slice(a, b + 1) }) });
@@ -1049,12 +1063,13 @@ async function deleteLines() {
   if (!r.ok) { await loadPage(pg, li); msg = t('changed_outside'); render(); return; }
   data = await r.json(); updateCount(); renderText(); pending = null;
   li = Math.min(a, data.lines.length - 1); while (li < data.lines.length - 1 && skippable(li)) li++; while (li > 0 && skippable(li)) li--;
-  msg = t(b > a ? 'del_done_n' : 'del_done', { n: b - a + 1, keys: t(MAC ? 'key_undo_mac' : 'key_undo') }); render(); bookmark();
+  msg = tap ? t('del_done_t') : t(b > a ? 'del_done_n' : 'del_done', { n: b - a + 1, keys: t(MAC ? 'key_undo_mac' : 'key_undo') });
+  canUndo = true; render(); bookmark();
 }
 async function undeleteLines() {
   const r = await (await fetch(BASE + '/api/undelete', { method: 'POST', body: '{}' })).json();
-  if (r.error) { msg = t(r.error == 'nichts' ? 'undel_none' : 'undel_moved'); render(); return; }
-  await loadOverview(); await loadPage(r.page, r.line);
+  if (r.error) { canUndo = false; msg = t(r.error == 'nichts' ? 'undel_none' : 'undel_moved'); render(); return; }
+  canUndo = r.rest > 0; await loadOverview(); await loadPage(r.page, r.line);
   msg = t(r.n > 1 ? 'undel_done_n' : 'undel_done', { n: r.n }); render(); bookmark();
 }
 // A: Hier beginnt ein Absatz – nochmals A nimmt es zurück (#67). Die meisten setzt das Programm beim ersten Öffnen selbst.
@@ -1489,7 +1504,7 @@ async function onKey(e) {
     if (hopJoin(e)) return;
     if (e.key == 'Enter' && e.shiftKey) { e.preventDefault(); await splitLine(); }
     else if (e.key == 'Enter') { e.preventDefault(); await commit(); }
-    else if (e.key == 'Escape') { e.preventDefault(); if (mode == 'fix') passed = { line: cf.line, start: cf.start }; toRead(mode == 'fix' ? cf.line : li); }
+    else if (e.key == 'Escape') { e.preventDefault(); leaveFix(); }
     else if ((e.key == 'F8' || e.key == '#') && mode == 'fix') { e.preventDefault(); await whitelist(); }
     else if (e.key == 'Tab' && mode == 'fix') { e.preventDefault(); await toFlag({ line: cf.line, start: cf.start }); }
   }
@@ -1518,6 +1533,19 @@ for (const [id, d] of [['pprev', -1], ['pnext', 1]]) $(id).onclick = e => { e.cu
 $('pagesel').onchange = async e => { await loadPage(e.target.value, 0); e.target.blur(); bookmark(); };
 $('wfilter').addEventListener('input', () => { if (wl) { wl.sel = 0; renderWl(); } });
 window.addEventListener('resize', () => { setLayout(); fitText(); layoutText(); layoutImage(); renderSug(); });
+// Bildschirmtastatur am Tablet (#80): Safari legt sie über die Seite, statt sie zu verkleinern – die Korrekturleiste unten
+// läge darunter. Darum wird die Seite so hoch wie der sichtbare Teil und rückt dorthin, wo Safari gerade hinschaut: Die
+// Leiste steht dann gleich über der Tastatur. Mit angeschlossener Tastatur ändert sich nichts.
+if (TOUCH && window.visualViewport) {
+  const vv = visualViewport, fitKeyboard = () => {
+    const kb = vv.scale < 1.05 && document.documentElement.clientHeight - vv.height > 100, s = document.body.style;
+    const h = kb ? vv.height + 'px' : '', y = kb ? 'translateY(' + vv.pageTop + 'px)' : '';
+    if (s.height == h && s.transform == y) return;
+    s.height = h; s.transform = y;
+    if (data) { layoutText(); layoutImage(); renderSug(); }
+  };
+  vv.addEventListener('resize', fitKeyboard); vv.addEventListener('scroll', fitKeyboard);
+}
 // Kopfleiste auf dem Tablet: Menü ☰, Reiter Text/Seitenbild, Schalter für die Einzelansicht (#63)
 $('menubtn').onclick = e => { e.currentTarget.blur(); $('links').classList.toggle('open'); };
 $('links').addEventListener('click', () => $('links').classList.remove('open'));
@@ -1537,6 +1565,8 @@ document.addEventListener('selectionchange', () => {  // mit dem Finger markiert
   if (!TOUCH) return;
   const s = mode == 'read' && selectedText(); $('tNote').textContent = t(s ? 't_note_sel' : 't_note'); $('tNote').classList.toggle('go', !!s);
 });
+$('tDel').onclick = guarded(() => deleteLines(true));  // Strg+⌫
+$('tUndel').onclick = guarded(() => undeleteLines());  // Strg+Z
 $('tPara').onclick = guarded(() => paraKey(true));  // A
 for (const b of $('tfmt').querySelectorAll('[data-h]')) b.onclick = guarded(() => headingKey(+b.dataset.h));  // H
 $('tbar').addEventListener('pointerdown', () => { if (stopFling()) rollEnd(); });  // ein Knopf gilt der Zeile, auf der der Text steht
@@ -1544,7 +1574,15 @@ $('tSerieR').onclick = $('tSerieF').onclick = () => { if (!busy && (mode == 'rea
 $('tOk').onclick = inFix(() => whitelist());  // F8
 $('tSkip').onclick = inFix(async () => { const f = cf; passed = { line: f.line, start: f.start }; await toFlag({ line: f.line, start: f.start }); });  // Tab
 $('tSave').onclick = inFix(() => commit());  // Enter
-$('tBack').onclick = () => { if (busy || (mode != 'fix' && mode != 'free')) return; fixRun = false; if (mode == 'fix') passed = { line: cf.line, start: cf.start }; toRead(mode == 'fix' ? cf.line : li); };  // Esc
+$('tBack').onclick = () => { if (!busy && (mode == 'fix' || mode == 'free')) leaveFix(); };  // Esc
+// Abbrechen beim Selbsttippen: Das Wort ist beim Öffnen der Tastatur markiert, ein Tipp daneben löscht es leicht. Die Zeile
+// steht wieder wie vorher, die Tastatur geht zu, es bleibt beim selben Wort mit seinen Vorschlägen.
+$('tUntype').onclick = inFix(async () => { $('edit').blur(); $('edit2').blur(); enterFix(cf); msg = t('untype_done'); render(); });
+$('tParaF').onclick = inFix(async () => {  // A beim Korrigieren: danach weiter an demselben Wort, das jetzt 3 Zeichen weiter steht
+  const f = cf; li = f.line; await paraKey(true); const m = msg;
+  const n = data.flags.filter(x => x.line == f.line && x.word == f.word).sort((a, b) => Math.abs(a.start - f.start) - Math.abs(b.start - f.start))[0];
+  if (n) { enterFix(n); msg = m; render(); } else toRead(f.line);
+});
 $('tType').onclick = () => {  // Schreibmarke ins Feld, noch während des Antippens – nur dann öffnet Safari die Tastatur
   if (busy || mode != 'fix') return;
   document.documentElement.classList.add('typing'); renderTouch();
@@ -1563,6 +1601,7 @@ function charOffset(d, x, y) {
   return r2.toString().length;
 }
 $('lines').addEventListener('dblclick', async e => {
+  if (mode == 'fix' || mode == 'free') { try { getSelection().removeAllRanges(); } catch (x) {} if (!busy) leaveFix(); return; }  // wie Esc
   // Doppelklick auf ein Wort: Korrekturmodus mit diesem Wort markiert (Position stammt vom ersten Klick, weil der Text danach rollt)
   const c = lastClick; if (!c || c.off == null) return;
   try { getSelection().removeAllRanges(); } catch (x) {}
@@ -1733,13 +1772,26 @@ function imgTap(e) {  // Antippen einer Zeile im Bild: wie der Doppelklick am PC
 // Strg+Mausrad am PC. Ein Antippen bleibt ein Klick (Zeile wählen, rotes Wort korrigieren), außer es hat einen Schwung angehalten.
 const pts = new Map(); let gest = null;
 const spread = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
+// Beim Rollen baut der Reader die Zeilen neu (Seitengrenze): Safari meldete das Loslassen dann an die verschwundene Zeile,
+// nicht mehr an das Textfenster. Darum hält das Fenster den Finger fest, sobald er rollt oder zoomt – beim bloßen Antippen
+// nicht, sonst ginge der Klick ans Fenster statt an die Zeile oder das rote Wort.
+function hold(el, id) { try { el.setPointerCapture(id); } catch (x) {} }
 function fingerDown(e) {
-  if (!TOUCH || e.pointerType == 'mouse' || !data || busy) return;
+  if (!TOUCH || e.pointerType == 'mouse') return;
+  // Der erste Finger, der aufsetzt, während kein anderer liegt: Was noch in pts steht, hat sein Loslassen nie gemeldet.
+  // Blieb es stehen, wäre jeder neue Finger der zweite – Rollen würde zum Zoomen, bis zum Neuladen.
+  if (e.isPrimary) { pts.clear(); gest = null; }
+  if (!data || busy) return;
   const pane = e.currentTarget.id == 'text' ? 'text' : 'img';
   pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
   const stopped = stopFling();
-  if (pts.size == 2) { if (stopped) rollEnd(); gest = { pane, kind: 'pinch', d0: spread(), z0: pane == 'text' ? tzoom : zoom }; return; }
-  if (pts.size > 2 || mode != 'read') { gest = null; return; }
+  if (pts.size == 2) {
+    if (stopped) rollEnd(); gest = { pane, kind: 'pinch', d0: spread(), z0: pane == 'text' ? tzoom : zoom };
+    for (const id of pts.keys()) hold(e.currentTarget, id);
+    return;
+  }
+  if (pts.size > 2 || (mode != 'read' && mode != 'fix' && mode != 'free')) { gest = null; return; }
+  if (mode != 'read' && e.target.closest('input,#sugbox')) { gest = null; return; }  // im Eingabefeld: Schreibmarke, Markieren
   if (pane == 'text' && selectedText()) { if (stopped) rollEnd(); gest = null; return; }  // Text ist markiert: die Griffe verschieben, nicht rollen
   if (stopped) $('lines').classList.remove('rolling');
   gest = { pane, kind: 'tap', stopped, x0: e.clientX, y0: e.clientY, y: e.clientY, tm: e.timeStamp, v: 0 };
@@ -1750,7 +1802,9 @@ function fingerMove(e) {
   if (gest.kind == 'pinch') { if (pts.size == 2) { const f = spread() / gest.d0; if (gest.pane == 'text') setTextZoom(gest.z0 * f); else setZoom(gest.z0 * f); } return; }
   if (gest.kind == 'tap') {
     if (Math.hypot(e.clientX - gest.x0, e.clientY - gest.y0) < 10) return;
+    if (mode != 'read') { if (busy) { gest = null; return; } leaveFix(); }  // Wischen beim Korrigieren: zurück zum Lesen, ohne Übernahme
     gest.kind = 'roll'; if (gest.pane == 'text') $('lines').classList.add('rolling');
+    hold(e.currentTarget, e.pointerId);
   }
   const dy = e.clientY - gest.y, dt = Math.max(1, e.timeStamp - gest.tm);
   gest.v = 0.7 * dy / dt + 0.3 * gest.v; gest.y = e.clientY; gest.tm = e.timeStamp;
@@ -1765,7 +1819,7 @@ function fingerUp(e) {
     noClick = performance.now() + 400;  // der Klick, den mancher Browser nach dem Rollen noch schickt, wählt keine Zeile
     if (g.pane == 'text') fling(e.type == 'pointerup' && e.timeStamp - g.tm < 80 ? g.v : 0); else imgDrop(e.clientY - g.y0);
   } else if (g.stopped) { noClick = performance.now() + 400; rollEnd(); }
-  else if (g.pane == 'img' && e.type == 'pointerup') imgTap(e);
+  else if (g.pane == 'img' && e.type == 'pointerup' && mode == 'read') imgTap(e);
 }
 for (const id of ['text', 'imgpane']) {
   const el = $(id);

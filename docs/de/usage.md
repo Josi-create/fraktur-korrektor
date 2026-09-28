@@ -40,7 +40,7 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Korrektur | `F8` (oder `#`) | Wort ist richtig → Whitelist |
 | Korrektur | `↓` `↑` | einen Korrekturvorschlag ins Feld setzen (siehe unten); `Enter` übernimmt ihn |
 | Korrektur | `Tab` | nächstes rotes Wort, ohne zu ändern; bei einem getrennten Wort zuerst in die zweite Hälfte |
-| Korrektur | `Esc` | zurück zum Lesen, ohne zu ändern |
+| Korrektur | `Esc` oder Doppelklick in den Text | zurück zum Lesen, ohne zu ändern |
 | Lesen / Korrektur | `F9` | Serienkorrektur (siehe unten) |
 | Lesen | `U` | letzte Serienkorrektur zurücknehmen |
 | Lesen | `F` | Fußnoten beginnen mit der Lesezeile (siehe unten) |
@@ -384,13 +384,21 @@ Auf dem Tablet bedienen Sie alles mit dem Finger:
   Seitengrenzen anzuhalten. Die Zeile auf der Höhe der kleinen orangen Marke am linken Rand ist die Lesezeile; das
   Programm merkt sich die Stelle. Eine Zeile antippen macht sie zur Lesezeile, im Text wie im Seitenbild. Mit zwei
   Fingern auseinanderziehen oder zusammenschieben: im Text die Schrift, im Bild das Bild größer oder kleiner.
-- **Korrigieren:** Ein rotes Wort antippen – oder unten **Nächstes rotes Wort**. Oben erscheint die Zeile als
-  Ausschnitt aus dem Seitenbild, das fragliche Wort rot umrahmt, darunter die Vorschläge. Einen Vorschlag antippen,
-  und er ist übernommen. **Richtig so** (grün) merkt sich das Wort als richtig (wie `F8`), **Überspringen** geht zum nächsten
-  roten Wort, **Selbst tippen** öffnet die Tastatur (die Eingabetaste oder **Übernehmen** speichert), **Zurück zum
-  Lesen** beendet. Haben Sie mit **Nächstes rotes Wort** begonnen, geht es nach jeder Korrektur gleich zum nächsten.
+- **Korrigieren:** Ein rotes Wort antippen – oder unten **Nächstes rotes Wort**. Unten, wo der Finger ohnehin ist, erscheint die
+  Zeile als Ausschnitt aus dem Seitenbild, das fragliche Wort rot umrahmt, darunter die Vorschläge und Knöpfe (beim
+  Tippen gleich über der Bildschirmtastatur). Stehen Bild und Text nebeneinander, entfällt der Ausschnitt – das
+  Seitenbild links zeigt die Zeile ja schon –, und Vorschläge und Knöpfe stehen in einer Reihe. Einen Vorschlag antippen,
+  und er ist übernommen. **Richtig so** (grün, immer ganz links, wo der Daumen schon liegt) merkt sich das Wort als
+  richtig (wie `F8`), **Überspringen** geht zum nächsten roten Wort, **Selbst tippen** öffnet die Tastatur (die
+  Eingabetaste oder **Übernehmen** speichert, **Abbrechen** stellt die Zeile wieder her, etwa wenn das markierte Wort
+  versehentlich gelöscht wurde), **¶ Absatz** lässt in dieser Zeile einen Absatz beginnen, **Zurück zum
+  Lesen** beendet – ebenso, wenn Sie einfach mit dem Finger über den Text wischen und weiterlesen; übernommen wird dabei
+  nichts. Haben Sie mit **Nächstes rotes Wort** begonnen, geht es nach jeder Korrektur gleich zum nächsten.
   Kommt das berichtigte Wort noch öfter im Buch vor, erscheint **Alle gleichen ändern** – die Serienkorrektur wie mit
   `F9`. **Zeile bearbeiten** öffnet die Lesezeile, wenn etwas anderes als ein rotes Wort falsch ist.
+- **Zeile löschen:** Eine Zeile, die nur OCR-Rauschen ist (Flecken vom Scanrand, Buchstabensalat), entfernt dieser Knopf
+  – wie `Strg`+`⌫`, ohne Rückfrage. War es ein Versehen: **↶ Zurückholen** bringt die zuletzt gelöschte Zeile an ihre
+  Stelle zurück, auch wenn Sie inzwischen weitergelesen haben.
 - **Absatz und Überschrift:** Die Knöpfe unten rechts gelten der Lesezeile. **¶ Absatz** lässt dort einen neuen
   Absatz beginnen (wie `A`), **Überschrift 1 2 3** macht die Zeile zur Überschrift dieser Ebene (wie `H`) – 1 für
   Kapitel, 2 und 3 für Abschnitte darin. Hervorgehoben ist, was die Zeile schon ist; noch einmal antippen nimmt es
