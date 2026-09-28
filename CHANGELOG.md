@@ -25,6 +25,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   `server.py --lan` (auf `0.0.0.0:8765`) trotzdem – Windows und macOS teilen den Port dann. Der Browser landete still
   bei der alten Fassung, neue Funktionen fehlten scheinbar. Jetzt kommt wie sonst die Meldung »Port 8765 ist belegt«
   (Windows: `SO_EXCLUSIVEADDRUSE`; sonst fragt der Server vorher, ob auf `127.0.0.1` schon jemand antwortet).
+- **Kein Traceback mehr, wenn der Browser eine Verbindung abbricht** (etwa `ConnectionResetError: [WinError 10054]`
+  nach schnellem Blättern oder einer ungenutzten, vorsorglich geöffneten Verbindung). Das war nie ein Fehler; die
+  Konsole bleibt jetzt ruhig, echte Fehler erscheinen weiter.
 
 ## [0.11.0] – 2026-09-26
 

@@ -50,6 +50,25 @@ def test_starter_meldet_belegten_port(monkeypatch):
     assert '8765' in gemeldet[0]
 
 
+def test_abgebrochene_verbindung_ohne_traceback(capsys):
+    """Schließt der Browser eine Verbindung vorzeitig (WinError 10054), bleibt die Konsole ruhig – echte Fehler nicht."""
+    srv = server.Server(('127.0.0.1', 0), server.H)
+    try:
+        for fehler in (ConnectionResetError(10054, 'vom Remotehost geschlossen'), ConnectionAbortedError(), BrokenPipeError()):
+            try:
+                raise fehler
+            except OSError:
+                srv.handle_error(None, ('127.0.0.1', 59928))
+        assert capsys.readouterr().err == ''
+        try:
+            raise ValueError('echter Fehler')
+        except ValueError:
+            srv.handle_error(None, ('127.0.0.1', 59928))
+        assert 'echter Fehler' in capsys.readouterr().err
+    finally:
+        srv.server_close()
+
+
 def test_prozessnummer_des_finders_stoert_nicht(monkeypatch):
     """Der Finder hängt beim Start manchmal -psn_0_… an; argparse würde daran scheitern."""
     monkeypatch.setattr(starter, 'answering', lambda port: True)
