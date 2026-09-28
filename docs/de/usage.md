@@ -386,13 +386,17 @@ Auf dem Tablet bedienen Sie alles mit dem Finger:
   Fingern auseinanderziehen oder zusammenschieben: im Text die Schrift, im Bild das Bild größer oder kleiner.
 - **Korrigieren:** Ein rotes Wort antippen – oder unten **Nächstes rotes Wort**. Oben erscheint die Zeile als
   Ausschnitt aus dem Seitenbild, das fragliche Wort rot umrahmt, darunter die Vorschläge. Einen Vorschlag antippen,
-  und er ist übernommen. **Richtig so** merkt sich das Wort als richtig (wie `F8`), **Überspringen** geht zum nächsten
+  und er ist übernommen. **Richtig so** (grün) merkt sich das Wort als richtig (wie `F8`), **Überspringen** geht zum nächsten
   roten Wort, **Selbst tippen** öffnet die Tastatur (die Eingabetaste oder **Übernehmen** speichert), **Zurück zum
   Lesen** beendet. Haben Sie mit **Nächstes rotes Wort** begonnen, geht es nach jeder Korrektur gleich zum nächsten.
   Kommt das berichtigte Wort noch öfter im Buch vor, erscheint **Alle gleichen ändern** – die Serienkorrektur wie mit
   `F9`. **Zeile bearbeiten** öffnet die Lesezeile, wenn etwas anderes als ein rotes Wort falsch ist.
-- **Mit Tastatur:** Tabellen, Überschriften, Absätze, Fußnotenstrich, Zeilen teilen oder verbinden gehen nur mit den
-  Tasten. Ist am Tablet eine Tastatur angeschlossen, gelten alle Tasten wie am Rechner.
+- **Absatz und Überschrift:** Die Knöpfe unten rechts gelten der Lesezeile. **¶ Absatz** lässt dort einen neuen
+  Absatz beginnen (wie `A`), **Überschrift 1 2 3** macht die Zeile zur Überschrift dieser Ebene (wie `H`) – 1 für
+  Kapitel, 2 und 3 für Abschnitte darin. Hervorgehoben ist, was die Zeile schon ist; noch einmal antippen nimmt es
+  zurück.
+- **Mit Tastatur:** Tabellen, Fußnotenstrich, Zeilen teilen oder verbinden gehen nur mit den Tasten. Ist am Tablet eine
+  Tastatur angeschlossen, gelten alle Tasten wie am Rechner.
 
 ### Zettel für Obsidian auf dem iPad
 

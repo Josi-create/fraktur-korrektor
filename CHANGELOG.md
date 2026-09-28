@@ -17,6 +17,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   SignPath Foundation signieren, sobald das Secret `SIGNPATH_API_TOKEN` gesetzt ist; ohne es bleibt alles wie bisher.
   Beide Dateien tragen jetzt Produktname und Version in den Datei-Eigenschaften (der Installer zeigte bisher 0.0.0.0).
   Einrichtung: [RELEASE.md](RELEASE.md#einmalig-windows-signatur-einrichten-signpath-foundation).
+- **Absatz und Überschrift am Tablet:** Beim Lesen stehen unten rechts **¶ Absatz** und **Überschrift 1 2 3** für die
+  Lesezeile – was am Rechner `A` und `H` tun. Hervorgehoben ist, was die Zeile schon ist; noch einmal antippen nimmt es
+  zurück. Beim Korrigieren ist **Richtig so** grün, solange die Tastatur zu ist.
 - Neue Hilfeseite [Signatur und Datenschutz](docs/de/code-signing.md): wer signiert, nach welchen Regeln, und was
   das Programm über das Netz überträgt.
 

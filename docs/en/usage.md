@@ -379,13 +379,16 @@ On the tablet you work with your finger:
   fingers makes the text (or, on the image, the image) larger or smaller.
 - **Correcting:** Tap a red word – or **Next red word** at the bottom. At the top the line appears as a cut-out of the
   page image with the doubtful word framed in red, and below it the suggestions. Tap a suggestion and it is applied.
-  **Correct as is** remembers the word as correct (like `F8`), **Skip** moves to the next red word, **Type it** opens
+  **Correct as is** (green) remembers the word as correct (like `F8`), **Skip** moves to the next red word, **Type it** opens
   the keyboard (the return key or **Apply** saves), **Back to reading** ends. If you started with **Next red word**,
   each correction takes you straight on to the next one. If the corrected word occurs more often in the book,
   **Change everywhere** appears – the batch correction as with `F9`. **Edit line** opens the reading line when
   something other than a red word is wrong.
-- **With a keyboard:** Tables, headings, paragraphs, the footnote rule, splitting or joining lines need the keys. With
-  a keyboard attached to the tablet, all keys work as on the computer.
+- **Paragraph and heading:** The buttons at the bottom right apply to the reading line. **¶ Paragraph** starts a new
+  paragraph there (like `A`), **Heading 1 2 3** makes the line a heading of that level (like `H`) – 1 for chapters, 2
+  and 3 for sections within them. What the line already is, is highlighted; tapping it again takes it back.
+- **With a keyboard:** Tables, the footnote rule, splitting or joining lines need the keys. With a keyboard attached to
+  the tablet, all keys work as on the computer.
 
 ### Notes for Obsidian on the iPad
 

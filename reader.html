@@ -155,6 +155,9 @@ html.touch #lines{cursor:pointer}  /* Safari schickt Klicks nur an Elemente, die
 .tb{font:16px Segoe UI,Arial,sans-serif;min-height:44px;padding:8px 16px;border:1px solid #999;border-radius:6px;background:#fff;color:#222;cursor:pointer}
 .tb.go{background:#3a6;border-color:#285;color:#fff} .tb:disabled{opacity:.45}
 .tclose{float:right;margin:-4px 0 0 12px;font-size:22px;line-height:1;padding:6px 14px}
+/* Absatz und Überschrift für die Lesezeile (A, H): rechts in der Leiste; hervorgehoben ist, was die Zeile schon ist */
+#tfmt{display:flex;gap:8px;align-items:center;margin-left:auto} #tfmt>span{color:#555;margin-left:6px}
+#tfmt [data-h]{min-width:48px;padding:8px 12px;font-family:Georgia,'Times New Roman',serif;font-weight:bold} #tfmt .tb.on{background:#c90;border-color:#c90;color:#fff}
 #tsug{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 2px} #tsug small{color:#888;align-self:center}
 #tsug .tb{font:20px Georgia,'Times New Roman',serif;background:#fffbe6;border-color:#c90;padding:6px 16px} #tsug .tb.on{background:#c90;color:#fff}
 #tcrop .crop{margin:4px 0 2px;border-color:#bbb;max-width:100%}
@@ -198,7 +201,8 @@ html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visib
   <div id="word"></div>
   <div id="tfix"><div id="tcrop"></div><div id="tsug"></div>
    <div class="tbtns"><button type="button" class="tb go" id="tSave" data-t="t_save"></button><button type="button" class="tb" id="tOk" data-t="t_ok"></button><button type="button" class="tb" id="tSkip" data-t="t_skip"></button><button type="button" class="tb" id="tType" data-t="t_type"></button><button type="button" class="tb" id="tSerieF" data-t="t_serie"></button><button type="button" class="tb" id="tBack" data-t="t_back"></button></div></div>
-  <div id="tbar" class="tbtns"><button type="button" class="tb go" id="tNext" data-t="t_next"></button><button type="button" class="tb" id="tEdit" data-t="t_edit"></button><button type="button" class="tb" id="tNote" data-t="t_note"></button><button type="button" class="tb" id="tSerieR" data-t="t_serie"></button></div>
+  <div id="tbar" class="tbtns"><button type="button" class="tb go" id="tNext" data-t="t_next"></button><button type="button" class="tb" id="tEdit" data-t="t_edit"></button><button type="button" class="tb" id="tNote" data-t="t_note"></button><button type="button" class="tb" id="tSerieR" data-t="t_serie"></button>
+   <span id="tfmt"><button type="button" class="tb" id="tPara" data-t="t_para"></button><span data-t="t_heading"></span><button type="button" class="tb" data-h="1" data-t-title="t_heading_1">1</button><button type="button" class="tb" data-h="2" data-t-title="t_heading_2">2</button><button type="button" class="tb" data-h="3" data-t-title="t_heading_3">3</button></span></div>
   <div id="help"></div>
   <div id="shint"></div>
  </div>
@@ -741,11 +745,17 @@ function renderTouch() {
   const typing = document.documentElement.classList.contains('typing'), f = mode == 'fix' ? cf : null;
   $('tbar').style.display = mode == 'read' ? 'flex' : 'none'; $('tfix').style.display = fixing ? 'block' : 'none';
   $('tSerieR').style.display = offer ? '' : 'none';
+  if (mode == 'read') {  // Absatz und Überschrift zeigen, was die Lesezeile schon ist
+    const l = data.lines[li] || '', h = l.match(/^<h([1-6])>/), ok = plainLine(li);
+    $('tPara').classList.toggle('on', l.startsWith('<p>')); $('tPara').disabled = !ok;
+    for (const b of $('tfmt').querySelectorAll('[data-h]')) { b.classList.toggle('on', !!h && h[1] == b.dataset.h); b.disabled = !ok; }
+  }
   if (!fixing) return;
   const i = f ? f.line : li, g = data.geo && data.geo[i], j = f && isJoin(f);
   $('tcrop').innerHTML = g && data.img && data.size ? cropHtml({ geo: g, text: data.lines[i], start: f ? f.start : 0, len: f ? f.len : 0, img: data.img,
     geo2: j ? data.geo[i + 1] : null, text2: j ? data.lines[i + 1] : '', start2: j ? f.start2 || 0 : 0, len2: j ? part2len(f) : 0 }, data.size, $('tfix').clientWidth - 2) : '';
   $('tOk').style.display = f && f.kind != 'page' && f.kind != 'fnref' ? '' : 'none';
+  $('tOk').classList.toggle('go', !typing);  // grün, solange »Übernehmen« nicht da ist – nur ein Knopf sticht hervor
   $('tSkip').style.display = f ? '' : 'none'; $('tType').style.display = typing ? 'none' : '';
   $('tSave').style.display = typing ? '' : 'none'; $('tSerieF').style.display = offer ? '' : 'none';
   renderTsug();
@@ -1048,18 +1058,19 @@ async function undeleteLines() {
   msg = t(r.n > 1 ? 'undel_done_n' : 'undel_done', { n: r.n }); render(); bookmark();
 }
 // A: Hier beginnt ein Absatz – nochmals A nimmt es zurück (#67). Die meisten setzt das Programm beim ersten Öffnen selbst.
-async function paraKey() {
+async function paraKey(tap) {  // tap: vom Knopf am Tablet
   if (!plainLine(li)) return;
   if (lineEls[li].classList.contains('intable') || /^<h[1-6]>/.test(data.lines[li])) { msg = t('para_no'); render(); return; }
   const on = !data.lines[li].startsWith('<p>');
-  if (await markup({ kind: 'para', line: li, old: data.lines[li] })) msg = t(on ? 'para_set' : 'para_removed');
+  if (await markup({ kind: 'para', line: li, old: data.lines[li] })) msg = t(on ? (tap ? 'para_set_t' : 'para_set') : 'para_removed');
   render();
 }
-async function headingKey() {
+async function headingKey(want) {  // want: Ebene vom Knopf am Tablet – dieselbe nochmal hebt die Überschrift auf
   if (!plainLine(li)) return;
   if (lineEls[li].classList.contains('intable')) { msg = t('hd_in_table'); render(); return; }
-  const m = data.lines[li].match(/^<h([1-6])>/), level = m ? (+m[1] >= 3 ? 0 : +m[1] + 1) : 1;  // H wiederholt: 1 → 2 → 3 → keine
-  if (await markup({ kind: 'heading', line: li, level, old: data.lines[li] })) msg = level ? t('hd_set', { n: level }) : t('hd_removed');
+  const m = data.lines[li].match(/^<h([1-6])>/), cur = m ? +m[1] : 0;
+  const level = want ? (cur == want ? 0 : want) : cur >= 3 ? 0 : cur + 1;  // H wiederholt: 1 → 2 → 3 → keine
+  if (await markup({ kind: 'heading', line: li, level, old: data.lines[li] })) msg = level ? t(want ? 'hd_set_t' : 'hd_set', { n: level }) : t('hd_removed');
   render();
 }
 // ---- Wörterbuch: welche Rechtschreibung gilt für dieses Buch (buch.json)
@@ -1526,6 +1537,9 @@ document.addEventListener('selectionchange', () => {  // mit dem Finger markiert
   if (!TOUCH) return;
   const s = mode == 'read' && selectedText(); $('tNote').textContent = t(s ? 't_note_sel' : 't_note'); $('tNote').classList.toggle('go', !!s);
 });
+$('tPara').onclick = guarded(() => paraKey(true));  // A
+for (const b of $('tfmt').querySelectorAll('[data-h]')) b.onclick = guarded(() => headingKey(+b.dataset.h));  // H
+$('tbar').addEventListener('pointerdown', () => { if (stopFling()) rollEnd(); });  // ein Knopf gilt der Zeile, auf der der Text steht
 $('tSerieR').onclick = $('tSerieF').onclick = () => { if (!busy && (mode == 'read' || mode == 'fix')) { busy = true; startSeries().finally(() => { busy = false; }); } };  // F9
 $('tOk').onclick = inFix(() => whitelist());  // F8
 $('tSkip').onclick = inFix(async () => { const f = cf; passed = { line: f.line, start: f.start }; await toFlag({ line: f.line, start: f.start }); });  // Tab
