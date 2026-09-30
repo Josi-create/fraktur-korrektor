@@ -46,6 +46,19 @@ Gibt es mehrere passende PDFs, wird das durchsuchbare mit der besseren Bildquali
 
 Das EPUB selbst wird dabei nicht verändert; Ihre Korrekturen landen in den Textdateien des neuen Buchordners.
 
+Mit dem Wortlaut kommt die **Gestaltung des EPUB**: Überschriften (sie erscheinen gleich im Inhalt, `I`),
+Absatzanfänge, **fett**, *kursiv*, hochgestellte Fußnotenzeichen – auch wo das EPUB sie über seine Stilvorlage setzt.
+Ohne PDF werden auch Tabellen wieder Tabellen. Trennt ein EPUB einen Absatz mitten im Satz (manche wurden an den
+Zeilen ihrer Vorlage getrennt), beginnt dort kein neuer Absatz.
+
+### Überschriften und Schrift nachtragen
+
+Bücher, die vor Version 0.12 aus einem EPUB eingelesen wurden, haben Überschriften, Absätze und Schrift des EPUB
+nicht mitbekommen. Das holen Sie in der Bibliothek nach, ohne von vorn anzufangen: beim Buch auf **Überschriften aus
+dem E-Book**, das EPUB auswählen, **Übernehmen**. Das Programm sucht jede Zeile im
+EPUB und trägt die Auszeichnung nur dort ein, wo die Zeile sicher passt. Kein Wort wird geändert, und was Sie schon
+ausgezeichnet haben, bleibt. Gefällt Ihnen das Ergebnis nicht, nimmt `U` in der Leseansicht alles auf einmal zurück.
+
 ### Das PDF liegt woanders
 
 Heißt das PDF anders oder liegt es in einem anderen Ordner, findet das Programm es nicht von selbst. Dann steht
@@ -91,6 +104,7 @@ Wege:
 | **Erkannten Text einlesen** | Der Text von Transkribus – oder der, den eine Bibliothek zu ihrem Digitalisat herausgibt – tritt an die Stelle des bisherigen. Ihre Seitenbilder, Ihre Wortliste und Ihr Lesezeichen bleiben, wo sie sind. Angeben können Sie die ZIP-Datei, den entpackten Ordner oder die Textdatei des Exports, oder einen Ordner mit hOCR- oder ALTO-Dateien (siehe unten). |
 | **Seitenbilder hinzufügen** | Für Bücher, die nur aus Text bestehen – etwa ein Transkribus-Export ohne Bilder. Zeigen Sie auf einen Bilderordner, auf das PDF, aus dem die Seiten stammen, oder auf ein anderes Buch, das die Bilder schon hat. |
 | **PDF hinzufügen** | Für ein Textbuch aus einem EPUB, das ohne PDF geöffnet wurde. Zeigen Sie auf das PDF des Scans: Es entsteht ein neues Buch mit den Seiten des Scans und Ihrem Text samt Korrekturen (siehe [EPUB und PDF zusammen](#epub-und-pdf-zusammen)). |
+| **Überschriften aus dem E-Book** | Für Bücher, die vor Version 0.12 aus einem EPUB eingelesen wurden: Überschriften, Absätze, fett und kursiv aus dem EPUB nachtragen, ohne ein Wort zu ändern (siehe [Überschriften und Schrift nachtragen](#uberschriften-und-schrift-nachtragen)). Erscheint nur, wo etwas fehlt. |
 | **Für Transkribus vorbereiten** | Das Programm nennt Ihnen den Ordner, den Sie hochladen, legt ihn in die Zwischenablage und öffnet ihn im Dateifenster. |
 | **Scans vorbereiten** | Teilt Doppelseiten und richtet schiefe Seiten gerade – mit Vorschau der Trennlinie. Das Ergebnis lassen Sie danach als neues Buch erkennen. Siehe [PDF oder Bilder einlesen](pdf-import.md). |
 | **Für ScanTailor vorbereiten** | Startet ScanTailor und nennt Ein- und Ausgabeordner – für gewölbte Seiten, Flecken, dunkle Ränder. |

@@ -481,6 +481,9 @@ def rate_book(folder, quelle=(), model='transkribus'):
     if not quality:
         return None
     q = dict(model=model, rating=rating(quality), quelle=list(quelle), pages=quality)
+    ep = pagexml.load_json(folder, 'qualitaet.json', {}).get('epub')
+    if ep:
+        q['epub'] = ep  # woher der Wortlaut kam (EPUB, #81) – das weiß nur das Einlesen
     with open(os.path.join(folder, 'qualitaet.json'), 'w', encoding='utf-8') as f:
         json.dump(q, f, ensure_ascii=False, indent=1)
     korrlib.save_cache()

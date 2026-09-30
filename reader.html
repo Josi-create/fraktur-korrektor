@@ -957,14 +957,15 @@ async function applySeries() {
   await closeSeries(t('ser_done', { w, nw, done: r.done }) + (r.skipped ? t('ser_skipped', { n: r.skipped }) : '') + t('ser_undo_hint'));
 }
 async function undoSeries() {
-  // U nimmt die letzte Serie zurück – eine Serienkorrektur oder die beim ersten Öffnen erkannten Absätze
+  // U nimmt die letzte Serie zurück – eine Serienkorrektur, die beim ersten Öffnen erkannten Absätze oder die aus dem
+  // E-Book nachgetragene Auszeichnung (#81)
   const last = (await (await fetch(BASE + '/api/series_last')).json()).id;
   if (!last) { msg = t('undo_none'); render(); return; }
-  const para = last.startsWith('absaetze');
-  if (!confirm(t(para ? 'undo_para_confirm' : 'undo_confirm'))) return;
+  const kind = last.startsWith('absaetze') ? 'para' : last.startsWith('auszeichnung') ? 'mark' : '';
+  if (!confirm(t(kind ? 'undo_' + kind + '_confirm' : 'undo_confirm'))) return;
   const r = await (await fetch(BASE + '/api/series_undo', { method: 'POST', body: '{}' })).json();
   await loadOverview(); await loadPage(pg, li);
-  msg = !r.id ? t('undo_none') : (para ? t('undo_para_done', { done: r.done }) : t('undo_done', { id: r.id, done: r.done }))
+  msg = !r.id ? t('undo_none') : (kind ? t('undo_' + kind + '_done', { done: r.done }) : t('undo_done', { id: r.id, done: r.done }))
     + (r.skipped ? t('undo_skipped', { n: r.skipped }) : ''); render();
 }
 async function serieKey(e) {

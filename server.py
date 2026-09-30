@@ -732,6 +732,27 @@ class Book:
             self.refresh()
             return n
 
+    def epub_markup(self, E, progress=lambda done, total, msg: None):
+        """Überschriften, Absatzanfänge und Schrift aus dem EPUB (E: epub.Words) nachtragen (#81) – für ein Buch, das
+        eingelesen wurde, als das Programm die Auszeichnung des EPUB noch verwarf. Der Wortlaut bleibt; Kolumnentitel und
+        alles ab der Seitenzahl unten bleiben außen vor. Protokolliert als Serie: U nimmt alles auf einmal zurück."""
+        with self.lock:
+            self.refresh()
+            skip = {pg: self.kopf(pg) | (set(range(self.feet[pg][1], len(lines))) if pg in self.feet else set())
+                    for pg, lines in self.pages.items()}
+            out, st = epub.markup(E, self.pages, skip, progress)
+            if st['matched'] < max(1, 0.2 * st['checked']):
+                raise ValueError('epub_passt_nicht')  # ein fremdes EPUB: keine Zufallstreffer hinterlassen
+            sid = 'auszeichnung-' + time.strftime('%Y%m%d-%H%M%S')
+            for pg, lines in out.items():
+                old = self.pages[pg]
+                self.write_page(pg, lines)
+                for i, (a, b) in enumerate(zip(old, lines)):
+                    if a != b:
+                        self.klog('serie:' + sid, pg, i, a, b)
+            self.refresh()
+        return dict(st, id=sid if out else None, pages=len(out))
+
     def conflicts(self, pg=None):
         """Zeilen, an denen das Zusammenführen zweier Arbeitsstände (#66) nicht entscheiden konnte – bis der Nutzer sie
         angesehen hat. Wurde die Zeile inzwischen verschoben (geteilt, verbunden), findet ihr Wortlaut sie wieder."""
@@ -1323,7 +1344,7 @@ def ensure_marks(folder):
             finally:
                 MARKS[folder] = False
         threading.Thread(target=rechnen, daemon=True).start()
-    return dict(quelle=quelle, rating=None, pending=MARKS.get(folder, False))
+    return dict(quelle=quelle, rating=None, pending=MARKS.get(folder, False), epub=qj.get('epub'))
 
 
 def lib_list():
@@ -1338,6 +1359,7 @@ def lib_list():
         q = (qj.get('rating') or {}).get('level')
         quelle = qj.get('quelle') or []
         unbekannt = (qj.get('rating') or {}).get('dict')
+        ep = (qj.get('epub') or {}) if str((qj.get('epub') or {}).get('file', '')).lower().endswith('.epub') else {}
         try:
             with open(os.path.join(e['folder'], 'korrekturen.log'), 'rb') as f:
                 corr = sum(1 for _ in f)
@@ -1349,6 +1371,10 @@ def lib_list():
                         unknown=None if unbekannt is None else round(100 * (1 - unbekannt)),
                         images=len(glob.glob(os.path.join(e['folder'], 'img', '*.*'))), pdfdir=pdf_target(e['folder']),
                         autor=pagexml.load_json(e['folder'], 'buch.json', {}).get('autor') or '' if n else '',
+                        # aus einem EPUB eingelesen: dessen Auszeichnung lässt sich nachtragen (#81), wenn sie nicht schon mitkam
+                        # (done); path, wenn das EPUB noch dort liegt
+                        epub=dict(file=ep['file'], path=ep['path'] if os.path.isfile(ep.get('path') or '') else '',
+                                  done=bool(ep.get('auszeichnung'))) if ep else None,
                         # Textbuch aus einem EPUB ohne PDF: Seiten ohne Bild und ohne Zeilenlage – dazu lässt sich das PDF nachreichen (#40)
                         textbook=bool(n) and not os.path.exists(os.path.join(e['folder'], 'lines.json')) and not os.path.isdir(os.path.join(e['folder'], 'img'))))
     out.sort(key=lambda b: b['last'], reverse=True)
@@ -1497,6 +1523,24 @@ def add_pdf(bid, source, script, target, progress, cancelled):
                 year=st.get('year'), dics=st.get('dics'))
 
 
+def epub_markup(bid, source, progress, cancelled):
+    """Die Auszeichnung eines EPUB in ein vorhandenes Buch nachtragen (#81). Merkt sich, wo das EPUB liegt – beim
+    nächsten Mal steht es schon im Dialog."""
+    folder = book_folder(bid)
+    if not source or not os.path.isfile(source) or not source.lower().endswith('.epub'):
+        raise ValueError('quelle_fehlt')
+    try:
+        E = epub.epub_words(source)[1]
+    except Exception:
+        raise ValueError('kein_epub')
+    r = get_book(bid).epub_markup(E, progress)
+    q = pagexml.load_json(folder, 'qualitaet.json', None)
+    if q is not None:  # nur, wo es sie gibt – sie kennzeichnet ein vom Programm eingelesenes Buch (discard)
+        q['epub'] = dict(q.get('epub') or {}, file=os.path.basename(source), path=os.path.abspath(source), auszeichnung=True)
+        write_atomic(os.path.join(folder, 'qualitaet.json'), json.dumps(q, ensure_ascii=False, indent=1))
+    return r
+
+
 def pair_check(source, bid, pdf):
     """Passt das PDF zu einem EPUB (source) oder einem Textbuch der Bibliothek (bid)? Liefert dict(pdf, pages, text, fit);
     fit None, wenn das PDF keine Textebene hat. Fehler pdf_passt_nicht, wenn die Stichprobe dagegen spricht (#40)."""
@@ -1617,6 +1661,9 @@ def import_epub(source, pdf, title, target, script, textlayer, progress, cancell
             r = dict(pages=r['pages'], quality=r['quality'], matched=m['matched'])
         else:
             r = epub.text_book(source, out)
+            # Überschriften und Schrift sind mitgekommen (#81) – die Ampel rechnet ensure_marks später dazu
+            write_atomic(os.path.join(out, 'qualitaet.json'), json.dumps(dict(epub=dict(
+                file=os.path.basename(source), path=os.path.abspath(source), auszeichnung=True)), ensure_ascii=False, indent=1))
     except ValueError:
         raise
     except Exception:
@@ -2071,12 +2118,12 @@ def start_job(fn, *args):
 
 
 # Dateitypen des Mac-Dialogs als UTI; "any" muss alles zeigen, was finder.py erkennt.
-UTI = dict(pdf=['com.adobe.pdf'], zip=['public.zip-archive'],
+UTI = dict(pdf=['com.adobe.pdf'], zip=['public.zip-archive'], epub=['org.idpf.epub-container'],
            export=['public.zip-archive', 'public.plain-text', 'public.xml'],
            page=['com.adobe.pdf', 'public.jpeg', 'public.png', 'public.tiff'],
            any=['com.adobe.pdf', 'org.idpf.epub-container', 'public.zip-archive', 'public.xml', 'public.plain-text',
                 'public.jpeg', 'public.png', 'public.tiff'])
-PROMPT = dict(folder='Ordner wählen', pdf='PDF wählen', exe='Programm wählen', zip='Transkribus-Export (ZIP) wählen',
+PROMPT = dict(folder='Ordner wählen', pdf='PDF wählen', exe='Programm wählen', zip='Transkribus-Export (ZIP) wählen', epub='E-Book (EPUB) wählen',
               export='Transkribus-Export wählen (ZIP, Text oder XML)', page='Neue Seite wählen (PDF oder Bild)')
 
 
@@ -2104,7 +2151,7 @@ def dialog(kind, out=None):
     root.withdraw()
     root.attributes('-topmost', True)
     p = filedialog.askdirectory(parent=root) if kind == 'folder' else \
-        filedialog.askopenfilename(parent=root, filetypes=dict(pdf=[('PDF', '*.pdf')], exe=[('*', '*.*')], any=[
+        filedialog.askopenfilename(parent=root, filetypes=dict(pdf=[('PDF', '*.pdf')], epub=[('E-Book (EPUB)', '*.epub'), ('*', '*.*')], exe=[('*', '*.*')], any=[
             ('PDF, EPUB, ZIP, Bilder, Buchseiten', '*.pdf *.epub *.zip *.xml *.txt *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')],
             export=[('Transkribus-Export, hOCR, ALTO', '*.zip *.txt *.xml *.html *.htm *.hocr *.alto'), ('*', '*.*')],
             page=[('PDF oder Bild', '*.pdf *.jpg *.jpeg *.png *.tif *.tiff'), ('*', '*.*')]).get(kind, [('ZIP', '*.zip'), ('*', '*.*')]))
@@ -2368,11 +2415,11 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/export_epub', '/api/epub_preview', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/rename', '/api/kindle_scan', '/api/kindle_notes'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/export_epub', '/api/epub_preview', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/epub_markup', '/api/rename', '/api/kindle_scan', '/api/kindle_notes'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
-                return self.sendjson(dict(path=choose(body.get('kind') if body.get('kind') in ('folder', 'pdf', 'exe', 'any', 'page') else 'zip')))
+                return self.sendjson(dict(path=choose(body.get('kind') if body.get('kind') in ('folder', 'pdf', 'exe', 'any', 'page', 'epub') else 'zip')))
             if u.path == '/api/reveal':
                 # Ordner im Dateifenster zeigen und den Pfad in die Zwischenablage – zum Hochladen bei Transkribus.
                 # Eine Datei (gesichertes E-Book oder PDF) wird in ihrem Ordner markiert, ohne Zwischenablage
@@ -2412,6 +2459,8 @@ class H(BaseHTTPRequestHandler):
                 return self.sendjson(dict(job=start_job(add_images, body.get('id'), body.get('source'))))
             if u.path == '/api/add_pdf':
                 return self.sendjson(dict(job=start_job(add_pdf, body.get('id'), body.get('source'), body.get('script'), body.get('target'))))
+            if u.path == '/api/epub_markup':
+                return self.sendjson(dict(job=start_job(epub_markup, body.get('id'), body.get('source'))))
             if u.path == '/api/epub_pair':
                 try:
                     return self.sendjson(pair_check(body.get('source'), body.get('id'), body.get('pdf')))

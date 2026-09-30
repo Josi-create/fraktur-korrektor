@@ -188,7 +188,10 @@ async function post(path, body) {
 }
 let booksdir = '', entered = false;
 // Was mit einem Buch möglich ist – in der Reihenfolge, in der es auf der Zeile steht
-const BOOKACTS = [['open', b => true], ['pdf', b => true], ['epub', b => true], ['trans', b => true], ['images', b => b.images < b.pages],
+// Aus einem EPUB eingelesen, als das Programm Überschriften und Schrift noch verwarf (#81) – ein Textbuch ohne Vermerk ist so eines
+const needsMarkup = b => b.epub ? !b.epub.done : !!b.textbook;
+const BOOKACTS = [['open', b => true], ['pdf', b => true], ['epub', b => true], ['trans', b => true], ['epubmark', needsMarkup],
+                  ['addpdf', b => b.textbook], ['images', b => b.images < b.pages && !b.textbook],
                   ['prep_scans', b => b.images > 0], ['prep_trans', b => b.images > 0], ['prep_st', b => b.images > 0],
                   ['restore', b => (b.backups || []).length]];
 // Vorbereiten für ein anderes Programm oder Text neu einlesen, obwohl es wenig bringt (#69): Der Knopf bleibt benutzbar, tritt
@@ -611,7 +614,8 @@ $('oST').onclick = async () => {
 // ---- Ein Buch weiterbearbeiten: Text aus Transkribus nachlegen, Bilder ergänzen, die anderen Programme vorbereiten.
 // Wer sein Buch schon einmal eingelesen hat, soll nicht wieder von vorn anfangen – und seine Seitenbilder nicht suchen müssen.
 let eb = null, eact = null, enext = null, enextOpen = null, epv = null, eauto = false;
-const ACTS = { pdf: ['📕', b => true], epub: ['📗', b => true], trans: ['🗂️', b => true], addpdf: ['📄', b => b.textbook], images: ['🖼️', b => b.images < b.pages && !b.textbook],
+const ACTS = { pdf: ['📕', b => true], epub: ['📗', b => true], trans: ['🗂️', b => true], addpdf: ['📄', b => b.textbook],
+               epubmark: ['🔠', needsMarkup], images: ['🖼️', b => b.images < b.pages && !b.textbook],
                prep_scans: ['✂️', b => b.images > 0], prep_trans: ['⬆️', b => b.images > 0], prep_st: ['🧹', b => b.images > 0],
                restore: ['⏪', b => (b.backups || []).length], rename: ['✏️', b => true] };
 
@@ -645,6 +649,7 @@ function editAct(a) {
   if (a == 'pdf') return editPdf();
   if (a == 'epub') return editEpub();
   if (a == 'addpdf') return editAddPdf();
+  if (a == 'epubmark') return editEpubMark();
   if (a == 'rename') return editRename();
   const img = a == 'images', many = eb.corrections >= CORR_MANY;  // nach viel Arbeit rät das Programm zum neuen Buch daneben
   $('ebody').innerHTML = '<label class="f">' + t(img ? 'ed_imgsource' : 'ed_source') + '</label>' +
@@ -725,6 +730,19 @@ function editAddPdf() {
   $('eFile').onclick = async () => { await editChoose('pdf'); check(); };
   $('eSrc').addEventListener('change', check);
   $('eGo').style.display = ''; $('eGo').disabled = true; $('eGo').textContent = t('ed_addpdf_go');
+  $('eSrc').focus();
+}
+function editEpubMark() {
+  // Überschriften, Absätze und Schrift aus dem EPUB nachtragen (#81) – für Bücher, die eingelesen wurden, als das Programm sie
+  // noch verwarf. Liegt das EPUB noch, wo es beim Einlesen lag, steht es schon da; sonst wenigstens sein Name
+  const ep = eb.epub || {};
+  $('ebody').innerHTML = '<div>' + t('ed_epubmark_intro') + '</div><label class="f">' + t('ed_epubmark_source') + '</label>' +
+    '<div class="row"><input type="text" id="eSrc" spellcheck="false"><button type="button" id="eFile">📄 ' + t('choose_epub') + '</button></div>' +
+    (ep.file && !ep.path ? '<div class="hint">' + t('ed_epubmark_was', { f: esc(ep.file) }) + '</div>' : '') +
+    '<div class="hint">' + t('ed_epubmark_hint') + '</div>';
+  $('eSrc').value = ep.path || '';
+  $('eFile').onclick = () => editChoose('epub');
+  $('eGo').style.display = ''; $('eGo').disabled = false; $('eGo').textContent = t('ed_epubmark_go');
   $('eSrc').focus();
 }
 function editRename() {
@@ -837,6 +855,11 @@ $('eform').onsubmit = async ev => {
       enext = r.id;
       editDone('<h3>✔ ' + t('ed_addpdf_done', { n: r.pages, m: Math.round(r.matched * 100) }) + '</h3>' +
         '<div class="hint">' + t('ed_addpdf_new', { f: esc(r.folder) }) + '</div>');
+    } else if (eact == 'epubmark') {
+      const r = await editJob('/api/epub_markup', { id: eb.id, source: src });
+      enext = eb.id;
+      editDone('<h3>✔ ' + (r.pages ? t('ed_epubmark_done', { h: r.headings, p: r.paragraphs, w: r.words, n: r.pages }) : t('ed_epubmark_none')) + '</h3>' +
+        (r.pages ? '<div class="hint">' + t('ed_epubmark_undo') + '</div>' : ''));
     } else if (eact == 'images') {
       const r = await editJob('/api/add_images', { id: eb.id, source: src });
       enext = eb.id;
@@ -945,7 +968,7 @@ if (location.hash.startsWith('#kindle')) {
   const [kp, kf] = decodeURIComponent(location.hash.slice(8)).split('|');
   openKindle(kp).then(() => { if (kf && kb) { $('kDir').value = kf; $('kform').requestSubmit(); } });
 }
-if (location.hash.startsWith('#open') || AUTO || AUTOPREP) openDialog(PAIR ? PAIR[0] : location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');
+if (location.hash.startsWith('#open') || (AUTO && !location.hash.startsWith('#edit=')) || AUTOPREP) openDialog(PAIR ? PAIR[0] : location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');
 </script>
 </body>
 </html>

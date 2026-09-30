@@ -25,6 +25,14 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   meldet dafür `rest`).
 - Neue Hilfeseite [Signatur und Datenschutz](docs/de/code-signing.md): wer signiert, nach welchen Regeln, und was
   das Programm über das Netz überträgt.
+- **Überschriften aus dem E-Book nachtragen** (#81): Für Bücher, die aus einem EPUB eingelesen wurden, bevor die
+  Auszeichnung mitkam, steht in der Bibliothek der Knopf **Überschriften aus dem E-Book**. Das Programm ordnet die
+  Wörter jeder Seite dem EPUB zu wie beim Einlesen, ändert aber kein Wort: Es kommen nur Überschriften (die ganze Zeile
+  steht im EPUB in einer), Absatzanfänge (wo noch keiner steht) und fett, kursiv, hochgestellt dazu – genau, wenn das
+  Wort gleich geschrieben ist, sonst für das ganze Wort, wenn es im EPUB ganz ausgezeichnet ist. Nur Zeilen, die sicher
+  passen; Kolumnentitel und alles ab der Seitenzahl unten bleiben außen vor. Protokolliert als Serie, `U` nimmt alles
+  zurück. Ein fremdes EPUB wird abgewiesen. Der Knopf erscheint nur, wo etwas fehlt (`qualitaet.json`:
+  `epub.auszeichnung`); das Buch merkt sich, wo das EPUB lag.
 
 ### Geändert
 - **Korrigieren am Tablet unten** (#80): Ausschnitt, Vorschläge und Knöpfe stehen jetzt unten, wo der Finger vom Lesen
@@ -39,6 +47,17 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   `Esc`: Übernommen wird nichts.
 
 ### Behoben
+- **EPUB: Überschriften und Schrift gingen beim Einlesen verloren** (#81). Jetzt kommen sie mit – beim Textbuch wie
+  beim EPUB auf den Zeilen des PDFs: Überschriften (`<h1>`–`<h6>`, eine umbrochene Überschrift als Zeilen derselben
+  Ebene), Absatzanfänge (`<p>`), fett, kursiv, hoch- und tiefgestellt, auch wo das EPUB sie über Klassen seiner
+  Stilvorlage setzt (`p.note { font-style: italic }`); im Textbuch auch Tabellen, eine Zelle je Zeile (über eine
+  Seitengrenze als zwei vollständige Tabellen). Jede Zeile schließt, was sie öffnet; ein getrenntes Wort bleibt ein
+  Wort (`<em>be¬</em>` / `<em>schwerlich</em>`). Trennt ein EPUB einen Absatz mitten im Satz – die Zeile davor endet ohne
+  Satzzeichen auf ein kleingeschriebenes Wort, oder der Absatz beginnt klein –, beginnt dort keiner. Auch ein Textbuch,
+  das später sein PDF bekommt, gibt seine Auszeichnung weiter. Weiche Trennstriche aus dem EPUB fallen weg.
+- **E-Book sichern:** Ein getrenntes Wort mit Auszeichnung dahinter (`<em>Zu¬</em>`) wurde nicht zusammengezogen.
+- **Bibliothek:** Der Knopf **PDF hinzufügen** für ein Textbuch (#40) stand seit den beschrifteten Knöpfen nicht mehr in
+  der Zeile des Buchs; statt seiner stand dort *Seitenbilder hinzufügen*, das für ein Textbuch nicht passt.
 - **Zwei Programme auf demselben Port:** Lief die installierte App (auf `127.0.0.1:8765`) noch im Infobereich, startete
   `server.py --lan` (auf `0.0.0.0:8765`) trotzdem – Windows und macOS teilen den Port dann. Der Browser landete still
   bei der alten Fassung, neue Funktionen fehlten scheinbar. Jetzt kommt wie sonst die Meldung »Port 8765 ist belegt«

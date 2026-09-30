@@ -29,6 +29,7 @@ REF = re.compile(r'<sup>\s*(\d{1,3}|\*+)(\)?)\s*</sup>'
 # Anfang einer Fußnote unten: »1) …«, »1 …«, »* …«, »*) …«, »<sup>1</sup> …« – eine bloße Zahl nur mit Leerzeichen dahinter
 NOTE = re.compile(r'\s*(?:<sup>\s*)?(?:(\d{1,3})|(\*+))(\)?)(\s*</sup>)?')
 ENDE = re.compile(r'[.!?:“”"»«)]$')  # ein Absatz endet mit einem Satzzeichen
+TRENN = re.compile(r'¬((?:</\w+>)*)$')  # Trennung am Zeilenende, auch vor schließender Auszeichnung (»<em>Zu¬</em>«)
 MARK = '%d'               # Platzhalter für fertiges XHTML (Seitenmarke, Fußnotenlink) im Text eines Absatzes
 PLATZ = re.compile('(\\d+)')
 W = dict(inhalt='Inhalt', seiten='Seiten', orientierung='Orientierung', titelseite='Titelseite', text='Text',
@@ -102,8 +103,9 @@ def join(a, b, br=False):
     gedruckte Zeile bleibt eine Zeile (Verse, Listen – lined)."""
     if not a:
         return b
-    if a.endswith('¬'):
-        return a[:-1] + b
+    m = TRENN.search(a)
+    if m:
+        return a[:m.start()] + m.group(1) + b
     if br:
         return a + '<br/>' + b
     if a[-1] in '-=' and plain(b)[:1].isupper():
@@ -269,7 +271,7 @@ class _Flow:
     def close(self):
         """Den offenen Absatz abschließen; danach die Fußnoten der Seiten, die in ihm enden."""
         if self.para is not None:
-            text = self.para[:-1] if self.para.endswith('¬') else self.para
+            text = TRENN.sub(r'\1', self.para)
             if plain(PLATZ.sub('', text)) or PLATZ.search(text):
                 cls = 'vers' if self.verse else 'erst' if self.first else ''
                 self.emit('p', '<p%s>%s</p>' % (' class="%s"' % cls if cls else '', self.fill(xhtml(text))))
@@ -304,7 +306,7 @@ class _Flow:
         if self.marks:
             ms = ''.join(self.marks)
             self.marks = []
-            if self.para.endswith('¬'):  # getrenntes Wort über die Seitengrenze: die Marke hinter seine zweite Hälfte
+            if TRENN.search(self.para):  # getrenntes Wort über die Seitengrenze: die Marke hinter seine zweite Hälfte
                 w = re.match(r'\S*', raw).end()
                 raw = raw[:w] + ms + raw[w:]
             else:
@@ -355,7 +357,8 @@ class _Flow:
                     self.block()
                     inner = ''
                     for p in parts:
-                        inner = inner[:-1] + p if inner.endswith('¬') else inner + ('<br/>' if inner else '') + p
+                        m = TRENN.search(inner)
+                        inner = inner[:m.start()] + m.group(1) + p if m else inner + ('<br/>' if inner else '') + p
                     name = self.names.get((pg, k), (level, plain(PLATZ.sub('', inner.replace('<br/>', ' ')))))[1]
                     self.emit('h', '<h%d id="h-%s-%d">%s</h%d>' % (level, pg, k, self.fill(xhtml(inner)), level),
                               level=level, id='h-%s-%d' % (pg, k), text=name, page=pg)

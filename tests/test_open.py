@@ -1,7 +1,7 @@
 """Einheitliches Öffnen: Erkennen, was eine Datei oder ein Ordner enthält; EPUB allein und EPUB + PDF."""
 import os, time, zipfile
 import pytest
-import finder, epub
+import finder, epub, korrlib
 from conftest import make_book, png
 from test_library import make_export
 from test_ocr import make_searchable_pdf, wait
@@ -132,7 +132,7 @@ def test_epub_lesen_und_textbuch(tmp_path):
     r = epub.text_book(str(tmp_path / 'x.epub'), str(tmp_path / 'out'))
     assert r == dict(pages=4, title='Mein Titel')  # jedes Kapitel beginnt eine Seite, lange Kapitel werden geteilt
     lines = open(tmp_path / 'out' / '001.txt', encoding='utf-8').read().split('\n')
-    assert lines[0] == '# ' and lines[1].startswith('Die Kolonisten') and max(map(len, lines)) <= 68
+    assert lines[0] == '# ' and lines[1].startswith('<p>Die Kolonisten') and max(len(korrlib.TAG.sub('', l)) for l in lines) <= 68
 
 
 def test_epub_text_auf_pdf_zeilen(tmp_path):
@@ -152,7 +152,7 @@ def test_epub_text_auf_pdf_zeilen(tmp_path):
     r = epub.transplant(str(tmp_path / 'x.epub'), str(book))
     lines = (book / '001.txt').read_text(encoding='utf-8').split('\n')[:-1]
     assert lines == ['# — 7 —',
-                     'Die Kolonisten zogen nach Rußland, und der Weg',
+                     '<p>Die Kolonisten zogen nach Rußland, und der Weg',  # beginnt im EPUB einen Absatz (#81)
                      'war weit. Sie dachten an die Zu¬',
                      'kunft und an die Heimat, die sie ver¬',
                      'lassen hatten. „Wohin geht die Reise?“ fragte',
@@ -182,6 +182,10 @@ def test_epub_und_pdf_ueber_die_schnittstelle(lib, tmp_path):
     j = wait(lib, lib.lpost('/api/import_epub', dict(source=f['path'], target=str(tmp_path / 'ziel2')))[1]['job'])
     assert j['state'] == 'done' and j['result']['pages'] == 3 and j['result']['quality'] is None
     assert lib.lget('/buch/%s/api/page/001' % j['result']['id'])[1]['img'] is None
+    # beide kennen ihr EPUB und haben seine Auszeichnung schon: »Überschriften aus dem E-Book« braucht es nicht (#81)
+    books = {x['id']: x for x in lib.lget('/api/library')[1]['books']}
+    for bid in (r['id'], j['result']['id']):
+        assert books[bid]['epub'] == dict(file='Probe.epub', path=os.path.abspath(f['path']), done=True)
     (tmp_path / 'kaputt.epub').write_bytes(b'kein zip')
     j = wait(lib, lib.lpost('/api/import_epub', dict(source=str(tmp_path / 'kaputt.epub')))[1]['job'])
     assert (j['state'], j['error']) == ('error', 'kein_epub')

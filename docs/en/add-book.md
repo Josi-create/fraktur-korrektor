@@ -45,6 +45,19 @@ there are several matching PDFs, the searchable one with the better image qualit
 
 The EPUB itself is not changed; your corrections go into the text files of the new book folder.
 
+Together with the wording comes the **formatting of the EPUB**: headings (they appear right away in the contents,
+`I`), paragraph starts, **bold**, *italics*, superscript footnote marks – also where the EPUB sets them through its
+style sheet. Without a PDF, tables become tables again too. Where an EPUB breaks a paragraph in the middle of a
+sentence (some were split at the lines of their source), no new paragraph begins.
+
+### Adding headings and type styles later
+
+Books taken in from an EPUB before version 0.12 did not get the headings, paragraphs and type styles of the EPUB.
+You can add them in the library without starting over: click **Headings from the e-book** at the book, choose the
+EPUB, **Take over**. The program looks up every line in the EPUB and adds the formatting only where the line
+matches for certain. No word is changed, and whatever you have already marked stays. If you do not like the result,
+`U` in the reading view undoes everything at once.
+
 ### The PDF lies elsewhere
 
 If the PDF has a different name or lies in another folder, the program cannot find it by itself. Then the EPUB is
@@ -87,6 +100,7 @@ In the library, every book has a row of buttons below it. Next to **Open book** 
 | **Take in recognised text** | The text from Transkribus – or the text a library publishes for its digitised copy – takes the place of the present one. Your page images, your word list and your bookmark stay where they are. You may point at the ZIP file, the unpacked folder or the text file of the export, or at a folder of hOCR or ALTO files (see below). |
 | **Add page images** | For books that are text only – a Transkribus export without images, say. Point at a folder of images, at the PDF the pages come from, or at another book that already has them. |
 | **Add PDF** | For a text-only book from an EPUB that was opened without a PDF. Point at the PDF of the scan: a new book is created with the pages of the scan and your text including corrections (see [EPUB and PDF together](#epub-and-pdf-together)). |
+| **Headings from the e-book** | For books taken in from an EPUB before version 0.12: add headings, paragraphs, bold and italics from the EPUB without changing a word (see [Adding headings and type styles later](#adding-headings-and-type-styles-later)). Appears only where something is missing. |
 | **Prepare for Transkribus** | The program names the folder you upload, puts it on the clipboard and opens it in a file window. |
 | **Prepare scans** | Splits double pages and straightens crooked pages – with a preview of the dividing line. Afterwards you have the result recognised as a new book. See [Reading in a PDF or images](pdf-import.md). |
 | **Prepare for ScanTailor** | Starts ScanTailor and names the input and output folder – for curved pages, stains, dark margins. |
