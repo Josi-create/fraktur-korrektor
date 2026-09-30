@@ -42,6 +42,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   für Bild und Text wie am Rechner. **Richtig so** steht immer ganz links, wo der Daumen schon liegt, im Querformat
   auch vor den Vorschlägen. **¶ Absatz** gibt es auch beim Korrigieren. Beim Selbsttippen stellt **Abbrechen** die Zeile
   wieder her (das Wort ist beim Öffnen der Tastatur markiert und schnell versehentlich gelöscht) und schließt die Tastatur.
+- **Tablet: »Richtig so« führt zurück zum Lesen** (#82), auf derselben Zeile – bisher ging es nach »Nächstes rotes
+  Wort« gleich zum nächsten roten Wort weiter, womöglich Seiten entfernt, und die Orientierung war weg. Wo »Richtig so«
+  war, steht danach »Nächstes rotes Wort«: Zweimal an dieselbe Stelle tippen geht weiter, der Daumen bleibt liegen.
+  Dafür steht der erste Knopf beider Leisten unten links (weitere Reihen wachsen nach oben), Meldungen stehen über den
+  Knöpfen, und die Leiste hat beim Lesen denselben Rahmen wie beim Korrigieren – in Hoch- und Querformat, auf iPad und
+  iPhone. Schnelles zweimaliges Tippen zoomt nicht mehr. Am Rechner bleibt `F8` wie bisher. Selbsttest: `rect:<id>`
+  schreibt die Lage eines Knopfs ins Bild.
 - **Korrektur verlassen durch Wischen oder Doppelklick:** Wer beim Korrigieren mit dem Finger über den Text wischt, ist
   wieder beim Lesen und rollt gleich weiter; am Rechner beendet ein Doppelklick in den Text die Korrektur. Beides wie
   `Esc`: Übernommen wird nichts.

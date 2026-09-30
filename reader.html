@@ -168,6 +168,12 @@ html.touch:not(.single) #tfix>div{display:contents} html.touch:not(.single) #tOk
 /* Beim Korrigieren stehen Ausschnitt, Vorschläge und Knöpfe unten, wo der Finger vom Lesen schon ist (#80) – beim Tippen
    gleich über der Bildschirmtastatur (fitKeyboard) */
 html.touch.fixing #korr{background:#fff;border:1px solid #bbb;padding:8px 12px;min-height:0}
+/* »Richtig so« und »Nächstes rotes Wort« liegen genau übereinander (#82): zweimal an dieselbe Stelle tippen geht weiter.
+   Der erste Knopf steht in beiden Leisten unten links, weitere Reihen wachsen nach oben, Meldungen stehen über den
+   Knöpfen, und das Feld hat beim Lesen denselben (unsichtbaren) Rahmen wie beim Korrigieren */
+html.touch #korr{display:flex;flex-direction:column;padding:8px 12px;border:1px solid transparent;min-height:0} html.touch #shint{order:-1}
+html.touch .tbtns,html.touch.fixing:not(.single) #tfix{flex-wrap:wrap-reverse} html.touch.fixing:not(.single) #tfix{margin:6px 0}
+.tb{touch-action:manipulation}  /* schnell zweimal tippen ist zweimal tippen, kein Zoom */
 html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visibility:hidden}  /* erst »Selbst tippen« holt die Tastatur */html.touch #top{padding:8px 12px} html.touch #pnav button{padding:4px 14px;font-size:15px} html.touch #pagesel{font-size:15px}
 </style>
 <script src="/i18n.js"></script>
@@ -880,11 +886,14 @@ async function commit() {
   if (mode == 'fix') await afterFix(f.line, f.start); else toRead(line);
   if (neu) { pending.pg = pg; pending.line = li; pending.auto = mode == 'fix' ? cf : null; render(); }  // wo das Angebot für F9 gilt
 }
-async function whitelist() {
+async function whitelist(read) {
   const f = cf; if (!f || f.kind == 'page' || f.kind == 'fnref') return;  // Seitenzahl und Fußnotenzeichen lassen sich nur berichtigen
   await fetch(BASE + '/api/whitelist', { method: 'POST', body: JSON.stringify({ word: f.word.replace('¬', '') }) });
   data = await (await fetch(BASE + '/api/page/' + pg)).json(); updateCount();
-  await afterFix(f.line, f.start);
+  // »Richtig so« am Tablet (#82): zurück zum Lesen, auf derselben Zeile – ein Sprung zum nächsten roten Wort, vielleicht Seiten
+  // weiter, nähme die Orientierung. Wo »Richtig so« war, steht jetzt »Nächstes rotes Wort«: noch einmal tippen geht weiter
+  if (read) { fixRun = false; passed = { line: f.line, start: f.start }; msg = t('ok_read', { w: f.word.replace('¬', '') }); toRead(f.line); }
+  else await afterFix(f.line, f.start);
   loadOverview();  // das Wort kann auch auf anderen Seiten vorkommen
 }
 async function openSeries(oldW, newW) {
@@ -1556,7 +1565,7 @@ for (const [id, img] of [['vtext', false], ['vimg', true]]) $(id).onclick = e =>
 $('viewlink').onclick = e => { e.preventDefault(); store(viewKey(), document.documentElement.classList.contains('single') ? 'beide' : 'text'); showImg = false; relayout(); };
 $('findlink').onclick = e => { e.preventDefault(); if (mode == 'read' && !busy) askOpen('find'); };
 // Knöpfe am Tablet (#63) – was am PC die Tasten tun
-$('tNext').onclick = guarded(async () => { fixRun = true; await toFlag(); });  // Leertaste
+$('tNext').onclick = guarded(async () => { fixRun = true; msg = ''; await toFlag(); });  // Leertaste
 $('tEdit').onclick = () => { if (!busy && mode == 'read') { fixRun = false; enterFree(); } };  // F2; ohne await, sonst öffnet Safari die Tastatur nicht
 // F4: die Markierung beim Aufsetzen des Fingers festhalten – das Antippen des Knopfs kann sie aufheben
 let noteSel = null;
@@ -1572,7 +1581,7 @@ $('tPara').onclick = guarded(() => paraKey(true));  // A
 for (const b of $('tfmt').querySelectorAll('[data-h]')) b.onclick = guarded(() => headingKey(+b.dataset.h));  // H
 $('tbar').addEventListener('pointerdown', () => { if (stopFling()) rollEnd(); });  // ein Knopf gilt der Zeile, auf der der Text steht
 $('tSerieR').onclick = $('tSerieF').onclick = () => { if (!busy && (mode == 'read' || mode == 'fix')) { busy = true; startSeries().finally(() => { busy = false; }); } };  // F9
-$('tOk').onclick = inFix(() => whitelist());  // F8
+$('tOk').onclick = inFix(() => whitelist(true));  // F8, danach zurück zum Lesen (#82)
 $('tSkip').onclick = inFix(async () => { const f = cf; passed = { line: f.line, start: f.start }; await toFlag({ line: f.line, start: f.start }); });  // Tab
 $('tSave').onclick = inFix(() => commit());  // Enter
 $('tBack').onclick = () => { if (!busy && (mode == 'fix' || mode == 'free')) leaveFix(); };  // Esc
@@ -1844,6 +1853,11 @@ for (const id of ['text', 'imgpane']) {
     if (k.startsWith('=')) $('edit').value = k.slice(1);
     else if (k.startsWith('click:')) ($(k.slice(6)) || document.querySelector(k.slice(6))).click();  // ein Knopf oder Link der Oberfläche, z. B. click:replPage, click:#tsug button
     else if (k.startsWith('caret=')) $('edit').setSelectionRange(+k.slice(6), +k.slice(6));
+    else if (k.startsWith('rect:')) {  // Lage eines Knopfs oben links ins Bild schreiben, z. B. rect:tOk (#82: liegen zwei Knöpfe übereinander?)
+      const r = $(k.slice(5)).getBoundingClientRect(), o = $('selftest') || document.body.appendChild(Object.assign(document.createElement('pre'), { id: 'selftest' }));
+      o.style.cssText = 'position:fixed;left:0;top:0;z-index:99;margin:0;background:#ff0;font:12px monospace';
+      o.textContent += k.slice(5) + ' ' + [r.left, r.top, r.width, r.height].map(Math.round).join(' ') + '\n';
+    }
     else if (k.startsWith('tapred:')) {  // das n-te rote Wort im Text antippen (#63), z. B. tapred:3
       const el = $('lines').querySelectorAll('.flag,.auto,.fnref')[+k.slice(7)], r = el.getBoundingClientRect();
       el.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));

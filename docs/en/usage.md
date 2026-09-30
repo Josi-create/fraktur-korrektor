@@ -381,12 +381,14 @@ On the tablet you work with your finger:
   line appears as a cut-out of the page image with the doubtful word framed in red, below it the suggestions and
   buttons (while you type, right above the on-screen keyboard). With image and text side by side, the cut-out is left
   out – the page image on the left already shows the line – and suggestions and buttons stand in one row. Tap a
-  suggestion and it is applied. **Correct as is** (green, always on the far left where your thumb already is) remembers
-  the word as correct (like `F8`), **Skip** moves to the next red word, **Type it** opens the keyboard (the return key
+  suggestion and it is applied. **Correct as is** (green, always at the bottom left where your thumb already is)
+  remembers the word as correct (like `F8`) and takes you back to reading, on the same line – so the view does not jump
+  pages ahead and you keep your place. Exactly where **Correct as is** was, **Next red word** now appears: tapping the
+  same spot twice moves straight on. **Skip** moves to the next red word, **Type it** opens the keyboard (the return key
   or **Apply** saves, **Cancel** restores the line, say if the selected word was deleted by
   mistake), **¶ Paragraph** starts a paragraph in this line, **Back to reading** ends – as does simply
   swiping over the text with your finger and reading on; nothing is applied then. If you started with **Next red word**,
-  each correction takes you straight on to the next one. If the corrected word occurs more often in the book,
+  each correction takes you straight on to the next one – except after **Correct as is**. If the corrected word occurs more often in the book,
   **Change everywhere** appears – the batch correction as with `F9`. **Edit line** opens the reading line when
   something other than a red word is wrong.
 - **Delete line:** A line that is nothing but OCR noise (specks from the scan edge, jumbled letters) is removed with

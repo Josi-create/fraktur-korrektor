@@ -388,12 +388,15 @@ Auf dem Tablet bedienen Sie alles mit dem Finger:
   Zeile als Ausschnitt aus dem Seitenbild, das fragliche Wort rot umrahmt, darunter die Vorschläge und Knöpfe (beim
   Tippen gleich über der Bildschirmtastatur). Stehen Bild und Text nebeneinander, entfällt der Ausschnitt – das
   Seitenbild links zeigt die Zeile ja schon –, und Vorschläge und Knöpfe stehen in einer Reihe. Einen Vorschlag antippen,
-  und er ist übernommen. **Richtig so** (grün, immer ganz links, wo der Daumen schon liegt) merkt sich das Wort als
-  richtig (wie `F8`), **Überspringen** geht zum nächsten roten Wort, **Selbst tippen** öffnet die Tastatur (die
+  und er ist übernommen. **Richtig so** (grün, immer unten links, wo der Daumen schon liegt) merkt sich das Wort als
+  richtig (wie `F8`) und führt zurück zum Lesen, auf derselben Zeile – so springt die Ansicht nicht Seiten weiter, und
+  Sie behalten die Stelle im Blick. Genau dort, wo **Richtig so** war, steht dann **Nächstes rotes Wort**: Zweimal an
+  dieselbe Stelle tippen geht also gleich weiter. **Überspringen** geht zum nächsten roten Wort, **Selbst tippen** öffnet die Tastatur (die
   Eingabetaste oder **Übernehmen** speichert, **Abbrechen** stellt die Zeile wieder her, etwa wenn das markierte Wort
   versehentlich gelöscht wurde), **¶ Absatz** lässt in dieser Zeile einen Absatz beginnen, **Zurück zum
   Lesen** beendet – ebenso, wenn Sie einfach mit dem Finger über den Text wischen und weiterlesen; übernommen wird dabei
-  nichts. Haben Sie mit **Nächstes rotes Wort** begonnen, geht es nach jeder Korrektur gleich zum nächsten.
+  nichts. Haben Sie mit **Nächstes rotes Wort** begonnen, geht es nach jeder Korrektur gleich zum nächsten – außer nach
+  **Richtig so**.
   Kommt das berichtigte Wort noch öfter im Buch vor, erscheint **Alle gleichen ändern** – die Serienkorrektur wie mit
   `F9`. **Zeile bearbeiten** öffnet die Lesezeile, wenn etwas anderes als ein rotes Wort falsch ist.
 - **Zeile löschen:** Eine Zeile, die nur OCR-Rauschen ist (Flecken vom Scanrand, Buchstabensalat), entfernt dieser Knopf
