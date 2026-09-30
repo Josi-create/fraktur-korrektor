@@ -49,6 +49,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Knöpfen, und die Leiste hat beim Lesen denselben Rahmen wie beim Korrigieren – in Hoch- und Querformat, auf iPad und
   iPhone. Schnelles zweimaliges Tippen zoomt nicht mehr. Am Rechner bleibt `F8` wie bisher. Selbsttest: `rect:<id>`
   schreibt die Lage eines Knopfs ins Bild.
+- **iPhone** (#83): Die Kopfleiste des Readers passt jetzt auch hochkant auf ein Handy. Bisher war sie breiter als der
+  Bildschirm – Reiter *Text/Seitenbild* und Menü ☰ lagen außerhalb, und Safari verkleinerte die ganze Seite. Unter
+  560 px fallen »Seite« und »1 / 30« weg, **Bibliothek** steht im Menü; unter 420 px auch das Schild *Lesen/Korrektur*
+  (unten steht ohnehin, was gerade geschieht). Quer auf dem Handy (unter 500 px Höhe) sind die Ränder schmaler, damit
+  mehr Text zu sehen ist. Hilfe: »Auf dem Tablet lesen« nennt das iPhone.
 - **Korrektur verlassen durch Wischen oder Doppelklick:** Wer beim Korrigieren mit dem Finger über den Text wischt, ist
   wieder beim Lesen und rollt gleich weiter; am Rechner beendet ein Doppelklick in den Text die Korrektur. Beides wie
   `Esc`: Übernommen wird nichts.

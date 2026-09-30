@@ -367,6 +367,10 @@ the program must be started on the computer with the option `--lan`; the address
 at start-up, for example `http://192.168.1.20:8765`. Type it into Safari and bookmark it. There is no password
 protection – use it on your own home network only. Books can only be added on the computer the program runs on.
 
+It works on the **iPhone** too, best held upright: then the text stands alone, and everything below applies just the
+same. Because the screen is narrower, the header leaves out the word “Page” and the page count “1 / 300” (the
+selection shows the page); **Library** is in the **☰** menu.
+
 On the tablet you work with your finger:
 
 - **View:** In portrait only the text is shown; at the top right you switch between **Text** and **Page image**. In

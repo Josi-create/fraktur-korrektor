@@ -374,6 +374,10 @@ Fenster, zum Beispiel `http://192.168.1.20:8765`. Geben Sie sie in Safari ein un
 keinen Passwortschutz – nur im eigenen Heimnetz verwenden. Bücher hinzufügen kann man nur an dem Rechner, auf dem das
 Programm läuft.
 
+Das geht auch auf dem **iPhone**, am besten hochkant: Dann steht der Text allein da, und alles Folgende gilt genauso.
+Weil der Bildschirm schmaler ist, fehlen in der Kopfleiste das Wort „Seite“ und die Seitenzahl „1 / 300“ (die
+Auswahl zeigt die Seite); **Bibliothek** steht im Menü **☰**.
+
 Auf dem Tablet bedienen Sie alles mit dem Finger:
 
 - **Ansicht:** Im Hochformat steht nur der Text da; oben rechts wechseln Sie zwischen **Text** und **Seitenbild**. Im

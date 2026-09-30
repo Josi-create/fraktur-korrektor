@@ -144,6 +144,7 @@ html.compact #top{position:relative}
 html.compact #links{display:none;position:absolute;right:8px;top:100%;z-index:20;flex-direction:column;background:#2b2b2b;border-radius:0 0 6px 6px;box-shadow:0 6px 20px rgba(0,0,0,.35);padding:6px 0;min-width:260px}
 html.compact #links.open{display:flex} html.compact #links>*{padding:11px 20px;font-size:16px} html.compact .conly{display:block}
 html.touch #diclink{display:none}
+.nonly{display:none}
 html.single #main{grid-template-columns:1fr} html.single #imgpane,html.single #right{grid-row:1;grid-column:1}
 html.single #imgpane,html.single.showimg #right{display:none} html.single.showimg #imgpane{display:block}
 html.touch #text,html.touch #imgpane{touch-action:none}  /* Rollen und Zoomen mit den Fingern macht der Reader selbst */
@@ -172,9 +173,23 @@ html.touch.fixing #korr{background:#fff;border:1px solid #bbb;padding:8px 12px;m
    Der erste Knopf steht in beiden Leisten unten links, weitere Reihen wachsen nach oben, Meldungen stehen über den
    Knöpfen, und das Feld hat beim Lesen denselben (unsichtbaren) Rahmen wie beim Korrigieren */
 html.touch #korr{display:flex;flex-direction:column;padding:8px 12px;border:1px solid transparent;min-height:0} html.touch #shint{order:-1}
-html.touch .tbtns,html.touch.fixing:not(.single) #tfix{flex-wrap:wrap-reverse} html.touch.fixing:not(.single) #tfix{margin:6px 0}
+html.touch .tbtns,html.touch.fixing:not(.single) #tfix{flex-wrap:wrap-reverse} html.touch.fixing:not(.single) #tfix{margin:6px 0;align-items:flex-start}  /* bei wrap-reverse: unten bündig */
 .tb{touch-action:manipulation}  /* schnell zweimal tippen ist zweimal tippen, kein Zoom */
 html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visibility:hidden}  /* erst »Selbst tippen« holt die Tastatur */html.touch #top{padding:8px 12px} html.touch #pnav button{padding:4px 14px;font-size:15px} html.touch #pagesel{font-size:15px}
+/* Handy hochkant (#83): Die Kopfleiste muss in 430 px passen, sonst lägen Reiter und Menü außerhalb des Bildschirms (und
+   Safari verkleinerte die ganze Seite). »Seite« und »1 / 30« fallen weg – die Auswahl zeigt die Seite –, »Bibliothek«
+   steht im Menü ☰. Am Ende des Stylesheets, damit es die Regeln für das Tablet übertrifft */
+@media (max-width:560px) {
+  #top,html.touch #top{gap:8px;padding-left:6px;padding-right:6px}
+  #top>a[href="/bibliothek"],#title,#pnav label>span,#pcount{display:none} #mode{padding:2px 8px;font-size:13px}
+  #pnav{gap:6px} html.touch #pnav button{padding:4px 11px} #views button{padding:3px 9px} html.compact .nonly{display:block}
+}
+@media (max-width:420px) { #mode{display:none} }  /* kleinere iPhones: ob gelesen oder korrigiert wird, steht unten ohnehin */
+@media (max-height:500px) {  /* Handy quer: jede Zeile Text zählt – schmalere Ränder, in beiden Modi gleich (#82) */
+  html.touch #top{padding-top:4px;padding-bottom:4px} html.touch #main{padding:6px;gap:6px}
+  html.touch #korr,html.touch.fixing #korr{padding-top:4px;padding-bottom:4px}
+  html.touch .tbtns,html.touch.fixing:not(.single) #tfix{margin:4px 0}
+}
 </style>
 <script src="/i18n.js"></script>
 </head>
@@ -190,6 +205,7 @@ html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visib
  <span id="views"><button type="button" id="vtext" data-t="view_tab_text"></button><button type="button" id="vimg" data-t="view_tab_img"></button></span>
  <button type="button" id="menubtn" data-t-title="menu_t">☰</button>
  <span id="links">
+ <a href="/bibliothek" class="nonly" data-t="library"></a>
  <a href="#" id="findlink" class="conly" data-t="find_menu"></a>
  <a href="#" id="viewlink"></a>
  <a href="#" id="toclink" data-t="toc_link"></a>
