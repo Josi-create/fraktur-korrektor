@@ -349,7 +349,7 @@ dazu sagt. Ihr Lesezeichen bleibt dabei, wo es war; es rückt erst weiter, wenn 
   können. Zettel aus Kindle-Markierungen haben keinen Link, zu ihnen gibt es kein Seitenbild.
 
 Markierungen, die Sie auf dem Kindle gemacht haben, werden auf dieselbe Weise zu Zetteln: [Markierungen vom Kindle](kindle.md).
-Wie Zettel auf dem iPad gleich in Obsidian entstehen, steht unten bei *Auf dem Tablet lesen*.
+Wie Sie Zettel auf dem Tablet oder Handy schreiben, steht unten bei *Auf dem Tablet lesen*.
 
 ## Eine Seite ersetzen
 
@@ -413,22 +413,25 @@ Auf dem Tablet bedienen Sie alles mit dem Finger:
 - **Mit Tastatur:** Tabellen, Fußnotenstrich, Zeilen teilen oder verbinden gehen nur mit den Tasten. Ist am Tablet eine
   Tastatur angeschlossen, gelten alle Tasten wie am Rechner.
 
-### Zettel für Obsidian auf dem iPad
+### Zettel auf dem Tablet oder Handy
 
-Ist Obsidian auch auf dem Tablet installiert und gleicht es den Vault mit dem Rechner ab (Obsidian Sync), entsteht der
-Zettel gleich dort:
+Auch unterwegs entstehen Zettel mit Ihrer Anmerkung – ohne dass Sie dafür eine andere App brauchen:
 
 1. Eine Passage mit dem Finger markieren: lange auf ein Wort drücken, dann die Griffe ziehen.
 2. Unten **Notiz aus Markierung** antippen (ohne Markierung heißt der Knopf **Notiz** und nimmt die Lesezeile).
-3. Obsidian öffnet den neuen Zettel mit Zitat und Quelle. Schreiben Sie Ihre Anmerkung hinein und wechseln Sie zurück
-   zu Safari. Bequem ist es, beide nebeneinander zu haben (Split View).
+3. Es öffnet sich ein Feld: oben das Zitat, darunter schreiben Sie Ihre Anmerkung. **Zettel speichern** – fertig.
 
-Obsidian Sync bringt den Zettel auf den Rechner. Nummer, Zitat und Quellenangabe kommen wie immer vom Programm, der
-Ordner ist der, den Sie am Rechner für das Buch festgelegt haben (`O`). Die Nummern laufen auch dann richtig weiter,
-wenn Obsidian am Rechner gerade nicht läuft. Den Link *Scan* im Zettel klicken Sie am Rechner: Er führt zum Programm,
-das dort läuft; auf dem iPad öffnet er nichts.
+Der Zettel entsteht am Rechner, im Notizordner, den Sie dort für das Buch festgelegt haben (`O`) – genau wie mit `F4`:
+fortlaufend nummeriert, mit Zitat, Seite und Zeile, dem Verweis auf die Quellenangabe und oben Ihrer Anmerkung.
+Obsidian am Rechner zeigt ihn gleich; mit Obsidian Sync ist er auch auf Ihren anderen Geräten. Die Anmerkung darf leer
+bleiben, ergänzen können Sie sie später in Obsidian. Den Link *Scan* im Zettel klicken Sie am Rechner: Er führt zum
+Programm, das dort läuft.
 
-Safari fragt beim ersten Mal, ob es Obsidian öffnen darf. Öffnet es nicht von selbst, tippen Sie unten in der Meldung
-auf **in Obsidian öffnen**. Unter **☰ → Notizen** lässt sich das je Gerät ausschalten; dann entsteht der Zettel wie
-bisher am Rechner. Heißt der Vault auf dem Tablet anders als am Rechner, tragen Sie dort seinen Namen ein. Liegt der
-Notizordner in keinem Obsidian-Vault, entsteht der Zettel ebenfalls am Rechner.
+Mit Tastatur speichert `Strg`+`Enter`, `Esc` bricht ab. So geht es auch an einem zweiten Rechner, der über das
+Heimnetz mitliest.
+
+**Lieber in Obsidian auf dem Tablet?** Ist Obsidian dort installiert und gleicht es den Vault mit dem Rechner ab
+(Obsidian Sync), können Sie unter **☰ → Notizen** den Haken bei **Stattdessen Obsidian auf diesem Gerät öffnen**
+setzen. Dann öffnet **Notiz** den neuen Zettel mit Zitat und Quelle in Obsidian, und Sie schreiben Ihre Anmerkung dort;
+Safari fragt beim ersten Mal, ob es Obsidian öffnen darf (öffnet es nicht von selbst: unten in der Meldung auf **in
+Obsidian öffnen** tippen). Heißt der Vault auf dem Tablet anders als am Rechner, tragen Sie dort seinen Namen ein.

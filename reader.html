@@ -107,8 +107,15 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 .stext{font-family:Georgia,serif;font-size:16px;white-space:pre-wrap}
 #wlist{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
 #wlist.on{display:flex}
-#dics,#notes,#repl,#toc{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
-#dics.on,#notes.on,#repl.on,#toc.on{display:flex}
+#dics,#notes,#repl,#toc,#nedit{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border:1px solid #bbb}
+#dics.on,#notes.on,#repl.on,#toc.on,#nedit.on{display:flex}
+/* Zettel schreiben über das Heimnetz (#84): oben das Zitat, darunter die eigene Anmerkung – das Feld wächst mit dem Platz,
+   den die Bildschirmtastatur lässt, die Knöpfe bleiben gleich darunter */
+#nehead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
+#nebody{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding:12px 16px;font-size:16px}
+#nequote{flex:none;max-height:28%;overflow:auto;margin:0;padding:6px 12px;border-left:4px solid #c90;background:#fffbe6;font:17px/1.5 Georgia,'Times New Roman',serif;color:#333;white-space:pre-wrap}
+#netext{flex:1;min-height:90px;font:17px/1.5 Segoe UI,Arial,sans-serif;padding:8px 10px;border:1px solid #999;border-radius:4px;resize:none}
+#nebody .tbtns{margin:0} #neinfo{color:#a40} #neinfo:empty{display:none}
 #dhead,#nhead,#rhead,#ihead{padding:10px 14px;border-bottom:1px solid #ccc;font-size:16px;background:#f6f3ea}
 /* Inhalt (I): die Überschriften des Buchs, eingerückt nach Ebene, rechts die gedruckte Seitenzahl */
 #ilist{flex:1;overflow:auto;padding:8px 0}
@@ -270,6 +277,17 @@ html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visib
     <div id="nvinfo" style="color:#a40;margin-top:6px"></div>
    </div>
    <div class="tonly" style="margin:16px 0 0"><button type="button" class="tb go" id="nDone" data-t="note_done_btn"></button></div>
+  </div>
+ </div>
+ <div id="nedit">
+  <div id="nehead"><button type="button" class="tb tclose" id="neClose" data-t-title="close">×</button><b data-t="ne_head"></b>
+   <div style="color:#666;font-size:13.5px;margin-top:4px" id="nehelp"></div></div>
+  <div id="nebody">
+   <blockquote id="nequote"></blockquote>
+   <label for="netext" data-t="ne_label"></label>
+   <textarea id="netext" spellcheck="true" data-t-ph="ne_ph"></textarea>
+   <div class="tbtns"><button type="button" class="tb go" id="neSave" data-t="ne_save"></button><button type="button" class="tb" id="neCancel" data-t="ne_cancel"></button></div>
+   <div id="neinfo"></div>
   </div>
  </div>
  <div id="repl">
@@ -1171,10 +1189,12 @@ function markedLines() {
   return { text: out.join('\n'), lines: [a + 1, b + 1] };
 }
 let pendingNote = null;  // Notiz, die noch auf den Notizordner wartet (erstes F4: Ordner wählen, dann gleich anlegen)
-// Zettel in Obsidian auf dem Tablet (#63): Der Server liefert Inhalt, Nummer und Ort im Vault, Obsidian auf diesem Gerät legt den
-// Zettel an (obsidian://new), Obsidian Sync bringt ihn auf den Rechner. Je Gerät umschaltbar; Vorgabe: an, wenn ein Tablet über
-// das Heimnetz liest. Heißt der Vault hier anders als am Rechner, steht sein Name je Gerät in 'vault:<Name am Rechner>'.
-const onDevice = () => { const v = stored('obsidian_geraet'); return v ? v == '1' : TOUCH && !LOCAL; };
+// Zettel über das Heimnetz (#84): Auf dem Tablet, dem Handy oder einem zweiten Rechner öffnet »Notiz« einen einfachen Editor –
+// oben das Zitat, darunter die eigene Anmerkung. Der Zettel entsteht am Rechner im Notizordner des Buchs; Obsidian dort zeigt
+// ihn, Obsidian Sync bringt ihn auf die anderen Geräte. Obsidian auf dem Gerät selbst (#63): Der Server liefert Inhalt, Nummer
+// und Ort im Vault, obsidian://new legt den Zettel dort an – nur noch, wer es unter ☰ → Notizen einschaltet. Heißt der Vault
+// dort anders als am Rechner, steht sein Name je Gerät in 'vault:<Name am Rechner>'.
+const onDevice = () => stored('obsidian_geraet') == '1';
 let noteLink = null;  // {msg, href}: zur Meldung »Zettel … geht an Obsidian« der Link, falls Safari das Öffnen nicht selbst zulässt
 const postNote = body => fetch(BASE + '/api/notiz', { method: 'POST', body: JSON.stringify(body) }).then(r => r.json());
 async function makeNote(req, pre) {  // pre: die Markierung, festgehalten beim Antippen von »Notiz« (sie kann danach weg sein)
@@ -1184,6 +1204,7 @@ async function makeNote(req, pre) {  // pre: die Markierung, festgehalten beim A
     if (!text.trim()) return;
     req = { page: sel ? sel.p : pg, text, lines: sel ? sel.lines : ml ? ml.lines : [line + 1, line + 1] };
   }
+  if (!LOCAL && !onDevice()) { openNoteEditor(req); return; }  // ohne await davor: Safari öffnet die Tastatur nur im Antippen
   let x = await postNote({ ...req, lang: LANG, open: true, geraet: onDevice() }), novault = false;
   if (x.error == 'kein_vault') { novault = true; x = await postNote({ ...req, lang: LANG, open: true }); }  // dann eben am Rechner
   if (x.error == 'kein_notizordner') { await openNotes(req); return; }
@@ -1199,6 +1220,27 @@ async function makeNote(req, pre) {  // pre: die Markierung, festgehalten beim A
   if (noteLink && !NOTRANS) location.href = noteLink.href;  // im Selbsttest nicht: Obsidian am Rechner ginge sonst auf
 }
 function msgLink() { return noteLink && noteLink.msg === msg ? ' · <a href="' + esc(noteLink.href) + '">' + t('note_open') + '</a>' : ''; }
+let noteReq = null;  // der Zettel im Editor: {page, text, lines}
+function openNoteEditor(req) {
+  noteReq = req; mode = 'noteedit'; cf = null; nsel = null;
+  $('nequote').textContent = req.text; $('netext').value = ''; $('neinfo').textContent = ''; $('nehelp').innerHTML = macKeys(t('ne_help'));
+  $('nedit').classList.add('on'); $('edit').style.display = 'none'; $('edit2').style.display = 'none';
+  $('netext').focus();
+}
+function closeNoteEditor() { $('nedit').classList.remove('on'); noteReq = null; mode = 'read'; document.activeElement.blur(); render(); }
+async function saveNoteEditor() {
+  const req = noteReq; if (!req) return;
+  const x = await postNote({ ...req, lang: LANG, anmerkung: $('netext').value });
+  if (x.error) { $('neinfo').textContent = t(x.error == 'kein_notizordner' ? 'ne_nofolder' : 'err_' + x.error); return; }  // die Anmerkung bleibt stehen
+  try { getSelection().removeAllRanges(); } catch (e) {}
+  noteLink = null; msg = t('note_saved_pc', { n: x.name }); closeNoteEditor();
+}
+async function noteEditKey(e) {  // im Feld wird getippt; nur Esc und Strg+Enter gehören dem Editor
+  if (e.key == 'Escape') { e.preventDefault(); closeNoteEditor(); }
+  else if (e.key == 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); await saveNoteEditor(); }  // läuft schon unter busy
+}
+$('neSave').onclick = () => { if (mode == 'noteedit' && !busy) { busy = true; saveNoteEditor().finally(() => { busy = false; }); } };
+$('neCancel').onclick = $('neClose').onclick = () => { if (mode == 'noteedit') closeNoteEditor(); };
 async function openNotes(req) {
   pendingNote = req || null;
   const st = await (await fetch(BASE + '/api/settings')).json();
@@ -1457,6 +1499,7 @@ $('konflink').onclick = e => { e.preventDefault(); if (mode == 'read') guarded(o
 
 async function onKey(e) {
   if (e.key == 'F1') { e.preventDefault(); window.open($('helplink').href, '_blank'); return; }
+  if (mode == 'noteedit') return noteEditKey(e);  // Zettel schreiben (#84): Buchstaben sind Text, keine Befehle
   // Strg+F (Mac: Cmd+F) ist die gewohnte Suche – beim Lesen unsere statt der des Browsers
   if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key == 'f' || e.key == 'F') && data && mode == 'read') { e.preventDefault(); askOpen('find'); return; }
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && (e.key == '+' || e.key == '*' || e.code == 'NumpadAdd') && e.target.tagName == 'INPUT'

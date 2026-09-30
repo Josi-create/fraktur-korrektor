@@ -343,7 +343,7 @@ yourself.
   from Kindle highlights have no link, as there is no page image for them.
 
 Highlights you made on your Kindle become notes in the same way: [Highlights from the Kindle](kindle.md).
-How notes are created in Obsidian right on the iPad is described below under *Reading on a tablet*.
+How to write notes on a tablet or phone is described below under *Reading on a tablet*.
 
 ## Replacing a page
 
@@ -404,22 +404,25 @@ On the tablet you work with your finger:
 - **With a keyboard:** Tables, the footnote rule, splitting or joining lines need the keys. With a keyboard attached to
   the tablet, all keys work as on the computer.
 
-### Notes for Obsidian on the iPad
+### Notes on a tablet or phone
 
-If Obsidian is installed on the tablet too and keeps the vault in step with the computer (Obsidian Sync), the note is
-created right there:
+Notes with your remark can be made on the go too – without needing another app:
 
 1. Select a passage with your finger: press and hold a word, then drag the handles.
 2. Tap **Note from selection** at the bottom (without a selection the button says **Note** and takes the reading line).
-3. Obsidian opens the new note with the quotation and source. Write your remark into it and switch back to Safari.
-   Having both side by side (Split View) is convenient.
+3. A field opens: the quotation at the top, below it you write your remark. **Save note** – done.
 
-Obsidian Sync brings the note to the computer. Number, quotation and source come from the program as always; the folder
-is the one you set for the book on the computer (`O`). The numbers carry on correctly even while Obsidian is not
-running on the computer. Click the *Scan* link in the note on the computer: it leads to the program running there; on
-the iPad it opens nothing.
+The note is created on the computer, in the notes folder you set there for the book (`O`) – just as with `F4`:
+numbered consecutively, with the quotation, page and line, the reference to the source note and your remark at the
+top. Obsidian on the computer shows it right away; with Obsidian Sync it is on your other devices too. The remark may
+stay empty; you can add to it later in Obsidian. Click the *Scan* link in the note on the computer: it leads to the
+program running there.
 
-The first time, Safari asks whether it may open Obsidian. If it does not open by itself, tap **open in Obsidian** in
-the message at the bottom. Under **☰ → Notes** this can be switched off per device; the note is then created on the
-computer as before. If the vault has a different name on the tablet than on the computer, enter that name there. If
-the notes folder is not inside an Obsidian vault, the note is also created on the computer.
+With a keyboard, `Ctrl`+`Enter` saves and `Esc` cancels. This also works on a second computer reading along over the
+home network.
+
+**Rather in Obsidian on the tablet?** If Obsidian is installed there and keeps the vault in step with the computer
+(Obsidian Sync), you can tick **Open Obsidian on this device instead** under **☰ → Notes**. Then **Note** opens the new
+note with quotation and source in Obsidian, and you write your remark there; the first time, Safari asks whether it may
+open Obsidian (if it does not open by itself, tap **open in Obsidian** in the message at the bottom). If the vault has a
+different name on the tablet than on the computer, enter that name there.

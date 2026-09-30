@@ -173,6 +173,19 @@ def test_notizen_fuer_obsidian(app, tmp_path):
     assert app.post('/api/settings', dict(notizen=''))[1]['notizen'] is None
 
 
+def test_notiz_mit_anmerkung_aus_dem_editor(app, tmp_path):
+    """Am Tablet oder Handy (#84): Die Anmerkung kommt aus dem Editor des Readers und steht gleich im Zettel am Rechner."""
+    folder = tmp_path / 'Vault' / 'Buch'
+    folder.parent.mkdir()
+    app.post('/api/settings', dict(notizen=str(folder)))
+    code, r = app.post('/api/notiz', dict(page='001', text='Die Kolonisten', lines=[2, 2], anmerkung='  Wohin genau?\r\nVgl. Stumpp 1972.  \n\n'))
+    assert code == 200 and r['name'] == '01 Seite 5' and not r['opened']
+    assert open(folder / '01 Seite 5.md', encoding='utf-8').read().startswith(
+        '**Anmerkung**\n\nWohin genau?\nVgl. Stumpp 1972.\n\n---\n\n> Die Kolonisten\n\nSeite 5, Zeile 2, [[0 Quellenangabe|buch]]')
+    app.post('/api/notiz', dict(page='001', text='Die Kolonisten', anmerkung='   '))  # leer: wie ohne Editor
+    assert open(folder / '02 Seite 5.md', encoding='utf-8').read().startswith('**Anmerkung**\n\n\n\n---\n\n> Die Kolonisten')
+
+
 def test_notiz_titel_mit_klammern_und_ordner_als_datei(app, tmp_path):
     # Umbenennen lässt [ ] | im Titel zu – der Verweis im Zettel bleibt trotzdem ein gültiger Obsidian-Link (#71)
     app.lpost('/api/rename', dict(id=app.book[6:], title='Reise [Band 2]'))

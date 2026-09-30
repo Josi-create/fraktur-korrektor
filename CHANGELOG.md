@@ -54,6 +54,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   560 px fallen »Seite« und »1 / 30« weg, **Bibliothek** steht im Menü; unter 420 px auch das Schild *Lesen/Korrektur*
   (unten steht ohnehin, was gerade geschieht). Quer auf dem Handy (unter 500 px Höhe) sind die Ränder schmaler, damit
   mehr Text zu sehen ist. Hilfe: »Auf dem Tablet lesen« nennt das iPhone.
+- **Zettel auf dem Tablet oder Handy ohne Obsidian dort** (#84): **Notiz** öffnet über das Heimnetz einen einfachen
+  Editor – oben das Zitat, darunter die eigene Anmerkung, **Zettel speichern**. Der Zettel entsteht am Rechner im
+  Notizordner des Buchs, wie mit `F4`, und trägt die Anmerkung gleich oben (`/api/notiz` nimmt `anmerkung`); Obsidian am
+  Rechner zeigt ihn, Obsidian Sync bringt ihn auf die anderen Geräte. Fehlt der Notizordner, bleibt die Anmerkung im
+  Feld stehen. Obsidian auf dem Gerät selbst (`obsidian://new`, 0.11) gibt es weiter, aber nur noch, wenn man es unter
+  ☰ → Notizen einschaltet (»Stattdessen Obsidian auf diesem Gerät öffnen«). Auch ein zweiter Rechner im Heimnetz
+  bekommt den Editor. Hilfe DE/EN: »Zettel auf dem Tablet oder Handy«.
 - **Korrektur verlassen durch Wischen oder Doppelklick:** Wer beim Korrigieren mit dem Finger über den Text wischt, ist
   wieder beim Lesen und rollt gleich weiter; am Rechner beendet ein Doppelklick in den Text die Korrektur. Beides wie
   `Esc`: Übernommen wird nichts.

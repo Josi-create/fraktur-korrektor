@@ -240,14 +240,16 @@ class Book:
         exp = self.expected_page(pg)
         return str(exp if exp is not None else n[0] if n else int(pg))
 
-    def make_note(self, pg, text, lang='de', lines=None, device=False, port=None):
+    def make_note(self, pg, text, lang='de', lines=None, device=False, port=None, remark=''):
         """Ein Zettel nach Luhmanns Art im Notizordner: fortlaufend nummeriert, oben Platz für die eigene Anmerkung, unter dem
         Strich das Zitat und die Quelle – Seite, Zeilen (lines = (von, bis), gezählt wie in der Leiste des Readers) und Verweis auf die
         Quellenangabe des Buchs (Datei „0 Quellenangabe“, wird bei Bedarf als Vorlage angelegt; dort trägt der Nutzer Herkunft und
         Zotero-Zitierweise ein). Liefert (ergebnis, fehler).
         device: den Zettel nicht schreiben, sondern Inhalt und Ort im Vault liefern – Obsidian auf dem Tablet legt ihn an, Obsidian
         Sync bringt ihn auf den Rechner (#63). Die Quellenangabe entsteht trotzdem hier, sie ist für alle Zettel dieselbe.
-        port: der Port, auf dem das Programm läuft – dann endet die Quellenzeile mit einem Link zurück zur Stelle im Scan (#74)."""
+        port: der Port, auf dem das Programm läuft – dann endet die Quellenzeile mit einem Link zurück zur Stelle im Scan (#74).
+        remark: die eigene Anmerkung, am Tablet oder Handy im Editor des Readers geschrieben (#84) – sie steht gleich im Zettel,
+        Obsidian am Rechner zeigt ihn, Obsidian Sync bringt ihn auf die anderen Geräte."""
         W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
         folder = self.settings.get('notizen')
         vault = obsidian_vault(folder) if device and folder else None
@@ -284,7 +286,9 @@ class Book:
         # Die gedruckte Seite bleibt die Angabe fürs Zitat; der Link braucht die Seite der Datei. Er geht über die feste Kennung
         # des Buchs, nicht über /buch/<id>: Die hängt am Ordner, und der zieht vielleicht um oder kommt als PDF auf einen anderen Rechner
         scan = ' · [%s](http://localhost:%d/stelle?%s)' % (W['scan'], port, urllib.parse.urlencode(q)) if port else ''
-        body = '**%s**\n\n\n\n---\n\n> %s\n\n%s, [[%s|%s]]%s\n' % (W['note'], text, where, src, link_title(self.title), scan)
+        remark = '\n'.join(l.rstrip() for l in str(remark or '').replace('\r\n', '\n').replace('\r', '\n').strip().split('\n'))
+        body = '**%s**\n\n%s---\n\n> %s\n\n%s, [[%s|%s]]%s\n' % (W['note'], remark + '\n\n' if remark else '\n\n', text, where, src,
+                                                                link_title(self.title), scan)
         if vault:
             # Pfad ab der Wurzel des Vaults, mit / wie in Obsidian; ohne .md (Obsidian hängt es an)
             file = os.path.relpath(os.path.join(os.path.abspath(folder), name), vault[1]).replace(os.sep, '/')
@@ -2596,7 +2600,7 @@ class H(BaseHTTPRequestHandler):
         if rest == '/api/notiz':
             try:
                 r, err = book.make_note(str(body.get('page') or ''), body.get('text') or '', body.get('lang') or 'de', body.get('lines'),
-                                        device=bool(body.get('geraet')), port=self.server.server_port)
+                                        device=bool(body.get('geraet')), port=self.server.server_port, remark=body.get('anmerkung') or '')
             except OSError:  # der Notizordner ist eine Datei oder schreibgeschützt: eine Meldung statt einer abgerissenen Verbindung
                 r, err = None, 'notiz_schreiben'
             if err:
