@@ -267,6 +267,16 @@ mit einem Satzzeichen. Verse, Listen und Register bleiben so meist unberührt. O
 einem EPUB ohne PDF) oder in einem Buch ohne Einzüge erkennt das Programm keine Absätze. In der Textdatei steht ein
 Absatzanfang als `<p>` am Zeilenanfang, wie im EPUB.
 
+## Fett und kursiv (Strg+B, Strg+I)
+
+Wie in Word: Markieren Sie die Wörter mit der Maus – oder ganze Zeilen mit `Umschalt`+`↓`/`↑` – und drücken Sie
+`Strg`+`B` für **fett** oder `Strg`+`I` für *kursiv* (am Mac `⌘`). Die Wörter erscheinen gleich in dieser Schrift, im
+[E-Book](epub-sichern.md) später ebenso. Dieselbe Markierung noch einmal nimmt es zurück. Die Markierung darf über
+mehrere Zeilen reichen. Aus einem EPUB eingelesene Schrift lässt sich auf dieselbe Weise ändern.
+
+Auch im Eingabefeld (`F2` oder beim Korrigieren) gelten beide Tasten: Dort setzen sie die Zeichen `<b>…</b>` bzw.
+`<i>…</i>` um die markierten Zeichen – ohne Markierung um das Wort an der Schreibmarke.
+
 ## Weitere Auszeichnung
 
 Wer mag, kann mit `F2` auch weitere Auszeichnung von Hand eintragen; das Programm kennt `<em>`, `<strong>`, `<i>`, `<b>`,
@@ -410,6 +420,8 @@ Auf dem Tablet bedienen Sie alles mit dem Finger:
   Absatz beginnen (wie `A`), **Überschrift 1 2 3** macht die Zeile zur Überschrift dieser Ebene (wie `H`) – 1 für
   Kapitel, 2 und 3 für Abschnitte darin. Hervorgehoben ist, was die Zeile schon ist; noch einmal antippen nimmt es
   zurück.
+- **Fett und kursiv:** Wörter mit dem Finger markieren (lange auf ein Wort drücken, dann die Griffe ziehen) und unten
+  **F** für fett oder ***K*** für kursiv antippen. Dieselbe Markierung noch einmal nimmt es zurück.
 - **Mit Tastatur:** Tabellen, Fußnotenstrich, Zeilen teilen oder verbinden gehen nur mit den Tasten. Ist am Tablet eine
   Tastatur angeschlossen, gelten alle Tasten wie am Rechner.
 

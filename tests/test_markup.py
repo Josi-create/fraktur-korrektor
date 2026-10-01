@@ -172,3 +172,37 @@ def test_alte_verbindung_nach_zeilenabstand_trennen(tmp_path):
         assert b.unjoin_line('001', 1, b.pages['001'][1])[1] is None
     d = b.page_data('001')
     assert d['lines'][1:] == rows and d['geo'] == g0
+
+
+def test_fett_und_kursiv_von_hand():
+    """Strg+B, Strg+I: Zeichen a..b – gezählt ohne Auszeichnung – fett oder kursiv; sauber verschachtelt, je Zeile geschlossen."""
+    s = korrlib.style
+    assert s('Die Kolonisten zogen fort', 4, 14, 'b', True) == 'Die <b>Kolonisten</b> zogen fort'
+    assert s('Die Kolonisten zogen fort', 3, 15, 'b', True) == 'Die <b>Kolonisten</b> zogen fort'  # Leerraum am Rand bleibt draußen
+    assert s('<p>Die <b>Kolonisten</b> zogen fort', 4, 20, 'b', True) == '<p>Die <b>Kolonisten zogen</b> fort'  # erweitern
+    assert s('<p>Die <b>Kolonisten zogen</b> fort', 15, 20, 'b', False) == '<p>Die <b>Kolonisten</b> zogen fort'  # ein Wort zurück
+    assert s('<h2>Die Reise</h2>', 4, 9, 'i', True) == '<h2>Die <i>Reise</i></h2>'                 # Struktur bleibt außen
+    # mitten durch ein <em>: nichts kreuzt sich
+    assert s('Die <em>Kolonisten zogen</em> fort', 0, 14, 'b', True) == '<b>Die <em>Kolonisten</em></b><em> zogen</em> fort'
+    assert s('<strong>fett</strong> und <em>schräg</em>', 0, 4, 'b', False) == 'fett und <em>schräg</em>'  # <strong> gilt als fett
+    assert s('<em>schräg</em>', 0, 6, 'i', True) == '<em>schräg</em>'                                    # schon kursiv: bleibt
+    assert s('Wort<sup>1</sup> weiter', 0, 5, 'b', True) == '<b>Wort<sup>1</sup></b> weiter'
+    assert s('<tr><td>Ort</td><td></td></tr></table>', 0, 3, 'b', True) == '<tr><td><b>Ort</b></td><td></td></tr></table>'
+    assert s('Text', 2, 2, 'b', True) == 'Text' and s('a  b', 1, 3, 'b', True) == 'a  b'                 # nichts markiert
+    assert korrlib.styled('Die <b>Kolonisten</b> zogen', 4, 14, 'b') is True and korrlib.styled('Die <b>Kolonisten</b> zogen', 0, 14, 'b') is False
+    assert korrlib.styled('a  b', 1, 3, 'b') is None
+
+
+def test_fett_ueber_die_schnittstelle(app):
+    old = app.text('001')
+    code, d = app.post('/api/markup/001', dict(kind='style', tag='b', start=1, end=2, old=old[1:3], **{'from': 4, 'to': 7}))
+    assert code == 200 and d['on'] and d['lines'][1:3] == ['Die <b>Kolonisten zogen nach Rußland und</b>', '<b>ber Weg</b> war weit. Die Zu¬']
+    assert app.log()[-1][1] == 'edit' and words(d) == words(dict(flags=app.get('/api/page/001')[1]['flags']))  # rote Wörter bleiben
+    # dieselbe Markierung noch einmal: zurück
+    code, d = app.post('/api/markup/001', dict(kind='style', tag='b', start=1, end=2, old=d['lines'][1:3], **{'from': 4, 'to': 7}))
+    assert code == 200 and not d['on'] and d['lines'][1:3] == old[1:3]
+    code, d = app.post('/api/markup/001', dict(kind='style', tag='i', line=4, old=old[4], **{'from': 4, 'to': 10}))
+    assert code == 200 and d['lines'][4] == 'ber <i>Heimat</i> gedachten.'
+    assert app.post('/api/markup/001', dict(kind='style', tag='b', line=1, old='etwas anderes', **{'from': 0, 'to': 3}))[0] == 409
+    assert app.post('/api/markup/001', dict(kind='style', tag='u', line=1, old=old[1], **{'from': 0, 'to': 3}))[0] == 400
+    assert app.post('/api/markup/001', dict(kind='style', tag='b', line=5, old='---'))[0] == 400  # Fußnotenstrich: nichts zu markieren

@@ -25,6 +25,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   meldet dafür `rest`).
 - Neue Hilfeseite [Signatur und Datenschutz](docs/de/code-signing.md): wer signiert, nach welchen Regeln, und was
   das Programm über das Netz überträgt.
+- **Fett und kursiv von Hand:** Wörter markieren – mit der Maus, zeilenweise mit `Umschalt`+`↓`/`↑` oder am Tablet mit
+  dem Finger – und `Strg`+`B` bzw. `Strg`+`I` drücken (Mac `⌘`); am Tablet die Knöpfe **F** und *K*. Dieselbe Markierung
+  noch einmal nimmt es zurück, auch bei Schrift aus einem EPUB (`<strong>`, `<em>` gelten mit). Die Markierung darf über
+  mehrere Zeilen reichen; jede Zeile wird sauber verschachtelt neu geschrieben, auch wenn die Markierung mitten durch
+  ein `<em>` geht (`korrlib.style`, `/api/markup` mit `kind: style`). Im Eingabefeld setzen die Tasten `<b>…</b>` bzw.
+  `<i>…</i>` um die markierten Zeichen oder das Wort an der Schreibmarke; eine reine Schriftänderung bietet keine
+  Serienkorrektur an.
 - **Überschriften aus dem E-Book nachtragen** (#81): Für Bücher, die aus einem EPUB eingelesen wurden, bevor die
   Auszeichnung mitkam, steht in der Bibliothek der Knopf **Überschriften aus dem E-Book**. Das Programm ordnet die
   Wörter jeder Seite dem EPUB zu wie beim Einlesen, ändert aber kein Wort: Es kommen nur Überschriften (die ganze Zeile

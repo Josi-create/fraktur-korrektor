@@ -165,7 +165,7 @@ html.touch #lines{cursor:pointer}  /* Safari schickt Klicks nur an Elemente, die
 .tclose{float:right;margin:-4px 0 0 12px;font-size:22px;line-height:1;padding:6px 14px}
 /* Absatz und Überschrift für die Lesezeile (A, H): rechts in der Leiste; hervorgehoben ist, was die Zeile schon ist */
 #tfmt{display:flex;gap:8px;align-items:center;margin-left:auto} #tfmt>span{color:#555;margin-left:6px}
-#tfmt [data-h]{min-width:48px;padding:8px 12px;font-family:Georgia,'Times New Roman',serif;font-weight:bold} #tfmt .tb.on,#tParaF.on{background:#c90;border-color:#c90;color:#fff}
+#tfmt [data-h],#tBold,#tItal{min-width:48px;padding:8px 12px;font-family:Georgia,'Times New Roman',serif;font-weight:bold} #tItal{font-weight:normal;font-size:18px} #tfmt .tb.on,#tParaF.on{background:#c90;border-color:#c90;color:#fff}
 #tsug{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 2px} #tsug small{color:#888;align-self:center}
 /* Bild und Text nebeneinander: Vorschläge und Knöpfe in einer Reihe. »Richtig so« steht immer ganz links, wo der Daumen
    schon liegt – auch vor den Vorschlägen, deren Zahl und Breite wechselt */
@@ -236,7 +236,7 @@ html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visib
   <div id="tfix"><div id="tcrop"></div><div id="tsug"></div>
    <div class="tbtns"><button type="button" class="tb" id="tOk" data-t="t_ok"></button><button type="button" class="tb go" id="tSave" data-t="t_save"></button><button type="button" class="tb" id="tUntype" data-t="t_untype"></button><button type="button" class="tb" id="tSkip" data-t="t_skip"></button><button type="button" class="tb" id="tType" data-t="t_type"></button><button type="button" class="tb" id="tParaF" data-t="t_para"></button><button type="button" class="tb" id="tSerieF" data-t="t_serie"></button><button type="button" class="tb" id="tBack" data-t="t_back"></button></div></div>
   <div id="tbar" class="tbtns"><button type="button" class="tb go" id="tNext" data-t="t_next"></button><button type="button" class="tb" id="tEdit" data-t="t_edit"></button><button type="button" class="tb del" id="tDel" data-t="t_del"></button><button type="button" class="tb" id="tUndel" data-t="t_undel"></button><button type="button" class="tb" id="tNote" data-t="t_note"></button><button type="button" class="tb" id="tSerieR" data-t="t_serie"></button>
-   <span id="tfmt"><button type="button" class="tb" id="tPara" data-t="t_para"></button><span data-t="t_heading"></span><button type="button" class="tb" data-h="1" data-t-title="t_heading_1">1</button><button type="button" class="tb" data-h="2" data-t-title="t_heading_2">2</button><button type="button" class="tb" data-h="3" data-t-title="t_heading_3">3</button></span></div>
+   <span id="tfmt"><button type="button" class="tb" id="tBold" data-t-title="t_bold"><b data-t="t_bold_l"></b></button><button type="button" class="tb" id="tItal" data-t-title="t_ital"><i data-t="t_ital_l"></i></button><button type="button" class="tb" id="tPara" data-t="t_para"></button><span data-t="t_heading"></span><button type="button" class="tb" data-h="1" data-t-title="t_heading_1">1</button><button type="button" class="tb" data-h="2" data-t-title="t_heading_2">2</button><button type="button" class="tb" data-h="3" data-t-title="t_heading_3">3</button></span></div>
   <div id="help"></div>
   <div id="shint"></div>
  </div>
@@ -898,7 +898,7 @@ async function afterFix(line, start) {
 }
 async function commit() {
   const line = mode == 'fix' ? cf.line : li, f = cf, edits = [];
-  const v = $('edit').value, full = supMark(ed.pre + v + ed.post); if (full !== data.lines[line]) edits.push({ line, old: data.lines[line], new: full });
+  const v = $('edit').value, full = supMark(ed.pre + v + ed.post), before = data.lines[line]; if (full !== before) edits.push({ line, old: before, new: full });
   if (mode == 'fix' && isJoin(f)) { const v2 = supMark(ed2.pre + $('edit2').value + ed2.post); if (v2 !== data.lines[line + 1]) edits.push({ line: line + 1, old: data.lines[line + 1], new: v2 }); }
   let oldW = '', newW = '', neu = false;
   if (mode == 'fix' && f.kind != 'page' && f.kind != 'fnref' && !f.cross) {  // Seitenzahl und Fußnotenzeichen sind keine Wörter für die Serienkorrektur, eine halbe Seite auch nicht
@@ -912,7 +912,7 @@ async function commit() {
     data = await r.json(); updateCount();
     if (data.lines.length != lineEls.length) renderText();
     pending = null; msg = '';
-    if (oldW && newW && oldW != newW) {
+    if (oldW && newW && oldW != newW && strip(full) != strip(before)) {  // nur Auszeichnung geändert (Strg+B): kein Wort für die Serie
       const c = await (await fetch(BASE + '/api/occurrences?count=1&word=' + encodeURIComponent(oldW))).json();
       if (c.n > 0) { pending = { old: oldW, new: newW, n: c.n }; neu = true; }
     }
@@ -1131,6 +1131,43 @@ async function headingKey(want) {  // want: Ebene vom Knopf am Tablet – diesel
   const level = want ? (cur == want ? 0 : want) : cur >= 3 ? 0 : cur + 1;  // H wiederholt: 1 → 2 → 3 → keine
   if (await markup({ kind: 'heading', line: li, level, old: data.lines[li] })) msg = level ? t(want ? 'hd_set_t' : 'hd_set', { n: level }) : t('hd_removed');
   render();
+}
+// ---- Fett und kursiv von Hand, wie im EPUB: Strg+B, Strg+I auf die Markierung – mit der Maus, dem Finger oder zeilenweise
+// mit Umschalt+↓/↑ –, am Tablet die Knöpfe F und K. Dieselbe Markierung noch einmal nimmt es zurück. Der Server schreibt die
+// Zeile sauber verschachtelt (korrlib.style); hier wird nur gezählt, welche Zeichen gemeint sind.
+function selSpan() {  // {p: Seite, a, b: Zeilen, from, to: Zeichen in der ersten bzw. letzten Zeile, ohne Auszeichnung gezählt (to null: bis zum Ende)}
+  const s = getSelection();
+  if (s && !s.isCollapsed && s.rangeCount) {
+    const r = s.getRangeAt(0), off = (el, node, o) => { const q = document.createRange(); q.selectNodeContents(el); q.setEnd(node, o); return q.toString().length; };
+    for (const p of Object.keys(nbEls)) {  // reicht die Markierung über eine Seitengrenze: der Teil auf der ersten Seite
+      const hit = nbEls[p].map((el, i) => ({ el, i })).filter(x => !x.el.classList.contains('sep') && r.intersectsNode(x.el));
+      if (!hit.length) continue;
+      const a = hit[0], b = hit[hit.length - 1];
+      return { p, a: a.i, b: b.i, from: a.el.contains(r.startContainer) ? off(a.el, r.startContainer, r.startOffset) : 0,
+               to: b.el.contains(r.endContainer) ? off(b.el, r.endContainer, r.endOffset) : null };
+    }
+    return null;
+  }
+  return nsel != null && mode == 'read' ? { p: pg, a: Math.min(nsel, li), b: Math.max(nsel, li), from: 0, to: null } : null;
+}
+async function styleKey(tag, pre) {  // pre: die Markierung, festgehalten beim Antippen des Knopfs (sie kann danach weg sein)
+  const s = pre || selSpan(), none = () => { msg = t(TOUCH && !viaKey ? 'style_none_t' : 'style_none'); render(); };
+  if (!s) return none();
+  if (s.p != pg && !await loadPage(s.p, s.a)) return;  // auf der Nachbarseite markiert: Sie wird die aktuelle
+  const r = await fetch(BASE + '/api/markup/' + pg, { method: 'POST', body: JSON.stringify({ kind: 'style', tag, start: s.a, end: s.b, from: s.from, to: s.to, old: data.lines.slice(s.a, s.b + 1) }) });
+  if (r.status == 400) return none();
+  if (!r.ok) { await loadPage(pg, li); msg = t('changed_outside'); render(); return; }
+  const d = await r.json(); data = d; updateCount(); try { getSelection().removeAllRanges(); } catch (e) {}
+  nsel = null; pending = null; renderText(); msg = t('style_' + tag + (d.on ? '_on' : '_off')); render();
+}
+// Im Eingabefeld steht die Auszeichnung sichtbar da: Strg+B setzt <b>…</b> um die markierten Zeichen (ohne Markierung um das
+// Wort an der Schreibmarke) oder nimmt sie wieder weg
+function tagToggle(el, tag) {
+  let a = el.selectionStart, b = el.selectionEnd; const v = el.value;
+  if (a == b) { while (a > 0 && /\S/.test(v[a - 1])) a--; while (b < v.length && /\S/.test(v[b])) b++; }
+  const x = v.slice(a, b); if (!x.trim()) return;
+  const m = x.match(new RegExp('^<(' + (tag == 'b' ? 'b|strong' : 'i|em') + ')>([\\s\\S]*)</\\1>$'));
+  el.setRangeText(m ? m[2] : '<' + tag + '>' + x + '</' + tag + '>', a, b, 'select'); el.dispatchEvent(new Event('input'));
 }
 // ---- Wörterbuch: welche Rechtschreibung gilt für dieses Buch (buch.json)
 let dicsChanged = false;
@@ -1512,6 +1549,12 @@ async function onKey(e) {
     if (e.key == 'Backspace') { e.preventDefault(); await deleteLines(); return; }
     if (e.key == 'z' || e.key == 'Z') { e.preventDefault(); await undeleteLines(); return; }
   }
+  // Strg+B, Strg+I wie in Word: beim Lesen die Markierung, im Eingabefeld die markierten Zeichen
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && data && (e.key == 'b' || e.key == 'B' || e.key == 'i' || e.key == 'I')) {
+    const tag = e.key.toLowerCase(), inp = e.target.tagName == 'INPUT';
+    if (mode == 'read' && !inp) { e.preventDefault(); await styleKey(tag); return; }
+    if ((mode == 'fix' || mode == 'free') && inp) { e.preventDefault(); tagToggle(e.target, tag); return; }
+  }
   if (e.ctrlKey || e.altKey || e.metaKey || !data) return;
   if (mode == 'ask') return askKey(e);
   if (mode == 'serie') return serieKey(e);
@@ -1637,6 +1680,11 @@ document.addEventListener('selectionchange', () => {  // mit dem Finger markiert
 $('tDel').onclick = guarded(() => deleteLines(true));  // Strg+⌫
 $('tUndel').onclick = guarded(() => undeleteLines());  // Strg+Z
 $('tPara').onclick = guarded(() => paraKey(true));  // A
+let styleSel = null;  // Strg+B, Strg+I: die Markierung beim Aufsetzen des Fingers festhalten, wie bei der Notiz
+for (const [id, tag] of [['tBold', 'b'], ['tItal', 'i']]) {
+  $(id).addEventListener('pointerdown', e => { e.preventDefault(); styleSel = selSpan(); });
+  $(id).onclick = guarded(async () => { const s = styleSel || selSpan(); styleSel = null; await styleKey(tag, s); });
+}
 for (const b of $('tfmt').querySelectorAll('[data-h]')) b.onclick = guarded(() => headingKey(+b.dataset.h));  // H
 $('tbar').addEventListener('pointerdown', () => { if (stopFling()) rollEnd(); });  // ein Knopf gilt der Zeile, auf der der Text steht
 $('tSerieR').onclick = $('tSerieF').onclick = () => { if (!busy && (mode == 'read' || mode == 'fix')) { busy = true; startSeries().finally(() => { busy = false; }); } };  // F9

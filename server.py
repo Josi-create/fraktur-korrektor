@@ -1252,6 +1252,26 @@ class Book:
                     return None, 400
                 new = [lines[a][3:] if lines[a].startswith('<p>') else '<p>' + lines[a]]
                 b = a
+            elif body.get('kind') == 'style':  # Strg+B, Strg+I: die markierten Wörter fett bzw. kursiv – oder wieder nicht
+                tag, old = body.get('tag'), body.get('old')
+                if lines[a:b + 1] != ([old] if isinstance(old, str) else old):
+                    return None, 409
+                if tag not in korrlib.GLEICH:
+                    return None, 400
+                # from/to: Zeichen in der ersten bzw. letzten Zeile, gezählt ohne Auszeichnung; Zeilen dazwischen ganz.
+                # Kopfzeile und Fußnotenstrich bleiben, wie sie sind
+                span = []
+                for k in range(a, b + 1):
+                    n = len(korrlib.TAG.sub('', lines[k]))
+                    skip = lines[k] == '---' or (k == 0 and lines[k].startswith('#'))
+                    span.append(None if skip else (int(body.get('from') or 0) if k == a else 0, int(body['to']) if k == b and body.get('to') is not None else n))
+                have = [korrlib.styled(lines[a + k], s[0], s[1], tag) for k, s in enumerate(span) if s]
+                if not any(h is not None for h in have):
+                    return None, 400  # nichts markiert
+                on = not all(h for h in have if h is not None)  # schon alles so: zurücknehmen
+                new = [korrlib.style(lines[a + k], s[0], s[1], tag, on) if s else lines[a + k] for k, s in enumerate(span)]
+                edits = [dict(line=a + k, old=lines[a + k], new=n) for k, n in enumerate(new) if n != lines[a + k]]
+                return dict(self.edit(pg, edits) if edits else self.page_data(pg), on=on), None
             else:
                 return None, 400
             edits = [dict(line=a + k, old=lines[a + k], new=n) for k, n in enumerate(new) if n != lines[a + k]]

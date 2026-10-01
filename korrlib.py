@@ -443,6 +443,85 @@ def heading(line, level):
     """Zeile als Überschrift der Ebene 1–6 auszeichnen; level 0 nimmt die Auszeichnung weg."""
     t = HEADTAG.sub('', line)
     return '<h%d>%s</h%d>' % (level, t, level) if level and t.strip() else t
+# ---- Schrift von Hand: markierte Wörter fett oder kursiv (Strg+B, Strg+I – am Tablet zwei Knöpfe)
+INLINE = ('strong', 'b', 'em', 'i', 'sup', 'sub')  # außen nach innen, wie beim Einlesen eines EPUB (epub.INLINE)
+GLEICH = dict(b=('b', 'strong'), i=('i', 'em'))    # was als fett bzw. kursiv gilt: ein EPUB bringt beide Schreibweisen mit
+def _pieces(line):
+    """Die Zeile als Stücke: (text, stile) für Text und (tag, None) für Auszeichnung, die keine Schrift ist (Absatz,
+    Überschrift, Tabelle, <br/>) – sie bleibt, wo sie steht."""
+    out, st, pos = [], [], 0
+    cur = lambda: tuple(x for x in INLINE if x in st)
+    for m in TAG.finditer(line):
+        if m.start() > pos:
+            out.append((line[pos:m.start()], cur()))
+        pos = m.end()
+        name = re.match(r'</?\s*(\w+)', m.group()).group(1).lower()
+        if name not in INLINE:
+            out.append((m.group(), None))
+        elif m.group().endswith('/>'):
+            pass
+        elif not m.group().startswith('</'):
+            st.append(name)
+        elif name in st:
+            del st[len(st) - 1 - st[::-1].index(name)]
+    if pos < len(line):
+        out.append((line[pos:], cur()))
+    return out
+def styled(line, a, b, tag):
+    """Sind die Zeichen a..b der Zeile – gezählt ohne Auszeichnung, wie der Reader sie zeigt – alle schon fett (tag 'b')
+    bzw. kursiv ('i')? Leerraum zählt nicht; None, wenn dort gar kein Zeichen steht."""
+    pos, seen = 0, None
+    for text, st in _pieces(line):
+        if st is None:
+            continue
+        s, e = max(a, pos), min(b, pos + len(text))
+        if s < e and text[s - pos:e - pos].strip():
+            if not set(GLEICH[tag]) & set(st):
+                return False
+            seen = True
+        pos += len(text)
+    return seen
+def style(line, a, b, tag, on):
+    """Die Zeichen a..b der Zeile (gezählt wie in styled) fett bzw. kursiv setzen (on) oder zurücknehmen. Leerraum am Rand
+    bleibt draußen (»<b>Wort</b> «). Die Zeile wird dabei neu und sauber verschachtelt geschrieben: Jedes Element schließt
+    in der Zeile und vor jeder Struktur-Auszeichnung – auch wenn die Markierung mitten durch ein <em> geht."""
+    plain = TAG.sub('', line)
+    a, b = max(0, a), min(len(plain), b)
+    while a < b and plain[a].isspace():
+        a += 1
+    while b > a and plain[b - 1].isspace():
+        b -= 1
+    if a >= b:
+        return line
+    if not on:  # beim Zurücknehmen fällt der Leerraum daneben mit heraus: »<b>Wort</b> weiter«, nicht »<b>Wort </b>weiter«
+        while a > 0 and plain[a - 1].isspace():
+            a -= 1
+        while b < len(plain) and plain[b].isspace():
+            b += 1
+    same, parts, pos = GLEICH[tag], [], 0
+    for text, st in _pieces(line):
+        if st is None:
+            parts.append((text, None))
+            continue
+        s, e = max(a, pos), min(b, pos + len(text))
+        if s < e:
+            if not on:
+                new = tuple(x for x in st if x not in same)
+            else:
+                new = st if set(same) & set(st) else tuple(x for x in INLINE if x in st or x == tag)
+            parts += [p for p in ((text[:s - pos], st), (text[s - pos:e - pos], new), (text[e - pos:], st)) if p[0]]
+        else:
+            parts.append((text, st))
+        pos += len(text)
+    out, open_ = [], []
+    for text, st in parts:
+        k = 0
+        while st and k < len(open_) and k < len(st) and open_[k] == st[k]:
+            k += 1
+        out += ['</%s>' % x for x in reversed(open_[k:])] + ['<%s>' % x for x in (st or ())[k:]]
+        open_ = list(st or ())
+        out.append(text)
+    return ''.join(out + ['</%s>' % x for x in reversed(open_)])
 HLINE = re.compile(r'<h([1-6])>(.*)</h\1>$')
 def headings(pages):
     """Die Überschriften in Lesereihenfolge: [(seite, zeile, ebene, text)] – für die Übersicht im Reader und das
