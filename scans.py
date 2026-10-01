@@ -392,6 +392,72 @@ def trim(pix, box):
     return cut
 
 
+# ---- Abbildungen (#76): Vorschlag für den Rahmen, den der Nutzer in der Leseansicht mit B setzt
+
+FIG_SOFT = 40        # so viel dunkler als das Papier zählt zur Abbildung – auch die hellen Grautöne eines Fotos
+FIG_EDGE = 0.015     # Streifen am Bildrand, der nicht zählt (Anteil der Breite des Messbilds)
+FIG_GAP = 0.02       # so viel Weiß (Anteil der Höhe) darf in einer Abbildung zwischen bedruckten Zeilen liegen
+FIG_MIN = (0.06, 0.03)  # Mindestgröße (Anteil der Breite, der Höhe): kleiner ist ein Fleck oder eine verlorene Zeile
+FIG_INK = 0.01       # Anteil wirklich dunkler Pixel im Rahmen – darunter ist es durchscheinender Druck der Rückseite
+
+
+def figure_box(path, avoid=()):
+    """Die größte bedruckte Fläche eines Seitenbilds, in der kein Text steht, als (x0, y0, x1, y1) in Bildpixeln – oder
+    None. avoid: Rahmen in Bildpixeln, die nicht dazugehören (Textzeilen aus lines.json, schon markierte Abbildungen).
+
+    Gemessen wird wie oben auf dem Messbild. Was dunkler ist als das Papier und nicht mit dem Bildrand zusammenhängt
+    (Schatten der Falz, Tischplatte), zählt; Bildzeilen mit genug davon bilden Bänder, kleine weiße Lücken eingeschlossen.
+    Das Band mit dem meisten Schwarz ist der Vorschlag, seitlich begrenzt auf die Spalten, in denen es steht. Es bleibt
+    ein Vorschlag: Zeilen, die die Texterkennung übersehen hat, sehen genauso aus."""
+    pix = load_gray(path)
+    sm = small(pix)
+    w, h, stride, data = sm.width, sm.height, sm.stride, sm.samples
+    f = w / pix.width
+    soft = paper_level(data) - FIG_SOFT
+    hard = min(otsu(data[::7]), soft)
+    table = bytes(2 if v < hard else 1 if v < soft else 0 for v in range(256))  # 2 = Druckerschwärze, 1 = Grauton
+    rows = [bytearray(data[y * stride:y * stride + w].translate(table)) for y in range(h)]
+    comps, label = components(w, h, rows)
+    edge = {c['id'] for c in comps if c['x0'] == 0 or c['y0'] == 0 or c['x1'] == w or c['y1'] == h}
+    if edge:
+        for y in range(h):
+            row, lab = rows[y], label[y]
+            for x in range(w):
+                if lab[x] in edge:
+                    row[x] = 0
+    m = max(1, round(w * FIG_EDGE))
+    boxes = [(0, 0, w, m), (0, h - m, w, h), (0, 0, m, h), (w - m, 0, w, h)]
+    boxes += [(int(x0 * f) - 1, int(y0 * f) - 1, math.ceil(x1 * f) + 1, math.ceil(y1 * f) + 1) for x0, y0, x1, y1 in avoid]
+    for x0, y0, x1, y1 in boxes:
+        x0, x1 = max(0, x0), min(w, x1)
+        for y in range(max(0, y0), min(h, y1)):
+            rows[y][x0:x1] = bytes(max(0, x1 - x0))
+    ink = [w - r.count(0) for r in rows]
+    need, gap, bands = max(2, round(w * 0.01)), max(2, round(h * FIG_GAP)), []
+    for a, b in _runs([n >= need for n in ink]):
+        if bands and a - bands[-1][1] <= gap:
+            bands[-1][1] = b
+        else:
+            bands.append([a, b])
+    best = None
+    for a, b in bands:
+        cols = [sum(1 for y in range(a, b) if rows[y][x]) for x in range(w)]
+        xs = [x for x in range(w) if cols[x] >= max(1, round((b - a) * 0.01))]
+        if not xs or xs[-1] + 1 - xs[0] < FIG_MIN[0] * w or b - a < FIG_MIN[1] * h:
+            continue
+        x0, x1 = xs[0], xs[-1] + 1
+        if sum(rows[y].count(2, x0, x1) for y in range(a, b)) < FIG_INK * (x1 - x0) * (b - a):
+            continue
+        score = sum(ink[a:b])
+        if not best or score > best[0]:
+            best = (score, x0, a, x1, b)
+    if not best:
+        return None
+    pad = max(1, round(w * 0.01))
+    x0, y0, x1, y1 = best[1] - pad, best[2] - pad, best[3] + pad, best[4] + pad
+    return (max(0, int(x0 / f)), max(0, int(y0 / f)), min(pix.width, math.ceil(x1 / f)), min(pix.height, math.ceil(y1 / f)))
+
+
 # ---- Quellen: Bilderordner oder PDF
 
 def image_files(folder):

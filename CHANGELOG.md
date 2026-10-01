@@ -5,6 +5,21 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Abbildungen und Tafeln im E-Book** (#76): In der Leseansicht markiert `B` eine Abbildung im Seitenbild – ein Rahmen,
+  mit der Maus oder dem Finger aufgezogen; `G` nimmt die ganze Seite (Tafel, Karte). Wo das Programm eine bedruckte
+  Fläche ohne Textzeilen findet, schlägt es den Rahmen vor, und `Enter` übernimmt ihn (`scans.figure_box`: gemessen auf
+  dem verkleinerten Bild, Schatten am Bildrand zählen nicht). Markierte Abbildungen sind im Seitenbild grün umrahmt.
+  `L` zeichnet die Lesezeile als **Bildunterschrift** aus (`<figcaption>`, XHTML wie im EPUB); sie gehört dann nicht mehr
+  zum Absatz. Beim Sichern als E-Book wird jeder Rahmen ein Ausschnitt aus dem Scan
+  (`<figure><img alt="…"/><figcaption>`): unter der nächstgelegenen Bildunterschrift seiner Seite, sonst an der Stelle,
+  die sich aus der Lage der Zeilen ergibt – nie mitten im Absatz, sondern hinter ihm, eine Tafel hinter ihrer
+  Seitenzahl. Alternativtext ist die Bildunterschrift, sonst „Abbildung auf Seite 127“. Der Ausschnitt bleibt, wie der
+  Scan ist (Graustufen bleiben Graustufen), höchstens 1400 × 1900 Pixel, JPEG – aus einem PNG-Scan PNG, wenn das kleiner
+  ist. Der Dialog vor dem Sichern zählt die Abbildungen und nennt Seiten ohne Text, auf denen etwas gedruckt ist
+  (leere Seiten nicht). Die Rahmen stehen in `bilder.json` (Bildpixel; Text und `lines.json` bleiben unberührt), werden
+  protokolliert (`bild+`/`bild-`), wandern mit dem gesicherten PDF und werden beim Zusammenführen nachgespielt; wird
+  eine Seite ersetzt, verfallen ihre Rahmen. Am Tablet stehen beide Befehle im Menü ☰. Schnittstellen:
+  `/api/bild/<seite>`, `/api/bildvorschlag/<seite>`, `/api/markup` mit `kind: caption`.
 - **Rücksprung vom Zettel zur Quelle** (#74): Die Quellenzeile eines Zettels (`F4`) endet mit einem Link *Scan*. Ein
   Klick darauf in Obsidian öffnet das Buch im Reader genau an dieser Stelle: Seitenbild und Text, die zitierten Zeilen
   blau hervorgehoben, im Bild blau umrahmt – im zweispaltigen Satz je Spalte ein Rahmen. Das Lesezeichen bleibt, wo es

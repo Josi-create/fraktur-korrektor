@@ -155,6 +155,7 @@ class Book:
         self.bmpath = os.path.join(self.folder, 'lesezeichen.json')
         self.klogpath = os.path.join(self.folder, 'korrekturen.log')
         self.stpath = os.path.join(self.folder, 'buch.json')
+        self.figpath = os.path.join(self.folder, 'bilder.json')
         self.lock = threading.RLock()
         try:
             self.geo = json.load(open(os.path.join(self.folder, 'lines.json'), encoding='utf-8'))
@@ -350,7 +351,7 @@ class Book:
 
     def klog(self, kind, pg, line, old, new, when=None):
         """Korrekturprotokoll: Zeit, Art (edit | serie:ID | undo:ID | teilen | verbinden | fnsep | seite | whitelist+/- |
-        loeschen:ID | zurueck:ID),
+        loeschen:ID | zurueck:ID | bild+/-),
         Seite, Zeile (1-basiert), alte Zeile, neue Zeile. when: die Zeit eines nachgespielten Eintrags vom anderen
         Rechner (merge.py) – der Eintrag wird dann wortgleich zu dem im PDF."""
         with open(self.klogpath, 'a', encoding='utf-8') as f:
@@ -565,6 +566,82 @@ class Book:
             self.size[pg] = image_size(p) if p else None
         return self.size[pg]
 
+    # ---- Abbildungen (#76): Rahmen im Seitenbild, je Seite in bilder.json. Text und lines.json bleiben unberührt; wo die
+    # Abbildung im Text steht, ergibt sich beim Sichern als E-Book aus der Lage der Zeilen (epubbuch)
+
+    def figures(self, pg=None):
+        """Die markierten Abbildungen einer Seite als [dict(x0, y0, x1, y1)] in Bildpixeln, von oben nach unten – ohne pg
+        die aller Seiten als {seite: […]}."""
+        ok = lambda r: isinstance(r, dict) and all(isinstance(r.get(k), (int, float)) for k in ('x0', 'y0', 'x1', 'y1'))
+        out = {p: sorted((dict(x0=int(r['x0']), y0=int(r['y0']), x1=int(r['x1']), y1=int(r['y1'])) for r in rs if ok(r)),
+                         key=lambda r: (r['y0'], r['x0']))
+               for p, rs in pagexml.load_json(self.folder, 'bilder.json', {}).items() if isinstance(rs, list)}
+        return out.get(pg, []) if pg else {p: rs for p, rs in out.items() if rs}
+
+    def figure(self, pg, rect, add=True, when=None):
+        """Eine Abbildung markieren (add) oder ihren Rahmen wieder entfernen. rect: dict(x0, y0, x1, y1) in Bildpixeln –
+        beim Markieren auf das Seitenbild begrenzt; beim Entfernen genau ein gespeicherter Rahmen, sonst sieht die Seite
+        anders aus als im Browser (409). Protokolliert als bild+ / bild-. Liefert (seitendaten, fehler)."""
+        with self.lock:
+            self.refresh()
+            if pg not in self.pages:
+                raise KeyError(pg)
+            try:
+                x0, y0, x1, y1 = (int(round(float(rect[k]))) for k in ('x0', 'y0', 'x1', 'y1'))
+            except (TypeError, KeyError, ValueError):
+                return None, 400
+            figs, sz = self.figures(), self.img_size(pg)
+            mine = figs.get(pg, [])
+            if add:
+                # ohne Seitenbild kein Rahmen – außer nachgespielt vom anderen Rechner (when): Das Bild kommt dann noch
+                if len(mine) >= 30 or not (sz or when):
+                    return None, 400
+                if sz:
+                    (x0, x1), (y0, y1) = sorted(min(max(0, v), sz[0]) for v in (x0, x1)), sorted(min(max(0, v), sz[1]) for v in (y0, y1))
+                if min(x1 - x0, y1 - y0) < max(8, sz[0] // 100 if sz else 0):  # ein Klick statt eines Rahmens
+                    return None, 400
+            r = dict(x0=x0, y0=y0, x1=x1, y1=y1)
+            key = '%d,%d,%d,%d' % (x0, y0, x1, y1)
+            if add and r not in mine:
+                mine.append(r)
+                self.klog('bild+', pg, -1, '', key, when=when)
+            elif not add:
+                if r not in mine:
+                    return None, 409
+                mine.remove(r)
+                self.klog('bild-', pg, -1, key, '', when=when)
+            figs[pg] = mine
+            # auch ohne Rahmen bleibt die Datei stehen ({}): Im gesicherten PDF ersetzt sie dann den Stand von vorher
+            write_atomic(self.figpath, json.dumps({p: v for p, v in sorted(figs.items()) if v}, ensure_ascii=False, indent=1))
+            return self.page_data(pg), None
+
+    def drop_figures(self, pg):
+        """Die Rahmen einer Seite verwerfen: Ihr Bild wurde ersetzt (#52), die Bildpixel sind andere."""
+        with self.lock:
+            for r in self.figures(pg):
+                self.figure(pg, r, add=False)
+
+    def figure_guess(self, pg):
+        """Vorschlag für die Taste B: die größte bedruckte Fläche der Seite, in der keine Textzeile und keine schon
+        markierte Abbildung liegt (scans.figure_box) – als dict(x0, y0, x1, y1) oder None. Hat die Seite Text, aber keine
+        Zeilenlage, wäre der Text selbst der Vorschlag: dann keiner."""
+        with self.lock:
+            self.refresh()
+            lines, path, sz, g = self.pages[pg], self.img_file(pg), self.img_size(pg), self.geo.get(pg) or {}
+            avoid = [(r['x0'], r['y0'], r['x1'], r['y1']) for r in self.figures(pg)]
+            text = any(korrlib.TAG.sub('', l).strip() for i, l in enumerate(lines) if l != '---' and not (i == 0 and l.startswith('#')))
+        if not path or not sz or (text and not g.get('lines')):
+            return None
+        if g.get('lines'):  # derselbe Maßstab wie geo_lines – aber alle Zeilen aus lines.json, auch wenn ihre Zahl nicht zum Text passt
+            s = min(sz[1] / g['h'], sz[0] / g['w'])
+            ox = (sz[0] - g['w'] * s) / 2
+            avoid += [(l['x0'] * s + ox, l['y0'] * s, l['x1'] * s + ox, l['y1'] * s) for l in g['lines']]
+        try:
+            r = scans.figure_box(path, avoid)
+        except Exception:  # ohne PyMuPDF, oder das Bild lässt sich nicht lesen: dann zieht der Nutzer den Rahmen selbst
+            return None
+        return dict(zip(('x0', 'y0', 'x1', 'y1'), r)) if r else None
+
     def geo_seq(self, pg, lines):
         """Ordnet den Textzeilen die Zeilen aus lines.json zu (dieselben dict-Objekte, None für Trenner); None wenn die Anzahl
         nicht passt."""
@@ -610,8 +687,10 @@ class Book:
             lines = self.pages[pg]
             # size: damit der Reader die Nachbarseiten schon richtig platziert, bevor ihre Bilder geladen sind
             # foot: Zeile der Seitenzahl unten – der Reader zeigt sie blass wie die Kopfzeile
+            # bilder: die markierten Abbildungen (#76) – der Reader umrahmt sie im Seitenbild
             return dict(page=pg, lines=lines, geo=self.geo_lines(pg, lines), flags=self.flags(pg), img=self.img_url(pg), size=self.img_size(pg),
-                        conflicts=self.conflicts(pg), foot=self.feet[pg][1] if pg in self.feet else None, kopf=sorted(self.kopf(pg)))
+                        conflicts=self.conflicts(pg), foot=self.feet[pg][1] if pg in self.feet else None, kopf=sorted(self.kopf(pg)),
+                        bilder=self.figures(pg))
 
     def headings(self):
         """Die mit H ausgezeichneten Überschriften für die Übersicht (Taste I) und das Inhaltsverzeichnis des PDFs:
@@ -701,7 +780,8 @@ class Book:
                     left = statistics.median(seq[k]['x0'] for jj, k in enumerate(body) if jj != j and abs(jj - j) <= 6)
                     prev = korrlib.TAG.sub('', lines[body[j - 1]]).rstrip() if j else last
                     if 0.45 <= (seq[i]['x0'] - left) / lh <= 3 and prev and not prev.endswith('¬') and self.PARA_END.search(prev) \
-                            and not lines[i].startswith('<p>') and not korrlib.HEADTAG.search(lines[i]) and not korrlib.table_block(lines, i):
+                            and not lines[i].startswith('<p>') and not korrlib.HEADTAG.search(lines[i]) and not korrlib.CAPTAG.search(lines[i]) \
+                            and not korrlib.table_block(lines, i):
                         out.setdefault(pg, []).append(i)
             if text:
                 last = korrlib.TAG.sub('', lines[text[-1]]).rstrip()
@@ -1240,7 +1320,7 @@ class Book:
             elif body.get('kind') == 'heading':
                 if lines[a] != body.get('old') or lines[a] == '---' or (a == 0 and lines[a].startswith('#')):
                     return None, 409
-                if korrlib.table_block(lines, a):  # <h2><td>…</td></h2> wäre falsch verschachtelt
+                if korrlib.table_block(lines, a) or korrlib.CAPTAG.search(lines[a]):  # <h2><td>…</td></h2> wäre falsch verschachtelt
                     return None, 400
                 new = [korrlib.heading(lines[a], int(body.get('level') or 0))]
                 b = a
@@ -1248,9 +1328,17 @@ class Book:
                 if lines[a] != body.get('old'):
                     return None, 409
                 if not lines[a].strip() or lines[a] == '---' or (a == 0 and lines[a].startswith('#')) or \
-                        korrlib.HEADTAG.search(lines[a]) or korrlib.table_block(lines, a):
+                        korrlib.HEADTAG.search(lines[a]) or korrlib.CAPTAG.search(lines[a]) or korrlib.table_block(lines, a):
                     return None, 400
                 new = [lines[a][3:] if lines[a].startswith('<p>') else '<p>' + lines[a]]
+                b = a
+            elif body.get('kind') == 'caption':  # L: die Zeile ist eine Bildunterschrift – oder wieder nicht (#76)
+                if lines[a] != body.get('old'):
+                    return None, 409
+                if not korrlib.TAG.sub('', lines[a]).strip() or lines[a] == '---' or (a == 0 and lines[a].startswith('#')) or \
+                        korrlib.HEADTAG.search(lines[a]) or korrlib.table_block(lines, a):
+                    return None, 400
+                new = [korrlib.caption(lines[a])]
                 b = a
             elif body.get('kind') == 'style':  # Strg+B, Strg+I: die markierten Wörter fett bzw. kursiv – oder wieder nicht
                 tag, old = body.get('tag'), body.get('old')
@@ -1467,7 +1555,7 @@ def copy_book(folder, title=None):
     Leseposition bleiben beim Original – sie gehören zu dessen Text, nicht zu dem, der gleich hineinkommt."""
     out = new_folder(title or default_title(folder), folder)[1]
     os.makedirs(out, exist_ok=True)
-    for f in page_files(folder) + [os.path.join(folder, n) for n in ('lines.json', 'quellen.json', 'buch.json', 'whitelist.txt')]:
+    for f in page_files(folder) + [os.path.join(folder, n) for n in ('lines.json', 'quellen.json', 'buch.json', 'whitelist.txt', 'bilder.json')]:
         if os.path.isfile(f):
             shutil.copyfile(f, os.path.join(out, os.path.basename(f)))
     img = os.path.join(folder, 'img')
@@ -1615,6 +1703,7 @@ def replace_page(bid, pg, source, n, script, progress, cancelled):
         backup = pagexml.backup(folder, [pg], extra=[os.path.relpath(old, folder)] if old else [])
         r = ocr.recognize_page(folder, pg, source, n, 'antiqua' if script == 'antiqua' else 'fraktur', progress)
         book.klog('seite', pg, -1, os.path.basename(old or ''), os.path.basename(source) + (' S. %d' % n if source.lower().endswith('.pdf') else ''))
+        book.drop_figures(pg)  # Rahmen von Abbildungen (#76) gelten für das alte Bild; die Sicherung kennt sie noch
     with LIBLOCK:
         BOOKS.pop(bid, None)  # Zeilenlage und Wortliste des Buchs neu einlesen
     lib_touch(folder)
@@ -1777,7 +1866,11 @@ def epub_preview(bid):
     book = get_book(bid or '')
     if not book:
         raise ValueError('quelle_fehlt')
-    return dict(epubbuch.preview(book), autor=book.settings.get('autor') or '', title=book.title)
+    st = epubbuch.preview(book)
+    # Seiten ohne Text (#76): genannt werden nur die, auf denen etwas gedruckt ist – Tafeln, Karten. Eine leere Seite fehlt
+    # dem E-Book nicht. Dafür wird das Seitenbild angesehen (rund 0,1 s je Seite), höchstens 40, damit der Dialog nicht wartet
+    st['textless'] = [pg for pg in st['textless'][:40] if book.figure_guess(pg)]
+    return dict(st, autor=book.settings.get('autor') or '', title=book.title)
 
 
 def update_check(folder, pdf):
@@ -2430,6 +2523,12 @@ class H(BaseHTTPRequestHandler):
                 return self.sendjson(book.page_data(m.group(1)))
             except KeyError:
                 return self.send(404, '{}')
+        m = re.fullmatch(r'/api/bildvorschlag/(\d{3})', rest)  # Taste B (#76): wo auf der Seite eine Abbildung sein könnte
+        if m:
+            try:
+                return self.sendjson(dict(rect=book.figure_guess(m.group(1))))
+            except KeyError:
+                return self.send(404, '{}')
         self.send(404, '{}')
 
     def post(self):
@@ -2593,6 +2692,13 @@ class H(BaseHTTPRequestHandler):
         if m:
             r = book.fnsep(m.group(1), body['line'], body['old'])
             return self.sendjson(r) if r else self.send(409, '{}')
+        m = re.fullmatch(r'/api/bild/(\d{3})', rest)  # Abbildung markieren bzw. ihren Rahmen entfernen (#76)
+        if m:
+            try:
+                r, err = book.figure(m.group(1), body.get('rect'), add=body.get('kind') != 'delete')
+            except KeyError:
+                return self.send(404, '{}')
+            return self.sendjson(r) if r else self.send(err or 409, '{}')
         if rest == '/api/replace_page':  # liest eine Datei von der Platte, darum nur am Rechner selbst
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)

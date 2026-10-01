@@ -12,6 +12,7 @@ writes a file in the widespread **EPUB** format for this, containing the text yo
 | **Table of contents** | made from the headings you marked with `H`: clickable in the reading app, plus a **Contents** page right after the title page, with the printed page number of every chapter. Every top-level chapter starts on a new page. |
 | **Page numbers of the printed edition** | At every page break the page number of the printed edition appears small and grey, e.g. **[127]**. So you can cite the printed book from the e-book too. Reading apps that support it also jump straight to a page, for example Thorium Reader with *Go to page*. |
 | **Footnotes** | The raised footnote mark in the text becomes a link. Many reading apps show the footnote in a small pop-up when you tap it, others below the text. |
+| **Illustrations** | the illustrations, maps and plates you marked with `B` in the reading view, cut out of the scan – as it is, without retouching. A caption marked with `L` stands below and also serves as the description for screen readers. An illustration never sits in the middle of a paragraph; it follows the paragraph it lies in. See [Using the program](usage.md). |
 | **Title page and cover** | a title page with title, author and year of publication. The first scanned page becomes the cover image that reading apps show in the book list. |
 
 Verse, dialogue, lists of names and indexes keep their lines: where nearly every line starts with a capital letter and
@@ -21,7 +22,7 @@ hardly any reaches the margin, every printed line stays a line. Tables you marke
 
 1. In the **library**, click **Save as e-book** next to the book, or **Save …** at the top of the reading view and then
    **Save as e-book**.
-2. The dialog first shows what goes into the e-book: how many headings, paragraphs and footnotes, and on how many pages
+2. The dialog first shows what goes into the e-book: how many headings, paragraphs, footnotes and illustrations, and on how many pages
    a printed page number was found. If something is missing, it says which key fixes it (see below).
 3. **Author:** shown in the reading app's book list, which is sorted by it. The program remembers the name for next
    time. The title is the book's name in the library; you can change it there with *Rename*.
@@ -61,6 +62,8 @@ An e-book is only as well structured as the book it is made from. The dialog say
 | No paragraphs set | The program then separates paragraphs by one rule only: after a short line that ends in a punctuation mark. | Set paragraph beginnings with `A`. Usually the program has already recognised them from the indentation when the book was first opened. |
 | Footnotes without a reference mark in the text | Text recognition swallowed the raised mark or read it as `*`, `°` or a number glued to the word. These footnotes stand below the paragraph in the e-book, without a link. | While reading, the program marks presumed reference marks in blue; `Space` jumps there, `Enter` raises the number. Once raised, it becomes a link. |
 | No printed page numbers recognised | Text recognition read no page number at the top or the bottom. | Add the page number in the header line (`F2` on the top line). Single pages without a number, such as chapter beginnings, are filled in from the neighbouring pages. |
+| Pages without text that do have something printed on them | A plate, a map, or a title page of which text recognition read nothing. The e-book shows only the page number of such a page. Blank pages are not listed. | On the page named, press `B` and take the whole page as an illustration with `G` – or drag a frame around the picture. |
+| Captions without a marked illustration | A line is marked as a caption with `L`, but no illustration is marked on its page. The caption stands on its own in the e-book. | Mark the illustration with `B`. |
 
 Linked are reference marks that are raised (`<sup>12</sup>`), that follow the word as "12)" as in older books, a star
 at the word, and numbers glued to the word for which there is a footnote with that number on the same page. A footnote
@@ -68,6 +71,7 @@ that continues at the bottom of the next page is put back together.
 
 ## What does not work (yet)
 
-- **Illustrations and plates** from the scan do not go into the e-book; a page without text only carries its page
-  number.
+- Illustrations only go into the e-book if you have marked them; the program does not detect them by itself. They
+  are scaled down for the e-book (at most 1400 × 1900 pixels): sharp on e-readers and tablets, and the file stays
+  handy. The full-size page images are in the PDF.
 - The e-book cannot be edited and brought back. You keep working in Fraktur-Korrektor and simply save again afterwards.

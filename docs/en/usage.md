@@ -48,6 +48,8 @@ is being changed – and **Edit line** (orange).
 | Reading | `H` | heading: level 1 → 2 → 3 → none (see below) |
 | Reading | `A` | a paragraph starts here – press `A` again to take it back (see below) |
 | Reading | `I` | contents: all headings of the book, `Enter` goes there (see below) |
+| Reading | `B` | mark an illustration in the page image so that it goes into the e-book (see below) |
+| Reading | `L` | the reading line is a caption – press `L` again to take it back (see below) |
 | Reading | `V` | join the reading line with the next line; `Shift`+`V` splits a line joined this way again |
 | Reading | `Ctrl`+`⌫` (Mac: `⌘`+`⌫`) | delete the reading line, or all lines marked with `Shift`+`↓`/`↑` – for noise from the scan edge (see below) |
 | Reading | `Ctrl`+`Z` (Mac: `⌘`+`Z`) | bring back the lines deleted last |
@@ -260,6 +262,43 @@ punctuation mark. Verse, lists and indexes are thus mostly left alone. Without l
 an EPUB without a PDF) or in a book without indentation, the program detects no paragraphs. In the text file a
 paragraph start is written as `<p>` at the beginning of the line, as in an EPUB.
 
+## Illustrations (B) and captions (L)
+
+Of the page image the program only knows the text lines. You show it where an illustration, a map or a plate is – then
+it goes into the text as a picture when you [save the book as an e-book](epub-sichern.md). The text itself does not
+change.
+
+**Marking an illustration (`B`):** The `B` key shows the whole page on the left. If the program finds a printed area
+that contains no text line, it suggests a frame (dashed).
+
+- If the suggestion fits: `Enter` accepts it. That way it works with the keyboard alone.
+- If it does not fit, or there is none: drag a frame around the illustration with the mouse, then `Enter`. Missed?
+  Simply drag again.
+- `G` takes the **whole page** – for a plate or map that fills the page.
+- `Esc` goes back to reading without changing anything.
+
+Marked illustrations have a **green frame** in the page image, while reading too. To get rid of a frame: `B`, click
+the frame (if there are several on the page; `Tab` goes to the next) and `Del`. A page can have several illustrations;
+press `B` once for each.
+
+The suggestion is only a suggestion: a line that text recognition overlooked, or a library stamp, looks just like a
+small illustration to the program. If lines of gibberish lie over an illustration (text recognition took the picture
+for text), delete them with `Ctrl`+`⌫`, see *Deleting noise from the scan edge*.
+
+**Caption (`L`):** If there is a caption below the illustration ("Fig. 3: The colony of Rohrbach"), text recognition
+read it as an ordinary line – in the e-book it would sit in the middle of the paragraph. `L` marks the reading line as
+a caption; it then appears smaller, with a green bar at the edge. If the caption runs over several lines, give each
+line an `L`. `L` again takes it back.
+
+In the e-book the caption stands below the nearest illustration on its page and also serves as its description for
+screen readers. An illustration without a caption stands where it belongs according to the position of the lines in
+the page image – but never in the middle of a paragraph: it follows the paragraph it lies in.
+
+In the text file a caption is written as `<figcaption>…</figcaption>`, as in an EPUB. The frames of the illustrations
+are kept in the file `bilder.json` in the book folder; they travel to another computer with the
+[saved PDF](pdf-sichern.md). If [a page is replaced](#replacing-a-page), its frames are dropped – the new image is a
+different one.
+
 ## Bold and italics (Ctrl+B, Ctrl+I)
 
 As in Word: select the words with the mouse – or whole lines with `Shift`+`↓`/`↑` – and press `Ctrl`+`B` for **bold**
@@ -387,6 +426,9 @@ On the tablet you work with your finger:
   landscape image and text stand side by side as on the computer. The **☰** menu switches between **Text only** and
   **Image and text**; the tablet remembers the choice, separately for portrait and landscape. The menu also holds
   **Search**, **Contents**, **Notes** and the help.
+- **Illustrations:** The **☰** menu holds **Mark an illustration** and **Caption** – what `B` and `L` do on the
+  computer. You drag the frame with your finger in the page image; below it are **Accept**, **Whole page** and
+  **Back to reading**. **Caption** applies to the reading line.
 - **Reading:** Your finger scrolls the text through the whole book – like a long till receipt, without stopping at the
   page breaks. The line level with the small orange mark on the left edge is the reading line; the program remembers
   the place. Tapping a line makes it the reading line, in the text as in the page image. Spreading or pinching two

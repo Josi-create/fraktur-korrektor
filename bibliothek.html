@@ -692,9 +692,12 @@ async function editEpub() {
 }
 function epubSummary(r) {
   const d = [t('ep_pages', { n: r.pages }), r.headings ? t('ep_heads', { n: r.headings, c: r.files }) : '', t('ep_paras', { n: r.paragraphs }),
-    r.notes ? t('ep_notes', { n: r.notes, l: r.linked }) : '', r.marked ? t('ep_marked', { n: r.marked }) : ''].filter(x => x);
+    r.notes ? t('ep_notes', { n: r.notes, l: r.linked }) : '', r.marked ? t('ep_marked', { n: r.marked }) : '',
+    r.figures ? t(r.figures == 1 ? 'ep_figs_1' : 'ep_figs', { n: r.figures }) : ''].filter(x => x);
+  // Abbildungen (#76): Tafeln ohne Text, die noch niemand markiert hat – die ersten Seiten beim Namen, mehr als zwölf mit »…«
+  const tl = r.textless || [], pages = tl.slice(0, 12).map(p => +p).join(', ') + (tl.length > 12 ? ' …' : '');
   const w = [r.headings ? '' : t('ep_no_heads'), r.fallback ? t('ep_no_paras') : '', r.notes > r.linked ? t('ep_unlinked', { n: r.notes - r.linked }) : '',
-    r.marked ? '' : t('ep_no_pages')].filter(x => x);
+    r.marked ? '' : t('ep_no_pages'), tl.length ? t('ep_textless', { n: tl.length, p: pages }) : '', r.loose ? t('ep_loose', { n: r.loose }) : ''].filter(x => x);
   return t('ep_inside') + ' ' + d.join(' · ') + w.map(x => '<div class="why">' + x + '</div>').join('');
 }
 const fsize = s => s >= 1048576 ? (s / 1048576).toFixed(1) + ' MB' : Math.round(s / 1024) + ' KB';

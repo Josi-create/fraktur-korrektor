@@ -34,7 +34,7 @@ Das Projekt wird Open Source (GPL-3.0-or-later), Mitarbeit erwünscht. Plan und 
 
 Ein **Buchordner** enthält `NNN.txt` (eine Datei je Seite: optional `# Kopfzeile`, Haupttext, `---`, Fußnoten),
 `lines.json` (Zeilengeometrie), `img/NNN.jpg|png`, dazu `whitelist.txt`, `lesezeichen.json`, `korrekturen.log`, `buch.json`
-(Erscheinungsjahr, geltende Rechtschreibung), `qualitaet.json`. Einstellungen des Nutzers: `~/.fraktur-korrektor`
+(Erscheinungsjahr, geltende Rechtschreibung), `qualitaet.json`, `bilder.json` (Rahmen der Abbildungen in Bildpixeln). Einstellungen des Nutzers: `~/.fraktur-korrektor`
 (überschreibbar mit `FRAKTUR_HOME`), neue Bücher: `~/Fraktur-Korrektor`.
 
 ## Was nicht brechen darf

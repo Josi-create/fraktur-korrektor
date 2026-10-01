@@ -16,7 +16,8 @@ ANHANG = 'fraktur-korrektor.zip'
 MANIFEST = 'fraktur-korrektor.json'
 # Was außer den Seitentexten in den Anhang gehört. Nicht dabei: img/ (das sind die PDF-Seiten selbst), vorher-*.zip
 # (ersetzte Fassungen), scantailor/ (Zwischenschritte).
-DATEIEN = ('lines.json', 'quellen.json', 'buch.json', 'whitelist.txt', 'lesezeichen.json', 'korrekturen.log', 'qualitaet.json', 'autokorr.log')
+DATEIEN = ('lines.json', 'quellen.json', 'buch.json', 'whitelist.txt', 'lesezeichen.json', 'korrekturen.log', 'qualitaet.json', 'autokorr.log',
+           'bilder.json')  # bilder.json: die Rahmen der Abbildungen (#76)
 DPI = 300          # Seitengröße im PDF: Bildpixel bei 300 dpi – nur Anzeige, der Maßstab der Zeilen kommt vom Bild selbst
 A4 = (595.0, 842.0)
 

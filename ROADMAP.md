@@ -65,6 +65,5 @@ Transkribus- und Tesseract-Foren, CompGen/Ahnenforschung.net, Wikisource-Skripto
 
 ## Später
 
-- E-Book: Abbildungen und Tafeln aus dem Scan übernehmen (#76; der EPUB-Export selbst ist seit #59 da)
 - Tablet verbinden ohne Kommandozeile: Schalter in der Bibliothek, Adresse als QR-Code, Zugriffsschutz für `--lan` (#77)
 - `pipx install fraktur-korrektor` (PyPI)

@@ -7,6 +7,11 @@ Druckausgabe zitieren. Fußnoten werden EPUB-Fußnoten, der Verweis im Text ein 
 Programm nicht findet, steht sichtbar unter dem Absatz – verloren geht nichts. Absätze kommen aus dem <p> am Zeilenanfang
 (#67). Nicht in den Text gehören Kopfzeile, Kolumnentitel und die Seitenzahl unten samt dem Rauschen darunter.
 
+Abbildungen (#76) sind Ausschnitte aus dem Scan: die Rahmen, die der Nutzer in der Leseansicht mit B gesetzt hat
+(bilder.json), als <figure><img/><figcaption>. Eine mit L ausgezeichnete Bildunterschrift nimmt die nächstgelegene
+Abbildung ihrer Seite zu sich; sonst steht die Abbildung dort, wo sie nach der Lage der Zeilen im Seitenbild hingehört.
+Mitten im Absatz steht keine: Sie folgt dem Absatz, in dem sie liegt, wie die Fußnoten.
+
 Aufbau nach EPUB 3.3: mimetype unkomprimiert vorn, Paketdokument, Navigationsdokument (außerhalb der Lesereihenfolge), vorn
 eine Titelseite und eine sichtbare Seite »Inhalt«, jede Überschrift der obersten Stufe beginnt eine neue Datei. toc.ncx
 nur für ältere Lesegeräte. Die Kennung des Buchs steht als dc:identifier darin – daran erkennt das Programm sein EPUB wieder
@@ -19,6 +24,8 @@ MIME = 'application/epub+zip'
 OPF = 'OEBPS/content.opf'
 GROSS = 150000   # Zeichen je Textdatei: Ein Buch ohne Überschriften wird so geteilt – sehr große Dateien machen Lese-Apps träge
 UMSCHLAG = 1600  # Höhe des Umschlagbilds in Pixeln
+BILD = (1400, 1900)  # größte Breite und Höhe einer Abbildung in Pixeln: scharf auf Lesegerät und Tablet, das E-Book bleibt handlich
+QUALITAET = 80   # JPEG-Qualität der Abbildungen (wie beim Umschlag)
 INLINE = {'em', 'strong', 'i', 'b', 'sup', 'sub', 'br'}
 # Ein Fußnotenzeichen im Text: hochgestellt (<sup>36</sup>, <sup>*</sup>), »wurde 1)« wie in älteren Büchern, ein Stern am Wort
 # (»Wort*«, »Wort*)«) oder Ziffern, die am Wort kleben (»beziffert.36« – noch nicht hochgestellt)
@@ -34,7 +41,8 @@ MARK = '%d'               # Platzhalter für fertiges XHTML (Seitenmarke, 
 PLATZ = re.compile('(\\d+)')
 W = dict(inhalt='Inhalt', seiten='Seiten', orientierung='Orientierung', titelseite='Titelseite', text='Text',
          seitenzahlen='Die kleinen Zahlen in eckigen Klammern sind die Seitenzahlen der gedruckten Ausgabe.',
-         erstellt='Text korrigiert mit dem Fraktur-Korrektor.')
+         erstellt='Text korrigiert mit dem Fraktur-Korrektor.',
+         abb='Abbildung', abb_seite='Abbildung auf Seite %s')  # Alternativtext einer Abbildung ohne Bildunterschrift
 CSS = '''body { margin: 0 4%; line-height: 1.45; }
 p { margin: 0; text-indent: 1.2em; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
 p.erst { text-indent: 0; }
@@ -49,6 +57,10 @@ a.nr { text-decoration: none; }
 .fn p { text-indent: 0; text-align: left; }
 table { border-collapse: collapse; margin: 0.8em auto; }
 td, th { padding: 0.1em 0.5em; vertical-align: top; text-align: left; }
+figure { margin: 1.2em 0; padding: 0; text-align: center; page-break-inside: avoid; break-inside: avoid; }
+figure img { max-width: 100%; max-height: 90vh; height: auto; }
+figcaption, p.legende { font-size: 0.9em; text-align: center; text-indent: 0; hyphens: none; -webkit-hyphens: none; margin: 0.5em 0 0; }
+p.legende { margin: 1em 0; }
 .titel { text-align: center; margin-top: 20%; }
 .titel h1 { font-size: 1.8em; margin-bottom: 1em; }
 .titel p { text-indent: 0; text-align: center; margin: 0.4em 0; }
@@ -116,14 +128,18 @@ def join(a, b, br=False):
 class _Flow:
     """Aus den Seiten wird fortlaufender Text: Blöcke (Absatz, Überschrift, Tabelle, Fußnoten, Seitenmarke) in
     Lesereihenfolge. Seitenmarken stehen, wo die Seite beginnt – mitten im Absatz, bei einem getrennten Wort erst hinter
-    dessen zweiter Hälfte. Die Fußnoten einer Seite folgen dem Absatz, in dem die Seite endet."""
+    dessen zweiter Hälfte. Die Fußnoten einer Seite folgen dem Absatz, in dem die Seite endet.
+    figures: {seite: [rahmen]} der markierten Abbildungen, geo: {seite: [zeilenrahmen je Textzeile oder None]} – beides in
+    Bildpixeln; files: {(seite, nummer): dateiname} der geschnittenen Bilder, None = alle zählen (Vorschau)."""
 
-    def __init__(self, pages, labels, foot, kopf):
+    def __init__(self, pages, labels, foot, kopf, figures=None, geo=None, files=None):
         self.pages, self.labels, self.foot, self.kopf = pages, labels, foot, kopf
+        self.figures, self.geo, self.files = figures or {}, geo or {}, files
         self.blocks, self.snips = [], []
         self.para = None      # Text des offenen Absatzes (mit Platzhaltern)
-        self.marks = []       # Seitenmarken, die vor den nächsten Text gehören
+        self.marks = []       # Seitenmarken, die vor den nächsten Text gehören: [(seite, marke)]
         self.due = []         # Fußnoten, deren Seite schon durch ist
+        self.pend = []        # Abbildungen und Bildunterschriften, die dem offenen Absatz folgen
         self.first = True     # der nächste Absatz folgt einer Überschrift oder Tabelle: ohne Einzug
         self.fallback = not any(pages[pg][k].startswith('<p>') for pg in pages for k in self.main(pg))
         lens = sorted(len(plain(pages[pg][k])) for pg in pages for k in self.main(pg) if plain(pages[pg][k]))
@@ -132,7 +148,7 @@ class _Flow:
         self.verse = False    # der offene Absatz hat Zeilen, die Zeilen bleiben
         self.notes = self.footnotes()
         self.names = {(pg, i): (lv, tx) for pg, i, lv, tx in korrlib.headings(pages)}
-        self.stats = dict(paragraphs=0, headings=0)
+        self.stats = dict(paragraphs=0, headings=0, figures=0, loose=0)  # loose: Bildunterschriften ohne Abbildung
 
     # ---- Bereiche einer Seite
     def main(self, pg):
@@ -151,7 +167,8 @@ class _Flow:
         beginnt groß, und kaum eine reicht bis zum Rand – im Fließtext endet eine Zeile mitten im Satz und reicht bis zum
         Rand (in vier Büchern mit 1400 Seiten Prosa traf es nur solche Seiten, im Faust jede Versseite)."""
         raw = [self.pages[pg][k] for k in self.main(pg)]
-        ls = [plain(l) for l in raw if plain(l) and not korrlib.HLINE.match(l.strip()) and not korrlib.TABLETAG.search(l)]
+        ls = [plain(l) for l in raw if plain(l) and not korrlib.HLINE.match(l.strip()) and not korrlib.TABLETAG.search(l)
+              and not korrlib.CAPLINE.match(l.strip())]
         if len(ls) < 6 or not self.full:
             return False
         up = sum(1 for l in ls if re.match(r'[\W\d_]*[A-ZÄÖÜ]', l)) / len(ls)
@@ -288,11 +305,77 @@ class _Flow:
         self.due = []
 
     def block(self):
-        """Vor einem neuen Block: Absatz schließen, dann die Seitenmarken, die noch keinen Text vor sich hatten."""
+        """Vor einem neuen Block: Absatz schließen, dann die Seitenmarken, die noch keinen Text vor sich hatten, und die
+        Abbildungen, die auf das Ende des Absatzes gewartet haben – nach Seiten geordnet: Die Tafel auf Seite 127 steht
+        hinter [127] und vor [128]."""
         self.close()
-        for m in self.marks:
-            self.emit('mark', '<div class="seite">%s</div>' % self.fill(m))
-        self.marks = []
+        todo = [(pg, 0, n, m) for n, (pg, m) in enumerate(self.marks)] + [(b['page'], 1, n, b) for n, b in enumerate(self.pend)]
+        for pg, fig, n, x in sorted(todo, key=lambda x: x[:3]):
+            if fig:
+                self.blocks.append(x)
+            else:
+                self.emit('mark', '<div class="seite">%s</div>' % self.fill(x))
+        self.marks, self.pend = [], []
+
+    # ---- Abbildungen (#76)
+    def figure_plan(self, pg):
+        """Wohin die Abbildungen der Seite gehören: (caps, todo). caps: {erste Zeile einer Bildunterschrift: (ihre Zeilen,
+        Abbildung oder None)} – Zeilen unmittelbar untereinander sind eine Unterschrift, und sie nimmt die nächstgelegene
+        Abbildung der Seite zu sich (ohne Zeilenlage: der Reihe nach). todo: [(zeile, abbildung)] für die übrigen – vor
+        der ersten Zeile, deren Mitte im Seitenbild unter der Mitte der Abbildung liegt; None = am Ende der Seite."""
+        figs = [dict(f, n=n + 1) for n, f in enumerate(self.figures.get(pg) or [])]
+        lines, main, geo = self.pages[pg], self.main(pg), self.geo.get(pg) or []
+        g = lambda k: geo[k] if k < len(geo) else None
+        blocks = []
+        for k in main:
+            if korrlib.CAPLINE.match(lines[k].strip()):
+                if blocks and blocks[-1][-1] == k - 1:
+                    blocks[-1].append(k)
+                else:
+                    blocks.append([k])
+        if not figs:
+            return {b[0]: (b, None) for b in blocks}, []
+
+        def dist(blk, f):  # Abstand zwischen Unterschrift und Rahmen, None ohne Zeilenlage
+            rs = [g(k) for k in blk if g(k)]
+            if not rs:
+                return None
+            x0, y0, x1, y1 = min(r['x0'] for r in rs), min(r['y0'] for r in rs), max(r['x1'] for r in rs), max(r['y1'] for r in rs)
+            return max(0, y0 - f['y1'], f['y0'] - y1) + max(0, x0 - f['x1'], f['x0'] - x1)
+        pairs = sorted((d, bi, fi) for bi, blk in enumerate(blocks) for fi, f in enumerate(figs) for d in [dist(blk, f)] if d is not None)
+        took = {}
+        for d, bi, fi in pairs:
+            if bi not in took and fi not in took.values():
+                took[bi] = fi
+        for bi, blk in enumerate(blocks):
+            fi = next((i for i in range(len(figs)) if i not in took.values()), None)
+            if bi not in took and fi is not None and not any(g(k) for k in blk):
+                took[bi] = fi
+        todo = []
+        for fi, f in enumerate(figs):
+            if fi not in took.values():
+                cy = (f['y0'] + f['y1']) / 2
+                todo.append((next((k for k in main if g(k) and (g(k)['y0'] + g(k)['y1']) / 2 > cy), None), f))
+        todo.sort(key=lambda x: (x[0] is None, x[0] or 0))
+        return {b[0]: (b, figs[took[bi]] if bi in took else None) for bi, b in enumerate(blocks)}, todo
+
+    def figure(self, pg, f, cap=''):
+        """Eine Abbildung samt Unterschrift als Block. Ohne Abbildung – keine markiert, oder ihr Ausschnitt ließ sich
+        nicht schneiden – bleibt die Unterschrift ein Absatz für sich. Der Alternativtext ist die Unterschrift, sonst
+        »Abbildung auf Seite 127«."""
+        name = None
+        if f:
+            name = 'bilder/abb-%s-%d.jpg' % (pg, f['n']) if self.files is None else self.files.get((pg, f['n']))
+        hcap = self.fill(xhtml(cap)) if plain(PLATZ.sub('', cap)) else ''
+        if name:
+            label = self.labels.get(pg)
+            alt = plain(PLATZ.sub('', cap)) or (W['abb_seite'] % label if label else W['abb'])
+            self.stats['figures'] += 1
+            self.pend.append(dict(kind='fig', page=pg, html='<figure id="abb-%s-%d"><img src="%s" alt="%s"/>%s</figure>' % (
+                pg, f['n'], esc(name), esc(alt), '<figcaption>%s</figcaption>' % hcap if hcap else '')))
+        elif hcap:
+            self.stats['loose'] += 1
+            self.pend.append(dict(kind='cap', page=pg, html='<p class="legende">%s</p>' % hcap))
 
     def fill(self, h):
         return PLATZ.sub(lambda m: self.snips[int(m.group(1))], h)
@@ -304,7 +387,7 @@ class _Flow:
             self.para = ''
         self.verse = self.verse or br
         if self.marks:
-            ms = ''.join(self.marks)
+            ms = ''.join(m for pg, m in self.marks)
             self.marks = []
             if TRENN.search(self.para):  # getrenntes Wort über die Seitengrenze: die Marke hinter seine zweite Hälfte
                 w = re.match(r'\S*', raw).end()
@@ -322,10 +405,21 @@ class _Flow:
             lines, main = self.pages[pg], self.main(pg)
             m0 = self.mark(pg)
             if m0:
-                self.marks.append(m0)
+                self.marks.append((pg, m0))
+            caps, todo = self.figure_plan(pg)
             i = 0
             while i < len(main):
                 k = main[i]
+                while todo and todo[0][0] is not None and todo[0][0] <= k:  # Abbildungen, die im Seitenbild über dieser Zeile liegen
+                    self.figure(pg, todo.pop(0)[1])
+                if k in caps:  # Bildunterschrift: kein Teil des Absatzes; mit ihrer Abbildung hinter ihn
+                    blk, f = caps[k]
+                    inner = ''
+                    for x in blk:
+                        inner = join(inner, self.link(pg, korrlib.CAPLINE.match(lines[x].strip()).group(1)))
+                    self.figure(pg, f, TRENN.sub(r'\1', inner))
+                    i += len(blk)
+                    continue
                 l = lines[k].rstrip()
                 s = l.strip()
                 if not s:
@@ -374,6 +468,8 @@ class _Flow:
                 if self.fallback and pg not in self.lined and ENDE.search(plain(l)) and len(plain(l)) < 0.8 * self.full:
                     self.close()  # ohne Absatzmarken: eine kurze Zeile mit Satzzeichen am Ende schließt den Absatz
                 i += 1
+            for k, f in todo:  # unter der letzten Zeile, auf einer Seite ohne Text (Tafel) oder ohne Zeilenlage
+                self.figure(pg, f)
             self.due += self.notes.get(pg, [])
             if self.para is None:
                 self.block()
@@ -460,24 +556,28 @@ def depths(levels):
 
 
 def build(data, progress=lambda done, total, msg: None, cancelled=lambda: False):
-    """Aus den Seiten (gather) die Dateien des EPUB: dict(files=[(name, titel, xhtml)], toc, pages, stats)."""
+    """Aus den Seiten (gather) die Dateien des EPUB: dict(files=[(name, titel, xhtml)], toc, pages, stats). bildnamen:
+    die Dateinamen der geschnittenen Abbildungen (write) – ohne sie zählt die Vorschau alle markierten."""
     pages, labels = data['pages'], data['labels']
-    flow = _Flow(pages, labels, data.get('foot') or {}, data.get('kopf') or {})
+    figures = data.get('figures') or {}
+    flow = _Flow(pages, labels, data.get('foot') or {}, data.get('kopf') or {}, figures, data.get('geo'), data.get('bildnamen'))
     blocks = flow.run(progress, cancelled)
     heads = [b for b in blocks if b['kind'] == 'h']
     for b, d in zip(heads, depths([b['level'] for b in heads])):
         b['depth'] = d
     # Dateien: jede Überschrift der obersten Stufe beginnt eine neue; ein Buch ohne sie wird nach Größe geteilt.
-    # Seitenmarken unmittelbar davor wandern mit – sie gehören zur Seite, auf der das Kapitel beginnt
+    # Seitenmarken unmittelbar davor wandern mit – sie gehören zur Seite, auf der das Kapitel beginnt –, ebenso eine
+    # Abbildung derselben Seite über der Überschrift (Kopfvignette)
     parts, cur, size = [], [], 0
     for b in blocks:
         split = cur and any(x['kind'] != 'mark' for x in cur) and (
             (b['kind'] == 'h' and b['depth'] == 1) or (b['kind'] in ('p', 'h') and size > GROSS))
         if split:
             tail = []
-            while cur and cur[-1]['kind'] == 'mark':
+            while cur and (cur[-1]['kind'] == 'mark' or (b['kind'] == 'h' and cur[-1]['kind'] in ('fig', 'cap') and cur[-1]['page'] == b['page'])):
                 tail.insert(0, cur.pop())
-            parts.append(cur)
+            if cur:
+                parts.append(cur)
             cur, size = tail, sum(len(x['html']) for x in tail)
         cur.append(b)
         size += len(b['html'])
@@ -500,8 +600,12 @@ def build(data, progress=lambda done, total, msg: None, cancelled=lambda: False)
     toc = [(b['depth'], dict(text=b['text'], href=href(b['id']), page=labels.get(b['page']))) for b in heads]
     plist = [(labels[pg], href('seite-' + pg)) for pg in pages if labels.get(pg) and 'seite-' + pg in where]
     notes = [x for v in flow.notes.values() for x in v]
+    # textless: Seiten mit Scan, aber ohne Text und ohne markierte Abbildung – Tafeln, Karten oder leere Seiten; von ihnen
+    # steht im E-Book nur die Seitenzahl (der Dialog nennt sie, damit der Nutzer Tafeln mit B übernehmen kann)
+    scans = data.get('images') or {}
+    textless = [pg for pg in pages if scans.get(pg) and not figures.get(pg) and not any(plain(pages[pg][k]) for k in flow.main(pg))]
     stats = dict(flow.stats, pages=len(pages), files=len(files), notes=len(notes), linked=sum(1 for x in notes if x['ref']),
-                 marked=len(plist), fallback=flow.fallback)
+                 marked=len(plist), fallback=flow.fallback, textless=textless)
     return dict(files=[tuple(f) for f in files], toc=toc, pagelist=plist, stats=stats)
 
 
@@ -558,7 +662,7 @@ def _ncx(uid, title, toc, first):
         esc(uid), max([d for d, e in toc] or [1]), esc(title), nav)
 
 
-def _opf(data, uid, files, inhalt, cover, stats):
+def _opf(data, uid, files, inhalt, cover, stats, bilder=()):
     meta = ['<dc:identifier id="uid">%s</dc:identifier>' % esc(uid), '<dc:title>%s</dc:title>' % esc(data['title']),
             '<dc:language>de</dc:language>']
     if data.get('author'):
@@ -569,11 +673,14 @@ def _opf(data, uid, files, inhalt, cover, stats):
              '<meta refines="#prog" property="role" scheme="marc:relators">bkp</meta>']
     # Barrierefreiheit (EPUB Accessibility 1.1): was das Buch bietet – Lese-Apps und Kataloge zeigen es an
     feats = ['structuralNavigation' if stats['headings'] else None, 'tableOfContents', 'printPageNumbers' if stats['marked'] else None]
-    meta += ['<meta property="schema:accessMode">textual</meta>', '<meta property="schema:accessModeSufficient">textual</meta>']
+    # mit Abbildungen ist das Buch nicht mehr allein Text: Ihr Alternativtext ist die Bildunterschrift, keine Beschreibung
+    meta += ['<meta property="schema:accessMode">textual</meta>'] + (['<meta property="schema:accessMode">visual</meta>'] if bilder else [])
+    meta += ['<meta property="schema:accessModeSufficient">%s</meta>' % ('textual,visual' if bilder else 'textual')]
     meta += ['<meta property="schema:accessibilityFeature">%s</meta>' % f for f in feats if f]
     meta += ['<meta property="schema:accessibilityHazard">none</meta>',
              '<meta property="schema:accessibilitySummary">Text einer gescannten Druckausgabe, von Hand korrigiert; Inhaltsverzeichnis aus den '
-             'Überschriften, Seitenzahlen der Druckausgabe, Fußnoten als Links.</meta>']
+             'Überschriften, Seitenzahlen der Druckausgabe, Fußnoten als Links.%s</meta>'
+             % (' Abbildungen aus dem Scan; ihr Alternativtext ist die Bildunterschrift.' if bilder else '')]
     if stats['marked']:
         meta.append('<meta property="pageBreakSource">%s</meta>' % esc(
             'Druckausgabe' + (' %s' % data['year'] if data.get('year') else '')))
@@ -589,6 +696,8 @@ def _opf(data, uid, files, inhalt, cover, stats):
         i = name[:-6]
         items.append('<item id="%s" href="%s" media-type="application/xhtml+xml"/>' % (i, name))
         spine.append('<itemref idref="%s"/>' % i)
+    for name in bilder:
+        items.append('<item id="%s" href="%s" media-type="image/%s"/>' % (name[7:-4], name, 'png' if name.endswith('.png') else 'jpeg'))
     if cover:
         items.append('<item id="umschlag" href="umschlag.jpg" media-type="image/jpeg" properties="cover-image"/>')
         meta.append('<meta name="cover" content="umschlag"/>')  # für ältere Lesegeräte (EPUB 2)
@@ -622,22 +731,68 @@ def kennung(path):
     return None
 
 
+def _scan(path):
+    """Ein Seitenbild als Pixmap ohne Alpha, grau oder RGB – so, wie der Scan ist."""
+    import fitz
+    pix = fitz.Pixmap(path)
+    if pix.alpha:
+        pix = fitz.Pixmap(pix, 0)
+    if pix.colorspace is None or pix.colorspace.n not in (1, 3):
+        pix = fitz.Pixmap(fitz.csRGB, pix)
+    return pix
+
+
 def _umschlag(path):
     """Die erste Scanseite als Umschlagbild: JPEG, höchstens UMSCHLAG Pixel hoch – Lese-Apps zeigen es in der Bücherliste."""
     if not path:
         return None
     try:
         import fitz
-        pix = fitz.Pixmap(path)
-        if pix.alpha:
-            pix = fitz.Pixmap(pix, 0)
-        if pix.colorspace is None or pix.colorspace.n not in (1, 3):
-            pix = fitz.Pixmap(fitz.csRGB, pix)
+        pix = _scan(path)
         if pix.height > UMSCHLAG:
             pix = fitz.Pixmap(pix, max(1, round(pix.width * UMSCHLAG / pix.height)), UMSCHLAG)
         return pix.tobytes('jpeg', jpg_quality=80)
     except Exception:  # ohne PyMuPDF oder bei einem unlesbaren Bild: ohne Umschlag
         return None
+
+
+def _schnitt(pix, f, png=False):
+    """Der Ausschnitt f (Rahmen in Bildpixeln) des Seitenbilds als (endung, bytes) – höchstens BILD groß, sonst wie der
+    Scan: Graustufen bleiben Graustufen, nichts wird geschärft oder eingefärbt. JPEG; aus einem PNG-Scan auch PNG, wenn
+    das kleiner ist (Strichzeichnungen aus einem schwarzweißen Scan)."""
+    import fitz
+    x0, y0, x1, y1 = max(0, f['x0']), max(0, f['y0']), min(pix.width, f['x1']), min(pix.height, f['y1'])
+    if x1 - x0 < 2 or y1 - y0 < 2:
+        return None
+    cut = fitz.Pixmap(pix, pix.width, pix.height, fitz.IRect(x0, y0, x1, y1))
+    cut.set_origin(0, 0)
+    s = min(1.0, BILD[0] / cut.width, BILD[1] / cut.height)
+    if s < 1:
+        cut = fitz.Pixmap(cut, max(1, round(cut.width * s)), max(1, round(cut.height * s)))
+    jpg = cut.tobytes('jpeg', jpg_quality=QUALITAET)
+    p = cut.tobytes('png') if png else None
+    return ('png', p) if p and len(p) < len(jpg) else ('jpg', jpg)
+
+
+def _bilder(data, cancelled=lambda: False):
+    """Die markierten Abbildungen aus den Seitenbildern schneiden: {(seite, nummer): (dateiname, bytes)}. Was sich nicht
+    schneiden lässt (kein Seitenbild, unlesbar, ohne PyMuPDF), fehlt – das E-Book entsteht trotzdem."""
+    out = {}
+    for pg, figs in (data.get('figures') or {}).items():
+        path = (data.get('images') or {}).get(pg)
+        if cancelled():
+            raise ValueError('abgebrochen')
+        if not path or pg not in data['pages']:
+            continue
+        try:
+            pix = _scan(path)
+            for n, f in enumerate(figs, 1):
+                r = _schnitt(pix, f, path.lower().endswith('.png'))
+                if r:
+                    out[pg, n] = ('bilder/abb-%s-%d.%s' % (pg, n, r[0]), r[1])
+        except Exception:
+            continue
+    return out
 
 
 def gather(book):
@@ -654,9 +809,13 @@ def gather(book):
         foot = {pg: v[1] for pg, v in book.feet.items()}
         kopf = {pg: book.kopf(pg) for pg in pages}
         st = dict(book.settings)
-    cover = next((p for p in (book.img_file(pg) for pg in pages) if p), None)
+        # Abbildungen (#76): ihre Rahmen und, um sie in den Text einzuordnen, die Lage der Zeilen ihrer Seiten
+        figures = {pg: v for pg, v in book.figures().items() if pg in pages}
+        geo = {pg: book.geo_lines(pg, pages[pg]) for pg in figures}
+    images = {pg: book.img_file(pg) for pg in pages}
+    cover = next((p for p in images.values() if p), None)
     return dict(pages=pages, labels=labels, foot=foot, kopf=kopf, title=book.title, author=st.get('autor'), year=st.get('year'),
-                kennung=st.get('kennung'), cover=cover)
+                kennung=st.get('kennung'), cover=cover, figures=figures, geo=geo, images=images)
 
 
 def preview(book):
@@ -668,7 +827,8 @@ def write(data, out, version='', progress=lambda done, total, msg: None, cancell
     """Das EPUB nach out schreiben; erst in eine Nachbardatei, dann umbenennen. Liefert die Kennzahlen samt file und size."""
     if not data['pages']:
         raise ValueError('quelle_fehlt')
-    data = dict(data, version=version)
+    bilder = _bilder(data, cancelled)
+    data = dict(data, version=version, bildnamen={k: v[0] for k, v in bilder.items()})
     r = build(data, progress, cancelled)
     uid = uid_of(data.get('kennung')) or 'urn:fraktur-korrektor:%s' % re.sub(r'\W+', '-', data['title']).strip('-').lower()
     first, inhalt = r['files'][0][0], bool(r['toc'])
@@ -680,7 +840,7 @@ def write(data, out, version='', progress=lambda done, total, msg: None, cancell
             z.writestr('META-INF/container.xml', '<?xml version="1.0" encoding="UTF-8"?>\n'
                        '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles>'
                        '<rootfile full-path="%s" media-type="application/oebps-package+xml"/></rootfiles></container>\n' % OPF)
-            z.writestr(OPF, _opf(data, uid, r['files'], inhalt, cover, r['stats']))
+            z.writestr(OPF, _opf(data, uid, r['files'], inhalt, cover, r['stats'], [v[0] for v in bilder.values()]))
             z.writestr('OEBPS/nav.xhtml', _nav(data['title'], r['toc'], r['pagelist'], first, inhalt))
             z.writestr('OEBPS/toc.ncx', _ncx(uid, data['title'], r['toc'], first))
             z.writestr('OEBPS/stil.css', CSS)
@@ -689,6 +849,8 @@ def write(data, out, version='', progress=lambda done, total, msg: None, cancell
                 z.writestr('OEBPS/inhalt.xhtml', _inhalt(data['title'], r['toc']))
             for name, title, body in r['files']:
                 z.writestr('OEBPS/' + name, _doc(title, body))
+            for name, b in bilder.values():
+                z.writestr('OEBPS/' + name, b, compress_type=zipfile.ZIP_STORED)
             if cover:
                 z.writestr('OEBPS/umschlag.jpg', cover, compress_type=zipfile.ZIP_STORED)
         os.replace(tmp, out)

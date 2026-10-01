@@ -135,6 +135,17 @@ class Merge:
                 book.klog(kind, '-', -1, old, new, when=when)  # undo:ID ohne Wirkung – dazu gehört kein Text
             return
         lines = book.pages[pg]
+        if kind in ('bild+', 'bild-'):
+            # Rahmen einer Abbildung (#76), alt bzw. neu ist »x0,y0,x1,y1«. Zu entscheiden gibt es nichts: Steht der Rahmen
+            # hier schon bzw. ist er hier schon weg, ist es dieselbe Änderung
+            try:
+                rect = dict(zip(('x0', 'y0', 'x1', 'y1'), (int(v) for v in (new or old).split(','))))
+            except ValueError:
+                return
+            add = kind == 'bild+'
+            if (rect in book.figures(pg)) != add and len(rect) == 4 and book.figure(pg, rect, add=add, when=when)[0]:
+                return self._done(pg)
+            return self._same(row, when, kind, pg, n, old, new)
         if kind == 'edit' or kind.startswith('serie:') or kind.startswith('undo:'):
             if 0 <= n < len(lines) and lines[n] == old:
                 if book.edit(pg, [dict(line=n, old=old, new=new)], kind=kind, when=when):

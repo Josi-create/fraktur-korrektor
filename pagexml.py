@@ -524,7 +524,7 @@ def backup(folder, pages, extra=()):
     """Die Seiten, die gleich überschrieben werden, vorher in eine ZIP-Datei sichern (samt Protokoll, Ampel, Wortliste
     und Lesezeichen): hier steckt womöglich die Arbeit von Stunden. extra: weitere Dateien relativ zum Buchordner,
     etwa das Seitenbild einer ersetzten Seite (img/029.jpg). Liefert den Dateinamen der Sicherung oder None."""
-    names = [pg + '.txt' for pg in pages] + ['lines.json', 'quellen.json', 'qualitaet.json', 'korrekturen.log', 'whitelist.txt', 'lesezeichen.json']
+    names = [pg + '.txt' for pg in pages] + ['lines.json', 'quellen.json', 'qualitaet.json', 'korrekturen.log', 'whitelist.txt', 'lesezeichen.json', 'bilder.json']
     names += [e.replace(os.sep, '/') for e in extra]
     have = [n for n in names if os.path.isfile(os.path.join(folder, n))]
     if not have:
@@ -539,7 +539,7 @@ def backup(folder, pages, extra=()):
             z.write(os.path.join(folder, n), n)
         # Gab es noch keine Wortliste oder kein Lesezeichen, gehört auch das zum Stand: leer, damit das Zurückholen
         # nicht stehen lässt, was erst danach hereinkam (etwa aus einem gesicherten PDF)
-        for n, leer in (('whitelist.txt', ''), ('lesezeichen.json', '{}')):
+        for n, leer in (('whitelist.txt', ''), ('lesezeichen.json', '{}'), ('bilder.json', '{}')):
             if n not in have:
                 z.writestr(n, leer)
     return name
@@ -562,7 +562,7 @@ def backups(folder):
     return out
 
 
-SICHERBAR = re.compile(r'\d{3}\.txt|lines\.json|quellen\.json|qualitaet\.json|korrekturen\.log|whitelist\.txt|lesezeichen\.json|img/\d{3}\.(?:jpg|png)')
+SICHERBAR = re.compile(r'\d{3}\.txt|lines\.json|quellen\.json|qualitaet\.json|korrekturen\.log|whitelist\.txt|lesezeichen\.json|bilder\.json|img/\d{3}\.(?:jpg|png)')
 
 
 def restore(folder, name):

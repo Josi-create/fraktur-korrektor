@@ -13,6 +13,7 @@ Text, den Sie korrigiert haben.
 | **Inhaltsverzeichnis** | aus den Überschriften, die Sie mit `H` ausgezeichnet haben: in der Lese-App anklickbar, dazu eine Seite **Inhalt** gleich nach der Titelseite, mit der gedruckten Seitenzahl jedes Kapitels. Jedes Kapitel der obersten Stufe beginnt auf einer neuen Seite. |
 | **Seitenzahlen der Druckausgabe** | An jedem Seitenwechsel steht klein und grau die Seitenzahl der gedruckten Ausgabe, etwa **[127]**. So können Sie auch aus dem E-Book nach dem Buch zitieren. Lese-Apps, die das unterstützen, springen damit auch direkt zu einer Seite, etwa Thorium Reader mit *Gehe zu Seite*. |
 | **Fußnoten** | Das hochgestellte Fußnotenzeichen im Text wird ein Link. Viele Lese-Apps zeigen die Fußnote beim Antippen in einem kleinen Fenster, andere darunter. |
+| **Abbildungen** | die Abbildungen, Karten und Tafeln, die Sie in der Leseansicht mit `B` markiert haben, als Ausschnitt aus dem Scan – so, wie er ist, ohne Nachbearbeitung. Eine mit `L` ausgezeichnete Bildunterschrift steht darunter und ist zugleich die Beschreibung für Vorleseprogramme. Eine Abbildung steht nie mitten im Absatz, sondern hinter dem Absatz, in dem sie liegt. Siehe [Bedienung](usage.md). |
 | **Titelseite und Umschlag** | eine Titelseite mit Titel, Autor und Erscheinungsjahr. Die erste Scanseite wird das Umschlagbild, das Lese-Apps in der Bücherliste zeigen. |
 
 Verse, Dialoge, Namenslisten und Register behalten ihre Zeilen: Wo fast jede Zeile groß beginnt und kaum eine bis zum
@@ -23,8 +24,9 @@ Tabellen.
 
 1. In der **Bibliothek** beim Buch auf **Als E-Book sichern** klicken, oder in der Leseansicht oben auf **Sichern …**
    und dort auf **Als E-Book sichern**.
-2. Der Dialog zeigt zuerst, was ins E-Book kommt: wie viele Überschriften, Absätze und Fußnoten, auf wie vielen Seiten
-   eine gedruckte Seitenzahl steht. Fehlt etwas, steht darunter, mit welcher Taste Sie es nachholen (siehe unten).
+2. Der Dialog zeigt zuerst, was ins E-Book kommt: wie viele Überschriften, Absätze, Fußnoten und Abbildungen, auf wie
+   vielen Seiten eine gedruckte Seitenzahl steht. Fehlt etwas, steht darunter, mit welcher Taste Sie es nachholen
+   (siehe unten).
 3. **Autor:** erscheint in der Bücherliste der Lese-App, die danach sortiert. Das Programm merkt sich den Namen für das
    nächste Mal. Der Titel ist der Name des Buchs in der Bibliothek; ändern können Sie ihn dort mit *Umbenennen*.
 4. **Das PDF gleich daneben sichern** ist vorausgewählt. Dann liegen zwei Dateien mit demselben Namen im Ordner: das
@@ -64,6 +66,8 @@ Ein E-Book ist nur so gut gegliedert wie das Buch, aus dem es entsteht. Der Dial
 | Keine Absätze gesetzt | Das Programm trennt Absätze dann nur nach einer Regel: nach einer kurzen Zeile, die mit einem Satzzeichen endet. | Absatzanfänge mit `A` setzen. Meist hat das Programm sie beim ersten Öffnen schon am Einzug erkannt. |
 | Fußnoten ohne Fußnotenzeichen im Text | Die Texterkennung hat das hochgestellte Zeichen verschluckt oder als `*`, `°` oder an das Wort geklebte Ziffer gelesen. Diese Fußnoten stehen im E-Book ohne Link unter dem Absatz. | Beim Lesen markiert das Programm vermutete Fußnotenzeichen blau; `Leertaste` springt hin, `Enter` stellt die Nummer hoch. Hochgestellt wird sie zum Link. |
 | Keine gedruckten Seitenzahlen erkannt | Die Texterkennung hat oben und unten keine Seitenzahl gelesen. | Die Seitenzahl in der Kopfzeile nachtragen (`F2` auf der obersten Zeile). Einzelne Seiten ohne Zahl, etwa Kapitelanfänge, ergänzt das Programm aus den Nachbarseiten. |
+| Seiten ohne Text, auf denen aber etwas gedruckt ist | Eine Tafel, eine Karte oder ein Titelblatt, von dem die Texterkennung nichts gelesen hat. Von einer solchen Seite steht im E-Book nur die Seitenzahl. Leere Seiten nennt der Dialog nicht. | Auf der genannten Seite `B` drücken und mit `G` die ganze Seite als Abbildung übernehmen – oder einen Rahmen um das Bild ziehen. |
+| Bildunterschriften ohne markierte Abbildung | Eine Zeile ist mit `L` als Bildunterschrift ausgezeichnet, aber auf ihrer Seite ist keine Abbildung markiert. Die Unterschrift steht im E-Book für sich. | Die Abbildung mit `B` markieren. |
 
 Verknüpft werden Fußnotenzeichen, die hochgestellt sind (`<sup>12</sup>`), die wie in älteren Büchern als „12)“ hinter
 dem Wort stehen, ein Stern am Wort und am Wort klebende Ziffern, zu denen es auf derselben Seite eine Fußnote mit dieser
@@ -71,6 +75,8 @@ Nummer gibt. Eine Fußnote, die unten auf der nächsten Seite weiterläuft, wird
 
 ## Was (noch) nicht geht
 
-- **Abbildungen und Tafeln** aus dem Scan kommen nicht ins E-Book; eine Seite ohne Text trägt nur ihre Seitenzahl.
+- Abbildungen kommen nur ins E-Book, wenn Sie sie markiert haben; von selbst erkennt das Programm sie nicht. Sie
+  werden für das E-Book verkleinert (höchstens 1400 × 1900 Bildpunkte): scharf auf Lesegerät und Tablet, und die
+  Datei bleibt handlich. Die Seitenbilder in voller Größe stecken im PDF.
 - Das E-Book lässt sich nicht bearbeiten und zurückholen. Weitergearbeitet wird im Fraktur-Korrektor; danach sichern
   Sie einfach neu.

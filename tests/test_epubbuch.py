@@ -40,7 +40,8 @@ def test_fliesstext_absaetze_und_seitenmarken():
         '<p>Der Sohn.</p>'])  # Kolumnentitel, Kopfzeile, Seitenzahl unten und das Rauschen darunter fehlen
     assert r['pagelist'] == [('5', 'text-001.xhtml#seite-001'), ('6', 'text-001.xhtml#seite-002'), ('7', 'text-001.xhtml#seite-003'),
                              ('8', 'text-001.xhtml#seite-004')]
-    assert r['stats'] == dict(paragraphs=4, headings=0, pages=4, files=1, notes=0, linked=0, marked=4, fallback=False)
+    assert r['stats'] == dict(paragraphs=4, headings=0, pages=4, files=1, notes=0, linked=0, marked=4, fallback=False,
+                              figures=0, loose=0, textless=[])
     # ohne bekannte Seitenzahl keine Marke – eine erfundene wäre schlimmer als keine
     r = epubbuch.build(data(pages, {'001': '5', '002': None, '003': None, '004': '8'}))
     assert 'seite-002' not in text(r) and r['stats']['marked'] == 2

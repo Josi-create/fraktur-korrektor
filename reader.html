@@ -47,6 +47,12 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 #hlLine{background:rgba(255,220,60,.28)}
 #hlWord,#hlWord2{border:solid red}
 .hl.stelle{border:solid #1780c0}
+/* Abbildungen (#76): markierte Rahmen im Seitenbild grün; beim Markieren (B) der gewählte orange, der neue gestrichelt */
+.hl.bild{border:solid #2a9d5c;background:rgba(42,157,92,.10)}
+.hl.bild.sel{border-color:#e08a00;background:rgba(224,138,0,.14)}
+.hl.bild.neu{border:dashed #c33;background:rgba(204,51,51,.08)}
+#imgpane.drawing{cursor:crosshair;touch-action:none}
+#imgwrap img{-webkit-user-drag:none;user-select:none}
 #right{display:flex;flex-direction:column;gap:10px;min-height:0}
 /* Wort und Tastaturhilfe über beide Spalten: nimmt links dem Bild etwas Höhe, gibt sie rechts dem Text (#55) */
 /* Kürzel unten ohne Rahmen; Mindesthöhe = Lesemodus-Kürzel, damit Bild und Text beim Moduswechsel nicht springen */
@@ -83,6 +89,9 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 #lines div.stelle{background:#e1f0ff;color:#0d4d85;box-shadow:inset 4px 0 #1780c0}
 #lines div.stelle.cur{background:#fff3b8}
 #lines div.para{text-indent:1.5em}
+/* Bildunterschrift (L): kleiner, mit grünem Strich wie der Rahmen der Abbildung im Seitenbild */
+#lines div.caption{font-size:calc(16px * var(--tz, 1));color:#1d5c3a;background:#eef7f1;box-shadow:inset 4px 0 #2a9d5c}
+#lines div.caption.cur{background:#fff3b8;color:#000}
 #lines div.hd1{font-size:calc(27px * var(--tz, 1));font-weight:bold;color:#222} #lines div.hd2{font-size:calc(23px * var(--tz, 1));font-weight:bold;color:#222} #lines div.hd3{font-size:calc(20px * var(--tz, 1));font-weight:bold;color:#222}
 #tprev{border-collapse:collapse;font:14px Georgia,serif;margin-top:6px;color:#222} #tprev td,#tprev th{border:1px solid #9bc;padding:1px 9px} #tprev th{background:#e3eefa}
 #centerline{position:absolute;left:0;width:5px;top:25%;height:30px;margin-top:-15px;background:#c90;border-radius:0 3px 3px 0}
@@ -214,6 +223,8 @@ html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visib
  <span id="links">
  <a href="/bibliothek" class="nonly" data-t="library"></a>
  <a href="#" id="findlink" class="conly" data-t="find_menu"></a>
+ <a href="#" id="figlink" class="conly" data-t="fig_menu"></a>
+ <a href="#" id="caplink" class="conly" data-t="cap_menu"></a>
  <a href="#" id="viewlink"></a>
  <a href="#" id="toclink" data-t="toc_link"></a>
  <a href="#" id="diclink" data-t="dic_link"></a>
@@ -348,6 +359,9 @@ function setLayout() {
 setLayout();
 let ov = [], pg = null, data = null, li = 0, mode = 'read', cf = null, passed = null, busy = false, lastCy = null, nsel = null;
 let konf = [];  // Zeilen aus dem Zusammenführen zweier Arbeitsstände (#66), die der Nutzer noch ansehen muss: [{page, line, …}]
+// Abbildung markieren (B, #76): {rect: der neue Rahmen in Bildpixeln oder null, guess: vom Programm vorgeschlagen,
+// sel: gewählter vorhandener Rahmen (-1 keiner), drag: Rahmen wird gerade gezogen, img: Reiter »Seitenbild« vorher}
+let bild = null;
 let zoom = 1; try { zoom = parseFloat(localStorage.getItem('zoom')) || 1; } catch (e) {}
 // Schriftgröße des Textes (--tz), unabhängig vom Bild: je Buch so, dass eine volle gedruckte Zeile auch rechts in eine
 // Zeile passt (zeichen: Länge einer vollen Zeile, vom Server). Strg + / − stellen sie für dieses Buch fest ein, Strg+0
@@ -390,11 +404,11 @@ if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transiti
 
 // Am Mac heißt die Taste zu Strg+F, Strg+⌫ usw. ⌘ (onKey nimmt metaKey wie ctrlKey)
 const MAC = /Mac/i.test(navigator.platform), macKeys = s => MAC ? s.replace(/<kbd>(Strg|Ctrl)<\/kbd>/g, '<kbd>⌘</kbd>') : s;
-const HELP = { read: macKeys(t('help_read')), fix: macKeys(t('help_fix')), free: macKeys(t('help_free')), table: t('help_table'), konf: t('help_konf') };
+const HELP = { read: macKeys(t('help_read')), fix: macKeys(t('help_fix')), free: macKeys(t('help_free')), table: t('help_table'), konf: t('help_konf'), bild: t('help_bild') };
 
 function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 // Auszeichnung: dieselben Elemente wie der Server (korrlib.MARKUP)
-const TAGS = 'table|tr|td|th|h[1-6]|em|strong|i|b|sup|sub|p|blockquote|br';
+const TAGS = 'table|tr|td|th|h[1-6]|em|strong|i|b|sup|sub|p|blockquote|br|figcaption';
 const TAGRE = new RegExp('</?(?:' + TAGS + ')\\s*/?>', 'g'), TAGESC = new RegExp('&lt;(/?(?:' + TAGS + ')\\s*/?)>', 'g');
 function strip(s) { return s.replace(TAGRE, ''); }
 function vis(l, pos) { return strip(l.slice(0, pos)).length; }  // Zeichenposition ohne die Auszeichnung davor – für die Lage im Bild
@@ -408,7 +422,7 @@ function rawPos(l, v) {
   return v + skipped;
 }
 // Für das Eingabefeld: Struktur-Auszeichnung am Zeilenanfang und -ende bleibt unsichtbar und wird beim Speichern wieder angefügt
-const STRUCT = '(?:</?(?:table|tr|td|th|h[1-6]|p|blockquote)>)*';
+const STRUCT = '(?:</?(?:table|tr|td|th|h[1-6]|p|blockquote|figcaption)>)*';
 function parts(l) { const m = l.match(new RegExp('^(' + STRUCT + ')([\\s\\S]*?)(' + STRUCT + ')$')); return { pre: m[1], core: m[2], post: m[3] }; }
 // Hochgestellte Zahlen (Fußnotenzeichen) zeigt das Feld als hochgestellte Ziffern: <sup>38</sup> ↔ ³⁸. Gespeichert wird wieder
 // <sup> (supMark; der Server tut es ebenso, korrlib.sup_markup). supPos rechnet Zeichenpositionen der Zeile ins Feld um.
@@ -485,6 +499,7 @@ async function loadPage(p, line, smooth) {
   const d = await r.json();
   const idx = ov.findIndex(o => o.page == p);
   [prevD, nextD] = await Promise.all([idx > 0 ? fetchPage(ov[idx - 1].page) : null, idx >= 0 && idx < ov.length - 1 ? fetchPage(ov[idx + 1].page) : null]);
+  if (bild) { showImg = bild.img; bild = null; setLayout(); }  // mitten im Markieren einer Abbildung die Seite gewechselt
   data = d; pg = p; $('pagesel').value = p; lastCy = null; passed = null; cf = null; nsel = null; mode = 'read';
   li = line == 'last' ? data.lines.length - 1 : Math.min(Math.max(0, line || 0), data.lines.length - 1);
   if (line == 'last') { while (li > 0 && skippable(li)) li--; }
@@ -529,6 +544,7 @@ function decorate(els, b) {
     const m = l.match(/^<h([1-6])>/);
     for (const n of [1, 2, 3]) d.classList.toggle('hd' + n, !!m && Math.min(3, +m[1]) == n);
     d.classList.toggle('para', l.startsWith('<p>'));  // Absatzanfang (#67): eingerückt wie im Druck
+    d.classList.toggle('caption', l.includes('<figcaption>'));  // Bildunterschrift (#76)
     d.classList.toggle('stelle', !!stelle && stelle.page == b.page && i >= stelle.a && i <= stelle.b && l !== '---');
   });
 }
@@ -563,13 +579,14 @@ function render() {
   decorate(lineEls, data);
   layoutText(); layoutImage();
   // Kopf
-  const m = $('mode'); m.className = mode == 'read' ? '' : mode == 'table' ? 'free' : mode;
-  m.textContent = t(mode == 'read' ? 'mode_read' : mode == 'fix' ? 'mode_fix' : mode == 'table' ? 'mode_table' : mode == 'konf' ? 'mode_konf' : 'mode_free');
+  const m = $('mode'); m.className = mode == 'read' ? '' : mode == 'table' || mode == 'bild' ? 'free' : mode;
+  m.textContent = t(mode == 'read' ? 'mode_read' : mode == 'fix' ? 'mode_fix' : mode == 'table' ? 'mode_table' : mode == 'konf' ? 'mode_konf' : mode == 'bild' ? 'mode_bild' : 'mode_free');
+  $('imgpane').classList.toggle('drawing', mode == 'bild');
   showPos();
   // Korrekturfeld; am Tablet Knöpfe statt der Tastenkürzel (mit Tastatur gelten sie trotzdem)
   const hc = document.documentElement.classList, fixing = mode == 'fix' || mode == 'free';
   hc.toggle('fixing', TOUCH && fixing); if (!fixing) hc.remove('typing');
-  $('help').innerHTML = TOUCH && (fixing || mode == 'read') ? '' : HELP[mode] || '';
+  $('help').innerHTML = TOUCH && (fixing || mode == 'read' || mode == 'bild') ? '' : HELP[mode] || '';
   $('shint').innerHTML = mode == 'table' ? tbPreview() : pending && seriesStart() === pending ? t(TOUCH ? 'pending_t' : 'pending', { old: esc(pending.old), n: pending.n, new: esc(pending.new) }) : esc(msg) + msgLink();
   if (TOUCH) renderTouch();
   if (mode == 'table') { const c = tbCells().length; $('word').innerHTML = t('tbl_word', { n: c, r: Math.ceil(c / tb.cols), c: tb.cols }); }
@@ -580,6 +597,7 @@ function render() {
     $('word').innerHTML = n ? '<span style="color:#c00">' + t(n > 1 ? 'flags_n' : 'flags_1', { n }) + '</span>' : '<span style="color:#888">' + t('reading') + '</span>';
     if (k) $('word').innerHTML += ' <span style="color:#b35c00">· ' + t('konf_hint') + '</span>';
   } else if (mode == 'konf') { e1.style.display = 'none'; e2.style.display = 'none'; renderConflict(); }
+  else if (mode == 'bild') { e1.style.display = 'none'; e2.style.display = 'none'; renderBild(); }
   layoutText(); layoutImage();  // nochmal, falls das Korrekturfeld oben seine Höhe geändert hat
   renderSug();  // das Aufklappmenü hängt an der Lage des Eingabefelds
   suggestAhead();
@@ -619,19 +637,26 @@ function stackImages() {
   for (const p of Object.keys(imgEls)) if (!place[p]) { imgEls[p].remove(); delete imgEls[p]; }
   for (const b of pages) {
     let el = imgEls[b.page];
-    if (!el) { el = document.createElement('img'); el.alt = ''; el.src = b.img; wrap.insertBefore(el, $('hlLine')); imgEls[b.page] = el; }
+    if (!el) { el = document.createElement('img'); el.alt = ''; el.draggable = false; el.src = b.img; wrap.insertBefore(el, $('hlLine')); imgEls[b.page] = el; }
     const q = place[b.page]; el.style.left = q.x + 'px'; el.style.top = q.y + 'px'; el.style.width = q.w + 'px'; el.style.height = q.h + 'px';
   }
   return place;
 }
 function layoutImage() {
   const place = stackImages(), q = data ? place[pg] : null;
-  if (!q) { for (const id of ['hlLine', 'hlWord', 'hlWord2']) $(id).style.display = 'none'; stelleBoxes({}, 1); imgState = null; imgKeep = null; return; }
+  if (!q) { for (const id of ['hlLine', 'hlWord', 'hlWord2']) $(id).style.display = 'none'; stelleBoxes({}, 1); imgState = null; imgKeep = null; bildBoxes(); return; }
   const pane = $('imgpane'), W = pane.clientWidth, H = pane.clientHeight;
   // Lesezeile im Bild auf dieselbe Bildschirmhöhe wie im Textfenster (das wegen des Korrekturfelds tiefer beginnt); steht
   // das Bild allein (Reiter Seitenbild), auf 1/4 seiner Höhe
   const te = $('text'), tr = te.getBoundingClientRect();
   const RY = te.offsetParent ? tr.top + te.clientTop - (pane.getBoundingClientRect().top + pane.clientTop) + te.clientHeight * READ_POS : H * READ_POS;
+  if (mode == 'bild') {  // Abbildung markieren (#76): die ganze Seite zeigen, damit der Rahmen auch um eine Tafel passt
+    const kb = Math.min(W / q.w, H / q.h) * 0.94, bx = (W - q.w * kb) / 2 - q.x * kb, by = (H - q.h * kb) / 2 - q.y * kb;
+    $('imgwrap').style.transform = 'translate(' + bx + 'px,' + by + 'px) scale(' + kb + ')';
+    imgState = { place, tx: bx, ty: by, k: kb, ry: RY }; imgKeep = null;
+    for (const id of ['hlLine', 'hlWord', 'hlWord2']) $(id).style.display = 'none';
+    stelleBoxes(place, kb); bildBoxes(); return;
+  }
   let x0 = 0, x1 = q.w;
   const gs = data.geo ? data.geo.filter(g => g) : [];
   if (gs.length) { x0 = Math.min(...gs.map(g => g.x0)); x1 = Math.max(...gs.map(g => g.x1)); }
@@ -650,7 +675,7 @@ function layoutImage() {
   }
   wrap.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + k + ')';
   imgState = { place, tx, ty, k, ry: RY };
-  stelleBoxes(place, k);
+  stelleBoxes(place, k); bildBoxes();
   const box = (el, x, y, w, h) => { el.style.display = ''; el.style.left = (q.x + x) + 'px'; el.style.top = (q.y + y) + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px'; el.style.borderWidth = (2.5 / k) + 'px'; };
   const hl = $('hlLine'), hw = $('hlWord'), hw2 = $('hlWord2');
   hl.style.display = hw.style.display = hw2.style.display = 'none';
@@ -1119,7 +1144,7 @@ async function undeleteLines() {
 // A: Hier beginnt ein Absatz – nochmals A nimmt es zurück (#67). Die meisten setzt das Programm beim ersten Öffnen selbst.
 async function paraKey(tap) {  // tap: vom Knopf am Tablet
   if (!plainLine(li)) return;
-  if (lineEls[li].classList.contains('intable') || /^<h[1-6]>/.test(data.lines[li])) { msg = t('para_no'); render(); return; }
+  if (lineEls[li].classList.contains('intable') || /^<h[1-6]>|<figcaption>/.test(data.lines[li])) { msg = t('para_no'); render(); return; }
   const on = !data.lines[li].startsWith('<p>');
   if (await markup({ kind: 'para', line: li, old: data.lines[li] })) msg = t(on ? (tap ? 'para_set_t' : 'para_set') : 'para_removed');
   render();
@@ -1127,9 +1152,124 @@ async function paraKey(tap) {  // tap: vom Knopf am Tablet
 async function headingKey(want) {  // want: Ebene vom Knopf am Tablet – dieselbe nochmal hebt die Überschrift auf
   if (!plainLine(li)) return;
   if (lineEls[li].classList.contains('intable')) { msg = t('hd_in_table'); render(); return; }
+  if (data.lines[li].includes('<figcaption>')) { msg = t('hd_in_cap'); render(); return; }
   const m = data.lines[li].match(/^<h([1-6])>/), cur = m ? +m[1] : 0;
   const level = want ? (cur == want ? 0 : want) : cur >= 3 ? 0 : cur + 1;  // H wiederholt: 1 → 2 → 3 → keine
   if (await markup({ kind: 'heading', line: li, level, old: data.lines[li] })) msg = level ? t(want ? 'hd_set_t' : 'hd_set', { n: level }) : t('hd_removed');
+  render();
+}
+// ---- Abbildungen (#76): B markiert eine Abbildung im Seitenbild – ein Rahmen, mit der Maus oder dem Finger aufgezogen; das
+// Programm schlägt einen vor, wo es eine bedruckte Fläche ohne Textzeilen findet (Enter übernimmt ihn, so geht es auch
+// ganz mit der Tastatur). Gespeichert wird nur der Rahmen (bilder.json), Text und Zeilenlage bleiben unberührt; beim
+// Sichern als E-Book wird der Ausschnitt ein Bild im Text. L zeichnet die Lesezeile als Bildunterschrift aus (<figcaption>).
+const figs = () => (data && data.bilder) || [];
+async function openBild() {
+  if (!data.img || !data.size) { msg = t('bild_noimg'); render(); return; }
+  bild = { rect: null, guess: false, sel: -1, drag: null, img: showImg };
+  mode = 'bild'; cf = null; nsel = null; msg = '';
+  if (document.documentElement.classList.contains('single')) { showImg = true; setLayout(); }  // eine Spalte: jetzt das Seitenbild
+  render();
+  try {
+    const r = await (await fetch(BASE + '/api/bildvorschlag/' + pg)).json();
+    if (mode == 'bild' && bild && !bild.rect && r.rect) { bild.rect = r.rect; bild.guess = true; }
+  } catch (e) {}
+  if (mode != 'bild' || !bild) return;
+  if (!bild.rect && figs().length) bild.sel = 0;  // nichts Neues zu finden: der vorhandene Rahmen ist gewählt (Entf entfernt ihn)
+  render();
+}
+function closeBild(m) {
+  const b = bild; bild = null; mode = 'read'; msg = m || '';
+  if (b && showImg != b.img) { showImg = b.img; setLayout(); }
+  render();
+}
+const inBild = fn => async () => { if (busy || mode != 'bild') return; busy = true; try { await fn(); } finally { busy = false; } };
+function renderBild() {
+  const b = bild, n = figs().length;
+  const btn = (id, key, label) => '<button type="button"' + (TOUCH ? ' class="tb"' : '') + ' id="' + id + '">' + (TOUCH ? '' : key + ' · ') + label + '</button>';
+  let h = '<div class="kbox">' + t(b.rect ? (b.guess ? 'bild_guess' : 'bild_new') : b.sel >= 0 ? 'bild_sel' : 'bild_draw') + '<br>';
+  if (b.rect) h += btn('bOk', 'Enter', t('bild_ok'));
+  h += btn('bAll', 'G', t('bild_all'));
+  if (b.rect || b.sel >= 0) h += btn('bDel', t('key_del'), t(b.rect ? 'bild_discard' : 'bild_del'));
+  if (!b.rect && n > 1) h += btn('bNext', 'Tab', t('bild_next'));
+  $('word').innerHTML = h + btn('bEsc', 'Esc', t('bild_done')) + '</div>';
+  for (const [id, fn] of [['bOk', bildSave], ['bAll', bildAll], ['bDel', bildDelete], ['bNext', bildNext], ['bEsc', closeBild]]) if ($(id)) $(id).onclick = inBild(async () => fn());
+}
+async function bildSave() {
+  const r = await fetch(BASE + '/api/bild/' + pg, { method: 'POST', body: JSON.stringify({ kind: 'add', rect: bild.rect }) });
+  if (r.status == 400) { bild.rect = null; msg = t('bild_small'); render(); return; }
+  if (!r.ok) { await loadPage(pg, li); msg = t('changed_outside'); render(); return; }
+  data = await r.json(); closeBild(t(TOUCH && !viaKey ? 'bild_saved_t' : 'bild_saved'));
+}
+async function bildDelete() {
+  if (bild.rect) { bild.rect = null; bild.guess = false; bild.sel = figs().length ? 0 : -1; msg = ''; render(); return; }  // den neuen Rahmen verwerfen
+  const f = figs()[bild.sel]; if (!f) return;
+  const r = await fetch(BASE + '/api/bild/' + pg, { method: 'POST', body: JSON.stringify({ kind: 'delete', rect: f }) });
+  if (!r.ok) { await loadPage(pg, li); msg = t('changed_outside'); render(); return; }
+  data = await r.json(); bild.sel = figs().length ? 0 : -1; msg = t('bild_removed'); render();
+}
+function bildAll() { bild.rect = { x0: 0, y0: 0, x1: data.size[0], y1: data.size[1] }; bild.guess = false; bild.sel = -1; msg = ''; render(); }
+function bildNext() { const n = figs().length; if (n) { bild.rect = null; bild.sel = (bild.sel + 1) % n; msg = ''; render(); } }
+async function bildKey(e) {
+  const k = e.key;
+  if (k == 'Escape') closeBild();
+  else if (k == 'Enter') { if (bild.rect) await bildSave(); else closeBild(); }
+  else if (k == 'g' || k == 'G') bildAll();
+  else if (k == 'Delete' || k == 'Backspace') await bildDelete();
+  else if (k == 'Tab') bildNext();
+  else return;
+  e.preventDefault();
+}
+// Die Rahmen im Seitenbild: die gespeicherten aller drei gestapelten Seiten, beim Markieren dazu der neue
+function bildBoxes() {
+  for (const el of document.querySelectorAll('#imgwrap .bild')) el.remove();
+  const s = imgState; if (!s) return;
+  const add = (q, f, cls) => {
+    const el = document.createElement('div'); el.className = 'hl bild' + cls;
+    el.style.left = (q.x + f.x0) + 'px'; el.style.top = (q.y + f.y0) + 'px'; el.style.width = (f.x1 - f.x0) + 'px'; el.style.height = (f.y1 - f.y0) + 'px';
+    el.style.borderWidth = (3 / s.k) + 'px'; $('imgwrap').appendChild(el);
+  };
+  for (const b of [prevD, data, nextD]) {
+    const q = b && s.place[b.page]; if (!q) continue;
+    (b.bilder || []).forEach((f, i) => add(q, f, bild && b === data && i == bild.sel ? ' sel' : ''));
+  }
+  if (bild && bild.rect && s.place[pg]) add(s.place[pg], bild.rect, ' neu');
+}
+// Aufziehen mit Maus oder Finger: Punkt im Bild der aktuellen Seite (Bildpixel), auf die Seite begrenzt. Ein Klick ohne
+// Ziehen wählt den vorhandenen Rahmen darunter.
+function bildPoint(e) {
+  const pane = $('imgpane'), r = pane.getBoundingClientRect(), s = imgState, q = s && s.place[pg]; if (!q) return null;
+  const x = (e.clientX - r.left - pane.clientLeft - s.tx) / s.k - q.x, y = (e.clientY - r.top - pane.clientTop - s.ty) / s.k - q.y;
+  return { x: Math.round(Math.min(q.w, Math.max(0, x))), y: Math.round(Math.min(q.h, Math.max(0, y))) };
+}
+$('imgpane').addEventListener('pointerdown', e => {
+  if (mode != 'bild' || !bild || busy || (e.pointerType == 'mouse' && e.button != 0)) return;
+  const p = bildPoint(e); if (!p) return;
+  e.preventDefault(); hold($('imgpane'), e.pointerId);
+  bild.drag = { id: e.pointerId, x: p.x, y: p.y, cx: e.clientX, cy: e.clientY, moved: false };
+});
+$('imgpane').addEventListener('pointermove', e => {
+  const d = mode == 'bild' && bild && bild.drag; if (!d || d.id != e.pointerId) return;
+  if (!d.moved && Math.hypot(e.clientX - d.cx, e.clientY - d.cy) < 6) return;
+  const p = bildPoint(e); if (!p) return;
+  d.moved = true; bild.guess = false; bild.sel = -1;
+  bild.rect = { x0: Math.min(d.x, p.x), y0: Math.min(d.y, p.y), x1: Math.max(d.x, p.x), y1: Math.max(d.y, p.y) };
+  bildBoxes();
+});
+for (const ev of ['pointerup', 'pointercancel']) $('imgpane').addEventListener(ev, e => {
+  const d = mode == 'bild' && bild && bild.drag; if (!d || d.id != e.pointerId) return;
+  bild.drag = null;
+  if (!d.moved) { const i = figs().findIndex(f => d.x >= f.x0 && d.x <= f.x1 && d.y >= f.y0 && d.y <= f.y1); if (i >= 0) { bild.rect = null; bild.sel = i; } }
+  msg = ''; render();
+});
+// die Maus zieht einen Rahmen – nicht das Bild aus dem Fenster, und sie markiert nichts
+for (const ev of ['mousedown', 'dragstart']) $('imgpane').addEventListener(ev, e => { if (mode == 'bild') e.preventDefault(); });
+// L: Die Lesezeile ist eine Bildunterschrift – noch einmal L nimmt es zurück. Sie gehört dann nicht mehr zum Absatz; im
+// E-Book steht sie unter der nächstgelegenen Abbildung ihrer Seite. Mehrere Zeilen untereinander sind eine Unterschrift.
+async function capKey(tap) {  // tap: aus dem Menü am Tablet
+  if (!plainLine(li)) return;
+  if (lineEls[li].classList.contains('intable') || /^<h[1-6]>/.test(data.lines[li])) { msg = t('cap_no'); render(); return; }
+  const on = !data.lines[li].includes('<figcaption>');
+  if (await markup({ kind: 'caption', line: li, old: data.lines[li] })) msg = t(on ? (tap ? 'cap_set_t' : 'cap_set') : 'cap_removed');
   render();
 }
 // ---- Fett und kursiv von Hand, wie im EPUB: Strg+B, Strg+I auf die Markierung – mit der Maus, dem Finger oder zeilenweise
@@ -1565,6 +1705,7 @@ async function onKey(e) {
   if (mode == 'notes') return notesKey(e);
   if (mode == 'repl') return replKey(e);
   if (mode == 'konf') return konfKey(e);
+  if (mode == 'bild') return bildKey(e);
   if (e.key == 'F9') { e.preventDefault(); await startSeries(); return; }
   if (e.key == 'F4') { e.preventDefault(); await makeNote(); return; }
   if (mode == 'read') {
@@ -1597,6 +1738,8 @@ async function onKey(e) {
     else if (k == 'h' || k == 'H') await headingKey();
     else if (k == 'a' || k == 'A') await paraKey();
     else if (k == 'i' || k == 'I') await openToc();
+    else if (k == 'b' || k == 'B') await openBild();
+    else if (k == 'l' || k == 'L') await capKey();
     else if ((k == 'v' || k == 'V') && e.shiftKey) await unjoinLine();
     else if (k == 'v' || k == 'V') await joinLine();
     else if (k == 'z' || k == 'Z') await openConflict();  // K geht wie ↑ eine Zeile hoch (j/k)
@@ -1663,9 +1806,12 @@ $('menubtn').onclick = e => { e.currentTarget.blur(); $('links').classList.toggl
 $('links').addEventListener('click', () => $('links').classList.remove('open'));
 document.addEventListener('pointerdown', e => { if (!e.target.closest('#links,#menubtn')) $('links').classList.remove('open'); });
 const relayout = () => { setLayout(); fitText(); if (data) render(); };
-for (const [id, img] of [['vtext', false], ['vimg', true]]) $(id).onclick = e => { e.currentTarget.blur(); showImg = img; relayout(); };
-$('viewlink').onclick = e => { e.preventDefault(); store(viewKey(), document.documentElement.classList.contains('single') ? 'beide' : 'text'); showImg = false; relayout(); };
+// (wer beim Markieren einer Abbildung zum Text wechselt, hört damit auf – der Rahmen wird im Seitenbild gezogen)
+for (const [id, img] of [['vtext', false], ['vimg', true]]) $(id).onclick = e => { e.currentTarget.blur(); if (bild && !img) closeBild(); showImg = img; relayout(); };
+$('viewlink').onclick = e => { e.preventDefault(); if (bild) closeBild(); store(viewKey(), document.documentElement.classList.contains('single') ? 'beide' : 'text'); showImg = false; relayout(); };
 $('findlink').onclick = e => { e.preventDefault(); if (mode == 'read' && !busy) askOpen('find'); };
+$('figlink').onclick = e => { e.preventDefault(); guarded(openBild)(); };  // B und L (#76): am Tablet im Menü
+$('caplink').onclick = e => { e.preventDefault(); guarded(() => capKey(true))(); };
 // Knöpfe am Tablet (#63) – was am PC die Tasten tun
 $('tNext').onclick = guarded(async () => { fixRun = true; msg = ''; await toFlag(); });  // Leertaste
 $('tEdit').onclick = () => { if (!busy && mode == 'read') { fixRun = false; enterFree(); } };  // F2; ohne await, sonst öffnet Safari die Tastatur nicht
@@ -1898,7 +2044,7 @@ function fingerDown(e) {
   // Der erste Finger, der aufsetzt, während kein anderer liegt: Was noch in pts steht, hat sein Loslassen nie gemeldet.
   // Blieb es stehen, wäre jeder neue Finger der zweite – Rollen würde zum Zoomen, bis zum Neuladen.
   if (e.isPrimary) { pts.clear(); gest = null; }
-  if (!data || busy) return;
+  if (!data || busy || mode == 'bild') return;  // beim Markieren einer Abbildung zieht der Finger den Rahmen, er rollt nicht
   const pane = e.currentTarget.id == 'text' ? 'text' : 'img';
   pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
   const stopped = stopFling();
@@ -1979,6 +2125,11 @@ for (const id of ['text', 'imgpane']) {
       const pane = $('imgpane'), r = pane.getBoundingClientRect(), s = imgState;
       pane.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, clientX: r.left + pane.clientLeft + s.tx + (q.x + (g.x0 + g.x1) / 2) * s.k,
                                                        clientY: r.top + pane.clientTop + s.ty + (q.y + (g.y0 + g.y1) / 2) * s.k }));
+    }
+    else if (k.startsWith('imgdrag:')) {  // im Seitenbild einen Rahmen aufziehen (#76), z. B. imgdrag:60:200:440:520 (Bildpixel der aktuellen Seite)
+      const [x0, y0, x1, y1] = k.slice(8).split(':').map(Number), pane = $('imgpane'), r = pane.getBoundingClientRect(), s = imgState, q = s.place[pg];
+      const at = (x, y) => ({ bubbles: true, pointerId: 7, button: 0, clientX: r.left + pane.clientLeft + s.tx + (q.x + x) * s.k, clientY: r.top + pane.clientTop + s.ty + (q.y + y) * s.k });
+      pane.dispatchEvent(new PointerEvent('pointerdown', at(x0, y0))); pane.dispatchEvent(new PointerEvent('pointermove', at(x1, y1))); pane.dispatchEvent(new PointerEvent('pointerup', at(x1, y1)));
     }
     else if (k.startsWith('Shift+') || k.startsWith('Shift ')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(6), shiftKey: true, bubbles: true }));
     else if (k.startsWith('CtrlShift:')) (document.activeElement || document).dispatchEvent(new KeyboardEvent('keydown', { key: k.slice(10), ctrlKey: true, shiftKey: true, bubbles: true }));  // z. B. CtrlShift:* (Strg+Umschalt++)

@@ -394,10 +394,11 @@ def foot_numbers(pages, heads=None):
     return feet if ok >= 3 and ok * 3 >= without else {}
 # ---- Auszeichnung im Text: dieselben Elemente wie im EPUB (XHTML), nichts Eigenes. Die Zeilenzahl einer Seite bleibt dabei
 # gleich (sonst ginge die Bildzuordnung verloren): Jede Zeile bleibt eine Zeile, eine Tabellenzelle ist eine Zeile.
-MARKUP = 'table|tr|td|th|h[1-6]|em|strong|i|b|sup|sub|p|blockquote|br'
+MARKUP = 'table|tr|td|th|h[1-6]|em|strong|i|b|sup|sub|p|blockquote|br|figcaption'
 TAG = re.compile(r'</?(?:%s)\s*/?>' % MARKUP)
 TABLETAG = re.compile(r'</?(?:table|tr|td|th)>')
 HEADTAG = re.compile(r'</?h[1-6]>')
+CAPTAG = re.compile(r'</?figcaption>')
 SUPD = '⁰¹²³⁴⁵⁶⁷⁸⁹'
 def sup_markup(s):
     """Hochgestellte Ziffern – so zeigt sie das Bearbeitungsfeld, so kommen sie beim Einfügen – als Auszeichnung wie im
@@ -443,6 +444,12 @@ def heading(line, level):
     """Zeile als Überschrift der Ebene 1–6 auszeichnen; level 0 nimmt die Auszeichnung weg."""
     t = HEADTAG.sub('', line)
     return '<h%d>%s</h%d>' % (level, t, level) if level and t.strip() else t
+CAPLINE = re.compile(r'<figcaption>(.*)</figcaption>$')
+def caption(line):
+    """Zeile als Bildunterschrift auszeichnen (#76) – oder, ist sie schon eine, wieder nicht. Sie ist ein Block für sich:
+    Ein Absatzanfang <p> davor fällt weg."""
+    t = CAPTAG.sub('', line)
+    return t if CAPTAG.search(line) or not t.strip() else '<figcaption>%s</figcaption>' % re.sub(r'^<p>', '', t)
 # ---- Schrift von Hand: markierte Wörter fett oder kursiv (Strg+B, Strg+I – am Tablet zwei Knöpfe)
 INLINE = ('strong', 'b', 'em', 'i', 'sup', 'sub')  # außen nach innen, wie beim Einlesen eines EPUB (epub.INLINE)
 GLEICH = dict(b=('b', 'strong'), i=('i', 'em'))    # was als fett bzw. kursiv gilt: ein EPUB bringt beide Schreibweisen mit

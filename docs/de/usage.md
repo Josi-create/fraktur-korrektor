@@ -48,6 +48,8 @@ ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 | Lesen | `H` | Überschrift: Ebene 1 → 2 → 3 → keine (siehe unten) |
 | Lesen | `A` | hier beginnt ein Absatz – noch einmal `A` nimmt es zurück (siehe unten) |
 | Lesen | `I` | Inhalt: alle Überschriften des Buchs, `Enter` springt hin (siehe unten) |
+| Lesen | `B` | Abbildung im Seitenbild markieren, damit sie ins E-Book kommt (siehe unten) |
+| Lesen | `L` | die Lesezeile ist eine Bildunterschrift – noch einmal `L` nimmt es zurück (siehe unten) |
 | Lesen | `V` | Lesezeile mit der nächsten Zeile verbinden; `Umschalt`+`V` trennt eine so verbundene Zeile wieder |
 | Lesen | `Strg`+`⌫` (Mac: `⌘`+`⌫`) | Lesezeile löschen, bzw. alle mit `Umschalt`+`↓`/`↑` markierten – für Rauschen vom Scanrand (siehe unten) |
 | Lesen | `Strg`+`Z` (Mac: `⌘`+`Z`) | zuletzt gelöschte Zeilen zurückholen |
@@ -267,6 +269,43 @@ mit einem Satzzeichen. Verse, Listen und Register bleiben so meist unberührt. O
 einem EPUB ohne PDF) oder in einem Buch ohne Einzüge erkennt das Programm keine Absätze. In der Textdatei steht ein
 Absatzanfang als `<p>` am Zeilenanfang, wie im EPUB.
 
+## Abbildungen (B) und Bildunterschriften (L)
+
+Das Programm kennt vom Seitenbild nur die Textzeilen. Wo eine Abbildung, eine Karte oder eine Tafel ist, zeigen Sie
+ihm – dann kommt sie beim [Sichern als E-Book](epub-sichern.md) als Bild in den Text. Am Text selbst ändert das nichts.
+
+**Abbildung markieren (`B`):** Die Taste `B` zeigt links die ganze Seite. Findet das Programm eine bedruckte Fläche, in
+der keine Textzeile liegt, schlägt es einen Rahmen vor (gestrichelt).
+
+- Passt der Vorschlag: `Enter` übernimmt ihn. So geht es ganz mit der Tastatur.
+- Passt er nicht, oder gibt es keinen: Ziehen Sie mit der Maus einen Rahmen um die Abbildung, dann `Enter`. Nicht
+  getroffen? Einfach noch einmal ziehen.
+- `G` nimmt die **ganze Seite** – für eine Tafel oder Karte, die die Seite füllt.
+- `Esc` führt zurück zum Lesen, ohne etwas zu ändern.
+
+Markierte Abbildungen sind im Seitenbild **grün umrahmt**, auch beim Lesen. Um einen Rahmen wieder loszuwerden: `B`,
+den Rahmen anklicken (bei mehreren auf der Seite; `Tab` geht zum nächsten) und `Entf`. Eine Seite kann mehrere
+Abbildungen haben; drücken Sie `B` für jede einmal.
+
+Der Vorschlag ist nur ein Vorschlag: Eine Zeile, die die Texterkennung übersehen hat, oder ein Bibliotheksstempel sieht
+für das Programm genauso aus wie eine kleine Abbildung. Liegen über einer Abbildung Zeilen mit Buchstabensalat (die
+Texterkennung hat das Bild für Text gehalten), löschen Sie diese mit `Strg`+`⌫`, siehe
+*Rauschen vom Scanrand löschen*.
+
+**Bildunterschrift (`L`):** Steht unter der Abbildung eine Unterschrift („Abb. 3: Die Kolonie Rohrbach“), hat die
+Texterkennung sie als gewöhnliche Zeile gelesen – im E-Book stünde sie mitten im Absatz. `L` zeichnet die Lesezeile als
+Bildunterschrift aus; sie erscheint dann kleiner, mit einem grünen Strich am Rand. Geht die Unterschrift über mehrere
+Zeilen, bekommt jede Zeile ein `L`. Noch einmal `L` nimmt es zurück.
+
+Im E-Book steht die Unterschrift unter der nächstgelegenen Abbildung ihrer Seite und ist zugleich deren Beschreibung
+für Vorleseprogramme. Eine Abbildung ohne Unterschrift steht dort, wo sie nach der Lage der Zeilen im Seitenbild
+hingehört – aber nie mitten im Absatz, sondern hinter dem Absatz, in dem sie liegt.
+
+In der Textdatei steht eine Bildunterschrift als `<figcaption>…</figcaption>`, wie im EPUB. Die Rahmen der Abbildungen
+stehen in der Datei `bilder.json` im Buchordner; sie wandern mit dem [gesicherten PDF](pdf-sichern.md) auf einen
+anderen Rechner. Wird [eine Seite ersetzt](#eine-seite-ersetzen), verfallen ihre Rahmen – das neue Bild ist ein
+anderes.
+
 ## Fett und kursiv (Strg+B, Strg+I)
 
 Wie in Word: Markieren Sie die Wörter mit der Maus – oder ganze Zeilen mit `Umschalt`+`↓`/`↑` – und drücken Sie
@@ -394,6 +433,9 @@ Auf dem Tablet bedienen Sie alles mit dem Finger:
   Querformat stehen Bild und Text nebeneinander wie am Rechner. Das Menü **☰** schaltet zwischen **Nur Text** und
   **Bild und Text** um; das Tablet merkt sich die Wahl, getrennt für Hoch- und Querformat. Im Menü stehen auch
   **Suchen**, **Inhalt**, **Notizen** und die Hilfe.
+- **Abbildungen:** Im Menü **☰** stehen **Abbildung markieren** und **Bildunterschrift** – was am Rechner `B` und `L`
+  tun. Den Rahmen ziehen Sie mit dem Finger im Seitenbild, darunter stehen **Übernehmen**, **Ganze Seite** und
+  **Zurück zum Lesen**. **Bildunterschrift** gilt der Lesezeile.
 - **Lesen:** Mit dem Finger rollen Sie den Text durch das ganze Buch – wie einen langen Kassenbon, ohne an den
   Seitengrenzen anzuhalten. Die Zeile auf der Höhe der kleinen orangen Marke am linken Rand ist die Lesezeile; das
   Programm merkt sich die Stelle. Eine Zeile antippen macht sie zur Lesezeile, im Text wie im Seitenbild. Mit zwei
