@@ -813,20 +813,22 @@ async function editJob(path, body) {
   } finally { $('eprog').style.display = 'none'; $('eGo').disabled = false; }
 }
 function editDone(h) {
-  $('ebody').style.display = 'none'; $('ehead').textContent = '';
+  $('ebody').style.display = 'none'; $('ehead').textContent = ''; $('emsg').textContent = '';  // kein Fehler von vorhin neben dem Erfolg
   $('eGo').style.display = $('eBack').style.display = $('eShow').style.display = 'none';
   $('edone').style.display = ''; $('edone').innerHTML = h;
   $('eBook').style.display = ''; $('eBook').className = 'main'; $('eBook').textContent = t('btn_open_book'); $('eClose').textContent = t('close');
 }
 $('eform').onsubmit = async ev => {
   ev.preventDefault();
+  $('emsg').textContent = '';  // neuer Versuch: Die Meldung des vorigen stünde sonst noch da, auch neben einem Erfolg
   if (eact == 'rename') {  // der neue Name steht gleich in der Liste – dafür braucht es keine Erfolgsmeldung
     const name = $('eName').value.trim(); if (!name) return;
     try { await post('/api/rename', { id: eb.id, title: name }); $('edlg').classList.remove('on'); load(); }
     catch (err) { fail('emsg', err); }
     return;
   }
-  const src = $('eSrc') ? $('eSrc').value.trim() : '';
+  // Windows’ »Als Pfad kopieren« setzt den Pfad in Anführungszeichen – so eingefügt, fände ihn das Programm nicht
+  const src = $('eSrc') ? $('eSrc').value.trim().replace(/^"(.*)"$/, '$1') : '';
   if (!src && eact != 'pdf' && eact != 'epub' && eact != 'prep_scans') return;
   const mode = document.querySelector('input[name=emode]:checked');
   try {

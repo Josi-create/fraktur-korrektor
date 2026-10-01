@@ -77,6 +77,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - **E-Book sichern:** Ein getrenntes Wort mit Auszeichnung dahinter (`<em>Zu¬</em>`) wurde nicht zusammengezogen.
 - **Bibliothek:** Der Knopf **PDF hinzufügen** für ein Textbuch (#40) stand seit den beschrifteten Knöpfen nicht mehr in
   der Zeile des Buchs; statt seiner stand dort *Seitenbilder hinzufügen*, das für ein Textbuch nicht passt.
+- **Bibliothek: alte Fehlermeldung neben dem Erfolg.** Schlug im Dialog eines Buchs ein Versuch fehl (etwa »Datei nicht
+  gefunden«) und gelang der nächste, stand die Fehlermeldung weiter unter der grünen Erfolgsmeldung. Sie verschwindet
+  jetzt mit jedem neuen Versuch. Ein Pfad in Anführungszeichen (Windows: »Als Pfad kopieren«) wird in diesem Dialog angenommen.
 - **Zwei Programme auf demselben Port:** Lief die installierte App (auf `127.0.0.1:8765`) noch im Infobereich, startete
   `server.py --lan` (auf `0.0.0.0:8765`) trotzdem – Windows und macOS teilen den Port dann. Der Browser landete still
   bei der alten Fassung, neue Funktionen fehlten scheinbar. Jetzt kommt wie sonst die Meldung »Port 8765 ist belegt«
