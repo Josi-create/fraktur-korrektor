@@ -25,28 +25,28 @@ Neu hier? [Erste Schritte](first-steps.md) führt am Beispielbuch durch das Wich
 |---|---|---|
 | Lesen | `↓` `↑` (oder `j` `k`), Mausrad | nächste / vorige Zeile; der Text läuft fließend über Seitengrenzen. Ein Klick auf eine Zeile macht sie zur Lesezeile |
 | Lesen | `Leertaste` | zum nächsten roten Wort → Korrektur |
-| Lesen | Doppelklick auf ein Wort | Korrektur dieser Zeile, das angeklickte Wort ist markiert |
+| Lesen | Doppelklick auf ein Wort | ein rotes Wort: Korrektur; sonst die Zeile bearbeiten, das angeklickte Wort ist markiert |
 | Lesen | Doppelklick ins Seitenbild | die Zeile unter dem Mauszeiger wird Lesezeile, im Bild wie im Text – praktisch, wenn man im Bild eine Stelle sucht |
 | Lesen | `F8` (oder `#`) | erstes rotes Wort der Lesezeile ist richtig → Whitelist. Nochmal `F8` = nächstes. Ohne rotes Wort in der Lesezeile: das nächste weiter unten auf der Seite |
 | Lesen | `Enter` | steht in der Lesezeile ein rotes Wort: direkt dorthin; sonst wie `F2` |
 | Lesen | `F2` | die Lesezeile frei bearbeiten (Satzzeichen, Fußnotenzeichen, alles, was die Automatik nicht bemerkt) |
 | Lesen | `Bild↓` `Bild↑`, `Pos1` `Ende` | Seite vor/zurück, Seitenanfang/-ende |
 | Lesen | `G` | gehe zu Seite: oben erscheint eine Eingabezeile für die Seitenzahl |
-| Lesen | `S` (oder `/`, `Strg`+`F`, am Mac auch `Cmd`+`F`) | im ganzen Buch suchen; `N` nächste, `Umschalt`+`N` vorige Fundstelle (siehe unten) |
+| Lesen | `S` (oder `/`, `Strg`+`F`, am Mac auch `Cmd`+`F`) | im ganzen Buch suchen; `N` (oder `F3`) nächste, `Umschalt`+`N` vorige Fundstelle (siehe unten) |
 | Lesen | `+` `−` `0` | Zoom des Seitenbildes (auch `Strg`+Mausrad über dem Bild) |
-| Lesen | `Strg`+`+` `Strg`+`−` `Strg`+`0` | Schriftgröße des Textes für dieses Buch (auch `Strg`+Mausrad über dem Text); bleibt gespeichert. Von selbst wählt das Programm sie so, dass eine gedruckte Zeile auch rechts in eine Zeile passt – `Strg`+`0` stellt das wieder ein |
+| Lesen | `Strg`+`+` `Strg`+`−` `Strg`+`0` (Mac: `⌘`) | Schriftgröße des Textes für dieses Buch (auch `Strg`+Mausrad über dem Text); bleibt gespeichert. Von selbst wählt das Programm sie so, dass eine gedruckte Zeile auch rechts in eine Zeile passt – `Strg`+`0` stellt das wieder ein |
 | Lesen | `Umschalt`+Mausrad | eine breite Tabelle seitwärts rollen; mit der Lesezeile rollt sie von selbst |
 | Lesen | `R` | Seite neu laden (nach Änderungen in einem anderen Editor) |
-| Korrektur | `Enter` | übernehmen und weiterlesen (steht in derselben Zeile noch ein rotes Wort, kommt dieses zuerst) |
+| Korrektur / Zeile bearbeiten | `Enter` | übernehmen und weiterlesen (in der Korrektur: steht in derselben Zeile noch ein rotes Wort, kommt dieses zuerst) |
 | Korrektur / Zeile bearbeiten | `Strg`+`Umschalt`+`+` (Mac: `⌘`+`Umschalt`+`+`) | die Ziffern vor der Schreibmarke (oder die markierten) hochstellen – für Fußnotenzeichen; noch einmal: wieder normal (siehe *Fußnoten*) |
 | Korrektur / Zeile bearbeiten | `F7` (oder `-` am Zeilenende) | Trennzeichen `¬` an der Schreibmarke einfügen. Mitten in der Zeile bleibt `-` ein Bindestrich; endet die Zeile schon mit `¬`, setzt `-` einen Bindestrich davor (`Ost-¬` / `Preußen`) |
 | Korrektur / Zeile bearbeiten | `Umschalt`+`Enter` | Zeile an der Schreibmarke teilen (siehe unten) |
 | Korrektur | `F8` (oder `#`) | Wort ist richtig → Whitelist |
 | Korrektur | `↓` `↑` | einen Korrekturvorschlag ins Feld setzen (siehe unten); `Enter` übernimmt ihn |
 | Korrektur | `Tab` | nächstes rotes Wort, ohne zu ändern; bei einem getrennten Wort zuerst in die zweite Hälfte |
-| Korrektur | `Esc` oder Doppelklick in den Text | zurück zum Lesen, ohne zu ändern |
+| Korrektur / Zeile bearbeiten | `Esc` oder Doppelklick in den Text | zurück zum Lesen, ohne zu ändern |
 | Lesen / Korrektur | `F9` | Serienkorrektur (siehe unten) |
-| Lesen | `U` | letzte Serienkorrektur zurücknehmen |
+| Lesen | `U` | letzte Serienkorrektur zurücknehmen (ebenso die beim ersten Öffnen erkannten Absätze, siehe unten) |
 | Lesen | `F` | Fußnoten beginnen mit der Lesezeile (siehe unten) |
 | Lesen | `T` | Tabelle: aus getrennten Zeilen eine Tabelle machen bzw. wieder auflösen (siehe unten) |
 | Lesen | `H` | Überschrift: Ebene 1 → 2 → 3 → keine (siehe unten) |
@@ -219,7 +219,8 @@ Eine Texterkennung zerreißt Tabellen meist in einzelne Zeilen – aus einer Auf
 Stellen Sie die Lesezeile auf die erste Zeile und drücken Sie `T`. Mit `↓` ziehen Sie den Bereich bis zur letzten Zeile
 der Tabelle, mit `2` … `9` wählen Sie die Zahl der Spalten; die Vorschau oben zeigt sofort, wie sich die Zeilen auf Reihen
 und Spalten verteilen (der Reihe nach, von links nach rechts). `H` macht die erste Reihe zu Spaltenköpfen, `Enter`
-übernimmt, `Esc` bricht ab. `T` auf einer vorhandenen Tabelle nimmt die Auszeichnung wieder weg – der Text bleibt.
+übernimmt, `Esc` bricht ab. `T` auf einer vorhandenen Tabelle nimmt die Auszeichnung nach einer Rückfrage wieder weg – der
+Text bleibt.
 
 Das Programm erfindet dafür kein eigenes Format, sondern schreibt dieselbe Auszeichnung in den Text, die auch ein EPUB
 benutzt (XHTML):
@@ -346,7 +347,7 @@ Kopfleiste) zeigt drei Häkchen; die Wahl gilt nur für dieses Buch und wird ges
 Beim Einlesen schätzt das Programm das **Erscheinungsjahr** aus Titelei und Impressum und setzt die Häkchen passend:
 vor 1902 die ersten beiden, bis 1997 das mittlere, ab 1998 die unteren beiden (die Umstellung zog sich hin, und neuere
 Arbeiten zitieren ältere Texte). Das Fenster zeigt nach jeder Änderung, wie viele rote Wörter es vorher und nachher im Buch
-gibt – so sehen Sie sofort, was passt. Echte Lesefehler (`ber`, `bie`, `Bolk`) bleiben in jeder Einstellung rot.
+gibt – so sehen Sie sofort, was passt. Mit der Tastatur schalten `1`, `2`, `3` die Häkchen um, `Esc` schließt. Echte Lesefehler (`ber`, `bie`, `Bolk`) bleiben in jeder Einstellung rot.
 
 Unabhängig davon gelten immer: gängige Abkürzungen (Vgl, Bd, Ebd, Hg, Bibelstellen wie Offb, Joh), Siglen in
 Großbuchstaben, die mehrfach vorkommen (BWKG, LKA), und längere Wörter, die im Buch mindestens dreimal stehen (meist
@@ -362,7 +363,8 @@ Niklas Luhmanns Zettelkasten: ein Gedanke je Zettel, jeder mit Quellenangabe.
    öffnet den Dateidialog; ein noch fehlender letzter Ordner wird angelegt. Die Wahl steht in `buch.json`.
 2. Beim Lesen eine Passage mit der Maus markieren – auch über mehrere Zeilen – und `F4` drücken oder mit der rechten
    Maustaste auf die Markierung klicken. Ganz ohne Maus: zur ersten Zeile gehen, `Umschalt` halten und mit `↓` oder `↑`
-   die gewünschten Zeilen markieren (blau hinterlegt), dann `F4`. Ohne Markierung wird die Lesezeile zum Zettel.
+   die gewünschten Zeilen markieren (blau hinterlegt), dann `F4`. Ohne Markierung wird die Lesezeile zum Zettel. Ist
+   noch kein Notizordner festgelegt, fragt `F4` zuerst danach.
 
 Das Programm legt im Ordner eine Datei an, fortlaufend nummeriert, zum Beispiel `07 Seite 57.md`:
 

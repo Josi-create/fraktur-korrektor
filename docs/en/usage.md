@@ -25,28 +25,28 @@ New here? [First steps](first-steps.md) walks you through the essentials using t
 |---|---|---|
 | Reading | `↓` `↑` (or `j` `k`), mouse wheel | next / previous line; the text flows across page breaks. Clicking a line makes it the reading line |
 | Reading | `Space` | jump to the next red word → correction |
-| Reading | double-click a word | correct this line, with the clicked word selected |
+| Reading | double-click a word | a red word: correction; otherwise edit the line, with the clicked word selected |
 | Reading | double-click in the page image | the line under the mouse pointer becomes the reading line, in the image and in the text – handy when you spot a place in the image |
 | Reading | `F8` (or `#`) | first red word of the reading line is correct → whitelist. `F8` again = the next one. With no red word in the reading line: the next one further down the page |
 | Reading | `Enter` | if the reading line has a red word: go there; otherwise like `F2` |
 | Reading | `F2` | edit the reading line freely (punctuation, footnote marks, anything the automatic check misses) |
 | Reading | `PgDn` `PgUp`, `Home` `End` | page forward/back, top/bottom of page |
 | Reading | `G` | go to page: an input line for the page number appears at the top |
-| Reading | `S` (or `/`, `Ctrl`+`F`, on a Mac also `Cmd`+`F`) | search the whole book; `N` next, `Shift`+`N` previous match (see below) |
+| Reading | `S` (or `/`, `Ctrl`+`F`, on a Mac also `Cmd`+`F`) | search the whole book; `N` (or `F3`) next, `Shift`+`N` previous match (see below) |
 | Reading | `+` `−` `0` | zoom the page image (also `Ctrl`+mouse wheel over the image) |
-| Reading | `Ctrl`+`+` `Ctrl`+`−` `Ctrl`+`0` | text size for this book (also `Ctrl`+mouse wheel over the text); remembered. By itself the program chooses it so that a printed line fits into one line on the right as well – `Ctrl`+`0` restores that |
+| Reading | `Ctrl`+`+` `Ctrl`+`−` `Ctrl`+`0` (Mac: `⌘`) | text size for this book (also `Ctrl`+mouse wheel over the text); remembered. By itself the program chooses it so that a printed line fits into one line on the right as well – `Ctrl`+`0` restores that |
 | Reading | `Shift`+mouse wheel | scroll a wide table sideways; it follows the reading line by itself |
 | Reading | `R` | reload the page (after changes in another editor) |
-| Correction | `Enter` | apply and read on (if the same line has another red word, that comes first) |
+| Correction / Edit line | `Enter` | apply and read on (when correcting: if the same line has another red word, that comes first) |
 | Correction / Edit line | `Ctrl`+`Shift`+`+` (Mac: `⌘`+`Shift`+`+`) | raise the digits before the cursor (or the selected ones) – for footnote marks; again: back to normal (see *Footnotes*) |
 | Correction / Edit line | `F7` (or `-` at the end of the line) | insert the hyphenation mark `¬` at the cursor. Within the line `-` stays a hyphen; if the line already ends with `¬`, `-` puts a hyphen before it (`Ost-¬` / `Preußen`) |
 | Correction / Edit line | `Shift`+`Enter` | split the line at the cursor (see below) |
 | Correction | `F8` (or `#`) | word is correct → whitelist |
 | Correction | `↓` `↑` | put a suggested correction into the field (see below); `Enter` applies it |
 | Correction | `Tab` | next red word without changing anything; for a split word, first into its second half |
-| Correction | `Esc` or double-click in the text | back to reading without changing anything |
+| Correction / Edit line | `Esc` or double-click in the text | back to reading without changing anything |
 | Reading / Correction | `F9` | batch correction (see below) |
-| Reading | `U` | undo the last batch correction |
+| Reading | `U` | undo the last batch correction (likewise the paragraphs detected on first opening, see below) |
 | Reading | `F` | footnotes start at the reading line (see below) |
 | Reading | `T` | table: turn separate lines into a table, or dissolve it again (see below) |
 | Reading | `H` | heading: level 1 → 2 → 3 → none (see below) |
@@ -212,7 +212,7 @@ Text recognition usually tears tables apart into single lines – a listing turn
 Put the reading line on the first line and press `T`. Use `↓` to extend the range to the last line of the table and
 `2` … `9` to choose the number of columns; the preview at the top shows at once how the lines are distributed over rows and
 columns (in order, from left to right). `H` turns the first row into column headers, `Enter` applies, `Esc` cancels. `T` on
-an existing table removes the markup again – the text stays.
+an existing table removes the markup again after asking – the text stays.
 
 The program does not invent a format of its own for this; it writes the same markup into the text that an EPUB uses
 (XHTML):
@@ -339,7 +339,7 @@ bar) shows three tick boxes; the choice applies to this book only and is saved:
 When a book is read in, the program estimates the **year of publication** from the title pages and imprint and ticks the
 boxes accordingly: before 1902 the first two, up to 1997 the middle one, from 1998 the lower two (the changeover took
 years, and newer works quote older texts). After every change the window shows how many red words the book had before and
-has now – so you see at once what fits. Genuine misreadings (`ber`, `bie`, `Bolk`) stay red in every setting.
+has now – so you see at once what fits. On the keyboard, `1`, `2`, `3` toggle the boxes and `Esc` closes. Genuine misreadings (`ber`, `bie`, `Bolk`) stay red in every setting.
 
 Independently of this, the following always count as correct: common abbreviations (Vgl, Bd, Ebd, Hg, Bible references
 such as Offb, Joh), sigla in capitals that occur more than once (BWKG, LKA), and longer words that occur at least three
@@ -356,7 +356,8 @@ Niklas Luhmann's Zettelkasten: one thought per note, each with its source.
    missing last folder is created. The choice is stored in `buch.json`.
 2. While reading, select a passage with the mouse – across several lines if you like – and press `F4`, or right-click the
    selection. Without a mouse: go to the first line, hold `Shift` and select the lines you want with `↓` or `↑`
-   (highlighted in blue), then press `F4`. Without a selection the reading line becomes the note.
+   (highlighted in blue), then press `F4`. Without a selection the reading line becomes the note. If no notes folder
+   has been set yet, `F4` asks for it first.
 
 The program creates a file in that folder, numbered consecutively, for example `07 Page 57.md`:
 
