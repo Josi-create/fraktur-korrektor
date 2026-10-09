@@ -8,36 +8,74 @@ particularly difficult scans is there the free add-on program ScanTailor, which 
 
 All versions are on the [releases page](https://github.com/Josi-create/fraktur-korrektor/releases/latest).
 
+These instructions describe Windows 11 and macOS as of October 2026. On Windows 10 the windows look a little
+different, but the steps are the same.
+
 ## Windows
 
-1. **Download:**
-   [Fraktur-Korrektor_Setup.exe](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor_Setup.exe)
-2. Double-click the downloaded file.
-3. The first time, Windows will say **“Windows protected your PC”**. This does not mean anything is wrong: the
-   message appears for every program that few people have downloaded so far. Click **More info**, then
-   **Run anyway**.
+1. **Download:** click
+   [Fraktur-Korrektor_Setup.exe](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor_Setup.exe).
+   The browser puts the file into your *Downloads* folder.
+2. **If the browser holds the file back:** Microsoft Edge sometimes says the file “isn’t commonly downloaded”. In
+   the list of downloads (top right), click the three dots **…** next to the file, then **Keep**; in the next
+   window click **Show more** and **Keep anyway**.
 
-   <!-- room for a screenshot of the SmartScreen dialog -->
-4. Follow the wizard; the defaults are fine. The program is installed into your user folder, so Windows does not
-   ask for an administrator password.
-5. Done. Fraktur-Korrektor is now in the **Start menu** and on the desktop.
+   <!-- Bildschirmfoto: win-edge-download.png – Microsoft Edge (deutsche Oberfläche) direkt nach dem Herunterladen der Fraktur-Korrektor_Setup.exe: die Downloadliste oben rechts mit der Warnung „wird nicht häufig heruntergeladen“, das Menü der drei Punkte aufgeklappt, „Beibehalten“ sichtbar -->
+3. Click the file in the list of downloads (or double-click it in the *Downloads* folder).
+4. The first time, a blue window appears: **“Windows protected your PC”**. This does not mean anything is wrong:
+   the message appears for every program that few people have downloaded so far. Click the underlined text
+   **More info**.
 
-There is also a version without an installer: unpack `Fraktur-Korrektor-v….-win64.zip` and double-click
-`Fraktur-Korrektor.exe` inside. Handy for a USB stick.
+   <!-- Bildschirmfoto: win-smartscreen.png – Windows 11 (deutsch), das blaue Fenster „Der Computer wurde durch Windows geschützt“ gleich nach dem Doppelklick auf Fraktur-Korrektor_Setup.exe; der Link „Weitere Informationen“ ist zu sehen, unten nur der Knopf „Nicht ausführen“ -->
+5. A second button now appears at the bottom. Click **Run anyway**. (The publisher is shown as “Unknown
+   publisher” – the program does not carry a digital signature yet.)
+
+   <!-- Bildschirmfoto: win-smartscreen-2.png – dasselbe blaue Fenster nach dem Klick auf „Weitere Informationen“: App „Fraktur-Korrektor_Setup.exe“, Herausgeber „Unbekannter Herausgeber“, unten die Knöpfe „Trotzdem ausführen“ und „Nicht ausführen“ -->
+6. The installer asks for the **language** – pick English and click **OK**.
+7. It asks whether to install **for you only or for all users**. Click **Install for me only (recommended)**.
+   Windows then does not ask for an administrator password.
+
+   <!-- Bildschirmfoto: win-installer.png – das Fenster „Installationsmodus auswählen“ des Fraktur-Korrektor-Setups (deutsch) mit den beiden Knöpfen „Installation für alle Benutzer“ und „Installation nur für Sie (empfohlen)“ -->
+8. The **License Agreement** (the GPL, a free licence): click **I accept the agreement**, then **Next**.
+9. Accept the suggested **destination location** with **Next**.
+10. Under *Additional tasks*, **Create a desktop shortcut** is ticked – leave it, **Next**.
+11. Click **Install**. It is done within a few seconds.
+12. In the last window, **Launch Fraktur-Korrektor** is ticked. Click **Finish** – the program starts, see
+    [The first start](#the-first-start).
+
+Fraktur-Korrektor is then in the **Start menu** and on the desktop.
+
+There is also a version without an installer: download `Fraktur-Korrektor-v….-win64.zip` from the releases page,
+right-click → *Extract All …*, and double-click `Fraktur-Korrektor.exe` inside. Handy for a USB stick. The blue
+message described above appears on its first start, too.
 
 ## Mac
 
-1. **Which Mac do you have?** Apple menu → *About This Mac*. If “Chip” says **Apple M**, you need the `arm64`
-   version; if it says **Intel**, take `x86_64`.
-2. **Download:**
-   [for Apple Silicon (M1–M4)](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-arm64.dmg)
-   · [for Intel](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-x86_64.dmg)
-3. Double-click the downloaded `.dmg`. A window opens showing the program icon and the *Applications* folder.
-   **Drag the icon onto the Applications folder.**
+1. **Which Mac do you have?** Click the Apple symbol at the top left, then **About This Mac**. If there is a line
+   **Chip** saying “Apple M…” (M1, M2, M3 …), your Mac has an Apple chip. If there is a line **Processor** saying
+   “Intel”, it is an Intel Mac.
 
-   <!-- room for a screenshot of the DMG window -->
-4. Close the window and eject the `.dmg` (click the eject symbol in the Finder sidebar).
-5. In *Applications*, double-click **Fraktur-Korrektor**.
+   <!-- Bildschirmfoto: mac-chip.png – das Fenster „Über diesen Mac“ (deutsche Oberfläche) eines Macs mit Apple-Chip, die Zeile „Chip: Apple M…“ gut lesbar; Seriennummer unkenntlich machen -->
+2. **Download** – click the matching version:
+   [for Macs with an Apple chip (M1 and later)](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-arm64.dmg)
+   · [for Macs with an Intel processor](https://github.com/Josi-create/fraktur-korrektor/releases/latest/download/Fraktur-Korrektor-macos-x86_64.dmg).
+   The file lands in your *Downloads* folder; its name ends in `.dmg` – a kind of package that the Mac opens like
+   a drive when you double-click it.
+3. Double-click the downloaded file. A window opens showing the Fraktur-Korrektor icon and the *Applications*
+   folder. **Drag the icon onto the Applications folder** with the mouse button held down, and let go.
+
+   <!-- Bildschirmfoto: mac-dmg.png – das Finder-Fenster, das sich nach dem Doppelklick auf Fraktur-Korrektor-macos-arm64.dmg öffnet: links das Programmsymbol „Fraktur-Korrektor“, rechts der Ordner „Programme“/„Applications“; am besten mitten im Ziehen, mit dem halbdurchsichtigen Symbol über dem Ordner -->
+4. Close the window. The Finder sidebar still lists “Fraktur-Korrektor” with a small eject symbol ⏏ next to it –
+   click it. You can then delete the `.dmg` file in *Downloads*.
+5. In the Finder, open the *Applications* folder and double-click **Fraktur-Korrektor**.
+6. On the first start, the Mac asks whether you really want to open this program downloaded from the internet.
+   The program has been checked and notarised by Apple; click **Open**. You are asked only this once.
+
+   <!-- Bildschirmfoto: mac-gatekeeper.png – die Rückfrage von macOS (deutsche Oberfläche) beim ersten Doppelklick auf den Fraktur-Korrektor im Ordner Programme: „„Fraktur-Korrektor“ ist … aus dem Internet geladen … wirklich öffnen?“ mit den Knöpfen „Abbrechen“ und „Öffnen“ (bitte den genauen Wortlaut mitteilen, damit der Text ihn übernehmen kann) -->
+
+If the Mac later asks whether Fraktur-Korrektor may access a folder (such as *Documents*) or control your browser,
+click **Allow** or **OK**: the program needs this to open your books and to bring the browser window that is
+already open to the front.
 
 The Mac needs macOS 15 (Sequoia) or newer.
 
@@ -51,8 +89,8 @@ built for ordinary PCs (x86_64) and needs a distribution from Ubuntu 22.04, Debi
 2. **Make the file executable**: in the file manager right-click → *Properties* → *Permissions* tab → tick
    *Allow executing file as program* (the wording varies a little between desktops). In a terminal:
    `chmod +x Fraktur-Korrektor-linux-x86_64.AppImage`.
-3. Double-click the file. A small window with the buttons *Im Browser öffnen* (open in browser) and *Beenden*
-   (quit) appears, and the browser shows the library.
+3. Double-click the file. A small window with the buttons *Open in browser* and
+   *Quit Fraktur-Korrektor* appears, and the browser shows the library.
 4. **Add text recognition** – only needed if you want to read in PDFs or images that have no text yet. It comes
    from the package manager of your distribution, in a terminal:
 
@@ -78,17 +116,24 @@ No book of your own to hand yet? **Open the example book** lets you try everythi
 
 The program runs on your computer only and sends nothing to the internet.
 
-**Quitting:** on the Mac use the Dock icon (right-click → *Quit*) or the small book symbol in the menu bar at the
-top; on Windows use the icon in the notification area of the taskbar (bottom right, possibly behind the `^`
-arrow); on Linux the *Beenden* button in the small window. Closing the browser window is not enough – the
-program keeps running.
+**Quitting:** closing the browser window is not enough – the program keeps running. This is how you quit it:
+
+- **Windows:** at the bottom right of the taskbar, next to the clock, is the Fraktur-Korrektor icon. If you do not
+  see it, first click the small arrow **^** next to it. Right-click the icon and choose
+  **Quit Fraktur-Korrektor**. (Double-clicking the icon brings the browser window back.)
+
+  <!-- Bildschirmfoto: win-infobereich.png – Windows 11 (deutsch), Taskleiste unten rechts: der Pfeil „^“ ist aufgeklappt, mit der rechten Maustaste auf das Fraktur-Korrektor-Symbol geklickt, das Menü „Im Browser öffnen“ / „Fraktur-Korrektor beenden“ ist offen -->
+- **Mac:** right-click the icon in the Dock and choose **Quit** – or click the small book symbol in the menu bar
+  at the top and choose **Quit Fraktur-Korrektor**.
+- **Linux:** click **Quit Fraktur-Korrektor** in the small window.
 
 **No window opened?** Open your browser and go to <http://localhost:8765>.
 
 ## Updating
 
-Download the new version and install it the same way; on the Mac drag it into *Applications* again and confirm
-replacing it. Your books and settings are untouched.
+First quit the running program (see above). Then download the new version and install it just as the first time;
+on Windows simply over the old version, on the Mac drag it into *Applications* again and confirm with **Replace**.
+Your books and settings are untouched.
 
 ## Where are my things?
 
@@ -96,13 +141,14 @@ replacing it. Your books and settings are untouched.
 |---|---|
 | books you have read in | folder `Fraktur-Korrektor` in your home folder |
 | settings, list of books | folder `.fraktur-korrektor` in your home folder (hidden) |
-| the program itself | Windows: `Program Files\Fraktur-Korrektor` · Mac: `Applications/Fraktur-Korrektor.app` · Linux: the AppImage file, wherever you put it |
+| the program itself | Windows: `AppData\Local\Programs\Fraktur-Korrektor` in your home folder (with “for all users”: `Program Files\Fraktur-Korrektor`) · Mac: `Applications/Fraktur-Korrektor.app` · Linux: the AppImage file, wherever you put it |
 
 Back up the `Fraktur-Korrektor` folder now and then – all your work is in there.
 
 ## Removing it again
 
-**Windows:** *Settings → Apps → Installed apps → Fraktur-Korrektor → Uninstall*.
+**Windows:** *Start → Settings → Apps → Installed apps*, click the three dots **…** next to Fraktur-Korrektor →
+**Uninstall**.
 **Mac:** drag `Fraktur-Korrektor.app` from *Applications* to the bin.
 **Linux:** delete the AppImage file.
 

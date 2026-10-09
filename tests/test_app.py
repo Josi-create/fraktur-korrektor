@@ -345,3 +345,13 @@ def test_linux_alert_ohne_display_stuerzt_nicht(monkeypatch, capsys):
     monkeypatch.setitem(sys.modules, 'tkinter', None)
     starter.alert('Der Port 8765 ist belegt')
     assert 'belegt' in capsys.readouterr().out
+
+
+def test_starter_spricht_die_sprache_des_systems():
+    from conftest import ROOT
+    """Die Einträge am Symbol gibt es deutsch und englisch, mit denselben Schlüsseln; die Hilfe nennt sie wörtlich."""
+    assert set(starter.TEXTS['de']) == set(starter.TEXTS['en'])
+    assert starter.T in (starter.TEXTS['de'], starter.TEXTS['en'])
+    for lang in ('de', 'en'):
+        doc = open(os.path.join(ROOT, 'docs', lang, 'install.md'), encoding='utf-8').read()
+        assert starter.TEXTS[lang]['quit'] in doc, lang

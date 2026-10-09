@@ -20,6 +20,26 @@ import server
 APP = 'Fraktur-Korrektor'
 
 
+def system_lang():
+    """Sprache des Systems – dieselbe Wahl, die der Browser für die Oberfläche trifft (i18n.js: deutsch oder englisch)."""
+    try:
+        if sys.platform == 'darwin':
+            import Foundation
+            return str(Foundation.NSLocale.preferredLanguages()[0])
+        if os.name == 'nt':
+            import ctypes, locale
+            return locale.windows_locale.get(ctypes.windll.kernel32.GetUserDefaultUILanguage(), '')
+        return os.environ.get('LC_ALL') or os.environ.get('LC_MESSAGES') or os.environ.get('LANG') or ''
+    except Exception:
+        return 'de'
+
+
+# Die Einträge an Symbol und Fenster des Starters; die Hilfe nennt sie wörtlich (install.md)
+TEXTS = dict(de=dict(show='Im Browser öffnen', quit=APP + ' beenden', running='%s läuft – das Fenster des Programms ist Ihr Browser:' % APP),
+             en=dict(show='Open in browser', quit='Quit ' + APP, running='%s is running – your browser is the program’s window:' % APP))
+T = TEXTS['de' if system_lang().lower().startswith('de') else 'en']
+
+
 def alert(text):
     """Fehlermeldung, die auch ohne Konsole ankommt – sonst startet die App scheinbar grundlos nicht."""
     print(text)
@@ -147,7 +167,7 @@ def mac_ui(url, on_quit):
 
         def applicationDockMenu_(self, sender):
             m = AppKit.NSMenu.alloc().init()
-            m.addItem_(entry('Im Browser öffnen', 'openBrowser:', self))
+            m.addItem_(entry(T['show'], 'openBrowser:', self))
             return m
 
         def openBrowser_(self, sender):
@@ -166,9 +186,9 @@ def mac_ui(url, on_quit):
     head = AppKit.NSMenuItem.alloc().init()
     bar.addItem_(head)
     sub = AppKit.NSMenu.alloc().init()
-    sub.addItem_(entry('Im Browser öffnen', 'openBrowser:', delegate))
+    sub.addItem_(entry(T['show'], 'openBrowser:', delegate))
     sub.addItem_(AppKit.NSMenuItem.separatorItem())
-    sub.addItem_(entry(APP + ' beenden', 'terminate:', app, 'q'))
+    sub.addItem_(entry(T['quit'], 'terminate:', app, 'q'))
     head.setSubmenu_(sub)
     app.setMainMenu_(bar)
 
@@ -180,9 +200,9 @@ def mac_ui(url, on_quit):
     else:
         status.button().setTitle_('FK')
     menu = AppKit.NSMenu.alloc().init()
-    menu.addItem_(entry('Im Browser öffnen', 'openBrowser:', delegate))
+    menu.addItem_(entry(T['show'], 'openBrowser:', delegate))
     menu.addItem_(AppKit.NSMenuItem.separatorItem())
-    menu.addItem_(entry(APP + ' beenden', 'terminate:', app))
+    menu.addItem_(entry(T['quit'], 'terminate:', app))
     status.setMenu_(menu)
     delegate.status = status  # Referenz halten, sonst verschwindet das Symbol wieder
 
@@ -195,8 +215,8 @@ def win_ui(url, on_quit):
     from PIL import Image
 
     icon = pystray.Icon('fraktur-korrektor', Image.open(os.path.join(server.HERE, 'icon.png')), APP,
-                        pystray.Menu(pystray.MenuItem('Im Browser öffnen', lambda i, e: show(url), default=True),
-                                     pystray.MenuItem(APP + ' beenden', lambda i, e: i.stop())))
+                        pystray.Menu(pystray.MenuItem(T['show'], lambda i, e: show(url), default=True),
+                                     pystray.MenuItem(T['quit'], lambda i, e: i.stop())))
     icon.run()
     on_quit()
 
@@ -218,12 +238,12 @@ def linux_ui(url, on_quit):
         pass
     frame = ttk.Frame(root, padding=16)
     frame.pack()
-    ttk.Label(frame, text='%s läuft – das Fenster des Programms ist Ihr Browser:' % APP).pack(anchor='w')
+    ttk.Label(frame, text=T['running']).pack(anchor='w')
     ttk.Label(frame, text=url).pack(anchor='w', pady=(0, 12))
     row = ttk.Frame(frame)
     row.pack()
-    ttk.Button(row, text='Im Browser öffnen', command=lambda: show(url)).pack(side='left', padx=(0, 8))
-    ttk.Button(row, text=APP + ' beenden', command=root.destroy).pack(side='left')
+    ttk.Button(row, text=T['show'], command=lambda: show(url)).pack(side='left', padx=(0, 8))
+    ttk.Button(row, text=T['quit'], command=root.destroy).pack(side='left')
     root.protocol('WM_DELETE_WINDOW', root.destroy)
     root.mainloop()
     on_quit()

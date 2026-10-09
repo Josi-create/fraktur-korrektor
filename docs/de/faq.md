@@ -10,11 +10,22 @@ Das ist die übliche Warnung für Programme, die noch wenige Menschen herunterge
 Problem. Klicken Sie auf *Weitere Informationen* und dann auf *Trotzdem ausführen* – siehe
 [Programm installieren](install.md).
 
-**Der Mac sagt, das Programm könne nicht geöffnet werden, weil der Entwickler nicht verifiziert werden kann.**
+**Microsoft Edge lädt die Datei nicht herunter: Sie werde „nicht häufig heruntergeladen“.**
+Auch das betrifft nur Programme, die noch wenige Menschen geladen haben. Klicken Sie in der Liste der Downloads
+(oben rechts) neben der Datei auf die drei Punkte **…**, dann auf **Beibehalten**, **Mehr anzeigen** und
+**Trotzdem beibehalten**.
+
+**Der Mac fragt, ob ich das aus dem Internet geladene Programm wirklich öffnen möchte.**
+Das fragt er bei jedem Programm aus dem Internet einmal. Der Fraktur-Korrektor ist bei Apple geprüft und
+beglaubigt; klicken Sie auf **Öffnen**.
+
+**Der Mac sagt, das Programm wurde nicht geöffnet oder der Entwickler könne nicht überprüft werden.**
 Bei der fertigen Fassung von der Veröffentlichungsseite sollte diese Meldung nicht erscheinen. Kommt sie doch (zum
-Beispiel bei einer selbst gebauten Fassung): Meldung schließen, dann *Apfelmenü → Systemeinstellungen → Datenschutz &
-Sicherheit*, unten bei *Sicherheit* auf **Dennoch öffnen**. Der Knopf erscheint nur in der Stunde nach dem
-Startversuch. Denselben Weg brauchen Sie für ScanTailor, siehe [Werkzeuge installieren](install-tools.md).
+Beispiel bei einer selbst gebauten Fassung): Meldung mit **Fertig** bzw. **OK** schließen, dann *Apfelmenü →
+Systemeinstellungen → Datenschutz & Sicherheit*, ganz nach unten zu *Sicherheit* blättern und auf **Dennoch öffnen**
+klicken; die folgende Rückfrage mit **Öffnen** bestätigen. Der Knopf steht dort nur eine Weile nach dem
+Startversuch – fehlt er, das Programm noch einmal doppelklicken. Denselben Weg brauchen Sie für ScanTailor, siehe
+[Werkzeuge installieren](install-tools.md).
 
 **Windows fragt nach der Firewall-Freigabe.**
 Beim gewöhnlichen Start fragt Windows nicht, denn das Programm ist dann nur auf Ihrem eigenen Rechner erreichbar.

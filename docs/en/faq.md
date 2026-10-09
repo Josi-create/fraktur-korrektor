@@ -9,11 +9,20 @@ Anything not covered here is explained on the other help pages; they are linked 
 This is the usual warning for programs that few people have downloaded yet, not a sign that something is wrong.
 Click *More info* and then *Run anyway* – see [Installing the program](install.md).
 
-**The Mac says the program cannot be opened because the developer cannot be verified.**
+**Microsoft Edge will not download the file: it “isn’t commonly downloaded”.**
+This, too, only affects programs that few people have downloaded yet. In the list of downloads (top right), click
+the three dots **…** next to the file, then **Keep**, **Show more** and **Keep anyway**.
+
+**The Mac asks whether I really want to open the program downloaded from the internet.**
+It asks this once for every program from the internet. Fraktur-Korrektor has been checked and notarised by Apple;
+click **Open**.
+
+**The Mac says the program was not opened or the developer cannot be verified.**
 With the release version from the downloads page this message should not appear. If it does (for example with a
-version you built yourself): close the message, then *Apple menu → System Settings → Privacy & Security*, and under
-*Security* click **Open Anyway**. The button is only shown for an hour after the attempt. ScanTailor needs the same
-route, see [Installing the tools](install-tools.md).
+version you built yourself): close the message with **Done** or **OK**, then *Apple menu → System Settings →
+Privacy & Security*, scroll down to *Security* and click **Open Anyway**; confirm the following question with
+**Open**. The button is only shown for a while after the attempt – if it is missing, double-click the program
+again. ScanTailor needs the same route, see [Installing the tools](install-tools.md).
 
 **Windows asks for a firewall permission.**
 With a normal start Windows does not ask, because the program can then only be reached from your own computer. The
