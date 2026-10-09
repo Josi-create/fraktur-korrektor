@@ -65,6 +65,28 @@ def test_modellwahl(monkeypatch, tmp_path):
     assert ocr.pick_model('t') == (None, None)
 
 
+def test_frak2021_auch_neben_altem_modell(monkeypatch, tmp_path):
+    """Hat Tesseract nur frk (Homebrew, apt), wird frak2021 geladen; offline bleibt es beim alten, ohne jedes Modell
+    ist es ein Fehler."""
+    monkeypatch.setattr(ocr, 'TESSDATA', str(tmp_path))
+    have = {None: ['deu', 'frk'], str(tmp_path): []}
+    monkeypatch.setattr(ocr, '_langs', lambda tess, d=None: have[d])
+    geladen = []
+    monkeypatch.setattr(ocr, 'download_model', lambda timeout=120: geladen.append(timeout) or have[str(tmp_path)].append('frak2021'))
+    assert ocr.ensure_model('t') == ('frak2021', str(tmp_path)) and geladen == [20]
+    assert ocr.ensure_model('t') == ('frak2021', str(tmp_path)) and geladen == [20]  # schon da: nicht noch einmal
+    assert ocr.ensure_model('t', 'antiqua') == ('deu', None)
+
+    def offline(timeout=120):
+        raise OSError('offline')
+    have[str(tmp_path)] = []
+    monkeypatch.setattr(ocr, 'download_model', offline)
+    assert ocr.ensure_model('t') == ('frk', None)
+    have[None] = ['eng']
+    with pytest.raises(ValueError, match='modell_laden'):
+        ocr.ensure_model('t')
+
+
 def test_aufraeumen_laesst_scantailor_projekt_stehen(tmp_path):
     out = tmp_path / 'Buch'
     (out / 'img').mkdir(parents=True); (out / 'scantailor' / 'out').mkdir(parents=True)
@@ -183,3 +205,18 @@ def test_pdf_ohne_textebene(tmp_path):
     fitz = pytest.importorskip('fitz')
     d = fitz.open(); d.new_page(); d.new_page(); d.save(str(tmp_path / 'leer.pdf')); d.close()
     assert ocr.pdf_has_text(str(tmp_path / 'leer.pdf')) is False
+
+
+def test_titel_aus_scantailor_ordner(monkeypatch, tmp_path):
+    """Ohne Titel heißt das Buch nach dem Ordner über »out« – bei …/<Buch>/scantailor/out nach dem Buch."""
+    import server
+    titel = []
+    monkeypatch.setattr(server, 'new_folder', lambda title, source, target=None: titel.append(title) or (title, str(tmp_path / 'neu')))
+    def build(*a, **k):
+        raise ValueError('halt')
+    monkeypatch.setattr(ocr, 'build', build)
+    for d in (tmp_path / 'Chronik' / 'scantailor' / 'out', tmp_path / 'Fotos' / 'Kirchenbuch' / 'out'):
+        d.mkdir(parents=True)
+        with pytest.raises(ValueError):
+            server.import_ocr(str(d), '', None, 'fraktur', False, lambda *a: None, lambda: False)
+    assert titel == ['Chronik', 'Kirchenbuch']

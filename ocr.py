@@ -92,12 +92,32 @@ def pick_model(tess, script='fraktur'):
     return None, None
 
 
-def download_model():
+def download_model(timeout=120):
     os.makedirs(TESSDATA, exist_ok=True)
     out = os.path.join(TESSDATA, 'frak2021.traineddata')
-    with urllib.request.urlopen(MODEL_URL, timeout=120) as r, open(out + '.tmp', 'wb') as f:
+    with urllib.request.urlopen(MODEL_URL, timeout=timeout) as r, open(out + '.tmp', 'wb') as f:
         shutil.copyfileobj(r, f)
     os.replace(out + '.tmp', out)
+
+
+def ensure_model(tess, script='fraktur', progress=lambda: None):
+    """(modell, tessdata-ordner) zum Erkennen. Fehlt frak2021, wird es geladen – auch wenn schon ein älteres
+    Frakturmodell da ist: frk aus Homebrew oder apt erkennt deutlich schlechter. Klappt das nicht (offline), bleibt es
+    beim älteren; nur ohne jedes Modell ist das ein Fehler."""
+    model, tessdata = pick_model(tess, script)
+    if model == 'frak2021' or (script == 'antiqua' and model == 'deu'):
+        return model, tessdata
+    progress()
+    try:
+        download_model(timeout=20 if model else 120)  # mit Ersatz nicht lange warten
+    except OSError:
+        if not model:
+            raise ValueError('modell_laden')
+        return model, tessdata
+    model, tessdata = pick_model(tess, script)
+    if not model:
+        raise ValueError('modell_laden')
+    return model, tessdata
 
 
 def tools():
@@ -338,16 +358,7 @@ def recognize_page(folder, pg, source, n=1, script='fraktur', progress=lambda do
         raise ValueError('quelle_fehlt')
     progress(1, 2, 'ocr')
     if tess:
-        model, tessdata = pick_model(tess, script)
-        if not model:
-            progress(0, 2, 'modell')
-            try:
-                download_model()
-            except OSError:
-                raise ValueError('modell_laden')
-            model, tessdata = pick_model(tess, script)
-            if not model:
-                raise ValueError('modell_laden')
+        model, tessdata = ensure_model(tess, script, lambda: progress(0, 2, 'modell'))
         lines, words = ocr_image(tess, img, model, tessdata, dpi)
     elif words:
         lines, words = group_words(words), [(None, x[4], False) for x in words]
@@ -396,16 +407,7 @@ def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda:
         raise ValueError('keine_seiten')
     if total > 999:
         raise ValueError('zu_viele_seiten')
-    model, tessdata = ('textebene', None) if textlayer else pick_model(tess, script)
-    if not model:
-        progress(0, total, 'modell')
-        try:
-            download_model()
-        except OSError:
-            raise ValueError('modell_laden')
-        model, tessdata = pick_model(tess, script)
-        if not model:
-            raise ValueError('modell_laden')
+    model, tessdata = ('textebene', None) if textlayer else ensure_model(tess, script, lambda: progress(0, total, 'modell'))
     os.makedirs(os.path.join(out, 'img'), exist_ok=True)
 
     def finish(pg, w, h, lines, words):

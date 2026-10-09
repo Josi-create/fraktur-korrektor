@@ -22,9 +22,24 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Zeilenerkennung 0,5 Credit (das Freikontingent reicht für etwa 100 Seiten im Monat), OCR4all wird nicht mehr
   weiterentwickelt, ABBYY-Preise je Fassung.
 
+- [PDF oder Bilder einlesen](docs/de/pdf-import.md) (#24): der Weg PDF → Ampel → Scans vorbereiten oder ScanTailor →
+  erneut erkennen durchgehend, mit den Schwellen der Ampel und den Beschriftungen der Knöpfe;
+  [Programm installieren](docs/de/install.md) (#21) Schritt für Schritt für Einsteiger. Die Mac-Fassung ist signiert
+  und beglaubigt – dort bleibt nur die einmalige Rückfrage „Öffnen“.
+- **frak2021 auch neben einem älteren Frakturmodell:** Hat Tesseract nur `frk` o. ä. (Homebrew, apt), lädt das
+  Programm beim ersten Einlesen frak2021 dazu; ohne Internet bleibt es beim älteren (`ocr.ensure_model`). Bisher wurde
+  frak2021 nur geholt, wenn gar kein Frakturmodell da war.
+- **Für ScanTailor vorbereiten** (Bibliothek) legt eine Kopie der Seitenbilder in `<Buch>/scantailor` an, wie der
+  PDF-Weg. ScanTailor schlägt dann selbst `scantailor/out` vor, und »Öffnen …« findet das Ergebnis; bisher landete es
+  bei übernommenem Vorschlag in `img/out`.
+
 ### Behoben
 - Die Bibliothek nannte im Dialog „Öffnen“ den Ordner für das neue Buch nicht, wenn der Dialog über einen Link aus
   der Hilfe aufging.
+- Das Menü am Symbol des Programms (»Im Browser öffnen«, »Fraktur-Korrektor beenden«) war immer deutsch; es folgt jetzt
+  der Sprache des Systems.
+- Ein ScanTailor-Ergebnis aus einem Fotoordner (`…/Kirchenbuch/out`) hieß ohne Titel nach dem Ordner zwei Ebenen
+  darüber; jetzt nach dem Fotoordner.
 
 ## [0.12.0] – 2026-10-09
 

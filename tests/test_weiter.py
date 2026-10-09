@@ -315,6 +315,14 @@ def test_ordner_fuer_das_andere_programm(tmp_path, monkeypatch):
     r = server.prepare(server.book_id(folder), 'transkribus')
     assert r['folder'] == os.path.join(folder, 'img') and r['pages'] == 4 and r['out'] is None
     assert gezeigt == [os.path.join(folder, 'img')] and r['clipboard']
+    # ScanTailor bekommt eine Kopie in <Buch>/scantailor – dann schlägt es scantailor/out vor, wo »Öffnen …« sucht
+    monkeypatch.setattr(ocr, 'find_scantailor', lambda: 'scantailor.exe')
+    monkeypatch.setattr(ocr, 'launch', lambda exe: None)
+    r = server.prepare(server.book_id(folder), 'scantailor')
+    st = os.path.join(folder, 'scantailor')
+    assert r['folder'] == st and r['out'] == os.path.join(st, 'out') and r['pages'] == 4 and os.path.isdir(r['out'])
+    assert sorted(os.listdir(st)) == sorted(os.listdir(os.path.join(folder, 'img')) + ['out'])
+    assert server.prepare(server.book_id(folder), 'scantailor')['pages'] == 4  # ein zweites Mal: nichts doppelt
 
 
 def test_fehlerhafte_anfragen(lib, tmp_path):

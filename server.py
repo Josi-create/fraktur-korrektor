@@ -1737,13 +1737,21 @@ def prepare(bid, tool):
         exe = ocr.find_scantailor()
         if not exe:
             raise ValueError('kein_scantailor')
-        out = os.path.join(folder, 'scantailor', 'out')
+        # Eingabe ist eine Kopie der Seitenbilder in <Buch>/scantailor, wie beim PDF-Weg: Dann schlägt ScanTailor
+        # selbst scantailor/out als Ausgabe vor, und »Öffnen …« auf den Buchordner findet das Ergebnis wieder.
+        # Aus img/ selbst gäbe es img/out – mitten im Buch, wo es niemand sucht.
+        src, img = img, os.path.join(folder, 'scantailor')
+        os.makedirs(img, exist_ok=True)
+        for p in glob.glob(os.path.join(src, '*.*')):
+            if not os.path.exists(os.path.join(img, os.path.basename(p))):
+                shutil.copy2(p, img)
+        out = os.path.join(img, 'out')
         os.makedirs(out, exist_ok=True)
     clip = ocr.to_clipboard(img)
     ocr.reveal(img)
     if exe:
         ocr.launch(exe)
-    return dict(folder=img, out=out, clipboard=clip, pages=len(glob.glob(os.path.join(img, '*.*'))))
+    return dict(folder=img, out=out, clipboard=clip, pages=len(glob.glob(os.path.join(folder, 'img', '*.*'))))
 
 
 def import_ocr(source, title, target, script, textlayer, progress, cancelled):
@@ -1752,7 +1760,8 @@ def import_ocr(source, title, target, script, textlayer, progress, cancelled):
         raise ValueError('quelle_fehlt')
     src = source.rstrip('/\\')
     if os.path.isdir(src) and os.path.basename(src).lower() == 'out' and not title:
-        title = os.path.basename(os.path.dirname(os.path.dirname(src)))  # …/<Titel>/scantailor/out
+        up = os.path.dirname(src)  # …/<Titel>/scantailor/out, sonst …/<Titel>/out (ScanTailor direkt auf einen Fotoordner)
+        title = os.path.basename(os.path.dirname(up) if os.path.basename(up).lower() == 'scantailor' else up)
     elif os.path.isdir(src) and os.path.basename(src).lower().startswith(scans.FOLDER) and not title:
         title = os.path.basename(os.path.dirname(src))  # …/<Titel>/aufbereitet
     name, out = new_folder(title, source, target)
