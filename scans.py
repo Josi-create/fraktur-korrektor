@@ -328,9 +328,9 @@ def paper_box(pix):
     ids = {c['id'] for c in blobs}
     keep = [[1 if v and v not in ids else 0 for v in line] for line in label]
     ys = [y for y in range(h) if sum(keep[y]) >= 2]
-    if ys:
-        cols = [sum(keep[y][x] for y in ys) for x in range(w)]
-        xs = [x for x in range(w) if cols[x] >= 2]
+    cols = [sum(keep[y][x] for y in ys) for x in range(w)]
+    xs = [x for x in range(w) if cols[x] >= 2]  # leer bei verstreuten Pünktchen (fast leere Seite, Vorsatz)
+    if xs:
         tx0, ty0, tx1, ty1 = max(0, xs[0] - pad), max(0, ys[0] - pad), min(w, xs[-1] + 1 + pad), min(h, ys[-1] + 1 + pad)
     else:  # leere Seite: alles darf weg, was dunkel ist
         tx0, ty0, tx1, ty1 = w // 2, h // 2, w // 2, h // 2

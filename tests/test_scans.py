@@ -130,6 +130,18 @@ def test_finger_im_text_laesst_den_text_unversehrt():
     assert ink(out, 0, 700, 110, 900) == 0     # außerhalb ist der Fleck weg
 
 
+def test_fast_leere_seite_mit_rand():
+    # Vorsatzblatt: Tischplatte links, sonst nur zwei Pünktchen in einer Zeile – keine Spalte hat zwei dunkle Pixel.
+    # Das ließ paper_box abstürzen (leere Spaltenliste), und mit einer Seite scheiterte der ganze Auftrag.
+    pix = fitz.Pixmap(fitz.csGRAY, fitz.IRect(0, 0, 320, 400), False)
+    pix.clear_with(255)
+    pix.set_rect(fitz.IRect(0, 0, 30, 400), (30,))
+    for x in (100, 200):
+        pix.set_pixel(x, 150, (0,))
+    b = scans.paper_box(pix)
+    assert b['margins'] == 1 and b['crop'][0] >= 30
+
+
 def test_schatten_ueber_dem_text_bleibt():
     # eine dunkle Fläche über der halben Seite ist kein Rand: nichts tun, statt Text zu verlieren
     assert scans.paper_box(page(1200, 1600, [(150, 1050)], dark=[((0, 0, 1200, 900), 0.6)])) is None
