@@ -15,6 +15,10 @@ sie sich aus den Nachbarseiten.
 Das Programm kennt drei Zustände, oben in der Leiste angezeigt: **Lesen** (grün), **Korrektur** (rot) –
 ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 
+![Die Leseansicht: links das Seitenbild, rechts der Text, die Lesezeile gelb, unbekannte Wörter rot](img/lesen.png)
+
+Neu hier? [Erste Schritte](first-steps.md) führt am Beispielbuch durch das Wichtigste.
+
 ## Tasten
 
 | Modus | Taste | Wirkung |

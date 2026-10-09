@@ -28,7 +28,7 @@ VERSION = re.search(r'^version\s*=\s*"([^"]+)"',
 
 datas = [(str(ROOT / n), ".") for n in
          ("reader.html", "bibliothek.html", "i18n.js", "pyproject.toml", "LICENSE", "icon.png")]
-datas += [(str(ROOT / "dict"), "dict"), (str(ROOT / "docs"), "docs")]
+datas += [(str(ROOT / "dict"), "dict"), (str(ROOT / "docs"), "docs"), (str(ROOT / "beispiel"), "beispiel")]
 
 # Tesseract: die Mach-O- bzw. PE-Dateien als "binaries", damit sie im .app-Bundle in Contents/Frameworks
 # landen - ausfuehrbarer Code unter Contents/Resources laesst die Notarisierung scheitern.

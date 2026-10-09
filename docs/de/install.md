@@ -73,6 +73,10 @@ Es geht ein Fenster Ihres Browsers auf, und darin steht die Bibliothek – der B
 Programms. Mit **Öffnen …** zeigen Sie dem Programm Ihr erstes Buch; wie das geht, steht unter
 [Ein Buch öffnen](add-book.md).
 
+![Die Bibliothek beim ersten Start](img/bibliothek-start.png)
+
+Noch kein eigenes Buch zur Hand? Mit **Beispielbuch öffnen** probieren Sie alles an acht Seiten aus Goethes *Faust* aus – Schritt für Schritt unter [Erste Schritte](first-steps.md).
+
 Das Programm läuft nur auf Ihrem Rechner und überträgt nichts ins Internet.
 
 **Beenden:** auf dem Mac über das Symbol im Dock (rechte Maustaste → *Beenden*) oder das kleine Buchsymbol

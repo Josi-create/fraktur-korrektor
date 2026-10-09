@@ -4,6 +4,28 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 
 ## [Unveröffentlicht]
 
+### Neu
+- **Beispielbuch zum Ausprobieren** (#22): Der Willkommensgruß der leeren Bibliothek hat den Knopf **Beispielbuch
+  öffnen**, unten in der Bibliothek steht immer der Link **Beispielbuch**. Das Programm legt eine Kopie der acht
+  Faust-Seiten (1862, gemeinfrei) im Bücherordner an und öffnet sie; ein zweiter Klick öffnet dieselbe Kopie samt
+  Übung, ein fremder Ordner gleichen Namens bleibt unberührt (`/api/beispiel`, nur am Rechner selbst). Das
+  Beispielbuch liegt jetzt in den fertigen Programmen bei.
+- Neue Hilfeseite [Erste Schritte](docs/de/first-steps.md): am Beispielbuch in zehn Minuten durch das Wichtigste,
+  mit den zehn wichtigsten Tasten.
+- **Bildschirmfotos in Hilfe und README** (#20): Leseansicht, Korrektur, Bibliothek, Öffnen eines PDF, Ampel – und in
+  der README ein kurzer Film vom Korrigieren. `scripts/screenshots.py` nimmt alle in beiden Sprachen neu auf, in
+  einer eigenen Instanz mit dem Beispielbuch.
+
+### Geändert
+- [Andere Programme im Vergleich](docs/de/vergleich.md) (#25) und [Mit Transkribus arbeiten](docs/de/transkribus.md)
+  (#23) mit Stand 9. Oktober 2026 nachgeprüft: unter anderem kostet bei Transkribus die Druckseite samt
+  Zeilenerkennung 0,5 Credit (das Freikontingent reicht für etwa 100 Seiten im Monat), OCR4all wird nicht mehr
+  weiterentwickelt, ABBYY-Preise je Fassung.
+
+### Behoben
+- Die Bibliothek nannte im Dialog „Öffnen“ den Ordner für das neue Buch nicht, wenn der Dialog über einen Link aus
+  der Hilfe aufging.
+
 ## [0.12.0] – 2026-10-09
 
 ### Neu

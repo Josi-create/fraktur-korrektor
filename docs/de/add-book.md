@@ -4,6 +4,8 @@ Die Startseite des Programms ist die **Bibliothek**. Sie zeigt alle Bücher, die
 haben, das zuletzt benutzte zuoberst. Ein Klick auf ein Buch öffnet es an der Stelle, an der Sie aufgehört
 haben.
 
+![Die Bibliothek mit zwei Büchern: je Buch die Ampel, woher der Text stammt, und was sich damit tun lässt](img/bibliothek.png)
+
 ## Ein Knopf für alles: „Öffnen …“
 
 Sie müssen nicht wissen, in welcher Form Ihr Buch vorliegt. Klicken Sie auf **Öffnen …** und zeigen Sie dem
@@ -83,6 +85,11 @@ Seiten des Textbuchs nichts mit den Seiten des Scans zu tun haben – Protokoll 
 Textbuch.
 
 ## Export aus Transkribus
+
+In Transkribus wählen Sie dafür **„Action"** → **„Export"** und als Format **„Page XML"**; für ein neues Buch
+haken Sie zusätzlich **„Images"** an, dann liegen die Seitenbilder gleich bei. Die ZIP-Datei, die Sie
+herunterladen, öffnen Sie hier unverändert – entpacken müssen Sie sie nicht. Der ganze Weg Schritt für Schritt:
+[Mit Transkribus arbeiten](transkribus.md).
 
 Beim Import erkennt das Programm Kopfzeilen (Seitenzahlen) und trennt Fußnoten vom Haupttext. Wo das nicht
 stimmt, korrigieren Sie es beim Lesen mit der Taste `F` (siehe [Bedienung](usage.md)). Enthält der Export keine

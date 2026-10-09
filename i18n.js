@@ -301,6 +301,8 @@ de: {
   start_dic_no: 'Das Wörterbuch fehlt – der Ordner „dict“ des Programms ist nicht vollständig. Bitte das Programm noch einmal installieren.',
   start_tess_no: 'Texterkennung (Tesseract) ist nicht installiert – nötig, um gescannte PDFs und Bilder einzulesen. Bücher, die schon Text haben (durchsuchbare PDFs, EPUB, Transkribus), gehen auch so.',
   start_st_no: 'ScanTailor ist nicht installiert – nur nötig für gewölbte Seiten, Flecken oder dunkle Ränder (Doppelseiten und schiefe Seiten richtet das Programm selbst). Das kann warten.',
+  start_example: 'Erst einmal ausprobieren? Acht Seiten aus Goethes Faust (1862), mit den Fehlern der Texterkennung, wie sie sind:',
+  example_btn: 'Beispielbuch öffnen', example_link: 'Beispielbuch',
   start_next: 'Dann klicken Sie oben auf »Öffnen …« und zeigen dem Programm Ihr erstes Buch: ein PDF, ein EPUB, einen Ordner mit Seitenbildern oder einen Export aus Transkribus. Schritt für Schritt erklärt in der',
   // ---- Ein Buch weiterbearbeiten, statt jedes Mal ein neues anzufangen
   src_tesseract: 'Tesseract', src_transkribus: 'Transkribus', src_scantailor: 'ScanTailor', src_textebene: 'PDF-Text', src_hocr: 'Bibliothek',
@@ -732,6 +734,8 @@ en: {
   start_dic_no: 'The dictionary is missing – the program’s “dict” folder is incomplete. Please install the program again.',
   start_tess_no: 'Text recognition (Tesseract) is not installed – needed to read in scanned PDFs and images. Books that already have text (searchable PDFs, EPUB, Transkribus) work without it.',
   start_st_no: 'ScanTailor is not installed – only needed for curved pages, stains or dark margins (double pages and crooked pages the program straightens out itself). That can wait.',
+  start_example: 'Want to try it first? Eight pages from Goethe’s Faust (1862), with the text recognition errors left in:',
+  example_btn: 'Open the example book', example_link: 'Example book',
   start_next: 'Then click “Open …” above and show the program your first book: a PDF, an EPUB, a folder of page images or an export from Transkribus. Explained step by step in the',
   // ---- Continue working on a book instead of starting over every time
   src_tesseract: 'Tesseract', src_transkribus: 'Transkribus', src_scantailor: 'ScanTailor', src_textebene: 'PDF text', src_hocr: 'Library',

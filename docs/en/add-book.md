@@ -3,6 +3,8 @@
 The program starts with the **library**. It lists every book you have opened before, the most recent one
 first. Clicking a book opens it where you left off.
 
+![The library with two books: for each book the traffic light, where the text came from, and what you can do with it](img/bibliothek.png)
+
 ## One button for everything: “Open …”
 
 You do not need to know in which form your book exists. Click **Open …** and show the program a **file** or a
@@ -80,6 +82,10 @@ you no longer need it, remove it from the list with the ✕. It has to be a new 
 text-only book have nothing to do with the pages of the scan – log and bookmark belong to the text-only book.
 
 ## Export from Transkribus
+
+In Transkribus, choose **“Action”** → **“Export”** and the format **“Page XML”**; for a new book also tick
+**“Images”**, so the page images come along. Open the downloaded ZIP file here as it is – there is no need to
+unpack it. The whole route step by step: [Working with Transkribus](transkribus.md).
 
 During import the program detects running heads (page numbers) and separates footnotes from the main text.
 Where it gets this wrong, fix it while reading with the `F` key (see [Usage](usage.md)). If the export contains

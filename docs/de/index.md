@@ -8,7 +8,10 @@ einfach durch und verbessern dabei, was Ihnen auffällt. Am Ende steht ein saube
 Das Programm läuft nur auf Ihrem eigenen Rechner. Es überträgt nichts ins Internet. Der Browser dient
 lediglich als Fenster.
 
-## Die drei Schritte
+**Neu hier?** [Erste Schritte](first-steps.md) führt in zehn Minuten am mitgelieferten Beispielbuch durch das
+Wichtigste.
+
+## Die vier Schritte
 
 1. **Texterkennung** – Aus den Seitenbildern wird Text. Dafür gibt es zwei Wege:
    - *eingebaut, ein Klick:* [PDF oder Bilder einlesen](pdf-import.md) mit dem freien Programm Tesseract;

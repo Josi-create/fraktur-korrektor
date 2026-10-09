@@ -46,6 +46,8 @@ maintained for years and that an open community develops today; current version 
 4. **Start text recognition.** A bar shows the progress; expect a few seconds per page. *Stop* cancels at
    any time.
 
+![The “Open” dialog has found a PDF without text and offers text recognition](img/oeffnen-pdf.png)
+
 ## Searchable PDFs: using the existing text
 
 Many PDFs are already “searchable”: another program (ABBYY FineReader, OCRmyPDF, the scanner itself) has recognised
@@ -68,6 +70,8 @@ see [Text from a library](add-book.md).
 After recognition the program estimates how good the result is. It uses two values: how confident Tesseract
 was about the words, and how many of the words are in the dictionary. (For text taken from the PDF only the
 dictionary counts – a PDF does not store how confident the recognition was.)
+
+![After reading in: green light, the two figures and the recommendation](img/ampel.png)
 
 | Light | Meaning | What to do |
 |---|---|---|

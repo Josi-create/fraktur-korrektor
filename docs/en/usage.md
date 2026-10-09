@@ -15,6 +15,10 @@ number (chapter opening), it follows from the neighbouring pages.
 The program has three states, shown in the top bar: **Reading** (green), **Correction** (red) – a red word
 is being changed – and **Edit line** (orange).
 
+![The reading view: page image on the left, text on the right, the reading line in yellow, unknown words in red](img/lesen.png)
+
+New here? [First steps](first-steps.md) walks you through the essentials using the example book.
+
 ## Keys
 
 | Mode | Key | Effect |

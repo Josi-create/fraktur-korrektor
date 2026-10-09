@@ -19,7 +19,9 @@ nebeneinander – links die Seite, wie sie gedruckt ist, rechts der erkannte Tex
 sind rot. Sie lesen das Buch einfach durch und verbessern dabei, was die Texterkennung (OCR) falsch gelesen hat. Am
 Ende steht ein sauberer, durchsuchbarer Text.
 
-<!-- Bildschirmfoto: Seitenbild links, Text rechts, ein rotes Wort mit Vorschlägen (#20) -->
+![Links das Seitenbild, rechts der Text: Ein falsch erkanntes Wort wird berichtigt, ein altertümliches mit F8 als richtig gemerkt](docs/de/img/korrigieren.gif)
+
+*Ausprobieren ohne eigenes Buch: In der Bibliothek liegt ein Beispielbuch bereit – [Erste Schritte](docs/de/first-steps.md).*
 
 Wer beim Lesen exzerpiert, macht aus einer markierten Stelle mit einer Taste einen Zettel für
 [Obsidian](https://obsidian.md): das Zitat mit gedruckter Seitenzahl und Verweis auf die Quelle. So wächst beim Lesen
@@ -86,11 +88,11 @@ dem Quelltext starten möchte: [CONTRIBUTING.md](CONTRIBUTING.md#einrichtung-fü
 
 Alles geht mit der Tastatur; die wichtigsten Tasten stehen im Programm immer unten unter Bild und Text, `F1` öffnet die Hilfe.
 
-- [Hilfe: Überblick](docs/de/index.md) · [Ein Buch öffnen](docs/de/add-book.md) · [PDF oder Bilder einlesen](docs/de/pdf-import.md) ·
+- [Hilfe: Überblick](docs/de/index.md) · [Erste Schritte](docs/de/first-steps.md) · [Ein Buch öffnen](docs/de/add-book.md) · [PDF oder Bilder einlesen](docs/de/pdf-import.md) ·
   [Bücher selbst fotografieren](docs/de/fotografieren.md) · [Mit Transkribus arbeiten](docs/de/transkribus.md) ·
   [Bedienung und alle Tasten](docs/de/usage.md) · [Programm installieren](docs/de/install.md) ·
   [Werkzeuge installieren](docs/de/install-tools.md) · [Häufige Fragen](docs/de/faq.md)
-- English: [Help](docs/en/index.md) · [Opening a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
+- English: [Help](docs/en/index.md) · [First steps](docs/en/first-steps.md) · [Opening a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
   [Photographing books yourself](docs/en/fotografieren.md) · [Working with Transkribus](docs/en/transkribus.md) ·
   [Usage](docs/en/usage.md) · [Installing the program](docs/en/install.md) ·
   [Installing the tools](docs/en/install-tools.md) · [FAQ](docs/en/faq.md)

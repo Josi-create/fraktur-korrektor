@@ -8,7 +8,10 @@ and fix what you notice along the way. The result is a clean text.
 The program runs entirely on your own computer. Nothing is sent to the internet; the browser merely serves
 as its window.
 
-## Three steps
+**New here?** [First steps](first-steps.md) takes you through the essentials in ten minutes, using the example
+book that comes with the program.
+
+## Four steps
 
 1. **Text recognition** – the page images are turned into text. There are two routes:
    - *built in, one click:* [Reading in a PDF or images](pdf-import.md) with the free program Tesseract;

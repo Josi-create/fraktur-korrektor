@@ -101,7 +101,7 @@ button:disabled{opacity:.5;cursor:default}
  <div id="note"></div>
  <div id="books"></div>
  <div id="extra" style="display:none"><a href="#" id="kindleLink">🔖 <span data-t="kindle_link"></span></a></div>
- <div id="foot"><span id="ver"></span><a data-help="index" target="_blank" data-t="help"></a><a data-help="faq" target="_blank" data-t="faq_link"></a><a href="https://github.com/Josi-create/fraktur-korrektor" target="_blank" data-t="source"></a><a id="donate" target="_blank" style="display:none" data-t="donate"></a></div>
+ <div id="foot"><span id="ver"></span><a data-help="index" target="_blank" data-t="help"></a><a data-help="faq" target="_blank" data-t="faq_link"></a><a href="#" class="example" data-t="example_link"></a><a href="https://github.com/Josi-create/fraktur-korrektor" target="_blank" data-t="source"></a><a id="donate" target="_blank" style="display:none" data-t="donate"></a></div>
 </div>
 <div id="dlg" class="dlg"><form id="form">
  <h2 data-t="open_title"></h2>
@@ -215,6 +215,7 @@ async function load() {
   booksdir = lib.booksdir;
   if (!lib.local) { $('bOpen').disabled = true; $('note').textContent = t('remote'); }
   $('extra').style.display = lib.local ? '' : 'none';  // Zettel landen im Vault auf diesem Rechner
+  $('foot').querySelector('.example').style.display = lib.local ? '' : 'none'; bindExample($('foot'));
   const edit = (location.hash.startsWith('#edit=') ? location.hash.slice(6) : '').split('|').map(decodeURIComponent);
   const box = $('books'); box.innerHTML = '';
   if (!lib.books.length) { box.innerHTML = '<div id="empty">' + t('empty') + '</div>'; showStart(); return; }
@@ -267,8 +268,16 @@ async function showStart() {
   el.innerHTML = '<h2>' + t('start_head') + '</h2><div>' + t('start_intro') + '</div><div class="tools">' +
     row(x.dict, t(x.dict ? 'start_dic_ok' : 'start_dic_no')) + row(x.tesseract, t(x.tesseract ? 'tool_tess_ok' : 'start_tess_no'), 'tesseract') +
     row(x.scantailor, t(x.scantailor ? 'tool_st_ok' : 'start_st_no'), 'scantailor') + (x.pdf ? '' : row(false, t('tool_pdf_no'))) +
-    '</div><div style="margin-top:14px">' + t('start_next') + ' ' + help('index', t('help')) + '</div>';
-  bindToolLinks(el, showStart);
+    '</div><div style="margin-top:14px">' + t('start_example') + ' <button class="example">' + t('example_btn') + '</button></div>' +
+    '<div style="margin-top:14px">' + t('start_next') + ' ' + help('index', t('help')) + '</div>';
+  bindToolLinks(el, showStart); bindExample(el);
+}
+// Beispielbuch (Faust 1862): der Bibliothek eine Kopie hinzufügen und gleich öffnen – zum Üben, ohne eigenes Buch
+function bindExample(box) {
+  for (const el of box.querySelectorAll('.example')) el.onclick = async e => {
+    e.preventDefault();
+    try { location.href = '/buch/' + (await post('/api/beispiel', {})).id; } catch (err) { fail('note', err); }
+  };
 }
 function bindToolLinks(box, after) {
   // »Programm zeigen …«: der Nutzer zeigt die Programmdatei, das merkt sich der Fraktur-Korrektor
@@ -963,7 +972,7 @@ $('kform').onsubmit = async ev => {
   } catch (err) { fail('kmsg', err); $('kGo').disabled = false; }
 };
 document.addEventListener('keydown', e => { if (e.key == 'Escape' && !job) { $('dlg').classList.remove('on'); $('edlg').classList.remove('on'); $('kdlg').classList.remove('on'); } if (e.key == 'F1') { e.preventDefault(); window.open('/hilfe/' + LANG + '/index', '_blank'); } });
-load();
+const loaded = load();
 // Link aus einem Zettel (#74), dessen Buch hier nicht (mehr) liegt: sagen, wie es wieder hineinkommt
 if (location.hash == '#stelle') $('note').textContent = t('stelle_unbekannt');
 // Einstieg aus der Hilfe: #open bzw. #open=<pfad>; #auto=<pfad> liest die Empfehlung gleich ein, #scans=<pfad> zeigt die
@@ -973,7 +982,8 @@ if (location.hash.startsWith('#kindle')) {
   const [kp, kf] = decodeURIComponent(location.hash.slice(8)).split('|');
   openKindle(kp).then(() => { if (kf && kb) { $('kDir').value = kf; $('kform').requestSubmit(); } });
 }
-if (location.hash.startsWith('#open') || (AUTO && !location.hash.startsWith('#edit=')) || AUTOPREP) openDialog(PAIR ? PAIR[0] : location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : '');
+// Erst nach load(): Der Dialog nennt den Bücherordner, den erst die Bibliothek liefert
+if (location.hash.startsWith('#open') || (AUTO && !location.hash.startsWith('#edit=')) || AUTOPREP) loaded.finally(() => openDialog(PAIR ? PAIR[0] : location.hash.includes('=') ? decodeURIComponent(location.hash.split('=').slice(1).join('=')) : ''));
 </script>
 </body>
 </html>

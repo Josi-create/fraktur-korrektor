@@ -1528,6 +1528,21 @@ def new_folder(title, source, target=None):
     return name, out
 
 
+def open_example():
+    """Das Beispielbuch (Goethe, Faust 1862, gemeinfrei) zum Ausprobieren: als Kopie in den Bücherordner, damit das
+    Mitgelieferte unberührt bleibt. Gibt es die Kopie schon, steckt darin vielleicht schon Übung – dann diese öffnen."""
+    base = os.path.join(books_dir(), 'Beispiel - Goethe, Faust (1862)')
+    out, n = base, 1
+    while os.path.exists(out) and not page_files(out):  # gleichnamiger fremder Ordner: nie hineinkopieren
+        n += 1
+        out = base + ' (%d)' % n
+    new = not os.path.exists(out)
+    if new:
+        shutil.copytree(os.path.join(HERE, 'beispiel'), out)
+    lib_touch(out, 'Goethe: Faust (1862)' if new else None)
+    return book_id(out)
+
+
 def import_transkribus(source, title=None, images=None, target=None):
     if not source or not os.path.exists(source):
         raise ValueError('quelle_fehlt')
@@ -2313,7 +2328,7 @@ body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9e6df;color:#22
 nav{flex:none;width:210px;font-size:15px} nav a{display:block;padding:4px 8px;border-radius:3px;color:#234;text-decoration:none}
 nav a.cur{background:#fff;font-weight:bold} nav a:hover{background:#f4f2ec}
 main{flex:1;min-width:0;background:#fff;border:1px solid #bbb;border-radius:4px;padding:10px 34px 30px}
-main img{max-width:100%%} table{border-collapse:collapse} td,th{border:1px solid #ccc;padding:4px 9px;vertical-align:top;text-align:left}
+main img{max-width:100%%;border:1px solid #d6d0c4;border-radius:4px} table{border-collapse:collapse} td,th{border:1px solid #ccc;padding:4px 9px;vertical-align:top;text-align:left}
 main table{display:block;max-width:100%%;overflow-x:auto} th{background:#f6f3ea} table.kurz td:first-child{white-space:nowrap} code,kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:0 4px;font-family:Consolas,monospace;font-size:.9em}
 pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} h1{margin-top:.6em}
 @media (max-width:760px) { #wrap{flex-direction:column} nav{width:auto} main{padding:6px 16px 20px} }
@@ -2321,7 +2336,7 @@ pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} 
 <div id="wrap"><nav>%(nav)s</nav><main>%(body)s</main></div></body></html>'''
 
 
-HELP_ORDER = ['index', 'add-book', 'fotografieren', 'pdf-import','transkribus', 'usage', 'kindle', 'pdf-sichern', 'epub-sichern', 'install', 'install-tools', 'vergleich', 'faq', 'code-signing']
+HELP_ORDER = ['index', 'first-steps', 'add-book', 'fotografieren', 'pdf-import','transkribus', 'usage', 'kindle', 'pdf-sichern', 'epub-sichern', 'install', 'install-tools', 'vergleich', 'faq', 'code-signing']
 
 
 def help_pages(lang):
@@ -2538,7 +2553,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/export_epub', '/api/epub_preview', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/epub_markup', '/api/rename', '/api/kindle_scan', '/api/kindle_notes'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/export_epub', '/api/epub_preview', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/epub_markup', '/api/rename', '/api/kindle_scan', '/api/kindle_notes', '/api/beispiel'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -2645,6 +2660,8 @@ class H(BaseHTTPRequestHandler):
                                                       body.get('lang') or 'de'))
                 except ValueError as e:
                     return self.sendjson(dict(error=str(e)), 400)
+            if u.path == '/api/beispiel':
+                return self.sendjson(dict(id=open_example()))
             if u.path == '/api/open':
                 f = find_book_folder(body.get('folder') or '')
                 if not f:

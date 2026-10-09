@@ -19,7 +19,9 @@ by side – the page as printed on the left, the recognised text on the right. W
 marked red. You simply read the book and fix what the text recognition (OCR) got wrong along the way. The result is a
 clean, searchable text.
 
-<!-- Screenshot: page image on the left, text on the right, a red word with suggestions (#20) -->
+![Page image on the left, text on the right: a misread word is corrected, an old-fashioned one is accepted with F8](docs/en/img/korrigieren.gif)
+
+*Try it without a book of your own: the library has an example book ready – [First steps](docs/en/first-steps.md).*
 
 If you take notes as you read, one key turns a marked passage into a note for [Obsidian](https://obsidian.md): the
 quotation with the printed page number and a link to the source. A slip box in the manner of Niklas Luhmann's
@@ -86,7 +88,7 @@ the program from source: [CONTRIBUTING.en.md](CONTRIBUTING.en.md#setup-for-devel
 Everything works from the keyboard; the most important keys are always shown at the bottom, below the image and the text; `F1` opens the help.
 The interface is available in English and German (switch at the top right).
 
-- [Help](docs/en/index.md) · [Opening a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
+- [Help](docs/en/index.md) · [First steps](docs/en/first-steps.md) · [Opening a book](docs/en/add-book.md) · [Reading in a PDF or images](docs/en/pdf-import.md) ·
   [Photographing books yourself](docs/en/fotografieren.md) · [Working with Transkribus](docs/en/transkribus.md) ·
   [Usage](docs/en/usage.md) · [Installing the program](docs/en/install.md) ·
   [Installing the tools](docs/en/install-tools.md) · [FAQ](docs/en/faq.md)

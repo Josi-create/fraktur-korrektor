@@ -72,6 +72,10 @@ built for ordinary PCs (x86_64) and needs a distribution from Ubuntu 22.04, Debi
 A browser window opens showing the library – the browser is the program’s window. Use **Open …** to point the
 program at your first book; see [Opening a book](add-book.md).
 
+![The library on first start](img/bibliothek-start.png)
+
+No book of your own to hand yet? **Open the example book** lets you try everything on eight pages of Goethe’s *Faust* – step by step under [First steps](first-steps.md).
+
 The program runs on your computer only and sends nothing to the internet.
 
 **Quitting:** on the Mac use the Dock icon (right-click → *Quit*) or the small book symbol in the menu bar at the

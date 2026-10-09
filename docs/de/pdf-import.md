@@ -47,6 +47,8 @@ Standardmodell `deu`. Einzelheiten: [Werkzeuge installieren](install-tools.md).
 4. **Texterkennung starten.** Ein Balken zeigt den Fortschritt; rechnen Sie mit wenigen Sekunden je Seite.
    Mit *Abbrechen* lässt sich der Vorgang jederzeit stoppen.
 
+![Der Dialog »Öffnen« hat ein PDF ohne Text gefunden und bietet die Texterkennung an](img/oeffnen-pdf.png)
+
 ## Durchsuchbare PDFs: Text übernehmen
 
 Viele PDFs sind schon „durchsuchbar“: Ein anderes Programm (ABBYY FineReader, OCRmyPDF, der Scanner selbst) hat
@@ -68,6 +70,8 @@ siehe [Text aus einer Bibliothek](add-book.md).
 Nach der Erkennung schätzt das Programm, wie gut das Ergebnis ist. Es benutzt dafür zwei Werte: wie sicher
 sich Tesseract bei den Wörtern war, und wie viele Wörter im Wörterbuch stehen. (Bei übernommenem Text zählt nur das
 Wörterbuch – ein PDF speichert nicht, wie sicher die Erkennung war.)
+
+![Nach dem Einlesen: grüne Ampel, die beiden Werte und die Empfehlung](img/ampel.png)
 
 | Ampel | Bedeutung | Was tun? |
 |---|---|---|
