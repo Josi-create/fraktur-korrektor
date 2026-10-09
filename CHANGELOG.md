@@ -4,6 +4,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 
 ## [Unveröffentlicht]
 
+## [0.12.0] – 2026-10-09
+
 ### Neu
 - **Abbildungen und Tafeln im E-Book** (#76): In der Leseansicht markiert `B` eine Abbildung im Seitenbild – ein Rahmen,
   mit der Maus oder dem Finger aufgezogen; `G` nimmt die ganze Seite (Tafel, Karte). Wo das Programm eine bedruckte
