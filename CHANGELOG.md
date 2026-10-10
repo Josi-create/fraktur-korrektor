@@ -15,6 +15,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - **Bildschirmfotos in Hilfe und README** (#20): Leseansicht, Korrektur, Bibliothek, Öffnen eines PDF, Ampel – und in
   der README ein kurzer Film vom Korrigieren. `scripts/screenshots.py` nimmt alle in beiden Sprachen neu auf, in
   einer eigenen Instanz mit dem Beispielbuch.
+- **Betatest** (#30): [BETATEST.md](BETATEST.md) sagt Testerinnen und Testern, was sie ausprobieren und wie sie
+  Bescheid geben; dazu das Formular „Rückmeldung zum Betatest“ (deutsch und englisch). Wie das Projekt bei Zenodo
+  eine zitierbare DOI bekommt, steht in [RELEASE.md](RELEASE.md) (#29).
 
 ### Geändert
 - [Andere Programme im Vergleich](docs/de/vergleich.md) (#25) und [Mit Transkribus arbeiten](docs/de/transkribus.md)

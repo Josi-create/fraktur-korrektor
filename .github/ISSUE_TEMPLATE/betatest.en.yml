@@ -1,0 +1,58 @@
+name: Beta test feedback
+description: What went well, where you hesitated, what was missing
+labels: [betatest]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for trying it out! What to try is described in [BETATEST.en.md](https://github.com/Josi-create/fraktur-korrektor/blob/main/BETATEST.en.md).
+        Short notes are enough; only the first field is required. What you write here is public: please no scans from books still under copyright.
+  - type: dropdown
+    id: system
+    attributes:
+      label: Which computer?
+      options:
+        - Windows
+        - Mac with Apple chip
+        - Mac with Intel chip
+        - Mac, not sure which chip
+        - Linux
+    validations:
+      required: true
+  - type: checkboxes
+    id: aufgaben
+    attributes:
+      label: What did you try?
+      options:
+        - label: Installing
+        - label: First steps with the example book
+        - label: Opening a book of your own
+        - label: Reading and correcting
+        - label: Saving as PDF
+  - type: textarea
+    id: haengen
+    attributes:
+      label: Where did you get stuck or hesitate?
+      description: Small things too, such as a button you had to look for.
+  - type: textarea
+    id: unklar
+    attributes:
+      label: Which words, messages or buttons were unclear?
+      description: For an error message, please give its wording or a screenshot (drag it in here).
+  - type: textarea
+    id: fehlt
+    attributes:
+      label: What was missing for your work?
+  - type: dropdown
+    id: weiter
+    attributes:
+      label: Would you keep using the program?
+      options:
+        - "Yes"
+        - Maybe
+        - "No"
+  - type: textarea
+    id: sonst
+    attributes:
+      label: Anything else?
+      description: For example why you would (not) keep using it, or under which name we may thank you.

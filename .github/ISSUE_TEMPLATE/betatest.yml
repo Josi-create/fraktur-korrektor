@@ -1,0 +1,58 @@
+name: Rückmeldung zum Betatest
+description: Was beim Ausprobieren gut ging, wo Sie gezögert haben, was gefehlt hat
+labels: [betatest]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke fürs Ausprobieren! Was ausprobiert werden soll, steht in [BETATEST.md](https://github.com/Josi-create/fraktur-korrektor/blob/main/BETATEST.md).
+        Kurze Notizen genügen, kein Feld außer dem ersten muss ausgefüllt sein. Was Sie hier schreiben, ist öffentlich sichtbar: bitte keine Scans aus geschützten Büchern.
+  - type: dropdown
+    id: system
+    attributes:
+      label: Auf welchem Rechner?
+      options:
+        - Windows
+        - Mac mit Apple-Chip
+        - Mac mit Intel-Chip
+        - Mac, weiß nicht welcher Chip
+        - Linux
+    validations:
+      required: true
+  - type: checkboxes
+    id: aufgaben
+    attributes:
+      label: Was haben Sie ausprobiert?
+      options:
+        - label: Installieren
+        - label: Erste Schritte mit dem Beispielbuch
+        - label: Ein eigenes Buch öffnen
+        - label: Lesen und berichtigen
+        - label: Als PDF sichern
+  - type: textarea
+    id: haengen
+    attributes:
+      label: Wo sind Sie hängen geblieben oder haben gezögert?
+      description: Auch Kleinigkeiten, etwa ein Knopf, den Sie erst suchen mussten.
+  - type: textarea
+    id: unklar
+    attributes:
+      label: Welche Wörter, Meldungen oder Knöpfe waren unverständlich?
+      description: Bei einer Fehlermeldung bitte den Wortlaut oder ein Bildschirmfoto (hier hineinziehen).
+  - type: textarea
+    id: fehlt
+    attributes:
+      label: Was hat Ihnen bei Ihrer Arbeit gefehlt?
+  - type: dropdown
+    id: weiter
+    attributes:
+      label: Würden Sie mit dem Programm weiterarbeiten?
+      options:
+        - Ja
+        - Vielleicht
+        - Nein
+  - type: textarea
+    id: sonst
+    attributes:
+      label: Sonst noch etwas?
+      description: Zum Beispiel, warum Sie (nicht) weiterarbeiten würden, oder unter welchem Namen wir Ihnen danken dürfen.

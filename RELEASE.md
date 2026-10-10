@@ -173,6 +173,25 @@ kein Release. Dann den Job neu starten – lehnt SignPath die Wiederholung ab, e
 Danach unter Windows 11 prüfen: Setup herunterladen, *Eigenschaften → Digitale Signaturen* zeigt „SignPath
 Foundation“; installieren, starten, deinstallieren.
 
+## Einmalig: Zitierbare DOI über Zenodo
+
+Stand Oktober 2026, nach <https://help.zenodo.org/docs/github/>. [Zenodo](https://zenodo.org) archiviert jedes
+Release und vergibt dafür eine DOI. So lässt sich der Fraktur-Korrektor in einer Arbeit zitieren wie ein Aufsatz.
+
+1. Auf <https://zenodo.org> mit **Log in → GitHub** anmelden und Zenodo den Zugriff erlauben.
+2. Oben rechts das Profilmenü → **GitHub** → **Sync now**, dann beim Repository `Josi-create/fraktur-korrektor` den
+   Schalter umlegen. Die Seite neu laden: Das Repository steht jetzt unter den eingeschalteten.
+3. Die nächste Version wie gewohnt veröffentlichen ([unten](#eine-version-veröffentlichen)). Zenodo holt sich jedes
+   Release nach dem Einschalten von selbst ab. Frühere Releases bleiben ohne DOI.
+
+Die Angaben (Titel, Autor, Zusammenfassung, Lizenz, Schlagwörter) liest Zenodo aus [CITATION.cff](CITATION.cff).
+Eine Datei `.zenodo.json` bitte **nicht** anlegen: Gibt es sie, nimmt Zenodo nur sie und übergeht `CITATION.cff`
+ganz, und die beiden laufen früher oder später auseinander. Eine ORCID kann unter `authors` als `orcid:` dazukommen.
+
+Nach dem ersten archivierten Release zeigt Zenodo zwei Arten von DOI: eine für genau diese Version und eine für
+**alle Versionen** (Concept DOI), die immer auf die neueste führt. Die zweite gehört als `doi:` in `CITATION.cff` und
+als Zitierhinweis samt DOI-Abzeichen in die README (deutsch und englisch).
+
 ## Lokal bauen
 
     pip install -e ".[build]"

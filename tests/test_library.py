@@ -194,10 +194,14 @@ def test_spendenlink(lib):
 def test_community_dateien_in_beiden_sprachen():
     """README, CONTRIBUTING, Verhaltenskodex und SECURITY gibt es deutsch (Name, den GitHub findet) und als *.en.md;
     die Version in CITATION.cff muss die aus pyproject.toml sein, sonst zitiert jemand einen falschen Stand."""
-    for name in ('README', 'CONTRIBUTING', 'CODE_OF_CONDUCT', 'SECURITY'):
+    for name in ('README', 'CONTRIBUTING', 'CODE_OF_CONDUCT', 'SECURITY', 'BETATEST'):
         de, en = (open(os.path.join(ROOT, name + ext), encoding='utf-8').read() for ext in ('.md', '.en.md'))
         assert name + '.en.md' in de and name + '.md' in en, name  # verweisen aufeinander
     version = re.search(r'^version = "([^"]+)"', open(os.path.join(ROOT, 'pyproject.toml'), encoding='utf-8').read(), re.M).group(1)
     assert ('version: %s\n' % version) in open(os.path.join(ROOT, 'CITATION.cff'), encoding='utf-8').read()
     vorlagen = os.listdir(os.path.join(ROOT, '.github', 'ISSUE_TEMPLATE'))
-    assert {'fehlerbericht.yml', 'bug_report.en.yml', 'vorschlag.yml', 'feature_request.en.yml', 'config.yml'} <= set(vorlagen)
+    assert {'fehlerbericht.yml', 'bug_report.en.yml', 'vorschlag.yml', 'feature_request.en.yml', 'config.yml',
+            'betatest.yml', 'betatest.en.yml'} <= set(vorlagen)
+    # BETATEST verlinkt das Formular über ?template=<datei>; ein umbenanntes Formular ergäbe eine leere Seite
+    for de_en in ('', '.en'):
+        assert 'template=betatest%s.yml' % de_en in open(os.path.join(ROOT, 'BETATEST%s.md' % de_en), encoding='utf-8').read()
