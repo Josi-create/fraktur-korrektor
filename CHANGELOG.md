@@ -42,6 +42,12 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   bei übernommenem Vorschlag in `img/out`.
 
 ### Behoben
+- **Zettel vom Tablet ohne Notizordner:** Statt der Meldung, dass am Rechner erst ein Ordner festzulegen sei, wartet der
+  Zettel samt Anmerkung im Buchordner (`notizen-wartend`). Wird der Notizordner festgelegt, zieht er mit der nächsten
+  freien Nummer dorthin; der Notiz-Dialog sagt, wie viele Zettel warten.
+- **Am Rechner über die Heimnetz-Adresse:** Wer am Rechner selbst – etwa über Remote-Desktop – die Adresse vom Tablet
+  (`http://192.168.…:8765`) aufrief, galt als fremdes Gerät und konnte den Notizordner nicht festlegen. Jetzt zählt
+  jede Verbindung, deren Absender der Rechner selbst ist.
 - Eine Überschrift auf einer Zeile mit Absatzanfang wurde zu `<h1><p>…</h1>`, falsch verschachtelt; der Absatzanfang
   fällt jetzt weg, wie bei der Bildunterschrift.
 - Die Bibliothek nannte im Dialog „Öffnen“ den Ordner für das neue Buch nicht, wenn der Dialog über einen Link aus

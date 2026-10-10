@@ -231,6 +231,38 @@ def test_notiz_fuer_obsidian_auf_dem_tablet(app, tmp_path):
     assert app.post('/api/notiz', dict(page='001', text='x'))[1]['name'] == '01 Seite 5'
 
 
+def test_zettel_vom_tablet_wartet_auf_den_notizordner(app, tmp_path):
+    """Ohne Notizordner geht die am Tablet geschriebene Anmerkung nicht verloren: Der Zettel wartet im Buchordner und zieht
+    mit der nächsten freien Nummer in den Notizordner, sobald am Rechner einer festgelegt ist."""
+    import os, server
+    wait = os.path.join(app.folder, server.NOTES_WAIT)
+    assert app.post('/api/notiz', dict(page='001', text='x', anmerkung='a'))[1]['error'] == 'kein_notizordner'  # F4 am Rechner: fragt
+    code, r = app.post('/api/notiz', dict(page='001', text='Die Kolonisten', lines=[2, 2], anmerkung='Wohin?', warten=True))
+    assert code == 200 and r['wartet'] and r['name'] == '01 Seite 5'
+    assert app.post('/api/notiz', dict(page='002', text='Der Vater', warten=True, lang='en'))[1]['name'] == '02 Page 6'
+    assert sorted(os.listdir(wait)) == ['0 Quellenangabe.md', '0 Source.md', '01 Seite 5.md', '02 Page 6.md']
+    st = app.get('/api/settings')[1]
+    assert st['wartend'] == 2 and st['notizen'] is None and 'notiz_nr' not in st
+    folder = tmp_path / 'Vault' / 'Buch'
+    folder.mkdir(parents=True)
+    (folder / '05 Eigene.md').write_text('x')
+    (folder / '0 Quellenangabe.md').write_text('meine Angaben', encoding='utf-8')
+    r = app.post('/api/settings', dict(notizen=str(folder)))[1]
+    assert r['uebertragen'] == 2 and r['notiz_nr'] == 7
+    assert sorted(os.listdir(folder)) == ['0 Quellenangabe.md', '0 Source.md', '05 Eigene.md', '06 Seite 5.md', '07 Page 6.md']
+    assert (folder / '0 Quellenangabe.md').read_text(encoding='utf-8') == 'meine Angaben'  # die vorhandene bleibt
+    assert 'Wohin?' in (folder / '06 Seite 5.md').read_text(encoding='utf-8')
+    assert not os.path.exists(wait) and 'wartend' not in app.get('/api/settings')[1]
+    assert app.post('/api/notiz', dict(page='001', text='x', warten=True))[1]['name'] == '08 Seite 5'  # mit Ordner: gleich dorthin
+    # Fehlte der Ordner beim Festlegen (Laufwerk nicht da), zieht der wartende Zettel mit dem nächsten Zettel um
+    app.post('/api/settings', dict(notizen=''))
+    app.post('/api/notiz', dict(page='001', text='y', warten=True))
+    app.post('/api/settings', dict(notizen=str(tmp_path / 'Fehlt' / 'Buch')))
+    assert app.get('/api/settings')[1]['wartend'] == 1
+    app.post('/api/settings', dict(notizen=str(tmp_path / 'Vault' / 'Neu')))
+    assert sorted(os.listdir(tmp_path / 'Vault' / 'Neu')) == ['0 Quellenangabe.md', '01 Seite 5.md']
+
+
 def test_link_im_zettel_fuehrt_zur_stelle(app, tmp_path):
     """Rücksprung vom Zettel zur Quelle (#74): /stelle findet das Buch über seine feste Kennung – auch wenn sein Ordner
     umgezogen ist – und leitet zum Reader weiter, der Seite und Zeilen aus der Adresse nimmt."""

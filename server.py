@@ -24,6 +24,9 @@ NOTE_WORDS = dict(
     en=dict(page='Page', line='Line', note='Note', src='0 Source', pos='Location', scan='Scan',
             template='# %s\n\nProvenance: (e.g. university library, interlibrary loan)\n\nCitation (Zotero):\n',
             kindle='# %s\n\nAuthor: %s\n\nProvenance: Kindle edition\n\nCitation (Zotero):\n'))
+# Zettel vom Tablet, solange für das Buch noch kein Notizordner festgelegt ist: Sie warten im Buchordner und ziehen um,
+# sobald es ihn gibt (Book.deliver_waiting) – eine am Tablet geschriebene Anmerkung geht so nicht verloren
+NOTES_WAIT = 'notizen-wartend'
 
 
 def notes_ready(folder):
@@ -156,6 +159,7 @@ class Book:
         self.klogpath = os.path.join(self.folder, 'korrekturen.log')
         self.stpath = os.path.join(self.folder, 'buch.json')
         self.figpath = os.path.join(self.folder, 'bilder.json')
+        self.waitdir = os.path.join(self.folder, NOTES_WAIT)
         self.lock = threading.RLock()
         try:
             self.geo = json.load(open(os.path.join(self.folder, 'lines.json'), encoding='utf-8'))
@@ -212,7 +216,50 @@ class Book:
                 self.settings.pop('notiz_nr', None)  # anderer Ordner: dort zählen die Zettel für sich
             self.settings['notizen'] = folder
             self.save_settings()
-        return self.settings
+            n = self.deliver_waiting()
+        return dict(self.settings, uebertragen=n) if n else self.settings
+
+    def waiting_notes(self):
+        """Die Zettel, die im Buchordner auf den Notizordner warten, als [(nummer, dateiname)] – ohne die Quellenangabe."""
+        try:
+            names = os.listdir(self.waitdir)
+        except OSError:
+            return []
+        return sorted((int(m.group(1)), n) for n in names for m in [re.match(r'(\d+) .*\.md$', n)] if m and int(m.group(1)) > 0)
+
+    def deliver_waiting(self):
+        """Wartende Zettel in den Notizordner bringen, mit der nächsten freien Nummer dort; liefert, wie viele umgezogen sind.
+        Kopieren statt umbenennen: Der Vault liegt vielleicht auf einem anderen Laufwerk als das Buch."""
+        folder = self.settings.get('notizen')
+        if not folder or not os.path.isdir(self.waitdir) or notes_ready(folder):
+            return 0
+        moved = 0
+        with self.lock:
+            for _, name in self.waiting_notes():
+                src = os.path.join(self.waitdir, name)
+                rest = name.split(' ', 1)[1]
+                n = max(note_number(folder), (self.settings.get('notiz_nr') or 0) + 1)
+                while os.path.exists(os.path.join(folder, '%02d %s' % (n, rest))):
+                    n += 1
+                with open(src, encoding='utf-8') as f:
+                    body = f.read()
+                with open(os.path.join(folder, '%02d %s' % (n, rest)), 'x', encoding='utf-8', newline='\n') as f:  # nie überschreiben
+                    f.write(body)
+                os.remove(src)
+                self.settings['notiz_nr'] = n
+                moved += 1
+            for name in os.listdir(self.waitdir):  # die Quellenangabe: hat der Notizordner schon eine, gilt die
+                if name in [W['src'] + '.md' for W in NOTE_WORDS.values()]:
+                    if not os.path.exists(os.path.join(folder, name)):
+                        shutil.copyfile(os.path.join(self.waitdir, name), os.path.join(folder, name))
+                    os.remove(os.path.join(self.waitdir, name))
+            try:
+                os.rmdir(self.waitdir)
+            except OSError:  # liegt noch etwas Fremdes darin: dann bleibt der Ordner
+                pass
+            if moved:
+                self.save_settings()
+        return moved
 
     def page_number(self, pg):
         """Gedruckte Seitenzahl als (zahl, zeile, position, länge) – aus der Kopfzeile, aus einem als Textzeile gelesenen
@@ -241,7 +288,7 @@ class Book:
         exp = self.expected_page(pg)
         return str(exp if exp is not None else n[0] if n else int(pg))
 
-    def make_note(self, pg, text, lang='de', lines=None, device=False, port=None, remark=''):
+    def make_note(self, pg, text, lang='de', lines=None, device=False, port=None, remark='', wait=False):
         """Ein Zettel nach Luhmanns Art im Notizordner: fortlaufend nummeriert, oben Platz für die eigene Anmerkung, unter dem
         Strich das Zitat und die Quelle – Seite, Zeilen (lines = (von, bis), gezählt wie in der Leiste des Readers) und Verweis auf die
         Quellenangabe des Buchs (Datei „0 Quellenangabe“, wird bei Bedarf als Vorlage angelegt; dort trägt der Nutzer Herkunft und
@@ -250,15 +297,21 @@ class Book:
         Sync bringt ihn auf den Rechner (#63). Die Quellenangabe entsteht trotzdem hier, sie ist für alle Zettel dieselbe.
         port: der Port, auf dem das Programm läuft – dann endet die Quellenzeile mit einem Link zurück zur Stelle im Scan (#74).
         remark: die eigene Anmerkung, am Tablet oder Handy im Editor des Readers geschrieben (#84) – sie steht gleich im Zettel,
-        Obsidian am Rechner zeigt ihn, Obsidian Sync bringt ihn auf die anderen Geräte."""
+        Obsidian am Rechner zeigt ihn, Obsidian Sync bringt ihn auf die anderen Geräte.
+        wait: Fehlt der Notizordner noch, wartet der Zettel im Buchordner (NOTES_WAIT), statt verloren zu gehen."""
         W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
         folder = self.settings.get('notizen')
         vault = obsidian_vault(folder) if device and folder else None
         if device and folder and not vault:
             return None, 'kein_vault'
+        waiting = wait and not folder and not device
+        if waiting:
+            folder = self.waitdir
         err = notes_ready(folder)
         if err:
             return None, err
+        if not waiting:
+            self.deliver_waiting()  # ist der Ordner erst jetzt erreichbar, kommen die wartenden Zettel vor diesem
         text = korrlib.TAG.sub('', re.sub(r'<sup>\d+</sup>|[⁰¹²³⁴⁵⁶⁷⁸⁹]+', '', text))  # Fußnotenzeichen gehören nicht ins Zitat
         text = re.sub(r'¬\s*\n\s*', '', text)  # getrennte Wörter zusammenziehen, Zeilen zu einem Absatz
         text = ' '.join(text.split()).strip()
@@ -273,8 +326,9 @@ class Book:
         with self.lock:
             # Die zuletzt vergebene Nummer merkt sich das Buch: Zettel vom Tablet sind hier erst, wenn Obsidian am Rechner
             # synchronisiert hat – ohne das bekäme der nächste Zettel dieselbe Nummer
-            n = max(note_number(folder), (self.settings.get('notiz_nr') or 0) + 1)
-            self.settings['notiz_nr'] = n
+            n = max(note_number(folder), (self.settings.get('notiz_nr') or 0) + 1) if not waiting else note_number(folder)
+            if not waiting:  # wartende Zettel zählen für sich, im Notizordner bekommen sie ihre Nummer erst beim Umzug
+                self.settings['notiz_nr'] = n
             self.settings['kennung'] = self.settings.get('kennung') or uuid.uuid4().hex  # für den Link zurück zur Quelle
             self.save_settings()
         name = '%02d %s %s' % (n, W['page'], page)
@@ -296,7 +350,7 @@ class Book:
             return dict(name=name, number=n, page=page, text=text, content=body, vault=vault[0], file=file), None
         with open(path, 'x', encoding='utf-8', newline='\n') as f:  # 'x': nie überschreiben
             f.write(body)
-        return dict(file=path, name=name, number=n, page=page, text=text), None
+        return dict(file=path, name=name, number=n, page=page, text=text, **(dict(wartet=True) if waiting else {})), None
 
     def autokorr_unsicher(self):
         out = {}
@@ -1821,7 +1875,7 @@ def discard(bid):
     if not e:
         raise ValueError('quelle_fehlt')
     f = e['folder']
-    if not os.path.exists(os.path.join(f, 'qualitaet.json')) or any(os.path.exists(os.path.join(f, n)) for n in ('korrekturen.log', 'whitelist.txt')):
+    if not os.path.exists(os.path.join(f, 'qualitaet.json')) or any(os.path.exists(os.path.join(f, n)) for n in ('korrekturen.log', 'whitelist.txt', NOTES_WAIT)):
         raise ValueError('hat_arbeit')
     lib_forget(bid)
     for n in ('lesezeichen.json', 'buch.json'):
@@ -2425,7 +2479,10 @@ class H(BaseHTTPRequestHandler):
 
     def local(self):
         """Bibliothek verändern (Ordner öffnen, importieren) darf nur, wer am Rechner selbst sitzt – nicht das LAN."""
-        return self.client_address[0] in ('127.0.0.1', '::1', '::ffff:127.0.0.1')
+        a = self.client_address[0]
+        # Auch wer am Rechner selbst die Heimnetz-Adresse aufruft – etwa über Remote-Desktop mit dem Link vom Tablet –, sitzt
+        # am Rechner: Absender und Ziel der Verbindung sind dann dieselbe Adresse. Ein anderes Gerät hat immer eine eigene.
+        return a in ('127.0.0.1', '::1', '::ffff:127.0.0.1') or a == self.connection.getsockname()[0]
 
     # Jede Anfrage hat Vortritt vor der Vorschlagsrechnung im Hintergrund (#68). Die vollständige Vorschlagsanfrage gibt
     # ihn ab, solange sie auf diese Rechnung wartet (Vorschlaege.hole).
@@ -2511,7 +2568,8 @@ class H(BaseHTTPRequestHandler):
             p = book.prog
             return self.sendjson(dict(done=p[0], total=p[1]) if p else dict(done=1, total=1))
         if rest == '/api/settings':
-            return self.sendjson(book.settings)
+            k = len(book.waiting_notes())  # Zettel vom Tablet, die auf den Notizordner warten
+            return self.sendjson(dict(book.settings, wartend=k) if k else book.settings)
         if rest == '/api/vault':  # der Vault des Notizordners – für den Notiz-Dialog am Tablet (#63)
             v = obsidian_vault(book.settings['notizen']) if book.settings.get('notizen') else None
             return self.sendjson(dict(vault=v[0] if v else None))
@@ -2747,7 +2805,10 @@ class H(BaseHTTPRequestHandler):
             if 'notizen' in body:  # Notizordner festlegen: schreibt später außerhalb des Buchs, darum nur am Rechner selbst
                 if not self.local():
                     return self.sendjson(dict(error='nur_lokal'), 403)
-                return self.sendjson(book.set_notes((body.get('notizen') or '').strip()))
+                try:
+                    return self.sendjson(book.set_notes((body.get('notizen') or '').strip()))
+                except OSError:  # festgelegt ist er, nur die wartenden Zettel kamen nicht hinein (schreibgeschützt, eine Datei)
+                    return self.sendjson(dict(book.settings, error='notiz_schreiben'))
             st = book.set_dics(body.get('dics') or [])
             total = sum(o['n'] for o in book.overview())
             korrlib.save_cache()
@@ -2755,7 +2816,8 @@ class H(BaseHTTPRequestHandler):
         if rest == '/api/notiz':
             try:
                 r, err = book.make_note(str(body.get('page') or ''), body.get('text') or '', body.get('lang') or 'de', body.get('lines'),
-                                        device=bool(body.get('geraet')), port=self.server.server_port, remark=body.get('anmerkung') or '')
+                                        device=bool(body.get('geraet')), port=self.server.server_port, remark=body.get('anmerkung') or '',
+                                        wait=bool(body.get('warten')))
             except OSError:  # der Notizordner ist eine Datei oder schreibgeschützt: eine Meldung statt einer abgerissenen Verbindung
                 r, err = None, 'notiz_schreiben'
             if err:

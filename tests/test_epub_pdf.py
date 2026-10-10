@@ -97,8 +97,28 @@ def test_pdf_dazuholen_nur_lokal():
     for path in ('/api/epub_pair', '/api/add_pdf', '/api/choose'):
         h = server.H.__new__(server.H)
         h.client_address, h.path, h.request_version, h.command, h.requestline = ('192.168.1.20', 4711), path, 'HTTP/1.1', 'POST', ''
+        h.connection = Sock('192.168.1.5')
         h.headers = {'Content-Length': '2'}
         h.rfile, h.wfile = io.BytesIO(b'{}'), io.BytesIO()
         h.do_POST()
         out = h.wfile.getvalue().decode('utf-8')
         assert ' 403 ' in out.split('\r\n')[0] and 'nur_lokal' in out, path
+
+
+class Sock:
+    def __init__(self, ip):
+        self.ip = ip
+
+    def getsockname(self):
+        return (self.ip, 8765)
+
+
+def test_am_rechner_auch_ueber_die_heimnetz_adresse():
+    """Über Remote-Desktop ruft der Browser am Rechner oft die Heimnetz-Adresse auf (der Link vom Tablet): Absender und Ziel
+    sind dann dieselbe Adresse – das ist der Rechner selbst, kein anderes Gerät."""
+    import server
+    h = server.H.__new__(server.H)
+    for client, own, local in (('127.0.0.1', '127.0.0.1', True), ('192.168.1.5', '192.168.1.5', True),
+                               ('192.168.1.20', '192.168.1.5', False), ('::1', '::1', True)):
+        h.client_address, h.connection = (client, 4711), Sock(own)
+        assert h.local() == local, client

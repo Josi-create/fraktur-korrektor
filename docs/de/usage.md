@@ -491,6 +491,11 @@ Obsidian am Rechner zeigt ihn gleich; mit Obsidian Sync ist er auch auf Ihren an
 bleiben, ergänzen können Sie sie später in Obsidian. Den Link *Scan* im Zettel klicken Sie am Rechner: Er führt zum
 Programm, das dort läuft.
 
+**Noch kein Notizordner festgelegt?** Dann geht der Zettel trotzdem nicht verloren: Er wartet im Buchordner. Sobald Sie
+am Rechner mit `O` einen Notizordner festlegen, kommt er von selbst dorthin und bekommt die nächste freie Nummer.
+Den Ordner können Sie auch über Remote-Desktop am Rechner festlegen – das Programm erkennt den Rechner auch dann, wenn
+im Browser dort die Heimnetz-Adresse vom Tablet steht.
+
 Mit Tastatur speichert `Strg`+`Enter`, `Esc` bricht ab. So geht es auch an einem zweiten Rechner, der über das
 Heimnetz mitliest.
 

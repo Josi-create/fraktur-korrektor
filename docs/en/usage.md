@@ -481,6 +481,11 @@ top. Obsidian on the computer shows it right away; with Obsidian Sync it is on y
 stay empty; you can add to it later in Obsidian. Click the *Scan* link in the note on the computer: it leads to the
 program running there.
 
+**No notes folder set yet?** The note is still not lost: it waits in the book folder. As soon as you set a notes folder
+on the computer with `O`, it moves there by itself and gets the next free number. You can also set the folder on the
+computer via Remote Desktop – the program recognises the computer even when the browser there shows the home-network
+address from the tablet.
+
 With a keyboard, `Ctrl`+`Enter` saves and `Esc` cancels. This also works on a second computer reading along over the
 home network.
 
