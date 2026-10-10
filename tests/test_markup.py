@@ -29,6 +29,7 @@ def test_ueberschrift():
     assert korrlib.heading('Erstes Kapitel', 2) == '<h2>Erstes Kapitel</h2>'
     assert korrlib.heading('<h2>Erstes Kapitel</h2>', 3) == '<h3>Erstes Kapitel</h3>'
     assert korrlib.heading('<h3>Erstes Kapitel</h3>', 0) == 'Erstes Kapitel' and korrlib.heading('  ', 1) == '  '
+    assert korrlib.heading('<p>Erstes Kapitel', 1) == '<h1>Erstes Kapitel</h1>'  # kein <p> in der Überschrift
 
 
 def test_ueberschriften_fuer_das_inhaltsverzeichnis(app):
@@ -42,6 +43,21 @@ def test_ueberschriften_fuer_das_inhaltsverzeichnis(app):
     old = app.text('002')[1]
     app.post('/api/markup/002', dict(kind='heading', line=1, level=1, old=old))
     assert app.get('/api/headings')[1]['items'] == [dict(page='002', line=1, level=1, text=old, printed='6')]  # gedruckte Seite aus »# 6«
+
+
+def test_mehrzeilige_ueberschrift(app):
+    """Markierte Zeilen werden mit H zusammen eine Überschrift (start, end, old als Liste) – im Inhaltsverzeichnis eine."""
+    t = app.text('001')
+    code, d = app.post('/api/markup/001', dict(kind='heading', start=1, end=2, level=2, old=t[1:3]))
+    assert code == 200 and d['lines'][1:3] == ['<h2>%s</h2>' % l for l in t[1:3]] and d['lines'][3] == t[3]
+    assert [(h['line'], h['level'], h['text']) for h in app.get('/api/headings')[1]['items']] == [(1, 2, t[1] + ' ' + t[2])]
+    # Ebene wechseln und aufheben: für alle Zeilen auf einmal
+    d = app.post('/api/markup/001', dict(kind='heading', start=1, end=2, level=0, old=d['lines'][1:3]))[1]
+    assert d['lines'][1:3] == t[1:3]
+    assert app.post('/api/markup/001', dict(kind='heading', start=1, end=2, level=1, old=['veraltet', t[2]]))[0] == 409
+    assert app.post('/api/markup/001', dict(kind='heading', start=4, end=6, level=1, old=t[4:7]))[0] == 400  # über den Fußnotenstrich
+    assert app.post('/api/markup/001', dict(kind='heading', start=0, end=1, level=1, old=t[0:2]))[0] == 400  # mit der Kopfzeile
+    assert app.text('001') == t
 
 
 def test_wortpruefung_uebergeht_die_auszeichnung():

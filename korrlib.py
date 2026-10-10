@@ -441,9 +441,10 @@ def table_shape(lines):
     first = ''.join(lines).split('</tr>')[0]
     return max(1, len(re.findall(r'<t[dh]>', first))), '<th>' in first
 def heading(line, level):
-    """Zeile als Überschrift der Ebene 1–6 auszeichnen; level 0 nimmt die Auszeichnung weg."""
+    """Zeile als Überschrift der Ebene 1–6 auszeichnen; level 0 nimmt die Auszeichnung weg. Eine Überschrift ist ein Block
+    für sich: Ein Absatzanfang <p> fällt weg (<h2><p>…</h2> wäre falsch verschachtelt), wie bei der Bildunterschrift."""
     t = HEADTAG.sub('', line)
-    return '<h%d>%s</h%d>' % (level, t, level) if level and t.strip() else t
+    return '<h%d>%s</h%d>' % (level, re.sub(r'^<p>', '', t), level) if level and t.strip() else t
 CAPLINE = re.compile(r'<figcaption>(.*)</figcaption>$')
 def caption(line):
     """Zeile als Bildunterschrift auszeichnen (#76) – oder, ist sie schon eine, wieder nicht. Sie ist ein Block für sich:

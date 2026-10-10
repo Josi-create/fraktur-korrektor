@@ -240,8 +240,10 @@ be marked up this way.
 `H` marks the reading line as a heading: level 1 the first time (`<h1>…</h1>`), the next level with each further press,
 ordinary text again after level 3. Headings are shown larger and bold, without visible control characters.
 
-If a heading runs over two lines (“Chapter Three.” / “The Journey to Odessa.”), give both lines the same level – the
-program joins them into one heading. Best use the levels the same way throughout the book: chapters level 1, sections
+If a heading runs over two or more lines (“Chapter Three.” / “The Journey to Odessa.”), select the lines with
+`Shift`+`↓` (or with the mouse) and press `H`: they get the same level, and the program joins them into one heading. If
+the reading line is part of such a heading, `H` changes the level of all its lines – no new selection needed. A
+paragraph start in the line is dropped: a heading is a block of its own. Best use the levels the same way throughout the book: chapters level 1, sections
 within them level 2; if the book has parts, the parts are level 1 and the chapters level 2.
 
 **Contents (`I`)** shows all headings of the book, indented by level, with the printed page number – so you can see
@@ -459,6 +461,7 @@ On the tablet you work with your finger:
 - **Paragraph and heading:** The buttons at the bottom right apply to the reading line. **¶ Paragraph** starts a new
   paragraph there (like `A`), **Heading 1 2 3** makes the line a heading of that level (like `H`) – 1 for chapters, 2
   and 3 for sections within them. What the line already is, is highlighted; tapping it again takes it back.
+  For a heading over several lines, select them with your finger and then tap the level.
 - **Bold and italics:** Select words with your finger (press and hold a word, then drag the handles) and tap **B** for
   bold or ***I*** for italics at the bottom. The same selection once more takes it back.
 - **With a keyboard:** Tables, the footnote rule, splitting or joining lines need the keys. With a keyboard attached to

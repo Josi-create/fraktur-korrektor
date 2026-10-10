@@ -1317,13 +1317,16 @@ class Book:
                 if lines[a:b + 1] != body.get('old') or any(l == '---' or (k == 0 and l.startswith('#')) for k, l in enumerate(lines[a:b + 1], a)):
                     return None, 409
                 new = korrlib.make_table(lines[a:b + 1], body.get('cols', 2), bool(body.get('head')))
-            elif body.get('kind') == 'heading':
-                if lines[a] != body.get('old') or lines[a] == '---' or (a == 0 and lines[a].startswith('#')):
+            elif body.get('kind') == 'heading':  # eine Zeile (line, old) oder mehrere markierte (start, end, old als Liste)
+                old = body.get('old') if isinstance(body.get('old'), list) else [body.get('old')]
+                if lines[a:b + 1] != old:
                     return None, 409
-                if korrlib.table_block(lines, a) or korrlib.CAPTAG.search(lines[a]):  # <h2><td>…</td></h2> wäre falsch verschachtelt
+                if any(l == '---' or (k == 0 and l.startswith('#')) for k, l in enumerate(lines[a:b + 1], a)):
+                    return None, 409 if a == b else 400
+                if any(korrlib.table_block(lines, k) or korrlib.CAPTAG.search(lines[k]) for k in range(a, b + 1)):  # <h2><td>…</td></h2> wäre falsch verschachtelt
                     return None, 400
-                new = [korrlib.heading(lines[a], int(body.get('level') or 0))]
-                b = a
+                # Zeilen derselben Ebene untereinander sind eine Überschrift (korrlib.headings); Leerzeilen bleiben leer
+                new = [korrlib.heading(l, int(body.get('level') or 0)) for l in lines[a:b + 1]]
             elif body.get('kind') == 'para':  # A: hier beginnt ein Absatz – oder wieder nicht (#67)
                 if lines[a] != body.get('old'):
                     return None, 409

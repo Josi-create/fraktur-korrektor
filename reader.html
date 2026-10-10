@@ -1149,13 +1149,31 @@ async function paraKey(tap) {  // tap: vom Knopf am Tablet
   if (await markup({ kind: 'para', line: li, old: data.lines[li] })) msg = t(on ? (tap ? 'para_set_t' : 'para_set') : 'para_removed');
   render();
 }
-async function headingKey(want) {  // want: Ebene vom Knopf am Tablet – dieselbe nochmal hebt die Überschrift auf
-  if (!plainLine(li)) return;
-  if (lineEls[li].classList.contains('intable')) { msg = t('hd_in_table'); render(); return; }
-  if (data.lines[li].includes('<figcaption>')) { msg = t('hd_in_cap'); render(); return; }
-  const m = data.lines[li].match(/^<h([1-6])>/), cur = m ? +m[1] : 0;
+// Eine Überschrift kann mehrere Zeilen haben (»Drittes Kapitel.« / »Die Reise nach Odessa.«): Markierte Zeilen werden mit H
+// zusammen eine. Ohne Markierung gilt H der ganzen Überschrift, in der die Lesezeile steht – Zeilen derselben Ebene
+// unmittelbar untereinander, wie im Inhaltsverzeichnis (korrlib.headings) –, so wechselt nochmal H die Ebene aller Zeilen.
+const hdLevel = i => +((data.lines[i] || '').match(/^<h([1-6])>/) || [0, 0])[1];
+async function headingKey(want, pre) {  // want: Ebene vom Knopf am Tablet – dieselbe nochmal hebt die Überschrift auf
+  const s = pre || selSpan(), multi = !!s && s.b > s.a;
+  if (multi && s.p != pg && !await loadPage(s.p, s.a)) return;  // auf der Nachbarseite markiert: Sie wird die aktuelle
+  let a = multi ? s.a : li, b = multi ? s.b : li;
+  if (!multi) {
+    if (!plainLine(li)) return;
+    const lv = hdLevel(li);
+    while (lv && a > 0 && hdLevel(a - 1) == lv) a--;
+    while (lv && b < data.lines.length - 1 && hdLevel(b + 1) == lv) b++;
+  }
+  const rows = [];
+  for (let i = a; i <= b; i++) if (!skippable(i) || data.lines[i] == '---') rows.push(i);
+  nsel = null; try { getSelection().removeAllRanges(); } catch (e) {}
+  if (rows.some(i => !plainLine(i))) { msg = t('hd_range_no'); render(); return; }  // Fußnotenstrich oder Kopfzeile markiert
+  if (!rows.length) return;
+  if (rows.some(i => lineEls[i].classList.contains('intable'))) { msg = t('hd_in_table'); render(); return; }
+  if (rows.some(i => data.lines[i].includes('<figcaption>'))) { msg = t('hd_in_cap'); render(); return; }
+  const cur = rows.every(i => hdLevel(i) == hdLevel(rows[0])) ? hdLevel(rows[0]) : 0;  // gemischt: wie noch keine
   const level = want ? (cur == want ? 0 : want) : cur >= 3 ? 0 : cur + 1;  // H wiederholt: 1 → 2 → 3 → keine
-  if (await markup({ kind: 'heading', line: li, level, old: data.lines[li] })) msg = level ? t(want ? 'hd_set_t' : 'hd_set', { n: level }) : t('hd_removed');
+  const n = rows.length, key = (want ? 'hd_set_t' : 'hd_set').replace('set', n > 1 ? 'set_n' : 'set');
+  if (await markup({ kind: 'heading', start: a, end: b, level, old: data.lines.slice(a, b + 1) })) msg = level ? t(key, { n: level, k: n }) : t('hd_removed');
   render();
 }
 // ---- Abbildungen (#76): B markiert eine Abbildung im Seitenbild – ein Rahmen, mit der Maus oder dem Finger aufgezogen; das
@@ -1712,7 +1730,7 @@ async function onKey(e) {
     if (e.target.tagName == 'SELECT') return;
     const k = e.key;
     if (e.shiftKey && (k == 'ArrowDown' || k == 'ArrowUp')) { e.preventDefault(); selMove(k == 'ArrowDown' ? 1 : -1); return; }
-    if (nsel != null && k != 'Shift') { nsel = null; render(); if (k == 'Escape') { e.preventDefault(); return; } }
+    if (nsel != null && k != 'Shift' && k != 'h' && k != 'H') { nsel = null; render(); if (k == 'Escape') { e.preventDefault(); return; } }  // H: die markierten Zeilen werden eine Überschrift
     if (k == 'ArrowDown' || k == 'j') await move(1);
     else if (k == 'ArrowUp' || k == 'k') await move(-1);
     else if (k == ' ') await toFlag();
@@ -1831,7 +1849,11 @@ for (const [id, tag] of [['tBold', 'b'], ['tItal', 'i']]) {
   $(id).addEventListener('pointerdown', e => { e.preventDefault(); styleSel = selSpan(); });
   $(id).onclick = guarded(async () => { const s = styleSel || selSpan(); styleSel = null; await styleKey(tag, s); });
 }
-for (const b of $('tfmt').querySelectorAll('[data-h]')) b.onclick = guarded(() => headingKey(+b.dataset.h));  // H
+let hdSel = null;  // H: mit dem Finger über mehrere Zeilen markiert – festhalten wie bei fett und kursiv
+for (const b of $('tfmt').querySelectorAll('[data-h]')) {
+  b.addEventListener('pointerdown', e => { e.preventDefault(); hdSel = selSpan(); });
+  b.onclick = guarded(async () => { const s = hdSel; hdSel = null; await headingKey(+b.dataset.h, s); });
+}
 $('tbar').addEventListener('pointerdown', () => { if (stopFling()) rollEnd(); });  // ein Knopf gilt der Zeile, auf der der Text steht
 $('tSerieR').onclick = $('tSerieF').onclick = () => { if (!busy && (mode == 'read' || mode == 'fix')) { busy = true; startSeries().finally(() => { busy = false; }); } };  // F9
 $('tOk').onclick = inFix(() => whitelist(true));  // F8, danach zurück zum Lesen (#82)

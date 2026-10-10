@@ -249,8 +249,11 @@ gelesen, lässt sie sich so nicht auszeichnen.
 nächste Ebene, nach Ebene 3 wieder gewöhnlicher Text. Überschriften erscheinen größer und fett, ohne sichtbare
 Steuerzeichen.
 
-Steht eine Überschrift über zwei Zeilen („Drittes Kapitel.“ / „Die Reise nach Odessa.“), geben Sie beiden Zeilen
-dieselbe Ebene – das Programm fasst sie zu einer Überschrift zusammen. Die Ebenen vergeben Sie am besten im ganzen Buch
+Steht eine Überschrift über zwei oder mehr Zeilen („Drittes Kapitel.“ / „Die Reise nach Odessa.“), markieren Sie die
+Zeilen mit `Umschalt`+`↓` (oder mit der Maus) und drücken `H`: Sie bekommen dieselbe Ebene, und das Programm fasst sie
+zu einer Überschrift zusammen. Steht die Lesezeile in einer solchen Überschrift, wechselt `H` die Ebene aller ihrer
+Zeilen – ohne neue Markierung. Ein Absatzanfang in der Zeile fällt dabei weg: Eine Überschrift ist ein Block für sich.
+Die Ebenen vergeben Sie am besten im ganzen Buch
 gleich: Kapitel Ebene 1, Abschnitte darin Ebene 2; hat das Buch Teile, sind die Teile Ebene 1 und die Kapitel Ebene 2.
 
 **Inhalt (`I`)** zeigt alle Überschriften des Buchs, eingerückt nach Ebene, mit der gedruckten Seitenzahl – so sehen
@@ -468,7 +471,7 @@ Auf dem Tablet bedienen Sie alles mit dem Finger:
 - **Absatz und Überschrift:** Die Knöpfe unten rechts gelten der Lesezeile. **¶ Absatz** lässt dort einen neuen
   Absatz beginnen (wie `A`), **Überschrift 1 2 3** macht die Zeile zur Überschrift dieser Ebene (wie `H`) – 1 für
   Kapitel, 2 und 3 für Abschnitte darin. Hervorgehoben ist, was die Zeile schon ist; noch einmal antippen nimmt es
-  zurück.
+  zurück. Für eine Überschrift über mehrere Zeilen markieren Sie diese mit dem Finger und tippen dann die Ebene an.
 - **Fett und kursiv:** Wörter mit dem Finger markieren (lange auf ein Wort drücken, dann die Griffe ziehen) und unten
   **F** für fett oder ***K*** für kursiv antippen. Dieselbe Markierung noch einmal nimmt es zurück.
 - **Mit Tastatur:** Tabellen, Fußnotenstrich, Zeilen teilen oder verbinden gehen nur mit den Tasten. Ist am Tablet eine

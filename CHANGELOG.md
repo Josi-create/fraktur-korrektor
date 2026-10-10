@@ -20,6 +20,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   eine zitierbare DOI bekommt, steht in [RELEASE.md](RELEASE.md) (#29).
 
 ### Geändert
+- **Überschrift über mehrere Zeilen:** Markierte Zeilen (`Umschalt`+`↓`, Maus oder Finger) werden mit `H` bzw. den
+  Knöpfen 1 2 3 zusammen eine Überschrift. Steht die Lesezeile in einer solchen, wechselt `H` die Ebene aller ihrer
+  Zeilen. Bisher musste man jede Zeile einzeln auszeichnen.
 - **Zeile löschen am Tablet auch beim Korrigieren:** Steht das rote Wort in Buchstabensalat vom Scanrand, nimmt der
   Knopf die ganze Zeile weg und führt zurück zum Lesen, wo »Zurückholen« bereitsteht.
 - [Andere Programme im Vergleich](docs/de/vergleich.md) (#25) und [Mit Transkribus arbeiten](docs/de/transkribus.md)
@@ -39,6 +42,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   bei übernommenem Vorschlag in `img/out`.
 
 ### Behoben
+- Eine Überschrift auf einer Zeile mit Absatzanfang wurde zu `<h1><p>…</h1>`, falsch verschachtelt; der Absatzanfang
+  fällt jetzt weg, wie bei der Bildunterschrift.
 - Die Bibliothek nannte im Dialog „Öffnen“ den Ordner für das neue Buch nicht, wenn der Dialog über einen Link aus
   der Hilfe aufging.
 - Das Menü am Symbol des Programms (»Im Browser öffnen«, »Fraktur-Korrektor beenden«) war immer deutsch; es folgt jetzt
