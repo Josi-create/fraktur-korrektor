@@ -499,13 +499,17 @@ im Browser dort die Heimnetz-Adresse vom Tablet steht.
 Mit Tastatur speichert `Strg`+`Enter`, `Esc` bricht ab. So geht es auch an einem zweiten Rechner, der über das
 Heimnetz mitliest.
 
-**Lieber in Obsidian auf dem Tablet?** Ist Obsidian dort installiert und gleicht es den Vault mit dem Rechner ab
+**Unsere Empfehlung: den Zettel über den Rechner anlegen** – so wie oben beschrieben, die Anmerkung im Programm
+schreiben. Obsidian auf dem Tablet selbst arbeitet mit dem Programm nicht zuverlässig zusammen (Stand Oktober 2026):
+Ist Obsidian auf dem iPad nicht schon im Hintergrund geöffnet, zeigt es statt des neuen Zettels nur die zuletzt
+geöffnete Notiz, und der Zettel entsteht gar nicht. Das ist ein Fehler in Obsidian, den das Programm nicht beheben kann.
+Über den Rechner geht nichts verloren; mit Obsidian Sync ist der Zettel kurz darauf auch auf dem Tablet, und Sie können
+dort weiterschreiben.
+
+*Trotzdem in Obsidian auf dem Tablet?* Ist Obsidian dort installiert und gleicht es den Vault mit dem Rechner ab
 (Obsidian Sync), können Sie unter **☰ → Notizen** den Haken bei **Stattdessen Obsidian auf diesem Gerät öffnen**
 setzen. Dann öffnet **Notiz** den neuen Zettel mit Zitat und Quelle in Obsidian, und Sie schreiben Ihre Anmerkung dort;
 Safari fragt beim ersten Mal, ob es Obsidian öffnen darf (öffnet es nicht von selbst: unten in der Meldung auf **in
 Obsidian öffnen** tippen). Heißt der Vault auf dem Tablet anders als am Rechner, tragen Sie dort seinen Namen ein.
-
-Zeigt Obsidian statt des neuen Zettels nur die zuletzt geöffnete Notiz, lag es noch nicht im Hintergrund bereit – ein
-Fehler von Obsidian auf dem iPad (Stand Oktober 2026). Kehren Sie dann ins Programm zurück und tippen Sie in der Meldung
-auf **in Obsidian öffnen**: Beim zweiten Mal entsteht der Zettel. Wer das vermeiden will, lässt den Haken weg und
-schreibt die Anmerkung im Programm.
+Zeigt Obsidian nur die zuletzt geöffnete Notiz, kehren Sie ins Programm zurück und tippen in der Meldung noch einmal
+auf **in Obsidian öffnen** – beim zweiten Mal entsteht der Zettel meist.

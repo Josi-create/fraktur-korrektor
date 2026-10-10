@@ -489,12 +489,16 @@ address from the tablet.
 With a keyboard, `Ctrl`+`Enter` saves and `Esc` cancels. This also works on a second computer reading along over the
 home network.
 
-**Rather in Obsidian on the tablet?** If Obsidian is installed there and keeps the vault in step with the computer
+**Our recommendation: create the note via the computer** – as described above, writing the remark in the program.
+Obsidian on the tablet itself does not work reliably with the program (as of October 2026): if Obsidian is not
+already open in the background on the iPad, it shows only the note you had open last instead of the new one, and the
+note is not created at all. This is a bug in Obsidian that the program cannot fix. Via the computer nothing is lost;
+with Obsidian Sync the note is on the tablet shortly afterwards, and you can carry on writing there.
+
+*Still want Obsidian on the tablet?* If Obsidian is installed there and keeps the vault in step with the computer
 (Obsidian Sync), you can tick **Open Obsidian on this device instead** under **☰ → Notes**. Then **Note** opens the new
 note with quotation and source in Obsidian, and you write your remark there; the first time, Safari asks whether it may
 open Obsidian (if it does not open by itself, tap **open in Obsidian** in the message at the bottom). If the vault has a
-different name on the tablet than on the computer, enter that name there.
-
-If Obsidian shows only the note you had open last instead of the new one, it was not yet ready in the background – a
-bug in Obsidian on the iPad (as of October 2026). Then go back to the program and tap **open in Obsidian** in the
-message: the second time, the note is created. To avoid this, leave the tick off and write the remark in the program.
+different name on the tablet than on the computer, enter that name there. If Obsidian shows only the note you had open
+last, go back to the program and tap **open in Obsidian** in the message once more – the second time the note is
+usually created.

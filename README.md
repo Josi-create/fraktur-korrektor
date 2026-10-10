@@ -41,7 +41,9 @@ Windows, macOS und Linux.
   Wörterbuch richtet sich nach dem Erscheinungsjahr: »Thür« ist in einem Buch von 1880 richtig. Alles geht mit der
   Tastatur, jede Korrektur ist sofort gespeichert ([Bedienung](docs/de/usage.md)).
 - **Exzerpieren.** Zettel für Obsidian mit Zitat, Seite und Zeile – auch aus den Markierungen, die Sie auf dem Kindle
-  gemacht haben ([Markierungen vom Kindle](docs/de/kindle.md)).
+  gemacht haben ([Markierungen vom Kindle](docs/de/kindle.md)). Am Tablet schreiben Sie die Anmerkung im Programm, der
+  Zettel entsteht am Rechner und kommt mit Obsidian Sync aufs Tablet; Obsidian auf dem Tablet direkt anzusteuern
+  klappt wegen eines Fehlers in Obsidian nicht zuverlässig ([Häufige Fragen](docs/de/faq.md)).
 - **Mitnehmen.** Das Buch als PDF sichern: Seitenbilder, durchsuchbarer Text, Inhaltsverzeichnis und Ihr ganzer
   Arbeitsstand – lesbar in jedem PDF-Programm und auf einem anderen Rechner wieder ein Buch
   ([Ein Buch als PDF sichern](docs/de/pdf-sichern.md)).

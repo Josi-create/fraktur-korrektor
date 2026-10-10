@@ -225,8 +225,15 @@ Auf dem Tablet bedienen Sie alles mit dem Finger – siehe [Auf dem Tablet lesen
 
 **Auf dem iPad passiert bei „Notiz“ nichts, oder Safari meldet eine ungültige Adresse.**
 Der Zettel soll in Obsidian auf dem iPad entstehen, aber Obsidian ist dort nicht installiert oder kennt den Vault nicht
-unter diesem Namen. Tippen Sie auf **☰ → Notizen**: Tragen Sie den Namen des Vaults auf dem iPad ein, oder nehmen Sie
-den Haken bei *Zettel in Obsidian auf diesem Gerät anlegen* weg – dann entsteht der Zettel am Rechner.
+unter diesem Namen. Tippen Sie auf **☰ → Notizen** und nehmen Sie den Haken bei *Stattdessen Obsidian auf diesem Gerät
+öffnen* weg – dann schreiben Sie die Anmerkung im Programm, und der Zettel entsteht am Rechner. Das empfehlen wir
+ohnehin (siehe nächste Frage).
+
+**Obsidian auf dem iPad öffnet sich, zeigt aber nur die zuletzt geöffnete Notiz statt des neuen Zettels.**
+Das ist ein Fehler in Obsidian auf dem iPad (Stand Oktober 2026): Läuft Obsidian nicht schon im Hintergrund, übergeht
+es den Auftrag des Programms, und der Zettel entsteht nicht. Wir empfehlen darum, Zettel am Tablet über den Rechner
+anzulegen: unter **☰ → Notizen** den Haken bei *Stattdessen Obsidian auf diesem Gerät öffnen* weglassen. Sie schreiben
+die Anmerkung dann im Programm, der Zettel entsteht zuverlässig am Rechner und kommt mit Obsidian Sync aufs Tablet.
 
 **Darf ich die Textdateien in einem anderen Programm bearbeiten?**
 Ja, jederzeit; das Programm liest geänderte Dateien von selbst neu (`R` lädt die Seite neu). Zwei Dinge beachten:

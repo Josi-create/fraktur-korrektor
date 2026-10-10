@@ -218,8 +218,14 @@ the computer itself. On a tablet you work with your finger – see [Reading on a
 
 **On the iPad nothing happens on “Note”, or Safari reports an invalid address.**
 The note is meant to be created in Obsidian on the iPad, but Obsidian is not installed there or does not know the
-vault by that name. Tap **☰ → Notes**: enter the name of the vault on the iPad, or untick *Create notes in Obsidian on
-this device* – the note is then created on the computer.
+vault by that name. Tap **☰ → Notes** and untick *Open Obsidian on this device instead* – you then write the remark in
+the program, and the note is created on the computer. We recommend that anyway (see the next question).
+
+**Obsidian on the iPad opens but only shows the note I had open last, not the new note.**
+This is a bug in Obsidian on the iPad (as of October 2026): if Obsidian is not already running in the background, it
+ignores the program's request and the note is not created. We therefore recommend creating notes on the tablet via the
+computer: under **☰ → Notes**, leave *Open Obsidian on this device instead* unticked. You then write the remark in the
+program, the note is created reliably on the computer and reaches the tablet with Obsidian Sync.
 
 **May I edit the text files in another program?**
 Yes, at any time; the program re-reads changed files by itself (`R` reloads the page). Two things to keep in mind:

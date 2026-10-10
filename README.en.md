@@ -42,7 +42,9 @@ Windows, macOS and Linux. It is built for German-language books: the dictionarie
   dictionary follows the year of publication: »Thür« is correct in a book from 1880. Everything works from the
   keyboard, and every correction is saved at once ([Usage](docs/en/usage.md)).
 - **Taking notes.** Notes for Obsidian with quotation, page and line – also from the highlights you made on a Kindle
-  ([Highlights from the Kindle](docs/en/kindle.md)).
+  ([Highlights from the Kindle](docs/en/kindle.md)). On a tablet you write the remark in the program, the note is
+  created on the computer and reaches the tablet with Obsidian Sync; driving Obsidian on the tablet directly is not
+  reliable because of a bug in Obsidian ([FAQ](docs/en/faq.md)).
 - **Taking it with you.** Save the book as a PDF: page images, searchable text, table of contents and all your work –
   readable in any PDF viewer, and a book again on another computer ([Saving a book as PDF](docs/en/pdf-sichern.md)).
 
