@@ -504,3 +504,8 @@ Heimnetz mitliest.
 setzen. Dann öffnet **Notiz** den neuen Zettel mit Zitat und Quelle in Obsidian, und Sie schreiben Ihre Anmerkung dort;
 Safari fragt beim ersten Mal, ob es Obsidian öffnen darf (öffnet es nicht von selbst: unten in der Meldung auf **in
 Obsidian öffnen** tippen). Heißt der Vault auf dem Tablet anders als am Rechner, tragen Sie dort seinen Namen ein.
+
+Zeigt Obsidian statt des neuen Zettels nur die zuletzt geöffnete Notiz, lag es noch nicht im Hintergrund bereit – ein
+Fehler von Obsidian auf dem iPad (Stand Oktober 2026). Kehren Sie dann ins Programm zurück und tippen Sie in der Meldung
+auf **in Obsidian öffnen**: Beim zweiten Mal entsteht der Zettel. Wer das vermeiden will, lässt den Haken weg und
+schreibt die Anmerkung im Programm.

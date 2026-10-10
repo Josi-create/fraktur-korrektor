@@ -494,3 +494,7 @@ home network.
 note with quotation and source in Obsidian, and you write your remark there; the first time, Safari asks whether it may
 open Obsidian (if it does not open by itself, tap **open in Obsidian** in the message at the bottom). If the vault has a
 different name on the tablet than on the computer, enter that name there.
+
+If Obsidian shows only the note you had open last instead of the new one, it was not yet ready in the background – a
+bug in Obsidian on the iPad (as of October 2026). Then go back to the program and tap **open in Obsidian** in the
+message: the second time, the note is created. To avoid this, leave the tick off and write the remark in the program.
