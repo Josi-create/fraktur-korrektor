@@ -455,14 +455,15 @@ Auf dem Tablet bedienen Sie alles mit dem Finger:
   Sie behalten die Stelle im Blick. Genau dort, wo **Richtig so** war, steht dann **Nächstes rotes Wort**: Zweimal an
   dieselbe Stelle tippen geht also gleich weiter. **Überspringen** geht zum nächsten roten Wort, **Selbst tippen** öffnet die Tastatur (die
   Eingabetaste oder **Übernehmen** speichert, **Abbrechen** stellt die Zeile wieder her, etwa wenn das markierte Wort
-  versehentlich gelöscht wurde), **¶ Absatz** lässt in dieser Zeile einen Absatz beginnen, **Zurück zum
+  versehentlich gelöscht wurde), **¶ Absatz** lässt in dieser Zeile einen Absatz beginnen, **Zeile löschen** nimmt die ganze Zeile weg, wenn das
+  rote Wort in Rauschen vom Scanrand steht (danach sind Sie wieder beim Lesen, wo **↶ Zurückholen** bereitsteht), **Zurück zum
   Lesen** beendet – ebenso, wenn Sie einfach mit dem Finger über den Text wischen und weiterlesen; übernommen wird dabei
   nichts. Haben Sie mit **Nächstes rotes Wort** begonnen, geht es nach jeder Korrektur gleich zum nächsten – außer nach
   **Richtig so**.
   Kommt das berichtigte Wort noch öfter im Buch vor, erscheint **Alle gleichen ändern** – die Serienkorrektur wie mit
   `F9`. **Zeile bearbeiten** öffnet die Lesezeile, wenn etwas anderes als ein rotes Wort falsch ist.
 - **Zeile löschen:** Eine Zeile, die nur OCR-Rauschen ist (Flecken vom Scanrand, Buchstabensalat), entfernt dieser Knopf
-  – wie `Strg`+`⌫`, ohne Rückfrage. War es ein Versehen: **↶ Zurückholen** bringt die zuletzt gelöschte Zeile an ihre
+  beim Lesen und beim Korrigieren – wie `Strg`+`⌫`, ohne Rückfrage. War es ein Versehen: **↶ Zurückholen** bringt die zuletzt gelöschte Zeile an ihre
   Stelle zurück, auch wenn Sie inzwischen weitergelesen haben.
 - **Absatz und Überschrift:** Die Knöpfe unten rechts gelten der Lesezeile. **¶ Absatz** lässt dort einen neuen
   Absatz beginnen (wie `A`), **Überschrift 1 2 3** macht die Zeile zur Überschrift dieser Ebene (wie `H`) – 1 für

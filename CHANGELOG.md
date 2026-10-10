@@ -20,6 +20,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   eine zitierbare DOI bekommt, steht in [RELEASE.md](RELEASE.md) (#29).
 
 ### Geändert
+- **Zeile löschen am Tablet auch beim Korrigieren:** Steht das rote Wort in Buchstabensalat vom Scanrand, nimmt der
+  Knopf die ganze Zeile weg und führt zurück zum Lesen, wo »Zurückholen« bereitsteht.
 - [Andere Programme im Vergleich](docs/de/vergleich.md) (#25) und [Mit Transkribus arbeiten](docs/de/transkribus.md)
   (#23) mit Stand 9. Oktober 2026 nachgeprüft: unter anderem kostet bei Transkribus die Druckseite samt
   Zeilenerkennung 0,5 Credit (das Freikontingent reicht für etwa 100 Seiten im Monat), OCR4all wird nicht mehr

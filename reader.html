@@ -245,7 +245,7 @@ html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visib
  <div class="pane" id="korr">
   <div id="word"></div>
   <div id="tfix"><div id="tcrop"></div><div id="tsug"></div>
-   <div class="tbtns"><button type="button" class="tb" id="tOk" data-t="t_ok"></button><button type="button" class="tb go" id="tSave" data-t="t_save"></button><button type="button" class="tb" id="tUntype" data-t="t_untype"></button><button type="button" class="tb" id="tSkip" data-t="t_skip"></button><button type="button" class="tb" id="tType" data-t="t_type"></button><button type="button" class="tb" id="tParaF" data-t="t_para"></button><button type="button" class="tb" id="tSerieF" data-t="t_serie"></button><button type="button" class="tb" id="tBack" data-t="t_back"></button></div></div>
+   <div class="tbtns"><button type="button" class="tb" id="tOk" data-t="t_ok"></button><button type="button" class="tb go" id="tSave" data-t="t_save"></button><button type="button" class="tb" id="tUntype" data-t="t_untype"></button><button type="button" class="tb" id="tSkip" data-t="t_skip"></button><button type="button" class="tb" id="tType" data-t="t_type"></button><button type="button" class="tb" id="tParaF" data-t="t_para"></button><button type="button" class="tb" id="tSerieF" data-t="t_serie"></button><button type="button" class="tb del" id="tDelF" data-t="t_del"></button><button type="button" class="tb" id="tBack" data-t="t_back"></button></div></div>
   <div id="tbar" class="tbtns"><button type="button" class="tb go" id="tNext" data-t="t_next"></button><button type="button" class="tb" id="tEdit" data-t="t_edit"></button><button type="button" class="tb del" id="tDel" data-t="t_del"></button><button type="button" class="tb" id="tUndel" data-t="t_undel"></button><button type="button" class="tb" id="tNote" data-t="t_note"></button><button type="button" class="tb" id="tSerieR" data-t="t_serie"></button>
    <span id="tfmt"><button type="button" class="tb" id="tBold" data-t-title="t_bold"><b data-t="t_bold_l"></b></button><button type="button" class="tb" id="tItal" data-t-title="t_ital"><i data-t="t_ital_l"></i></button><button type="button" class="tb" id="tPara" data-t="t_para"></button><span data-t="t_heading"></span><button type="button" class="tb" data-h="1" data-t-title="t_heading_1">1</button><button type="button" class="tb" data-h="2" data-t-title="t_heading_2">2</button><button type="button" class="tb" data-h="3" data-t-title="t_heading_3">3</button></span></div>
   <div id="help"></div>
@@ -830,7 +830,7 @@ function renderTouch() {
   $('tOk').classList.toggle('go', !typing);  // grün, solange »Übernehmen« nicht da ist – nur ein Knopf sticht hervor
   $('tSkip').style.display = f ? '' : 'none'; $('tType').style.display = typing ? 'none' : '';
   $('tSave').style.display = typing ? '' : 'none'; $('tSerieF').style.display = offer ? '' : 'none'; $('tUntype').style.display = f && typing ? '' : 'none';
-  $('tParaF').style.display = f && !typing ? '' : 'none'; $('tParaF').classList.toggle('on', !!f && data.lines[f.line].startsWith('<p>'));
+  $('tParaF').style.display = $('tDelF').style.display = f && !typing ? '' : 'none'; $('tParaF').classList.toggle('on', !!f && data.lines[f.line].startsWith('<p>'));
   renderTsug();
 }
 function renderTsug() {
@@ -1838,6 +1838,9 @@ $('tOk').onclick = inFix(() => whitelist(true));  // F8, danach zurück zum Lese
 $('tSkip').onclick = inFix(async () => { const f = cf; passed = { line: f.line, start: f.start }; await toFlag({ line: f.line, start: f.start }); });  // Tab
 $('tSave').onclick = inFix(() => commit());  // Enter
 $('tBack').onclick = () => { if (!busy && (mode == 'fix' || mode == 'free')) leaveFix(); };  // Esc
+// Rauschzeile beim Korrigieren: Das rote Wort steht oft gerade in Buchstabensalat vom Scanrand. Danach zurück zum Lesen,
+// denn nur dort steht »Zurückholen« – beim gleich folgenden nächsten roten Wort fiele ein Versehen nicht mehr auf.
+$('tDelF').onclick = inFix(async () => { li = cf.line; fixRun = false; mode = 'read'; cf = null; sug = null; nsel = null; await deleteLines(true); });
 // Abbrechen beim Selbsttippen: Das Wort ist beim Öffnen der Tastatur markiert, ein Tipp daneben löscht es leicht. Die Zeile
 // steht wieder wie vorher, die Tastatur geht zu, es bleibt beim selben Wort mit seinen Vorschlägen.
 $('tUntype').onclick = inFix(async () => { $('edit').blur(); $('edit2').blur(); enterFix(cf); msg = t('untype_done'); render(); });

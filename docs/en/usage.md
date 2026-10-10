@@ -447,13 +447,14 @@ On the tablet you work with your finger:
   pages ahead and you keep your place. Exactly where **Correct as is** was, **Next red word** now appears: tapping the
   same spot twice moves straight on. **Skip** moves to the next red word, **Type it** opens the keyboard (the return key
   or **Apply** saves, **Cancel** restores the line, say if the selected word was deleted by
-  mistake), **¶ Paragraph** starts a paragraph in this line, **Back to reading** ends – as does simply
+  mistake), **¶ Paragraph** starts a paragraph in this line, **Delete line** removes the whole line when the
+  red word sits in noise from the scan edge (you are then back to reading, where **↶ Bring back** is at hand), **Back to reading** ends – as does simply
   swiping over the text with your finger and reading on; nothing is applied then. If you started with **Next red word**,
   each correction takes you straight on to the next one – except after **Correct as is**. If the corrected word occurs more often in the book,
   **Change everywhere** appears – the batch correction as with `F9`. **Edit line** opens the reading line when
   something other than a red word is wrong.
 - **Delete line:** A line that is nothing but OCR noise (specks from the scan edge, jumbled letters) is removed with
-  this button – like `Ctrl`+`⌫`, without asking. If it was a mistake, **↶ Bring back** puts the most recently deleted
+  this button, while reading and while correcting – like `Ctrl`+`⌫`, without asking. If it was a mistake, **↶ Bring back** puts the most recently deleted
   line back in its place, even if you have read on in the meantime.
 - **Paragraph and heading:** The buttons at the bottom right apply to the reading line. **¶ Paragraph** starts a new
   paragraph there (like `A`), **Heading 1 2 3** makes the line a heading of that level (like `H`) – 1 for chapters, 2
