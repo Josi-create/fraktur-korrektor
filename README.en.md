@@ -13,6 +13,8 @@
 
 **Read, correct and quote old books – on your own computer.**
 
+▶ **[The program in five minutes – video on YouTube](https://youtu.be/ACVUMOtro-A)** (in German; an English version is on its way)
+
 You have a book printed in Fraktur (German blackletter) as a scan, a PDF or photos taken in an archive, and you want to
 work with it: read it, search it, quote from it. Fraktur-Korrektor turns the page images into text and shows both side
 by side – the page as printed on the left, the recognised text on the right. Words the program does not know are
