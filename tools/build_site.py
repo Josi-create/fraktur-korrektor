@@ -44,6 +44,8 @@ def index_html():
     choice = ''.join('<p><a href="%s/index.html"><b>%s</b></a></p>' % (l, WORDS[l]['choose']) for l in LANGS)
     intro = markdown.markdown(readme_intro())
     intro = re.sub(r'href="docs/(de|en)/([\w-]+)\.md"', r'href="\1/\2.html"', intro)
+    # Bilder der README liegen unter docs/<sprache>/img – auf der Website unter <sprache>/img
+    intro = re.sub(r'src="docs/(de|en)/img/', r'src="\1/img/', intro)
     body = '<h1>Fraktur-Korrektor</h1>%s%s<p><a href="%s/releases/latest">%s</a> · <a href="%s">%s</a></p>' % (
         choice, intro, REPO, WORDS['de']['releases'], REPO, WORDS['de']['more'])
     nav = ''.join('<a href="%s/index.html">%s</a>' % (l, WORDS[l]['title']) for l in LANGS)

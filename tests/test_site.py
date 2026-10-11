@@ -1,4 +1,4 @@
-"""Die Hilfe als Website (tools/build_site.py): jede Seite aus docs/ kommt heraus, alle Links lösen sich auf,
+"""Die Hilfe als Website (tools/build_site.py): jede Seite aus docs/ kommt heraus, alle Links und Bilder lösen sich auf,
 nichts zeigt mehr auf /hilfe oder die Bibliothek, beide Sprachen verweisen aufeinander."""
 import os, re, sys
 from conftest import ROOT
@@ -7,7 +7,7 @@ import build_site
 
 
 def links(html):
-    return re.findall(r'href="([^"]+)"', html)
+    return re.findall(r'(?:href|src)="([^"]+)"', html)  # auch Bilder: README-Bild fehlte auf der Startseite
 
 
 def test_website(tmp_path):
