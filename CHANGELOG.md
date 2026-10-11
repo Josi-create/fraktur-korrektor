@@ -42,6 +42,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   bei übernommenem Vorschlag in `img/out`.
 
 ### Behoben
+- **Serienkorrektur:** Der Textausschnitt einer Fundstelle zeigte Reste der Auszeichnung, wenn er mitten in einer
+  begann (»…>Im Elend!«). Die Auszeichnung wird jetzt vor dem Kürzen entfernt.
 - **Zettel vom Tablet ohne Notizordner:** Statt der Meldung, dass am Rechner erst ein Ordner festzulegen sei, wartet der
   Zettel samt Anmerkung im Buchordner (`notizen-wartend`). Wird der Notizordner festgelegt, zieht er mit der nächsten
   freien Nummer dorthin; der Notiz-Dialog sagt, wie viele Zettel warten.

@@ -995,9 +995,10 @@ function renderSeries() {
     let crop = '<div class="crop" style="width:' + CW + 'px;height:36px"></div>';
     const sz = ser.sizes[o.page];
     if (o.geo && sz) crop = cropHtml(o, sz, CW, K);
-    const a = Math.max(0, o.start - 40), b = Math.min(o.text.length, o.start + o.len + 40);
-    let tx = (a > 0 ? '…' : '') + esc(o.text.slice(a, o.start)) + '<span class="flag">' + esc(o.text.slice(o.start, o.start + o.len)) + '</span>' + esc(o.text.slice(o.start + o.len, b)) + (b < o.text.length ? '…' : '');
-    if (o.join) tx += ' <span style="color:#999">⏎</span> <span class="flag">' + esc((o.text2.match(WRE) || [''])[0]) + '</span>' + esc(o.text2.slice((o.text2.match(WRE) || [''])[0].length, 30)) + '…';
+    // Auszeichnung erst entfernen, dann kürzen: sonst schneidet der Ausschnitt mitten in ein <p> und zeigt »…>Im Elend«
+    const pre = strip(o.text.slice(0, o.start)), post = strip(o.text.slice(o.start + o.len));
+    let tx = (pre.length > 40 ? '…' : '') + esc(pre.slice(-40)) + '<span class="flag">' + esc(o.text.slice(o.start, o.start + o.len)) + '</span>' + esc(post.slice(0, 40)) + (post.length > 40 ? '…' : '');
+    if (o.join) tx += ' <span style="color:#999">⏎</span> <span class="flag">' + esc((o.text2.match(WRE) || [''])[0]) + '</span>' + esc(strip(o.text2.slice((o.text2.match(WRE) || [''])[0].length)).slice(0, 30)) + '…';
     row.innerHTML = '<span class="chk"></span><span class="pgno">' + t('p_abbr') + ' ' + o.page + ' / ' + (o.line + 1) + '</span>' + crop + '<span class="stext">' + tx + '</span>';
     row.onclick = () => { ser.sel = n; o.on = !o.on; updateSeries(); };
     box.appendChild(row);
