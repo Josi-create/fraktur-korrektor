@@ -13,7 +13,7 @@
 
 **Alte Bücher lesen, berichtigen und daraus zitieren – auf Ihrem eigenen Rechner.**
 
-▶ **[Das Programm in fünf Minuten – Video auf YouTube](https://youtu.be/ACVUMOtro-A)**
+▶ **[Das Programm in fünf Minuten – Video auf YouTube](https://youtu.be/ACVUMOtro-A)** ([englische Fassung](https://youtu.be/u7lzubKsPgQ))
 
 Sie haben ein Buch in Frakturschrift als Scan, als PDF oder als Fotos aus dem Archiv und wollen damit arbeiten: es
 lesen, darin suchen, daraus zitieren. Der Fraktur-Korrektor macht aus den Seitenbildern Text und zeigt beides
