@@ -220,3 +220,35 @@ def test_titel_aus_scantailor_ordner(monkeypatch, tmp_path):
         with pytest.raises(ValueError):
             server.import_ocr(str(d), '', None, 'fraktur', False, lambda *a: None, lambda: False)
     assert titel == ['Chronik', 'Kirchenbuch']
+
+
+def test_fehler_nennt_die_datei(monkeypatch, tmp_path):
+    """Ein Bild im Ordner, das keine Buchseite ist: Die Meldung sagt, welches – statt nur »Das hat nicht geklappt.«"""
+    fitz = pytest.importorskip('fitz')
+    (tmp_path / 'bilder').mkdir()
+    fitz.Pixmap(fitz.csRGB, fitz.IRect(0, 0, 40, 60), False).save(str(tmp_path / 'bilder' / 'seite1.png'))
+    (tmp_path / 'bilder' / 'kaputt.png').write_bytes(b'kein Bild')
+    monkeypatch.setattr(ocr, 'find_tesseract', lambda: 'tesseract')
+    monkeypatch.setattr(ocr, 'ensure_model', lambda tess, script, progress: ('frak2021', None))
+    monkeypatch.setattr(ocr.subprocess, 'run', lambda cmd, **kw: types.SimpleNamespace(returncode=0, stdout=TSV.encode('utf-8'), stderr=b''))
+    with pytest.raises(RuntimeError, match=r'^kaputt\.png: '):
+        ocr.build(str(tmp_path / 'bilder'), str(tmp_path / 'buch'))
+
+
+def test_unerwarteter_fehler_im_auftrag(capsys):
+    """Kurzfassung für die Oberfläche, eine Zeile; der Traceback geht nach stderr – in der App ins Protokoll."""
+    import server
+
+    def kaputt(progress, cancelled):
+        raise RuntimeError('seite2.png: RuntimeError: Error in pixReadStream:\nUnknown format: no pix returned\n' + 'x' * 500)
+    jid = server.start_job(kaputt)
+    for _ in range(100):
+        if server.JOBS[jid]['state'] != 'running':
+            break
+        time.sleep(0.02)
+    j = server.JOBS[jid]
+    assert (j['state'], j['error']) == ('error', 'unknown')
+    assert j['detail'].startswith('RuntimeError: seite2.png: RuntimeError: Error in pixReadStream: Unknown format') and '\n' not in j['detail']
+    assert len(j['detail']) <= 402
+    err = capsys.readouterr().err
+    assert 'Auftrag kaputt' in err and 'Traceback' in err

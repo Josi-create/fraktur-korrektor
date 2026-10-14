@@ -355,3 +355,18 @@ def test_starter_spricht_die_sprache_des_systems():
     for lang in ('de', 'en'):
         doc = open(os.path.join(ROOT, 'docs', lang, 'install.md'), encoding='utf-8').read()
         assert starter.TEXTS[lang]['quit'] in doc, lang
+
+
+def test_protokoll(monkeypatch, tmp_path):
+    """Die gepackte App schreibt, was sonst ins Leere ginge, nach protokoll.txt; zu groß, wird die alte zu protokoll.alt.txt."""
+    monkeypatch.setattr(starter.korrlib, 'HOME', str(tmp_path))
+    monkeypatch.setattr(starter, 'LOG', str(tmp_path / 'protokoll.txt'))
+    (tmp_path / 'protokoll.txt').write_bytes(b'x' * (1 << 20 | 1))
+    log = starter.open_log()
+    out = starter.Tee(None, log)
+    print('Auftrag fehlgeschlagen: Fehler in »Seite 3«', file=out)
+    log.close()
+    assert (tmp_path / 'protokoll.alt.txt').stat().st_size == 1 << 20 | 1
+    s = (tmp_path / 'protokoll.txt').read_text(encoding='utf-8')
+    assert s.startswith('\n==== ') and 'Fraktur-Korrektor' in s and s.endswith('Fehler in »Seite 3«\n')
+    assert not out.isatty()

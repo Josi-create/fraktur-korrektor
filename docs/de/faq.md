@@ -55,6 +55,18 @@ einmal. Beim Start aus dem Quelltext: den Ordner `dict/` wiederherstellen oder e
 
 ## Öffnen und Einlesen
 
+**„Das hat nicht geklappt.“**
+Beim Einlesen ist etwas schiefgegangen, womit das Programm nicht gerechnet hat. Hinter der Meldung steht unter
+*Genauer:* eine technische Angabe – oft mit dem Namen der Datei, an der es hing. Zwei Dinge helfen meistens:
+
+- Wählen Sie eine einzelne Bilddatei, liest das Programm **alle Bilder in diesem Ordner** ein. Liegt die Buchseite etwa
+  in *Downloads* oder *Bilder* zwischen Fotos und Bildschirmfotos, legen Sie einen neuen Ordner nur für das Buch an,
+  kopieren Sie die Seiten hinein und öffnen Sie diesen Ordner.
+- Hilft das nicht, [melden Sie den Fehler](https://github.com/Josi-create/fraktur-korrektor/issues) und schicken Sie die
+  Angabe hinter *Genauer:* mit. Noch genauer steht es in der Datei **protokoll.txt** im Einstellungsordner des
+  Programms – unter Windows `C:\Users\<Ihr Name>\.fraktur-korrektor`, auf dem Mac im Finder über *Gehe zu* →
+  *Gehe zum Ordner …* und `~/.fraktur-korrektor`.
+
 **„Die angegebene Datei bzw. der Ordner wurde nicht gefunden.“**
 Der Pfad stimmt nicht mehr – die Datei wurde verschoben oder umbenannt, oder ein USB-Stick oder Netzlaufwerk ist nicht
 angeschlossen. Suchen Sie die Datei mit dem Knopf *Datei wählen …* noch einmal heraus.

@@ -12,7 +12,7 @@ Ein zweiter Doppelklick startet kein zweites Programm, sondern öffnet den Brows
 Die Argumente sind die von server.py (Buchordner, --port, --dic, --title, --lan, --no-browser); zusätzlich
 unterdrückt --no-ui das Symbol – so lässt sich die gepackte App auch ohne Bildschirm prüfen.
 """
-import sys, os, json, threading, webbrowser, subprocess, urllib.request
+import sys, os, json, time, platform, threading, webbrowser, subprocess, urllib.request
 
 import korrlib
 import server
@@ -276,9 +276,52 @@ def pick_ui(noui):
         return console_ui
 
 
+LOG = os.path.join(korrlib.HOME, 'protokoll.txt')
+
+
+class Tee:
+    """Schreibt in die Protokolldatei und, wenn es eine gibt, weiter auf die Konsole."""
+    def __init__(self, *streams):
+        self.streams = [s for s in streams if s]
+
+    def write(self, s):
+        for st in self.streams:
+            try:
+                st.write(s)
+                st.flush()  # bricht das Programm ab, soll der Grund schon in der Datei stehen
+            except Exception:
+                pass
+        return len(s)
+
+    def flush(self):
+        pass
+
+    def isatty(self):  # manche Bibliotheken fragen danach, bevor sie Farben oder Fortschrittsbalken ausgeben
+        return False
+
+    encoding = 'utf-8'
+
+
+def open_log():
+    """Die gepackte App hat keine Konsole (Windows) oder keine sichtbare (Mac): Was sonst ins Leere ginge – vor allem der
+    Traceback eines gescheiterten Einlesens –, kommt nach protokoll.txt im Einstellungsordner, damit ein Nutzer es
+    schicken kann. Über 1 MB wird die alte Datei zu protokoll.alt.txt; mehr als zwei bleiben nicht liegen."""
+    try:
+        os.makedirs(korrlib.HOME, exist_ok=True)
+        if os.path.isfile(LOG) and os.path.getsize(LOG) > 1 << 20:
+            os.replace(LOG, os.path.join(korrlib.HOME, 'protokoll.alt.txt'))
+        f = open(LOG, 'a', encoding='utf-8', errors='replace')
+        f.write('\n==== %s %s %s, %s, Python %s\n' % (time.strftime('%Y-%m-%d %H:%M:%S'), APP, server.version(), platform.platform(),
+                                                   platform.python_version()))
+        return f
+    except OSError:
+        return None
+
+
 def main(argv=None):
-    if sys.stdout is None:  # gepackt ohne Konsole (Windows) – sonst scheitert schon das erste print
-        sys.stdout = sys.stderr = open(os.devnull, 'w')
+    if getattr(sys, 'frozen', False) or sys.stdout is None:  # gepackt; ohne Konsole scheiterte sonst schon das erste print
+        log = open_log()
+        sys.stdout, sys.stderr = Tee(sys.stdout, log), Tee(sys.stderr, log)
     argv = [a for a in (sys.argv[1:] if argv is None else argv) if not a.startswith('-psn_')]  # der Finder hängt eine Prozessnummer an
     unbundle_env()
     noui = '--no-ui' in argv
@@ -318,5 +361,5 @@ if __name__ == '__main__':
         except SystemExit:
             raise
         except Exception as e:  # ohne Konsole bliebe der Fehler unsichtbar und die App startete scheinbar grundlos nicht
-            alert('%s konnte nicht starten:\n\n%r' % (APP, e))
+            alert('%s konnte nicht starten:\n\n%r\n\nEinzelheiten stehen in %s' % (APP, e, LOG))
             raise

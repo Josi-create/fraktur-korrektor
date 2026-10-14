@@ -455,7 +455,7 @@ async function runJob(path, body) {
       if (j.total) $('bar').firstChild.style.width = (100 * j.done / j.total) + '%';
       $('ptext').textContent = j.msg ? t('prog_' + j.msg, { d: j.done, t: j.total }) : '';
       if (j.state == 'done') return j.result;
-      if (j.state == 'error') throw new Error(t('err_' + j.error));
+      if (j.state == 'error') throw new Error(jobError(j));
     }
   } finally { job = null; busyUi(false); await update(); }
 }
@@ -820,7 +820,7 @@ async function editJob(path, body) {
       if (j.total) $('ebar').firstChild.style.width = (100 * j.done / j.total) + '%';
       $('etext').textContent = j.msg ? t('prog_' + j.msg, { d: j.done, t: j.total }) : '';
       if (j.state == 'done') return j.result;
-      if (j.state == 'error') throw new Error(t('err_' + j.error));
+      if (j.state == 'error') throw new Error(jobError(j));
     }
   } finally { $('eprog').style.display = 'none'; $('eGo').disabled = false; }
 }

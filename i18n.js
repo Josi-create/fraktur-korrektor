@@ -173,6 +173,7 @@ de: {
   err_keine_xml: 'Darin war weder PAGE-XML noch hOCR, ALTO oder Text zu finden. Aus Transkribus kommen „PAGE XML“ (mit der Lage der Zeilen im Bild) und „Text“ (nur der Wortlaut); Bibliotheken geben hOCR oder ALTO heraus.',
   err_nur_lokal: 'Das geht nur an dem Rechner, auf dem das Programm läuft.',
   err_unknown: 'Das hat nicht geklappt.',
+  err_detail: 'Genauer: »{d}« – wenn Sie den Fehler melden, schicken Sie diese Angabe bitte mit.',
   open_btn: 'Öffnen …', open_what: 'Buchordner, PDF, EPUB, Bilder oder Transkribus-Export – das Programm erkennt selbst, was es ist.',
   open_title: 'Öffnen', open_intro: 'Zeigen Sie dem Programm eine Datei oder einen Ordner. Es sieht nach, was darin steckt, und schlägt vor, wie es weitergeht.',
   pick_file: 'Datei wählen …', pick_folder: 'Ordner wählen …', open_path: '… oder den Pfad hier einfügen', scan_go: 'Untersuchen', back: 'Zurück',
@@ -610,6 +611,7 @@ en: {
   err_keine_xml: 'Neither PAGE XML, hOCR, ALTO nor text was found in there. Transkribus exports “PAGE XML” (with the position of the lines in the image) and “Text” (wording only); libraries publish hOCR or ALTO.',
   err_nur_lokal: 'This only works on the computer the program runs on.',
   err_unknown: 'That did not work.',
+  err_detail: 'Details: “{d}” – please include this when you report the problem.',
   open_btn: 'Open …', open_what: 'Book folder, PDF, EPUB, images or Transkribus export – the program works out by itself what it is.',
   open_title: 'Open', open_intro: 'Show the program a file or a folder. It looks at what is inside and suggests how to go on.',
   pick_file: 'Choose file …', pick_folder: 'Choose folder …', open_path: '… or paste the path here', scan_go: 'Examine', back: 'Back',
@@ -885,6 +887,10 @@ function t(k, v) {
   let s = T[LANG][k] ?? T.de[k] ?? k;
   if (v) for (const [a, b] of Object.entries(v)) s = s.split('{' + a + '}').join(b);
   return s;
+}
+// Fehler eines Hintergrundauftrags als Text; bei einem unerwarteten steht die technische Angabe dabei – zum Weitergeben
+function jobError(j) {
+  return t('err_' + j.error) + (j.detail ? ' ' + t('err_detail', { d: j.detail }) : '');
 }
 function setLang(l) { try { localStorage.setItem('lang', l); } catch (e) {} location.reload(); }
 function applyI18n() {

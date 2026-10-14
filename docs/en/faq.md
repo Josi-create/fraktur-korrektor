@@ -52,6 +52,18 @@ starting from the source code: restore the `dict/` folder, or point to your own 
 
 ## Opening and reading in
 
+**“That did not work.”**
+Something went wrong while reading in that the program did not expect. After the message, under *Details:*, there is
+a technical note – often with the name of the file it got stuck on. Two things usually help:
+
+- If you pick a single image file, the program reads in **all images in that folder**. If the book page sits in
+  *Downloads* or *Pictures* among photos and screenshots, create a new folder just for the book, copy the pages into it
+  and open that folder.
+- If that does not help, [report the problem](https://github.com/Josi-create/fraktur-korrektor/issues) and include the
+  note after *Details:*. More detail is in the file **protokoll.txt** in the program's settings folder – on Windows
+  `C:\Users\<your name>\.fraktur-korrektor`, on the Mac via *Go* → *Go to Folder …* in the Finder and
+  `~/.fraktur-korrektor`.
+
 **“The file or folder was not found.”**
 The path no longer fits – the file was moved or renamed, or a USB stick or network drive is not connected. Pick the
 file again with the *Choose file …* button.

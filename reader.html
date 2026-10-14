@@ -1508,7 +1508,7 @@ async function runReplace() {
     while (true) {
       await new Promise(r => setTimeout(r, NOTRANS ? 0 : 400));
       const j = await (await fetch('/api/job/' + rjob)).json();
-      if (j.state == 'error') throw new Error(t('err_' + j.error));
+      if (j.state == 'error') throw new Error(jobError(j));
       if (j.state == 'done') { const p = pg; closeReplace(); await loadOverview(); await loadPage(p, 0); msg = t('repl_done', { n: j.result.lines }); render(); return; }
     }
   } catch (e) { $('rinfo').textContent = e.message; }

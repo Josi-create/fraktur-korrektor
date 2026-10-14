@@ -422,14 +422,18 @@ def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda:
             return None
         pg = '%03d' % (n + 1)
         stem = os.path.join(out, 'img', pg)
-        if is_pdf:
-            import fitz
-            with fitz.open(source) as d:  # je Aufruf öffnen: ein PDF-Objekt verträgt keine mehreren Threads
-                img, w, h, dpi, _ = pdf_page(d, n, stem)
-        else:
-            img, dpi = copy_image(files[n], stem), DPI
-            w, h = image_size(img)
-        lines, words = ocr_image(tess, img, model, tessdata, dpi)
+        try:
+            if is_pdf:
+                import fitz
+                with fitz.open(source) as d:  # je Aufruf öffnen: ein PDF-Objekt verträgt keine mehreren Threads
+                    img, w, h, dpi, _ = pdf_page(d, n, stem)
+            else:
+                img, dpi = copy_image(files[n], stem), DPI
+                w, h = image_size(img)
+            lines, words = ocr_image(tess, img, model, tessdata, dpi)
+        except Exception as e:
+            # Liegt im Bilderordner etwas, das keine Buchseite ist, soll die Meldung sagen, welche Datei es war
+            raise RuntimeError('%s: %s: %s' % ('PDF-Seite %d' % (n + 1) if is_pdf else os.path.basename(files[n]), type(e).__name__, e)) from e
         return pg, w, h, lines, words
 
     geo, quality, done = {}, {}, 0

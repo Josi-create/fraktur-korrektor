@@ -18,6 +18,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 - **Betatest** (#30): [BETATEST.md](BETATEST.md) sagt Testerinnen und Testern, was sie ausprobieren und wie sie
   Bescheid geben; dazu das Formular „Rückmeldung zum Betatest“ (deutsch und englisch). Wie das Projekt bei Zenodo
   eine zitierbare DOI bekommt, steht in [RELEASE.md](RELEASE.md) (#29).
+- **Unerwartete Fehler sagen, woran es lag:** Statt nur „Das hat nicht geklappt.“ steht dahinter *Genauer: …* – Art
+  und Text des Fehlers, beim Einlesen von Bildern mit dem Namen der Datei, an der es hing. Die fertigen Programme
+  schreiben außerdem `protokoll.txt` in den Einstellungsordner (`~/.fraktur-korrektor`), samt Traceback; unter Windows
+  ging bisher jede Ausgabe ins Leere. Anlass war eine Rückmeldung von Windows 10, bei der niemand sehen konnte, was
+  schiefging. Die FAQ erklärt die Meldung.
 
 ### Geändert
 - **Überschrift über mehrere Zeilen:** Markierte Zeilen (`Umschalt`+`↓`, Maus oder Finger) werden mit `H` bzw. den

@@ -4,7 +4,7 @@ py server.py [<buchordner>] [--port 8765] [--dic <hunspell-pfad>] [--title "…"
 Ohne Buchordner erscheint die Bibliothek (Bücher öffnen, Transkribus-Export importieren).
 Buchordner: NNN.txt (eine Datei je Seite), lines.json (Zeilengeometrie), img/NNN.png|jpg,
 optional autokorr.log, whitelist.txt; lesezeichen.json und korrekturen.log werden angelegt."""
-import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socket, socketserver, urllib.parse, webbrowser, argparse, collections, statistics
+import sys, os, json, re, glob, time, uuid, shutil, hashlib, tempfile, threading, subprocess, socket, socketserver, urllib.parse, webbrowser, argparse, collections, statistics, traceback
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import korrlib, pagexml, ocr, epub, finder, pdfbuch, epubbuch, scans, merge, kindle
 from korrlib import read_page, corpus_freq, joined_tokens, in_dict
@@ -2296,6 +2296,13 @@ def raise_window(exe, wait=6.0):
 JOBS = {}
 
 
+def job_detail(e):
+    """Kurzfassung eines unerwarteten Fehlers für die Oberfläche: Art und Text, eine Zeile, zum Kopieren und Weitergeben.
+    Ohne sie bliebe nur »Das hat nicht geklappt.« – und niemand wüsste, woran: Die gepackte App hat keine Konsole."""
+    s = ' '.join(('%s: %s' % (type(e).__name__, e)).split())  # Tesseract meldet mehrzeilig
+    return s if len(s) <= 400 else s[:400] + ' …'
+
+
 def start_job(fn, *args):
     jid = uuid.uuid4().hex[:8]
     j = JOBS[jid] = dict(state='running', done=0, total=0, msg='', cancel=False, result=None, error=None)
@@ -2310,7 +2317,10 @@ def start_job(fn, *args):
         except ValueError as e:
             j.update(state='error', error=str(e))
         except Exception as e:
-            j.update(state='error', error='unknown', detail=repr(e))
+            # Unerwartet: Die Oberfläche zeigt die Kurzfassung zum Weitergeben, der volle Traceback geht ins Protokoll
+            print('%s Auftrag %s (%s) fehlgeschlagen:' % (time.strftime('%Y-%m-%d %H:%M:%S'), fn.__name__, jid), file=sys.stderr)
+            traceback.print_exc()
+            j.update(state='error', error='unknown', detail=job_detail(e))
     threading.Thread(target=run, daemon=True).start()
     return jid
 
