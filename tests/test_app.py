@@ -363,6 +363,7 @@ def test_protokoll(monkeypatch, tmp_path):
     monkeypatch.setattr(starter, 'LOG', str(tmp_path / 'protokoll.txt'))
     (tmp_path / 'protokoll.txt').write_bytes(b'x' * (1 << 20 | 1))
     log = starter.open_log()
+    assert 'Fraktur-Korrektor' in (tmp_path / 'protokoll.txt').read_text(encoding='utf-8')  # gleich da, nicht erst mit der ersten Meldung
     out = starter.Tee(None, log)
     print('Auftrag fehlgeschlagen: Fehler in »Seite 3«', file=out)
     log.close()

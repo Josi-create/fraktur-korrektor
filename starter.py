@@ -313,6 +313,7 @@ def open_log():
         f = open(LOG, 'a', encoding='utf-8', errors='replace')
         f.write('\n==== %s %s %s, %s, Python %s\n' % (time.strftime('%Y-%m-%d %H:%M:%S'), APP, server.version(), platform.platform(),
                                                    platform.python_version()))
+        f.flush()  # sonst stünde die Kopfzeile erst mit der ersten Meldung in der Datei
         return f
     except OSError:
         return None
