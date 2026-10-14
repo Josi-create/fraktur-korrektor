@@ -4,6 +4,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 
 ## [Unveröffentlicht]
 
+## [0.13.0] – 2026-10-14
+
 ### Neu
 - **Beispielbuch zum Ausprobieren** (#22): Der Willkommensgruß der leeren Bibliothek hat den Knopf **Beispielbuch
   öffnen**, unten in der Bibliothek steht immer der Link **Beispielbuch**. Das Programm legt eine Kopie der acht
