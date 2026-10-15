@@ -47,6 +47,14 @@ def test_fliesstext_absaetze_und_seitenmarken():
     assert 'seite-002' not in text(r) and r['stats']['marked'] == 2
 
 
+
+def test_doppelter_absatz():
+    """<p><br/> (Umschalt+A): ein Absatz mit einer Leerzeile davor – im E-Book <p class="abstand">, die Leerzeile als Abstand."""
+    pages = {'001': ['# ', '<p>Ende des Kapitels.', '<p><br/>Ein neuer Abschnitt', 'beginnt hier.', '<p>Und weiter.']}
+    assert text(epubbuch.build(data(pages))).splitlines()[-3:] == [
+        '<p class="erst">Ende des Kapitels.</p>', '<p class="abstand">Ein neuer Abschnitt beginnt hier.</p>', '<p>Und weiter.</p>']
+    assert 'p.abstand' in epubbuch.CSS
+
 def test_kapitel_und_inhaltsverzeichnis():
     pages = {'001': ['<h1>Erstes Kapitel.</h1>', '<h1>Die Reise nach Odes¬</h1>', '<h1>sa.</h1>', 'Text eins.'],
              '002': ['# 2', '<h3>Unterabschnitt</h3>', 'Text zwei.', '<h1>Zweites Kapitel</h1>', 'Text drei.']}

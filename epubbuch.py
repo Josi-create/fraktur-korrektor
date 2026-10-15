@@ -47,6 +47,7 @@ CSS = '''body { margin: 0 4%; line-height: 1.45; }
 p { margin: 0; text-indent: 1.2em; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
 p.erst { text-indent: 0; }
 p.vers { text-indent: 0; text-align: left; hyphens: none; -webkit-hyphens: none; margin: 0.4em 0; }
+p.abstand { margin-top: 1.45em; }
 h1, h2, h3, h4, h5, h6 { text-align: center; line-height: 1.25; margin: 1.5em 0 0.8em; font-weight: bold; hyphens: none; }
 h1 { font-size: 1.5em; } h2 { font-size: 1.3em; } h3 { font-size: 1.12em; } h4, h5, h6 { font-size: 1em; }
 span.seite { font-size: 0.7em; color: #888; font-weight: normal; font-style: normal; }
@@ -146,6 +147,7 @@ class _Flow:
         self.full = lens[int(len(lens) * 0.95)] if lens else 0
         self.lined = {pg for pg in pages if self.is_lined(pg)}
         self.verse = False    # der offene Absatz hat Zeilen, die Zeilen bleiben
+        self.gap = False      # der offene Absatz ist ein doppelter: eine Leerzeile davor (Umschalt+A)
         self.notes = self.footnotes()
         self.names = {(pg, i): (lv, tx) for pg, i, lv, tx in korrlib.headings(pages)}
         self.stats = dict(paragraphs=0, headings=0, figures=0, loose=0)  # loose: Bildunterschriften ohne Abbildung
@@ -290,11 +292,11 @@ class _Flow:
         if self.para is not None:
             text = TRENN.sub(r'\1', self.para)
             if plain(PLATZ.sub('', text)) or PLATZ.search(text):
-                cls = 'vers' if self.verse else 'erst' if self.first else ''
+                cls = ' '.join(c for c in ('vers' if self.verse else 'erst' if self.first else '', 'abstand' if self.gap else '') if c)
                 self.emit('p', '<p%s>%s</p>' % (' class="%s"' % cls if cls else '', self.fill(xhtml(text))))
                 self.stats['paragraphs'] += 1
                 self.first = False
-            self.para, self.verse = None, False
+            self.para, self.verse, self.gap = None, False, False
         for x in self.due:
             body = self.fill(xhtml(x['text']))
             if x['ref']:
@@ -463,7 +465,8 @@ class _Flow:
                 raw = self.link(pg, l)
                 if raw.startswith('<p>'):
                     self.close()
-                    raw = raw[3:]
+                    self.gap = bool(korrlib.GAP.match(raw))
+                    raw = korrlib.PARA.sub('', raw)
                 self.add(raw, pg in self.lined)
                 if self.fallback and pg not in self.lined and ENDE.search(plain(l)) and len(plain(l)) < 0.8 * self.full:
                     self.close()  # ohne Absatzmarken: eine kurze Zeile mit Satzzeichen am Ende schließt den Absatz

@@ -51,6 +51,7 @@ Neu hier? [Erste Schritte](first-steps.md) führt am Beispielbuch durch das Wich
 | Lesen | `T` | Tabelle: aus getrennten Zeilen eine Tabelle machen bzw. wieder auflösen (siehe unten) |
 | Lesen | `H` | Überschrift: Ebene 1 → 2 → 3 → keine (siehe unten) |
 | Lesen | `A` | hier beginnt ein Absatz – noch einmal `A` nimmt es zurück (siehe unten) |
+| Lesen | `Umschalt`+`A` | doppelter Absatz: ein Absatz mit einer Leerzeile davor, etwa nach einem Kapitelende oder zwischen zwei Strophen (siehe unten) |
 | Lesen | `I` | Inhalt: alle Überschriften des Buchs, `Enter` springt hin (siehe unten) |
 | Lesen | `B` | Abbildung im Seitenbild markieren, damit sie ins E-Book kommt (siehe unten) |
 | Lesen | `L` | die Lesezeile ist eine Bildunterschrift – noch einmal `L` nimmt es zurück (siehe unten) |
@@ -277,6 +278,18 @@ mit einem Satzzeichen. Verse, Listen und Register bleiben so meist unberührt. O
 einem EPUB ohne PDF) oder in einem Buch ohne Einzüge erkennt das Programm keine Absätze. In der Textdatei steht ein
 Absatzanfang als `<p>` am Zeilenanfang, wie im EPUB.
 
+### Doppelter Absatz (Umschalt+A)
+
+Manchmal steht im Druck zwischen zwei Absätzen eine **Leerzeile**: wo ein Abschnitt endet und ein neuer beginnt, am Ende
+eines Kapitels vor dem nächsten Teil, oder in einem Gedicht zwischen zwei Strophen. `Umschalt`+`A` auf der ersten Zeile
+danach setzt einen solchen doppelten Absatz: Im Text erscheint darüber ein Abstand, im [E-Book](epub-sichern.md) eine
+Leerzeile. Noch einmal `Umschalt`+`A` nimmt die Leerzeile wieder weg, der Absatz bleibt; `A` nimmt den ganzen Absatz
+zurück. Am Tablet heißt der Knopf **¶¶**.
+
+Die Leerzeile ist keine eigene Zeile in der Textdatei – jede Zeile dort gehört zu einer Zeile im Seitenbild. Sie steht als
+`<p><br/>` am Anfang der Zeile. Liest das Programm ein EPUB ein, wird ein Abschnittswechsel darin (`<hr/>`) ebenso zum
+doppelten Absatz.
+
 ## Abbildungen (B) und Bildunterschriften (L)
 
 Das Programm kennt vom Seitenbild nur die Textzeilen. Wo eine Abbildung, eine Karte oder eine Tafel ist, zeigen Sie
@@ -469,7 +482,7 @@ Auf dem Tablet bedienen Sie alles mit dem Finger:
   beim Lesen und beim Korrigieren – wie `Strg`+`⌫`, ohne Rückfrage. War es ein Versehen: **↶ Zurückholen** bringt die zuletzt gelöschte Zeile an ihre
   Stelle zurück, auch wenn Sie inzwischen weitergelesen haben.
 - **Absatz und Überschrift:** Die Knöpfe unten rechts gelten der Lesezeile. **¶ Absatz** lässt dort einen neuen
-  Absatz beginnen (wie `A`), **Überschrift 1 2 3** macht die Zeile zur Überschrift dieser Ebene (wie `H`) – 1 für
+  Absatz beginnen (wie `A`), **¶¶** einen doppelten mit Leerzeile davor (wie `Umschalt`+`A`), **Überschrift 1 2 3** macht die Zeile zur Überschrift dieser Ebene (wie `H`) – 1 für
   Kapitel, 2 und 3 für Abschnitte darin. Hervorgehoben ist, was die Zeile schon ist; noch einmal antippen nimmt es
   zurück. Für eine Überschrift über mehrere Zeilen markieren Sie diese mit dem Finger und tippen dann die Ebene an.
 - **Fett, kursiv, unterstrichen:** Wörter mit dem Finger markieren (lange auf ein Wort drücken, dann die Griffe ziehen)

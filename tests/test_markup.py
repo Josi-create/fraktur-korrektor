@@ -215,6 +215,13 @@ def test_fett_und_kursiv_von_hand():
     assert korrlib.mask('ein <u>Wort</u>') == 'ein    Wort    '  # die Wortprüfung sieht kein »u«
 
 
+def test_doppelter_absatz_wird_ueberschrift():
+    """Wird ein doppelter Absatz (<p><br/>) Überschrift oder Bildunterschrift, fällt die Leerzeile mit dem Absatz weg."""
+    assert korrlib.heading('<p><br/>Drittes Kapitel', 2) == '<h2>Drittes Kapitel</h2>'
+    assert korrlib.caption('<p><br/>Abb. 3') == '<figcaption>Abb. 3</figcaption>'
+    assert korrlib.PARA.sub('', '<p><br/>Text') == korrlib.PARA.sub('', '<p>Text') == 'Text' and korrlib.GAP.match('<p><br />x')
+
+
 def test_fett_ueber_die_schnittstelle(app):
     old = app.text('001')
     code, d = app.post('/api/markup/001', dict(kind='style', tag='b', start=1, end=2, old=old[1:3], **{'from': 4, 'to': 7}))

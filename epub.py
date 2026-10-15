@@ -73,6 +73,7 @@ class _Blocks(HTMLParser):
         self.css, self.blocks, self.stack = css, [], []  # stack: offene Elemente (tag, eigene stile)
         self.runs, self.segs = [], []                    # der offene Block
         self.skip, self.pb, self.pre = 0, None, 0
+        self.gap = False  # der nächste Absatz ist ein doppelter: <hr/> davor, oder <p class="abstand"> wie im E-Book dieses Programms
         self.table, self.cell, self.nested = None, None, 0
 
     def styles(self, tag, a):
@@ -110,7 +111,8 @@ class _Blocks(HTMLParser):
         segs = [s for s in self.segs + [self.runs] if _words(s)]
         if segs:
             lv = self.level()
-            self.blocks.append(dict(kind='h' if lv else 'p', level=lv, segs=segs))
+            self.blocks.append(dict(kind='h' if lv else 'p', level=lv, segs=segs, **({'gap': True} if self.gap and not lv else {})))
+            self.gap = False
         self.runs, self.segs = [], []
 
     def handle_starttag(self, tag, attrs):
@@ -122,6 +124,7 @@ class _Blocks(HTMLParser):
                 self.newline()
             elif tag == 'hr' and self.table is None:
                 self.flush()
+                self.gap = True
             return
         if self.pb is None and ('pagebreak' in (a.get('epub:type') or '').split() or a.get('role') == 'doc-pagebreak'):
             self.pb = tag  # Seitenmarke der Druckausgabe (»[12]« in einem E-Book dieses Programms, #59): kein Text des Buchs
@@ -154,6 +157,7 @@ class _Blocks(HTMLParser):
             self.text(' ')
         elif tag in BLOCK or HEAD.match(tag):
             self.flush()
+            self.gap = self.gap or (tag == 'p' and 'abstand' in (a.get('class') or '').split())
         if tag == 'pre':
             self.pre += 1
         self.stack.append((tag, self.styles(tag, a)))
@@ -182,6 +186,7 @@ class _Blocks(HTMLParser):
                 for r in rows:
                     r += [['td', []] for _ in range(n - len(r))]
                 self.blocks.append(dict(kind='table', rows=[[(c[0], c[1]) for c in r] for r in rows]))
+                self.gap = False
             self.table = self.cell = None
         elif tag in ('td', 'th') and not self.nested:
             self.cell = None
@@ -409,7 +414,7 @@ def text_book(path, out, width=68, per_page=34):
                     if b['kind'] == 'h':
                         l = '<h%d>%s</h%d>' % (b['level'], l, b['level'])
                     elif s == 0 and k == 0 and not cont:
-                        l = '<p>' + l
+                        l = ('<p><br/>' if b.get('gap') else '<p>') + l
                     groups.append([l])
                     last = l
         page = []
@@ -439,11 +444,12 @@ def norm(w):
 
 class Words:
     """Der Wortlaut mit Auszeichnung: je Wort der Text (plain), die Stücke mit Stil (runs), die Ebene der Überschrift,
-    in der es steht (0: keine), und ob es einen Absatz beginnt (para)."""
+    in der es steht (0: keine), und ob es einen Absatz beginnt (para) – einen doppelten mit Leerzeile davor (gap)."""
 
     def __init__(self):
-        self.plain, self.runs, self.level, self.para = [], [], [], set()
+        self.plain, self.runs, self.level, self.para, self.gap = [], [], [], set(), set()
         self.start = False  # das nächste Wort beginnt einen Absatz
+        self.gapnext = False  # … einen doppelten
 
     def add(self, w, level=0):
         p = plain(w)
@@ -451,7 +457,9 @@ class Words:
             return  # ein Absatzanfang geht auf das nächste echte Wort über
         if self.start and not level:
             self.para.add(len(self.plain))
-        self.start = False
+            if self.gapnext:
+                self.gap.add(len(self.plain))
+        self.start = self.gapnext = False
         self.plain.append(p)
         self.runs.append(w)
         self.level.append(level)
@@ -469,7 +477,7 @@ def epub_words(path):
                         for w in _words(runs):
                             E.add(w)
                 continue
-            E.start = b['kind'] == 'p'
+            E.start, E.gapnext = b['kind'] == 'p', bool(b.get('gap'))
             for seg in b['segs']:
                 for w in _words(seg):
                     E.add(w, b['level'])
@@ -494,6 +502,7 @@ def book_text(folder):
             h = korrlib.HLINE.match(l.strip())
             level = int(h.group(1)) if h else 0
             E.start = E.start or l.startswith('<p>')
+            E.gapnext = E.gapnext or bool(korrlib.GAP.match(l))
             for w in _words(line_runs(l)):
                 if E.plain and E.plain[-1].endswith('¬'):  # zweite Hälfte eines getrennten Wortes
                     E.runs[-1] = _slice(E.runs[-1], 0, len(E.plain[-1]) - 1) + w
@@ -660,7 +669,7 @@ def _transplant(E, title, source, book, progress, path=None):
                     if v == u + 1 and 0 < gap <= span[u][3] + span[v][2] + 2:  # Nachbarzeilen: Lückenwörter aufteilen, nichts verlieren
                         take = min(gap, max(span[u][3], gap - span[v][2]))
                         span[u][1] += take; span[v][0] -= gap - take
-                new, starts = list(lines), set()
+                new, starts, gaps = list(lines), set(), set()
                 for ln, (e0, e1, _, _) in span.items():
                     ws = []
                     for e in range(e0, e1 + 1):
@@ -680,11 +689,13 @@ def _transplant(E, title, source, book, progress, path=None):
                         l = '<h%d>%s</h%d>' % (min(lv), l, min(lv))
                     elif e0 in E.para and not (e0 in split and split[e0][0] != ln):
                         starts.add(ln)
+                        if e0 in E.gap:
+                            gaps.add(ln)
                     new[ln] = l
                     taken += 1
                 for ln in sorted(x for x in span if x < foot):  # Absatzanfänge in Lesereihenfolge
                     if ln in starts and not _continues(last, new[ln]):
-                        new[ln] = '<p>' + new[ln]
+                        new[ln] = ('<p><br/>' if ln in gaps else '<p>') + new[ln]
                     last = new[ln]
                 if new != lines:
                     with open(f, 'w', encoding='utf-8') as o:
@@ -791,7 +802,7 @@ def markup(E, pages, skip=None, progress=lambda done, total, msg: None):
                 stats['headings'] += 1
             elif body[idx[0]][1] == ln and m.get(idx[0]) in E.para and not l.startswith('<p>') \
                     and (len(idx) == 1 or m.get(idx[1]) == m[idx[0]] + 1) and not _continues(last, l):
-                new[ln] = '<p>' + l  # auch das zweite Wort folgt im EPUB darauf, und die Zeile davor schließt einen Satz ab
+                new[ln] = ('<p><br/>' if m.get(idx[0]) in E.gap else '<p>') + l  # auch das zweite Wort folgt im EPUB darauf, und die Zeile davor schließt einen Satz ab
                 stats['paragraphs'] += 1
             last = new[ln]
         if new != lines:

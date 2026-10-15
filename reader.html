@@ -88,7 +88,7 @@ kbd{background:#eee;border:1px solid #bbb;border-bottom-width:2px;border-radius:
 /* Rücksprung vom Zettel (#74): die zitierten Zeilen blau wie ein Suchtreffer, im Bild blau umrahmt; die Lesezeile darin bleibt gelb */
 #lines div.stelle{background:#e1f0ff;color:#0d4d85;box-shadow:inset 4px 0 #1780c0}
 #lines div.stelle.cur{background:#fff3b8}
-#lines div.para{text-indent:1.5em}
+#lines div.para{text-indent:1.5em} #lines div.gap{margin-top:1.4em}
 /* Bildunterschrift (L): kleiner, mit grünem Strich wie der Rahmen der Abbildung im Seitenbild */
 #lines div.caption{font-size:calc(16px * var(--tz, 1));color:#1d5c3a;background:#eef7f1;box-shadow:inset 4px 0 #2a9d5c}
 #lines div.caption.cur{background:#fff3b8;color:#000}
@@ -247,7 +247,7 @@ html.touch.fixing:not(.typing) #edit,html.touch.fixing:not(.typing) #edit2{visib
   <div id="tfix"><div id="tcrop"></div><div id="tsug"></div>
    <div class="tbtns"><button type="button" class="tb" id="tOk" data-t="t_ok"></button><button type="button" class="tb go" id="tSave" data-t="t_save"></button><button type="button" class="tb" id="tUntype" data-t="t_untype"></button><button type="button" class="tb" id="tSkip" data-t="t_skip"></button><button type="button" class="tb" id="tType" data-t="t_type"></button><button type="button" class="tb" id="tParaF" data-t="t_para"></button><button type="button" class="tb" id="tSerieF" data-t="t_serie"></button><button type="button" class="tb del" id="tDelF" data-t="t_del"></button><button type="button" class="tb" id="tBack" data-t="t_back"></button></div></div>
   <div id="tbar" class="tbtns"><button type="button" class="tb go" id="tNext" data-t="t_next"></button><button type="button" class="tb" id="tEdit" data-t="t_edit"></button><button type="button" class="tb del" id="tDel" data-t="t_del"></button><button type="button" class="tb" id="tUndel" data-t="t_undel"></button><button type="button" class="tb" id="tNote" data-t="t_note"></button><button type="button" class="tb" id="tSerieR" data-t="t_serie"></button>
-   <span id="tfmt"><button type="button" class="tb" id="tBold" data-t-title="t_bold"><b data-t="t_bold_l"></b></button><button type="button" class="tb" id="tItal" data-t-title="t_ital"><i data-t="t_ital_l"></i></button><button type="button" class="tb" id="tUnder" data-t-title="t_under"><u data-t="t_under_l"></u></button><button type="button" class="tb" id="tPara" data-t="t_para"></button><span data-t="t_heading"></span><button type="button" class="tb" data-h="1" data-t-title="t_heading_1">1</button><button type="button" class="tb" data-h="2" data-t-title="t_heading_2">2</button><button type="button" class="tb" data-h="3" data-t-title="t_heading_3">3</button></span></div>
+   <span id="tfmt"><button type="button" class="tb" id="tBold" data-t-title="t_bold"><b data-t="t_bold_l"></b></button><button type="button" class="tb" id="tItal" data-t-title="t_ital"><i data-t="t_ital_l"></i></button><button type="button" class="tb" id="tUnder" data-t-title="t_under"><u data-t="t_under_l"></u></button><button type="button" class="tb" id="tPara" data-t="t_para"></button><button type="button" class="tb" id="tGap" data-t="t_gap" data-t-title="t_gap_title"></button><span data-t="t_heading"></span><button type="button" class="tb" data-h="1" data-t-title="t_heading_1">1</button><button type="button" class="tb" data-h="2" data-t-title="t_heading_2">2</button><button type="button" class="tb" data-h="3" data-t-title="t_heading_3">3</button></span></div>
   <div id="help"></div>
   <div id="shint"></div>
  </div>
@@ -422,7 +422,8 @@ function rawPos(l, v) {
   return v + skipped;
 }
 // Für das Eingabefeld: Struktur-Auszeichnung am Zeilenanfang und -ende bleibt unsichtbar und wird beim Speichern wieder angefügt
-const STRUCT = '(?:</?(?:table|tr|td|th|h[1-6]|p|blockquote|figcaption)>)*';
+const STRUCT = '(?:</?(?:table|tr|td|th|h[1-6]|p|blockquote|figcaption)>|<br\\s*/>)*';  // <br/> hinter <p>: doppelter Absatz
+const GAP = /^<p><br\s*\/>/;  // wie korrlib.GAP
 function parts(l) { const m = l.match(new RegExp('^(' + STRUCT + ')([\\s\\S]*?)(' + STRUCT + ')$')); return { pre: m[1], core: m[2], post: m[3] }; }
 // Hochgestellte Zahlen (Fußnotenzeichen) zeigt das Feld als hochgestellte Ziffern: <sup>38</sup> ↔ ³⁸. Gespeichert wird wieder
 // <sup> (supMark; der Server tut es ebenso, korrlib.sup_markup). supPos rechnet Zeichenpositionen der Zeile ins Feld um.
@@ -544,6 +545,7 @@ function decorate(els, b) {
     const m = l.match(/^<h([1-6])>/);
     for (const n of [1, 2, 3]) d.classList.toggle('hd' + n, !!m && Math.min(3, +m[1]) == n);
     d.classList.toggle('para', l.startsWith('<p>'));  // Absatzanfang (#67): eingerückt wie im Druck
+    d.classList.toggle('gap', GAP.test(l));  // doppelter Absatz: mit Abstand davor
     d.classList.toggle('caption', l.includes('<figcaption>'));  // Bildunterschrift (#76)
     d.classList.toggle('stelle', !!stelle && stelle.page == b.page && i >= stelle.a && i <= stelle.b && l !== '---');
   });
@@ -818,6 +820,7 @@ function renderTouch() {
   if (mode == 'read') {  // Absatz und Überschrift zeigen, was die Lesezeile schon ist
     const l = data.lines[li] || '', h = l.match(/^<h([1-6])>/), ok = plainLine(li);
     $('tPara').classList.toggle('on', l.startsWith('<p>')); $('tPara').disabled = !ok;
+    $('tGap').classList.toggle('on', GAP.test(l)); $('tGap').disabled = !ok;
     for (const b of $('tfmt').querySelectorAll('[data-h]')) { b.classList.toggle('on', !!h && h[1] == b.dataset.h); b.disabled = !ok; }
   }
   if (!fixing) return;
@@ -1143,11 +1146,13 @@ async function undeleteLines() {
   msg = t(r.n > 1 ? 'undel_done_n' : 'undel_done', { n: r.n }); render(); bookmark();
 }
 // A: Hier beginnt ein Absatz – nochmals A nimmt es zurück (#67). Die meisten setzt das Programm beim ersten Öffnen selbst.
-async function paraKey(tap) {  // tap: vom Knopf am Tablet
+// gap (Umschalt+A, ¶¶): doppelter Absatz – mit einer Leerzeile davor, etwa am Kapitelende oder zwischen zwei Strophen;
+// noch einmal nimmt nur die Leerzeile weg, der Absatz bleibt
+async function paraKey(tap, gap) {  // tap: vom Knopf am Tablet
   if (!plainLine(li)) return;
   if (lineEls[li].classList.contains('intable') || /^<h[1-6]>|<figcaption>/.test(data.lines[li])) { msg = t('para_no'); render(); return; }
-  const on = !data.lines[li].startsWith('<p>');
-  if (await markup({ kind: 'para', line: li, old: data.lines[li] })) msg = t(on ? (tap ? 'para_set_t' : 'para_set') : 'para_removed');
+  const on = gap ? !GAP.test(data.lines[li]) : !data.lines[li].startsWith('<p>'), k = gap ? 'gap' : 'para';
+  if (await markup({ kind: k, line: li, old: data.lines[li] })) msg = t(on ? k + (tap ? '_set_t' : '_set') : k + '_removed');
   render();
 }
 // Eine Überschrift kann mehrere Zeilen haben (»Drittes Kapitel.« / »Die Reise nach Odessa.«): Markierte Zeilen werden mit H
@@ -1760,6 +1765,7 @@ async function onKey(e) {
     else if (k == 'f' || k == 'F') await footnoteSep();
     else if (k == 't' || k == 'T') await tableKey();
     else if (k == 'h' || k == 'H') await headingKey();
+    else if (k == 'A' && e.shiftKey) await paraKey(false, true);
     else if (k == 'a' || k == 'A') await paraKey();
     else if (k == 'i' || k == 'I') await openToc();
     else if (k == 'b' || k == 'B') await openBild();
@@ -1850,6 +1856,7 @@ document.addEventListener('selectionchange', () => {  // mit dem Finger markiert
 $('tDel').onclick = guarded(() => deleteLines(true));  // Strg+⌫
 $('tUndel').onclick = guarded(() => undeleteLines());  // Strg+Z
 $('tPara').onclick = guarded(() => paraKey(true));  // A
+$('tGap').onclick = guarded(() => paraKey(true, true));  // Umschalt+A
 let styleSel = null;  // Strg+B, Strg+I, Strg+U: die Markierung beim Aufsetzen des Fingers festhalten, wie bei der Notiz
 for (const [id, tag] of [['tBold', 'b'], ['tItal', 'i'], ['tUnder', 'u']]) {
   $(id).addEventListener('pointerdown', e => { e.preventDefault(); styleSel = selSpan(); });

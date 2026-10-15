@@ -1201,7 +1201,7 @@ class Book:
             lines = list(self.pages[pg])
             if not (0 <= n < len(lines) - 1) or lines[n:n + 2] != old or '---' in lines[n:n + 2] or (n == 0 and lines[n].startswith('#')):
                 return None, 409
-            a, b = lines[n].rstrip(), re.sub(r'^<p>', '', lines[n + 1].lstrip())  # ein Absatz beginnt nicht mitten in der Zeile
+            a, b = lines[n].rstrip(), korrlib.PARA.sub('', lines[n + 1].lstrip())  # ein Absatz beginnt nicht mitten in der Zeile
             seq = self.geo_seq(pg, lines)
             if seq and seq[n] and seq[n + 1] and not force:
                 e, f = seq[n], seq[n + 1]
@@ -1381,13 +1381,17 @@ class Book:
                     return None, 400
                 # Zeilen derselben Ebene untereinander sind eine Überschrift (korrlib.headings); Leerzeilen bleiben leer
                 new = [korrlib.heading(l, int(body.get('level') or 0)) for l in lines[a:b + 1]]
-            elif body.get('kind') == 'para':  # A: hier beginnt ein Absatz – oder wieder nicht (#67)
+            elif body.get('kind') in ('para', 'gap'):  # A: hier beginnt ein Absatz – oder wieder nicht (#67); Umschalt+A: mit Leerzeile davor
                 if lines[a] != body.get('old'):
                     return None, 409
                 if not lines[a].strip() or lines[a] == '---' or (a == 0 and lines[a].startswith('#')) or \
                         korrlib.HEADTAG.search(lines[a]) or korrlib.CAPTAG.search(lines[a]) or korrlib.table_block(lines, a):
                     return None, 400
-                new = [lines[a][3:] if lines[a].startswith('<p>') else '<p>' + lines[a]]
+                rest = korrlib.PARA.sub('', lines[a])
+                if body.get('kind') == 'para':
+                    new = [rest if lines[a].startswith('<p>') else '<p>' + rest]
+                else:  # doppelter Absatz: setzen – oder die Leerzeile wieder wegnehmen, der Absatz bleibt
+                    new = ['<p>' + rest if korrlib.GAP.match(lines[a]) else '<p><br/>' + rest]
                 b = a
             elif body.get('kind') == 'caption':  # L: die Zeile ist eine Bildunterschrift – oder wieder nicht (#76)
                 if lines[a] != body.get('old'):

@@ -399,6 +399,10 @@ TAG = re.compile(r'</?(?:%s)\s*/?>' % MARKUP)
 TABLETAG = re.compile(r'</?(?:table|tr|td|th)>')
 HEADTAG = re.compile(r'</?h[1-6]>')
 CAPTAG = re.compile(r'</?figcaption>')
+# Doppelter Absatz (Umschalt+A): ein Absatz mit einer Leerzeile davor – am Kapitelende, zwischen zwei Strophen. Eine echte
+# Leerzeile ginge nicht (jede Zeile der Datei gehört zu einer Zeile im Bild); darum <br/> gleich hinter dem <p>
+PARA = re.compile(r'^<p>(?:<br\s*/>)?')
+GAP = re.compile(r'^<p><br\s*/>')
 SUPD = '⁰¹²³⁴⁵⁶⁷⁸⁹'
 def sup_markup(s):
     """Hochgestellte Ziffern – so zeigt sie das Bearbeitungsfeld, so kommen sie beim Einfügen – als Auszeichnung wie im
@@ -444,13 +448,13 @@ def heading(line, level):
     """Zeile als Überschrift der Ebene 1–6 auszeichnen; level 0 nimmt die Auszeichnung weg. Eine Überschrift ist ein Block
     für sich: Ein Absatzanfang <p> fällt weg (<h2><p>…</h2> wäre falsch verschachtelt), wie bei der Bildunterschrift."""
     t = HEADTAG.sub('', line)
-    return '<h%d>%s</h%d>' % (level, re.sub(r'^<p>', '', t), level) if level and t.strip() else t
+    return '<h%d>%s</h%d>' % (level, PARA.sub('', t), level) if level and t.strip() else t
 CAPLINE = re.compile(r'<figcaption>(.*)</figcaption>$')
 def caption(line):
     """Zeile als Bildunterschrift auszeichnen (#76) – oder, ist sie schon eine, wieder nicht. Sie ist ein Block für sich:
     Ein Absatzanfang <p> davor fällt weg."""
     t = CAPTAG.sub('', line)
-    return t if CAPTAG.search(line) or not t.strip() else '<figcaption>%s</figcaption>' % re.sub(r'^<p>', '', t)
+    return t if CAPTAG.search(line) or not t.strip() else '<figcaption>%s</figcaption>' % PARA.sub('', t)
 # ---- Schrift von Hand: markierte Wörter fett, kursiv oder unterstrichen (Strg+B, Strg+I, Strg+U – am Tablet drei Knöpfe)
 INLINE = ('strong', 'b', 'em', 'i', 'u', 'sup', 'sub')  # außen nach innen, wie beim Einlesen eines EPUB (epub.INLINE)
 GLEICH = dict(b=('b', 'strong'), i=('i', 'em'), u=('u',))  # was als fett bzw. kursiv gilt: ein EPUB bringt beide Schreibweisen mit

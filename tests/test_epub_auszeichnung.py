@@ -99,6 +99,17 @@ def test_unterstrichen(tmp_path):
     assert lines_of(tmp_path / 'out')[1] == '<p>Ein <u>wichtiges</u> und <u>betontes</u> Wort, siehe unten.'
     assert epubbuch.xhtml('Ein <u>wichtiges</u> Wort') == 'Ein <u>wichtiges</u> Wort'  # und so wieder ins E-Book
 
+
+def test_doppelter_absatz_aus_dem_epub(tmp_path):
+    """<hr/> (Abschnittswechsel) und <p class="abstand"> (so schreibt es dieses Programm) werden zum doppelten Absatz."""
+    make_epub(str(tmp_path / 'x.epub'), ['<p>Ende des Kapitels.</p><hr/><p>Neuer Abschnitt.</p><p class="abstand">Zweite Strophe.</p>'
+                                         '<hr/><h2>Titel</h2><p>Danach.</p>'])
+    epub.text_book(str(tmp_path / 'x.epub'), str(tmp_path / 'out'), width=80)
+    assert lines_of(tmp_path / 'out') == ['# ', '<p>Ende des Kapitels.', '', '<p><br/>Neuer Abschnitt.', '', '<p><br/>Zweite Strophe.', '',
+                                          '<h2>Titel</h2>', '', '<p>Danach.']  # vor einer Überschrift: kein Abstand nötig
+    E = epub.book_text(str(tmp_path / 'out'))
+    assert [E.plain[k] for k in sorted(E.gap)] == ['Neuer', 'Zweite']  # und so weiter, wenn das Textbuch ein PDF bekommt
+
 def test_absatz_mitten_im_satz(tmp_path):
     """Manches EPUB trennt Absätze an den Zeilen seiner Vorlage – mitten im Satz. Das wird kein Absatz; Listen bleiben."""
     make_epub(str(tmp_path / 'x.epub'), ['<p>„Sell ischt wohl!“, gaben die anderen zu. „Aber sei Land ischt</p><p>groß und — ‚Dr Zar ischt weit’.“</p>'
