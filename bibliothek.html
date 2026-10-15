@@ -339,6 +339,7 @@ function details(f, first) {
   if ((f.kind == 'book' || f.kind == 'pdfbuch') && f.corrections) d.push('<b>' + t('det_corr', { n: f.corrections }) + '</b>');
   if (f.kind == 'pdfbuch') d.push(t('det_saved', { d: esc((f.saved || '').slice(0, 16)) }));
   if (f.kind == 'pdfbuch' && f.epub) d.push(t('det_epub_pdfbuch', { f: esc(base(f.epub)) }));
+  if (f.finereader) d.push(t('det_finereader'));
   if (f.kind == 'pdf') d.push(t(f.text ? 'det_text' : 'det_notext'));
   if (f.kind == 'transkribus') d.push(t(f.images || f.images_dir ? 'det_images' : 'det_noimages'));
   if (f.kind == 'epub') d.push(f.pdf ? t('det_pair', { f: esc(base(f.pdf)) }) : f.pdfbuch ? t('det_epub_text') : t('det_nopair'));

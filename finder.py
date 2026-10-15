@@ -8,7 +8,7 @@ Fund = dict(kind, path, name, pages, mtime, …):
                geschrieben hat (#59)
   pdfbuch      PDF, das dieses Programm gesichert hat (Arbeitsstand im Anhang) – corrections, saved, kennung; epub = das E-Book
                desselben Buchs, das daneben liegt
-  pdf          PDF – text = durchsuchbar
+  pdf          PDF – text = durchsuchbar; finereader = der ursprüngliche Scan aus einem FineReader-Projekt ({GUID}.source)
   images       Ordner mit Seitenbildern – scantailor = Ergebnis von ScanTailor, prepared = vom Programm aufbereitet
                (Doppelseiten geteilt, geradegerichtet); beide gehen vor den unbearbeiteten Seiten
   kindle       »My Clippings.txt« vom Kindle – kein Buch, sondern Markierungen: books, highlights; daraus werden Zettel (#61)
@@ -126,6 +126,31 @@ def pdf_info(path, deep=True):
     return d
 
 
+def finereader_dir(folder):
+    """Projektordner von ABBYY FineReader (bis Version 12: _FRBatch.pac, je Seite ein Ordner 0001/Image …): Der
+    ursprüngliche Scan liegt darin als {GUID}.source, meist ein PDF – den bieten wir an, unter dem Namen des Ordners.
+    FineReaders eigener Text bleibt außen vor: Das Format ist nicht offengelegt, und Fraktur hat FineReader damals mit
+    der Antiqua-Erkennung gelesen ("hatteu ste auch alle Bücher") – Tesseract mit Fraktur-Modell macht es besser."""
+    try:
+        src = sorted(f for f in os.listdir(folder) if f.lower().endswith('.source'))
+    except OSError:
+        return []
+    found = []
+    for f in src:
+        p = os.path.join(folder, f)
+        try:
+            with open(p, 'rb') as fh:
+                if fh.read(5) != b'%PDF-':
+                    continue  # aus Bildern begonnene Projekte: der Scan liegt als Einzelbilder darin – (noch) nicht unterstützt
+        except OSError:
+            continue
+        d = pdf_info(p)
+        d['name'] = os.path.basename(folder) + (' (%d)' % (len(found) + 1) if found else '')
+        d['finereader'] = True
+        found.append(d)
+    return found
+
+
 def epub_info(path):
     d = dict(kind='epub', path=path, name=os.path.splitext(os.path.basename(path))[0], pages=0, pdf=None, mtime=_mtime(path))
     try:
@@ -205,6 +230,8 @@ def scan_file(path):
     if ext == '.zip':
         t = transkribus_zip(path)
         return [t] if t else []
+    if ext == '.source' or name == '_frbatch.pac':
+        return finereader_dir(folder)
     if ext == '.xml' and _is_page_xml(path):
         t = transkribus_dir(folder)
         return [t] if t else []
@@ -239,6 +266,12 @@ def scan_dir(root):
             if t:
                 found.append(t)
                 dirs[:] = []
+                continue
+        if any(f.lower().endswith('.source') for f in files):
+            fr = finereader_dir(cur)
+            if fr:
+                found += fr
+                dirs[:] = []  # die Seitenordner enthalten nur FineReaders Arbeitsdateien
                 continue
         nimg = 0
         for f in files:

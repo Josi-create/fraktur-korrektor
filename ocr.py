@@ -220,6 +220,19 @@ def render_pdf(pdf, n, out):
         d[n].get_pixmap(dpi=DPI, colorspace=fitz.csGRAY).save(out, jpg_quality=85)
 
 
+def pdf_file(path):
+    """Eine PDF-Datei? Auch ohne die Endung .pdf – FineReader legt den ursprünglichen Scan als {GUID}.source ab."""
+    if not path or not os.path.isfile(path):
+        return False
+    if path.lower().endswith('.pdf'):
+        return True
+    try:
+        with open(path, 'rb') as f:
+            return f.read(5) == b'%PDF-'
+    except OSError:
+        return False
+
+
 def pdf_count(pdf):
     import fitz
     with fitz.open(pdf) as d:
@@ -337,7 +350,7 @@ def recognize_page(folder, pg, source, n=1, script='fraktur', progress=lambda do
     """Eine Seite eines Buchs neu machen (#52): Seitenbild aus einer Bilddatei oder aus Seite n (ab 1) eines PDF, dann
     nur diese Seite erkennen – mit Tesseract; ohne Tesseract mit der Textebene des PDF, wenn es eine hat. Schreibt
     NNN.txt, das Bild und die Seite in lines.json und qualitaet.json. Liefert dict(lines, words, quality)."""
-    is_pdf = source.lower().endswith('.pdf')
+    is_pdf = pdf_file(source)
     tess = find_tesseract()
     stem = free_slot(folder, pg)
     if is_pdf:
@@ -386,7 +399,7 @@ def build(source, out, progress=lambda done, total, msg: None, cancelled=lambda:
     """source: PDF-Datei oder Ordner mit Seitenbildern. Schreibt den Buchordner out; liefert dict(pages, quality).
     textlayer: den Text eines durchsuchbaren PDF übernehmen, statt ihn neu zu erkennen (braucht kein Tesseract).
     Fehler als ValueError mit Schlüssel: kein_tesseract, kein_pymupdf, quelle_fehlt, keine_seiten, modell_laden, abgebrochen."""
-    is_pdf = os.path.isfile(source) and source.lower().endswith('.pdf')
+    is_pdf = pdf_file(source)
     textlayer = textlayer and is_pdf
     tess = find_tesseract()
     if not tess and not textlayer:
@@ -559,7 +572,7 @@ def add_images(folder, source, progress=lambda done, total, msg: None):
     if os.path.isdir(nachbar) and os.path.abspath(nachbar) != os.path.abspath(folder) and pagexml.book_pages(nachbar):
         return images_from_book(folder, nachbar, progress)
 
-    if os.path.isfile(source) and source.lower().endswith('.pdf'):
+    if pdf_file(source):
         try:
             import fitz
         except ImportError:

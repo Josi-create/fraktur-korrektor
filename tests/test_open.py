@@ -240,3 +240,23 @@ def test_vorschlag_wird_fuer_aeltere_importe_nachgeholt(tmp_path):
         assert server.Book(str(fremd)).settings == dict(year=None, dics=['1901'], notizen=None, kennung=None, autor=None) and not (fremd / 'buch.json').exists()  # von Hand angelegt: bleibt
     finally:
         server.books_dir = old
+
+
+def test_finereader_projekt(lib, tmp_path):
+    """Projektordner von FineReader 12: Der ursprüngliche Scan liegt als {GUID}.source darin – angeboten wird er unter
+    dem Namen des Ordners, auch wenn man die Datei selbst oder den Ordner darüber wählt."""
+    fitz = pytest.importorskip('fitz')
+    root = tmp_path / 'Der Schreckenstag'
+    (root / '0001' / 'Image').mkdir(parents=True)
+    (root / '0001' / 'Image' / 'bwPage.frdat').write_bytes(b'II*\x00')
+    (root / '_FRBatch.pac').write_bytes(b'FR5BL')
+    (root / '{1234ABCD-0000}.source').write_bytes(b'II*\x00 ein Bild, kein PDF')  # aus Bildern begonnen: wird übergangen
+    src = root / '{FB6BDF92-A3CB-4239-A7BB-809D45846CB6}.source'
+    make_searchable_pdf(str(src), fitz)
+    for p in (root, src, root / '_FRBatch.pac', tmp_path):
+        found = finder.scan(str(p))['found']
+        assert [(f['kind'], f['name'], f['path'], f['pages'], f['text'], f.get('finereader')) for f in found] == [
+            ('pdf', 'Der Schreckenstag', str(src), 3, True, True)], p
+    r = wait(lib, lib.lpost('/api/import_ocr', dict(source=str(src), textlayer=True, target=str(tmp_path / 'ziel')))[1]['job'])['result']
+    assert r['title'] == 'Der Schreckenstag' and r['pages'] == 3
+    assert lib.lpost('/api/pdf_info', dict(source=str(src)))[1] == dict(pages=3, text=True)

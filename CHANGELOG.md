@@ -4,6 +4,14 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 
 ## [Unveröffentlicht]
 
+### Neu
+- **Projektordner von ABBYY FineReader öffnen:** Ältere FineReader-Versionen (bis 12) legen den ursprünglichen Scan
+  als `{GUID}.source` in ihren Projektordner. **Öffnen …** erkennt das jetzt – am Ordner, an der `.source`-Datei oder
+  an `_FRBatch.pac` – und liest den Scan wie ein PDF ein, unter dem Namen des Ordners. FineReaders eigener Text bleibt
+  außen vor: Das Format ist nicht offengelegt, und Fraktur hat FineReader damals mit der Antiqua-Erkennung gelesen
+  („hatteu ste auch alle Bücher“), wo Tesseract „hatten sie auch alle Bücher“ liest. PDFs werden überall auch ohne
+  die Endung `.pdf` am Inhalt erkannt (`ocr.pdf_file`).
+
 ## [0.13.0] – 2026-10-14
 
 ### Neu

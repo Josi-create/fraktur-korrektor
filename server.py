@@ -1576,7 +1576,10 @@ def books_dir():
 
 def new_folder(title, source, target=None):
     """(name, ordner) für ein neues Buch; vorhandene Bücher nie überschreiben."""
-    name = re.sub(r'[\\/:*?"<>|]+', ' ', title or os.path.splitext(os.path.basename(source.rstrip('/\\')))[0]).strip() or 'Buch'
+    src = source.rstrip('/\\')
+    # FineReader nennt den Scan in seinem Projektordner {GUID}.source – das Buch heißt wie der Ordner
+    stem = os.path.basename(os.path.dirname(src)) if src.lower().endswith('.source') else os.path.splitext(os.path.basename(src))[0]
+    name = re.sub(r'[\\/:*?"<>|]+', ' ', title or stem).strip() or 'Buch'
     base = target or os.path.join(books_dir(), name[:60].rstrip(' .'))  # kurze Ordnernamen: Windows-Pfade sind auf 260 Zeichen begrenzt
     out, n = base, 1
     while page_files(out):
@@ -1681,7 +1684,7 @@ def add_pdf(bid, source, script, target, progress, cancelled):
     neues Buch daneben, denn die Seiten des Textbuchs sind willkürlich umbrochen; Protokoll und Lesezeichen gehören zu
     ihnen und nicht zu den Seiten des Scans. Das Textbuch bleibt, wie es ist; Wortliste und Einstellungen kommen mit."""
     folder = book_folder(bid)
-    if not source or not os.path.isfile(source) or not source.lower().endswith('.pdf'):
+    if not ocr.pdf_file(source):
         raise ValueError('quelle_fehlt')
     e = next((x for x in lib_load() if book_id(x['folder']) == bid), None)
     title = (e.get('title') if e else None) or default_title(folder)
@@ -1728,7 +1731,7 @@ def epub_markup(bid, source, progress, cancelled):
 def pair_check(source, bid, pdf):
     """Passt das PDF zu einem EPUB (source) oder einem Textbuch der Bibliothek (bid)? Liefert dict(pdf, pages, text, fit);
     fit None, wenn das PDF keine Textebene hat. Fehler pdf_passt_nicht, wenn die Stichprobe dagegen spricht (#40)."""
-    if not pdf or not os.path.isfile(pdf) or not pdf.lower().endswith('.pdf'):
+    if not ocr.pdf_file(pdf):
         raise ValueError('quelle_fehlt')
     if bid:
         E = epub.book_words(book_folder(bid))
@@ -1774,7 +1777,7 @@ def replace_page(bid, pg, source, n, script, progress, cancelled):
         old = book.img_file(pg)
         backup = pagexml.backup(folder, [pg], extra=[os.path.relpath(old, folder)] if old else [])
         r = ocr.recognize_page(folder, pg, source, n, 'antiqua' if script == 'antiqua' else 'fraktur', progress)
-        book.klog('seite', pg, -1, os.path.basename(old or ''), os.path.basename(source) + (' S. %d' % n if source.lower().endswith('.pdf') else ''))
+        book.klog('seite', pg, -1, os.path.basename(old or ''), os.path.basename(source) + (' S. %d' % n if ocr.pdf_file(source) else ''))
         book.drop_figures(pg)  # Rahmen von Abbildungen (#76) gelten für das alte Bild; die Sicherung kennt sie noch
     with LIBLOCK:
         BOOKS.pop(bid, None)  # Zeilenlage und Wortliste des Buchs neu einlesen
@@ -2070,7 +2073,7 @@ def scantailor(source, title, progress, cancelled):
         raise ValueError('kein_scantailor')
     folder = None
     if source:
-        if not (os.path.isfile(source) and source.lower().endswith('.pdf')):
+        if not ocr.pdf_file(source):
             raise ValueError('nur_pdf')
         folder = os.path.join(new_folder(title, source)[1], 'scantailor')
         try:
@@ -2667,7 +2670,7 @@ class H(BaseHTTPRequestHandler):
             if u.path == '/api/pdf_info':
                 src = body.get('source') or ''
                 try:
-                    ok = os.path.isfile(src) and src.lower().endswith('.pdf')
+                    ok = ocr.pdf_file(src)
                     return self.sendjson(dict(pages=ocr.pdf_count(src), text=ocr.pdf_has_text(src)) if ok else dict(pages=0, text=False))
                 except Exception:
                     return self.sendjson(dict(pages=0, text=False))

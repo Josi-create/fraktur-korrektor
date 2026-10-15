@@ -18,6 +18,7 @@ You do not need to know in which form your book exists. Click **Open …** and s
 | 📗 **EPUB** | If a **PDF of the same name** lies next to it, the scan appears on the left and the EPUB text on the right. If it lies elsewhere, fetch it with **Choose the matching PDF …**. Without a PDF the book is opened without page images. If the saved PDF of the same book lies next to it, the program recommends the PDF (see [Saving a book as e-book](epub-sichern.md)) |
 | 🖼️ **Page images** – a folder with JPG, PNG or TIF | Tesseract recognises the text |
 | 🗂️ **Export from Transkribus** – ZIP file or unpacked folder | is imported. See [Working with Transkribus](transkribus.md) |
+| 📄 **Project folder of ABBYY FineReader** (older versions: a folder with many subfolders 0001, 0002 … and a file whose name is in curly brackets and ends in “.source”) | It holds the original scan as a PDF – this is read in like any PDF and named after the folder. The program does not take over FineReader’s own text: older versions read Fraktur as ordinary type, so Tesseract almost always does better |
 
 If you choose a whole folder, the program often finds several things – for example a PDF, an EPUB and a book you
 have already been correcting. It then shows all finds with page count and date. The first one is the

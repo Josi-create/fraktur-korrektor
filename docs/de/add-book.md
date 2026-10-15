@@ -19,6 +19,7 @@ Programm eine **Datei** oder einen **Ordner**. Es sieht nach, was darin steckt, 
 | 📗 **EPUB** | Liegt ein **gleichnamiges PDF** daneben, erscheint links der Scan und rechts der Text des EPUB. Liegt es woanders, holen Sie es mit **Passendes PDF auswählen …** dazu. Ohne PDF wird das Buch ohne Seitenbilder geöffnet. Liegt daneben das gesicherte PDF desselben Buchs, empfiehlt das Programm das PDF (siehe [Ein Buch als E-Book sichern](epub-sichern.md)) |
 | 🖼️ **Seitenbilder** – ein Ordner mit JPG, PNG oder TIF | Tesseract erkennt den Text |
 | 🗂️ **Export aus Transkribus** – ZIP-Datei oder entpackter Ordner | wird importiert. Siehe [Mit Transkribus arbeiten](transkribus.md) |
+| 📄 **Projektordner von ABBYY FineReader** (ältere Versionen: ein Ordner mit vielen Unterordnern 0001, 0002 … und einer Datei, deren Name in geschweiften Klammern steht und auf „.source“ endet) | Darin liegt der ursprüngliche Scan als PDF – er wird wie ein PDF eingelesen und heißt wie der Ordner. FineReaders eigenen Text übernimmt das Programm nicht: Ältere Versionen haben Fraktur wie gewöhnliche Schrift gelesen, sodass Tesseract fast immer das bessere Ergebnis liefert |
 
 Wählen Sie einen ganzen Ordner, findet das Programm oft mehreres – zum Beispiel ein PDF, ein EPUB und ein Buch,
 an dem Sie schon korrigiert haben. Dann zeigt es alle Funde mit Seitenzahl und Datum. Der erste ist die
