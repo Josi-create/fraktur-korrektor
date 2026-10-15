@@ -56,7 +56,7 @@ New here? [First steps](first-steps.md) walks you through the essentials using t
 | Reading | `T` | table: turn separate lines into a table, or dissolve it again (see below) |
 | Reading | `H` | heading: level 1 → 2 → 3 → none (see below) |
 | Reading | `A` | a paragraph starts here – press `A` again to take it back (see below) |
-| Reading | `Shift`+`A` | double paragraph: a paragraph with a blank line before it, after the end of a chapter, say, or between two stanzas (see below) |
+| Reading | `Shift`+`A` or `Shift`+`Enter` | double paragraph: a paragraph with a blank line before it, after the end of a chapter, say, or between two stanzas (see below) |
 | Reading | `I` | contents: all headings of the book, `Enter` goes there (see below) |
 | Reading | `B` | mark an illustration in the page image so that it goes into the e-book (see below) |
 | Reading | `L` | the reading line is a caption – press `L` again to take it back (see below) |
@@ -274,13 +274,13 @@ punctuation mark. Verse, lists and indexes are thus mostly left alone. Without l
 an EPUB without a PDF) or in a book without indentation, the program detects no paragraphs. In the text file a
 paragraph start is written as `<p>` at the beginning of the line, as in an EPUB.
 
-### Double paragraph (Shift+A)
+### Double paragraph (Shift+A or Shift+Enter)
 
 Sometimes the print has a **blank line** between two paragraphs: where one section ends and a new one begins, at the end
-of a chapter before the next part, or in a poem between two stanzas. `Shift`+`A` on the first line after it sets such a
-double paragraph: the text shows a space above it, the [e-book](epub-sichern.md) a blank line. `Shift`+`A` once more
+of a chapter before the next part, or in a poem between two stanzas. `Shift`+`A` – or `Shift`+`Enter` – on the first line after
+it sets such a double paragraph: the text shows a space above it, the [e-book](epub-sichern.md) a blank line. `Shift`+`A` once more
 takes the blank line away again and the paragraph stays; `A` takes back the whole paragraph. On a tablet the button is
-called **¶¶**.
+called **¶¶**. (In the input field, by contrast, `Shift`+`Enter` splits the line, see *Splitting and joining lines*.)
 
 The blank line is not a line of its own in the text file – every line there belongs to a line in the page image. It is
 written as `<p><br/>` at the beginning of the line. When the program reads in an EPUB, a section break in it (`<hr/>`)

@@ -21,7 +21,7 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Zeichen, am Tablet der Knopf **U**. Gespeichert als `<u>` (XHTML wie im EPUB); die Wortprüfung übergeht es, das E-Book
   übernimmt es. Beim Einlesen eines EPUB kommt Unterstrichenes mit – auch über die Stilvorlage (`text-decoration:
   underline`), nicht aber an Verweisen, die die Lese-App ohnehin unterstreicht.
-- **Doppelter Absatz** (`Umschalt`+`A`, am Tablet **¶¶**): ein Absatz mit einer Leerzeile davor – wo im Druck ein
+- **Doppelter Absatz** (`Umschalt`+`A` oder `Umschalt`+`Enter`, am Tablet **¶¶**): ein Absatz mit einer Leerzeile davor – wo im Druck ein
   Abschnitt endet, am Kapitelende vor dem nächsten Teil, zwischen zwei Strophen. Der Reader zeigt Abstand darüber, das
   E-Book eine Leerzeile (`<p class="abstand">`). Noch einmal `Umschalt`+`A` nimmt nur die Leerzeile weg, `A` den ganzen
   Absatz. In der Datei steht `<p><br/>` am Zeilenanfang – keine eigene Zeile, die Zuordnung zum Bild bleibt. Beim
