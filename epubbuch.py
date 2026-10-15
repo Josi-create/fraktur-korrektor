@@ -26,7 +26,7 @@ GROSS = 150000   # Zeichen je Textdatei: Ein Buch ohne Überschriften wird so ge
 UMSCHLAG = 1600  # Höhe des Umschlagbilds in Pixeln
 BILD = (1400, 1900)  # größte Breite und Höhe einer Abbildung in Pixeln: scharf auf Lesegerät und Tablet, das E-Book bleibt handlich
 QUALITAET = 80   # JPEG-Qualität der Abbildungen (wie beim Umschlag)
-INLINE = {'em', 'strong', 'i', 'b', 'sup', 'sub', 'br'}
+INLINE = {'em', 'strong', 'i', 'b', 'u', 'sup', 'sub', 'br'}
 # Ein Fußnotenzeichen im Text: hochgestellt (<sup>36</sup>, <sup>*</sup>), »wurde 1)« wie in älteren Büchern, ein Stern am Wort
 # (»Wort*«, »Wort*)«) oder Ziffern, die am Wort kleben (»beziffert.36« – noch nicht hochgestellt)
 REF = re.compile(r'<sup>\s*(\d{1,3}|\*+)(\)?)\s*</sup>'

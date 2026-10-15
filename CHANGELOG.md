@@ -17,6 +17,10 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   bleiben, die gemerkte Schriftgröße zieht mit. Ist ein ganzer Arbeitsordner umgezogen, kommen die übrigen vermissten
   Bücher von dort gleich mit (`/api/relocate`, nur am Rechner selbst). Neuer Hilfeabschnitt „Bücher verschieben oder
   mit dem ganzen Ordner umziehen“; die Hilfe nennt den Knopf **Aus der Liste nehmen** jetzt beim Namen statt „✕“.
+- **Unterstreichen** wie fett und kursiv: Markierung und `Strg`+`U` (am Mac `⌘`), im Eingabefeld um die markierten
+  Zeichen, am Tablet der Knopf **U**. Gespeichert als `<u>` (XHTML wie im EPUB); die Wortprüfung übergeht es, das E-Book
+  übernimmt es. Beim Einlesen eines EPUB kommt Unterstrichenes mit – auch über die Stilvorlage (`text-decoration:
+  underline`), nicht aber an Verweisen, die die Lese-App ohnehin unterstreicht.
 
 ## [0.13.0] – 2026-10-14
 

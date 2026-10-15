@@ -394,7 +394,7 @@ def foot_numbers(pages, heads=None):
     return feet if ok >= 3 and ok * 3 >= without else {}
 # ---- Auszeichnung im Text: dieselben Elemente wie im EPUB (XHTML), nichts Eigenes. Die Zeilenzahl einer Seite bleibt dabei
 # gleich (sonst ginge die Bildzuordnung verloren): Jede Zeile bleibt eine Zeile, eine Tabellenzelle ist eine Zeile.
-MARKUP = 'table|tr|td|th|h[1-6]|em|strong|i|b|sup|sub|p|blockquote|br|figcaption'
+MARKUP = 'table|tr|td|th|h[1-6]|em|strong|i|b|u|sup|sub|p|blockquote|br|figcaption'
 TAG = re.compile(r'</?(?:%s)\s*/?>' % MARKUP)
 TABLETAG = re.compile(r'</?(?:table|tr|td|th)>')
 HEADTAG = re.compile(r'</?h[1-6]>')
@@ -451,9 +451,9 @@ def caption(line):
     Ein Absatzanfang <p> davor fällt weg."""
     t = CAPTAG.sub('', line)
     return t if CAPTAG.search(line) or not t.strip() else '<figcaption>%s</figcaption>' % re.sub(r'^<p>', '', t)
-# ---- Schrift von Hand: markierte Wörter fett oder kursiv (Strg+B, Strg+I – am Tablet zwei Knöpfe)
-INLINE = ('strong', 'b', 'em', 'i', 'sup', 'sub')  # außen nach innen, wie beim Einlesen eines EPUB (epub.INLINE)
-GLEICH = dict(b=('b', 'strong'), i=('i', 'em'))    # was als fett bzw. kursiv gilt: ein EPUB bringt beide Schreibweisen mit
+# ---- Schrift von Hand: markierte Wörter fett, kursiv oder unterstrichen (Strg+B, Strg+I, Strg+U – am Tablet drei Knöpfe)
+INLINE = ('strong', 'b', 'em', 'i', 'u', 'sup', 'sub')  # außen nach innen, wie beim Einlesen eines EPUB (epub.INLINE)
+GLEICH = dict(b=('b', 'strong'), i=('i', 'em'), u=('u',))  # was als fett bzw. kursiv gilt: ein EPUB bringt beide Schreibweisen mit
 def _pieces(line):
     """Die Zeile als Stücke: (text, stile) für Text und (tag, None) für Auszeichnung, die keine Schrift ist (Absatz,
     Überschrift, Tabelle, <br/>) – sie bleibt, wo sie steht."""
@@ -476,8 +476,8 @@ def _pieces(line):
         out.append((line[pos:], cur()))
     return out
 def styled(line, a, b, tag):
-    """Sind die Zeichen a..b der Zeile – gezählt ohne Auszeichnung, wie der Reader sie zeigt – alle schon fett (tag 'b')
-    bzw. kursiv ('i')? Leerraum zählt nicht; None, wenn dort gar kein Zeichen steht."""
+    """Sind die Zeichen a..b der Zeile – gezählt ohne Auszeichnung, wie der Reader sie zeigt – alle schon fett (tag 'b'),
+    kursiv ('i') bzw. unterstrichen ('u')? Leerraum zählt nicht; None, wenn dort gar kein Zeichen steht."""
     pos, seen = 0, None
     for text, st in _pieces(line):
         if st is None:
@@ -490,7 +490,7 @@ def styled(line, a, b, tag):
         pos += len(text)
     return seen
 def style(line, a, b, tag, on):
-    """Die Zeichen a..b der Zeile (gezählt wie in styled) fett bzw. kursiv setzen (on) oder zurücknehmen. Leerraum am Rand
+    """Die Zeichen a..b der Zeile (gezählt wie in styled) fett, kursiv bzw. unterstrichen setzen (on) oder zurücknehmen. Leerraum am Rand
     bleibt draußen (»<b>Wort</b> «). Die Zeile wird dabei neu und sauber verschachtelt geschrieben: Jedes Element schließt
     in der Zeile und vor jeder Struktur-Auszeichnung – auch wenn die Markierung mitten durch ein <em> geht."""
     plain = TAG.sub('', line)

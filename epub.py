@@ -5,7 +5,7 @@
   der Scan und rechts der bereits bearbeitete Text des EPUB.
 
 Auf beiden Wegen kommt die Auszeichnung des EPUB mit (#81): Überschriften, Absatzanfänge, Tabellen und die Schrift
-(fett, kursiv, hoch- und tiefgestellt – auch wo das EPUB sie über seine Stilvorlage setzt). Sie wird so geschrieben, wie
+(fett, kursiv, unterstrichen, hoch- und tiefgestellt – auch wo das EPUB sie über seine Stilvorlage setzt). Sie wird so geschrieben, wie
 das Programm sie selbst setzt (korrlib.MARKUP): zeilenweise, jede Zeile schließt, was sie öffnet."""
 import os, re, json, glob, zipfile, difflib, posixpath, urllib.parse
 import xml.etree.ElementTree as ET
@@ -16,8 +16,8 @@ SKIP = {'script', 'style', 'head', 'svg', 'nav'}
 VOID = {'br', 'hr', 'img', 'meta', 'link', 'input', 'wbr', 'col', 'area', 'base', 'source', 'image'}
 HEAD = re.compile(r'h([1-6])$')
 # Schrift-Auszeichnung, außen nach innen – in dieser Reihenfolge werden die Elemente verschachtelt
-INLINE = ('strong', 'b', 'em', 'i', 'sup', 'sub')
-OWN = {'strong': 'strong', 'b': 'b', 'em': 'em', 'i': 'i', 'cite': 'i', 'sup': 'sup', 'sub': 'sub'}
+INLINE = ('strong', 'b', 'em', 'i', 'u', 'sup', 'sub')
+OWN = {'strong': 'strong', 'b': 'b', 'em': 'em', 'i': 'i', 'cite': 'i', 'u': 'u', 'sup': 'sup', 'sub': 'sub'}
 BOLD = {'strong', 'b'}  # in Überschriften und Tabellenköpfen ohnehin fett – dort nicht noch einmal
 INVISIBLE = re.compile('[\xad​‌‍⁠﻿]')  # weiche Trennstriche, Breite null: im Text nur Stolpersteine
 NORM = re.compile(r'[^0-9a-zäöüß]+')
@@ -32,7 +32,7 @@ MINFIT, MINMATCH = 0.1, 0.05
 # ---- Stilvorlagen: Viele EPUBs setzen fett und kursiv nicht mit <b>/<i>, sondern über Klassen (<p class="bibhead">,
 # <td class="w">). Verstanden werden einfache Regeln – Element, Klasse, beides; bei »table.gloss td.w« zählt td.w.
 def _decl(text):
-    """Die Schrift-Auszeichnung einer CSS-Deklaration als Menge (b, i, sup, sub)."""
+    """Die Schrift-Auszeichnung einer CSS-Deklaration als Menge (b, i, u, sup, sub)."""
     out = set()
     for prop, val in re.findall(r'([\w-]+)\s*:\s*([^;]+)', text or ''):
         prop, val = prop.lower(), val.lower()
@@ -40,6 +40,8 @@ def _decl(text):
             out.add('b')
         elif prop == 'font-style' and re.search(r'italic|oblique', val):
             out.add('i')
+        elif prop in ('text-decoration', 'text-decoration-line') and 'underline' in val:
+            out.add('u')
         elif prop == 'vertical-align' and val.strip() in ('super', 'sub'):
             out.add(val.strip()[:3])
         elif prop == 'font' and re.search(r'\b(?:bold|[6-9]00)\b', val):
@@ -79,7 +81,8 @@ class _Blocks(HTMLParser):
         for t, cs, s in self.css:
             if (t is None or t == tag) and cs <= cls:
                 st |= s
-        return st | _decl(a.get('style'))
+        st |= _decl(a.get('style'))
+        return st - {'u'} if tag == 'a' else st  # Verweise unterstreicht der Leser, nicht der Druck
 
     def current(self):
         st = set().union(*(s for _, s in self.stack))

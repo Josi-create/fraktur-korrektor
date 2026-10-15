@@ -88,6 +88,17 @@ def test_textbuch_mit_auszeichnung(tmp_path):
     assert korrlib.table_block(lines, lines.index('<td>Siedlung</td></tr>')) == (17, 22)
 
 
+
+def test_unterstrichen(tmp_path):
+    """<u> und text-decoration: underline kommen als <u> mit; Verweise (<a>) unterstreicht der Leser, nicht der Druck."""
+    import epubbuch
+    css = 'span.unter { text-decoration: underline } a { text-decoration: underline }'
+    assert epub.css_rules(css)[0] == ('span', {'unter'}, {'u'})
+    make_epub(str(tmp_path / 'x.epub'), ['<p>Ein <u>wichtiges</u> und <span class="unter">betontes</span> Wort, <a href="#n1">siehe</a> unten.</p>'], css=css)
+    epub.text_book(str(tmp_path / 'x.epub'), str(tmp_path / 'out'), width=80)
+    assert lines_of(tmp_path / 'out')[1] == '<p>Ein <u>wichtiges</u> und <u>betontes</u> Wort, siehe unten.'
+    assert epubbuch.xhtml('Ein <u>wichtiges</u> Wort') == 'Ein <u>wichtiges</u> Wort'  # und so wieder ins E-Book
+
 def test_absatz_mitten_im_satz(tmp_path):
     """Manches EPUB trennt Absätze an den Zeilen seiner Vorlage – mitten im Satz. Das wird kein Absatz; Listen bleiben."""
     make_epub(str(tmp_path / 'x.epub'), ['<p>„Sell ischt wohl!“, gaben die anderen zu. „Aber sei Land ischt</p><p>groß und — ‚Dr Zar ischt weit’.“</p>'

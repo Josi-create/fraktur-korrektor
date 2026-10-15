@@ -305,21 +305,21 @@ are kept in the file `bilder.json` in the book folder; they travel to another co
 [saved PDF](pdf-sichern.md). If [a page is replaced](#replacing-a-page), its frames are dropped – the new image is a
 different one.
 
-## Bold and italics (Ctrl+B, Ctrl+I)
+## Bold, italics and underline (Ctrl+B, Ctrl+I, Ctrl+U)
 
-As in Word: select the words with the mouse – or whole lines with `Shift`+`↓`/`↑` – and press `Ctrl`+`B` for **bold**
-or `Ctrl`+`I` for *italics* (`⌘` on a Mac). The words appear in that type style right away, and later in the
+As in Word: select the words with the mouse – or whole lines with `Shift`+`↓`/`↑` – and press `Ctrl`+`B` for **bold**,
+`Ctrl`+`I` for *italics* or `Ctrl`+`U` for <u>underline</u> (`⌘` on a Mac). The words appear in that type style right away, and later in the
 [e-book](epub-sichern.md) too. The same selection once more takes it back. The selection may run over several lines.
 Type styles taken in from an EPUB can be changed in the same way.
 
-Both keys also work in the input field (`F2` or while correcting): there they put the characters `<b>…</b>` or
-`<i>…</i>` around the selected characters – without a selection around the word at the cursor.
+The three keys also work in the input field (`F2` or while correcting): there they put the characters `<b>…</b>`,
+`<i>…</i>` or `<u>…</u>` around the selected characters – without a selection around the word at the cursor.
 
 ## Further markup
 
 If you like, you can also enter further markup by hand with `F2`; the program knows `<em>`, `<strong>`, `<i>`, `<b>`,
-`<sup>`, `<sub>`, `<p>`, `<blockquote>` and `<br/>`, does not treat them as words, and shows font markup (italic, bold,
-superscript, subscript) as such.
+`<u>`, `<sup>`, `<sub>`, `<p>`, `<blockquote>` and `<br/>`, does not treat them as words, and shows font markup (italic, bold,
+underline, superscript, subscript) as such.
 
 ## Whitelist (W)
 
@@ -462,8 +462,8 @@ On the tablet you work with your finger:
   paragraph there (like `A`), **Heading 1 2 3** makes the line a heading of that level (like `H`) – 1 for chapters, 2
   and 3 for sections within them. What the line already is, is highlighted; tapping it again takes it back.
   For a heading over several lines, select them with your finger and then tap the level.
-- **Bold and italics:** Select words with your finger (press and hold a word, then drag the handles) and tap **B** for
-  bold or ***I*** for italics at the bottom. The same selection once more takes it back.
+- **Bold, italics, underline:** Select words with your finger (press and hold a word, then drag the handles) and tap
+  **B** for bold, ***I*** for italics or <u>U</u> for underline at the bottom. The same selection once more takes it back.
 - **With a keyboard:** Tables, the footnote rule, splitting or joining lines need the keys. With a keyboard attached to
   the tablet, all keys work as on the computer.
 

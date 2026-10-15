@@ -207,6 +207,12 @@ def test_fett_und_kursiv_von_hand():
     assert s('Text', 2, 2, 'b', True) == 'Text' and s('a  b', 1, 3, 'b', True) == 'a  b'                 # nichts markiert
     assert korrlib.styled('Die <b>Kolonisten</b> zogen', 4, 14, 'b') is True and korrlib.styled('Die <b>Kolonisten</b> zogen', 0, 14, 'b') is False
     assert korrlib.styled('a  b', 1, 3, 'b') is None
+    # Strg+U: unterstrichen, auch in fetter Schrift – und wieder zurück
+    assert s('Die Kolonisten zogen fort', 4, 14, 'u', True) == 'Die <u>Kolonisten</u> zogen fort'
+    assert s('<b>Die Kolonisten</b> zogen', 4, 14, 'u', True) == '<b>Die <u>Kolonisten</u></b> zogen'
+    assert s('Die <u>Kolonisten</u> zogen', 4, 14, 'u', False) == 'Die Kolonisten zogen'
+    assert korrlib.styled('Die <u>Kolonisten</u>', 4, 14, 'u') is True and korrlib.styled('Die <b>Kolonisten</b>', 4, 14, 'u') is False
+    assert korrlib.mask('ein <u>Wort</u>') == 'ein    Wort    '  # die Wortprüfung sieht kein »u«
 
 
 def test_fett_ueber_die_schnittstelle(app):
@@ -220,5 +226,7 @@ def test_fett_ueber_die_schnittstelle(app):
     code, d = app.post('/api/markup/001', dict(kind='style', tag='i', line=4, old=old[4], **{'from': 4, 'to': 10}))
     assert code == 200 and d['lines'][4] == 'ber <i>Heimat</i> gedachten.'
     assert app.post('/api/markup/001', dict(kind='style', tag='b', line=1, old='etwas anderes', **{'from': 0, 'to': 3}))[0] == 409
-    assert app.post('/api/markup/001', dict(kind='style', tag='u', line=1, old=old[1], **{'from': 0, 'to': 3}))[0] == 400
+    code, d = app.post('/api/markup/001', dict(kind='style', tag='u', line=4, old=d['lines'][4], **{'from': 4, 'to': 10}))
+    assert code == 200 and d['on'] and d['lines'][4] == 'ber <i><u>Heimat</u></i> gedachten.'
+    assert app.post('/api/markup/001', dict(kind='style', tag='x', line=1, old=old[1], **{'from': 0, 'to': 3}))[0] == 400
     assert app.post('/api/markup/001', dict(kind='style', tag='b', line=5, old='---'))[0] == 400  # Fußnotenstrich: nichts zu markieren
