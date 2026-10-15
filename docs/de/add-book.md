@@ -221,6 +221,36 @@ Neue Bücher legt das Programm unter `Fraktur-Korrektor` in Ihrem Benutzerordner
 Die Textdateien dürfen Sie auch mit einem anderen Editor bearbeiten, sogar während das Programm läuft.
 Ändern Sie dabei nur nicht die Zahl der Zeilen einer Seite, sonst passt die Zuordnung zum Bild nicht mehr.
 
+## Bücher verschieben oder mit dem ganzen Ordner umziehen
+
+Ihre Arbeit steckt vollständig im Buchordner (siehe oben): Text, Korrekturen, Wortliste, Lesezeichen und Seitenbilder.
+Sie dürfen ihn deshalb verschieben – in einen anderen Ordner, auf eine andere Festplatte, auch mit vielen Büchern auf
+einmal. Die Bibliothek merkt sich nur, wo jedes Buch liegt. So gehen Sie vor:
+
+1. **Beenden Sie den Fraktur-Korrektor** (wie, steht unter [Programm installieren](install.md)). Solange er läuft,
+   kann er gerade in eine Datei des Buchs schreiben, und Windows verschiebt keine geöffneten Dateien.
+2. **Verschieben Sie den Ordner** wie gewohnt im Explorer bzw. Finder – immer den ganzen Buchordner, nicht einzelne
+   Dateien daraus.
+3. **Starten Sie das Programm.** In der Bibliothek steht beim Buch jetzt blass *„Ordner nicht gefunden“*.
+4. Klicken Sie auf **Wo liegt es jetzt? …** und zeigen Sie auf den neuen Ort. Es genügt der Ordner, in den Sie das Buch
+   verschoben haben – das Programm sucht darin selbst nach dem Buch.
+
+**Viele Bücher auf einmal:** Haben Sie einen ganzen Ordner mit mehreren Büchern verschoben, etwa „Gescannte Bücher“,
+machen Sie das nur für eines davon. Die übrigen, die mit umgezogen sind, findet das Programm von selbst und sagt Ihnen,
+welche es gefunden hat.
+
+Danach ist alles wie vorher: Titel, Korrekturen, Wortliste und Leseposition bleiben. Neu ist nur die Adresse des Buchs
+im Browser – ein noch offener Browser-Tab mit dem Buch oder ein Lesezeichen im Browser führt ins Leere; öffnen Sie das
+Buch einfach wieder aus der Bibliothek. Zettel in Obsidian finden das Buch weiterhin (siehe
+[Notizen für Obsidian](usage.md)).
+
+- Steht *„Ordner nicht gefunden“*, ohne dass Sie etwas verschoben haben, liegt das Buch vielleicht auf einem USB-Stick
+  oder Netzlaufwerk, das gerade nicht angeschlossen ist. Schließen Sie es an – sonst ist nichts zu tun.
+- Den Ordner `Fraktur-Korrektor` in Ihrem Benutzerordner, in dem das Programm neue Bücher anlegt, können Sie ebenso
+  verschieben. Das nächste neue Buch legt es aber wieder dort an, der Ordner entsteht dann neu.
+- Auf einen anderen Rechner kopieren Sie den Buchordner und nehmen ihn dort mit **Öffnen …** auf. Einfacher ist oft,
+  das Buch als PDF zu sichern – darin reist alles mit, siehe [Ein Buch als PDF sichern](pdf-sichern.md).
+
 ## Ein Buch aus der Liste entfernen
 
-Das ✕ rechts entfernt nur den Eintrag aus der Bibliothek. Die Dateien bleiben unangetastet.
+**Aus der Liste nehmen** entfernt nur den Eintrag aus der Bibliothek. Die Dateien bleiben unangetastet.

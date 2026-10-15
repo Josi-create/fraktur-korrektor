@@ -16,7 +16,7 @@ button:hover{background:#f4f2ec} button.main{background:#3a6;border-color:#285;c
 button:disabled{opacity:.5;cursor:default}
 #actions{display:flex;gap:12px;align-items:center;margin-bottom:8px} #actions span{color:#666;font-size:14px}
 #bOpen{font-size:17px;padding:10px 26px}
-#note{color:#a40;font-size:14px;min-height:20px;margin-bottom:10px}
+#note{color:#a40;font-size:14px;min-height:20px;margin-bottom:10px} #note.ok{color:#2a6a2a}
 #books{background:#fff;border:1px solid #bbb;border-radius:4px}
 .book{padding:12px 18px;border-bottom:1px solid #eee} .book:last-child{border-bottom:0} .book:hover{background:#fff8d8}
 .book .line{display:flex;align-items:center;gap:18px}
@@ -217,6 +217,7 @@ async function load() {
   $('extra').style.display = lib.local ? '' : 'none';  // Zettel landen im Vault auf diesem Rechner
   $('foot').querySelector('.example').style.display = lib.local ? '' : 'none'; bindExample($('foot'));
   const edit = (location.hash.startsWith('#edit=') ? location.hash.slice(6) : '').split('|').map(decodeURIComponent);
+  const moved = (location.hash.startsWith('#moved=') ? location.hash.slice(7) : '').split('|').map(decodeURIComponent);
   const box = $('books'); box.innerHTML = '';
   if (!lib.books.length) { box.innerHTML = '<div id="empty">' + t('empty') + '</div>'; showStart(); return; }
   for (const b of lib.books) {
@@ -234,12 +235,14 @@ async function load() {
       '<small title="' + esc(b.folder) + '">' + esc(b.folder) + '</small>' + ti[1] +
       '<span class="nr">' + (b.pages ? b.pages + ' ' + t('col_pages') + (b.bookmark ? '<small>' + t('col_pos') + ': ' + t('p_abbr') + ' ' + esc(b.bookmark) + '</small>' : '') : t('missing')) + '</span>' +
       '<span class="nr"><small>' + t('col_last') + '</small>' + esc((b.last || '').slice(0, 16)) + '</span>' +
-      (lib.local && !b.pages ? '<button class="weg" data-a="forget">' + t('act_forget') + '</button>' : '') + '</div>' +
+      (lib.local && !b.pages ? '<button data-a="relocate" title="' + esc(t('act_relocate_t')) + '">' + t('act_relocate') + '</button>' +
+        '<button class="weg" data-a="forget">' + t('act_forget') + '</button>' : '') + '</div>' +
       (acts ? '<div class="acts">' + acts + '</div>' : '');
     for (const el of row.querySelectorAll('button[data-a]')) el.onclick = async e => {
       e.preventDefault(); e.stopPropagation();
       const k = el.dataset.a;
       if (k == 'open') return location.href = '/buch/' + b.id;
+      if (k == 'relocate') return relocate(b);
       if (k != 'forget') return stillWant(k, b) && openEdit(b, k);
       if (confirm(t('forget_confirm', { t: b.title }))) { await post('/api/forget', { id: b.id }); load(); }
     };
@@ -249,6 +252,8 @@ async function load() {
     // #edit=<id>|<was> öffnet den Dialog gleich bei der gewünschten Möglichkeit – so verweist die Leseansicht
     // hierher. Ein dritter Teil |<pfad> lässt den Vorgang durchlaufen (Selbsttest). Nur beim ersten Laden:
     // nach dem Einlesen frischt load() die Liste auf und würde sonst von vorn beginnen.
+    // #moved=<id>|<pfad>: »Wo liegt es jetzt?« ohne Dateidialog (Selbsttest)
+    if (moved[0] == b.id && moved[1] && !entered) { entered = true; relocate(b, moved[1]); }
     if (edit[0] == b.id && !entered) {
       entered = true;
       openEdit(b, edit[1] || null);
@@ -257,6 +262,24 @@ async function load() {
       else if (edit[2]) eauto = true;  // »Scans vorbereiten« holt erst die Vorschau und läuft dann durch
     }
   }
+}
+
+// Umgezogen: auf den neuen Ort zeigen – der Eintrag behält Titel und Datum, und was aus demselben Ordner mit umgezogen
+// ist, findet sich gleich mit. Die Adresse /buch/<id> hängt am Pfad: die gemerkte Schriftgröße des Buchs zieht mit um.
+async function relocate(b, path) {
+  const n = $('note'); n.className = ''; n.textContent = '';
+  try {
+    const p = path || (await post('/api/choose', { kind: 'folder' })).path; if (!p) return;
+    const r = await post('/api/relocate', { id: b.id, path: p });
+    try {
+      const z = localStorage.getItem('tzoom/buch/' + b.id);
+      if (z != null) { localStorage.setItem('tzoom/buch/' + r.id, z); localStorage.removeItem('tzoom/buch/' + b.id); }
+    } catch (e) {}
+    history.replaceState(null, '', location.pathname);
+    await load();
+    n.className = 'ok';
+    n.textContent = t('moved_ok', { t: b.title }) + (r.more.length ? ' ' + t('moved_more', { l: r.more.join(', ') }) : '');
+  } catch (e) { n.textContent = e.message; }
 }
 
 // ---- Erster Start (#19): Ist alles da? Haken statt Fachwörter, und hinter jedem Kreuz der Weg zur Abhilfe

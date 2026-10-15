@@ -70,8 +70,8 @@ file again with the *Choose file …* button.
 
 **The library shows “folder not found” next to a book.**
 The book folder is no longer where the program knows it. If it is on a stick or network drive, connect it. If you moved
-it: remove the entry with the ✕ and add the folder at its new place with **Open …** – the files and your work are
-untouched.
+it: click **Where is it now? …** and show the new place – title and work stay, and other books that moved along are
+found as well. See [Moving books](add-book.md).
 
 **“This folder contains no page files (001.txt, 002.txt, …).”**
 The folder is not a book folder of the program. Use **Open …** on the PDF, the images or the Transkribus export

@@ -214,6 +214,33 @@ New books are created in `Fraktur-Korrektor` in your home folder.
 You may edit the text files with another editor, even while the program is running. Just do not change the
 number of lines of a page, or the alignment with the image is lost.
 
+## Moving books, or moving house with the whole folder
+
+All your work is inside the book folder (see above): text, corrections, word list, bookmark and page images. So you
+may move it – into another folder, onto another disk, many books at once if you like. The library only remembers where
+each book is. This is how to go about it:
+
+1. **Quit Fraktur-Korrektor** (how is explained under [Installing the program](install.md)). While it is running it
+   may be writing to a file of the book, and Windows does not move files that are open.
+2. **Move the folder** as usual in Explorer or Finder – always the whole book folder, not single files from it.
+3. **Start the program.** In the library the book is now shown faded with *“folder not found”*.
+4. Click **Where is it now? …** and show it the new place. The folder you moved the book into is enough – the program
+   looks for the book inside it.
+
+**Many books at once:** If you moved a whole folder containing several books, “Scanned books” for example, do this for
+one of them only. The program finds the others that moved along by itself and tells you which ones it found.
+
+After that everything is as before: title, corrections, word list and reading position stay. Only the book’s address in
+the browser is new – a browser tab still showing the book, or a browser bookmark, leads nowhere; just open the book
+again from the library. Notes in Obsidian still find the book (see [Notes for Obsidian](usage.md)).
+
+- If it says *“folder not found”* although you moved nothing, the book may be on a USB stick or network drive that is
+  not connected right now. Connect it – nothing else to do.
+- You can move the folder `Fraktur-Korrektor` in your user folder, where the program creates new books, just the same.
+  The next new book will be created there again, though, and the folder appears anew.
+- To take a book to another computer, copy the book folder and add it there with **Open …**. Often simpler: save the
+  book as a PDF – everything travels inside it, see [Saving a book as PDF](pdf-sichern.md).
+
 ## Removing a book from the list
 
-The ✕ on the right only removes the entry from the library. The files are left untouched.
+**Remove from list** only removes the entry from the library. The files are left untouched.

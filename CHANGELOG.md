@@ -11,6 +11,12 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   außen vor: Das Format ist nicht offengelegt, und Fraktur hat FineReader damals mit der Antiqua-Erkennung gelesen
   („hatteu ste auch alle Bücher“), wo Tesseract „hatten sie auch alle Bücher“ liest. PDFs werden überall auch ohne
   die Endung `.pdf` am Inhalt erkannt (`ocr.pdf_file`).
+- **Umgezogene Bücher wiederfinden:** Bei einem Buch, dessen Ordner verschoben wurde („Ordner nicht gefunden“), steht
+  jetzt **Wo liegt es jetzt? …**. Man zeigt auf den neuen Ort – den Buchordner, eine Datei darin oder einen Ordner
+  darüber; das Programm sucht das Buch darin, bei mehreren das, dessen Pfad gleich endet wie der alte. Titel und Datum
+  bleiben, die gemerkte Schriftgröße zieht mit. Ist ein ganzer Arbeitsordner umgezogen, kommen die übrigen vermissten
+  Bücher von dort gleich mit (`/api/relocate`, nur am Rechner selbst). Neuer Hilfeabschnitt „Bücher verschieben oder
+  mit dem ganzen Ordner umziehen“; die Hilfe nennt den Knopf **Aus der Liste nehmen** jetzt beim Namen statt „✕“.
 
 ## [0.13.0] – 2026-10-14
 

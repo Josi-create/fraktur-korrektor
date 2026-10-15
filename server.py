@@ -1478,6 +1478,83 @@ def lib_forget(bid):
         BOOKS.pop(bid, None)
 
 
+def _tail(a, b):
+    """Wie viele Ordnernamen am Ende zweier Pfade übereinstimmen (…\\Leibbrandt1928\\ocr\\korr: 3)."""
+    pa, pb = os.path.normcase(a).split(os.sep), os.path.normcase(b).split(os.sep)
+    k = 0
+    while k < min(len(pa), len(pb)) - 1 and pa[-1 - k] == pb[-1 - k]:
+        k += 1
+    return k
+
+
+def _up(p, k):
+    for _ in range(k):
+        p = os.path.dirname(p)
+    return p
+
+
+def moved_book(old, path):
+    """Wo liegt das Buch, das in old lag, jetzt? path: der Buchordner, eine Datei darin oder ein Ordner darüber – dann
+    wird darin gesucht; bei mehreren Büchern gilt das, dessen Pfad gleich endet wie der alte."""
+    if os.path.isfile(path):
+        path = os.path.dirname(path)
+    if not os.path.isdir(path):
+        raise ValueError('quelle_fehlt')
+    if page_files(path):
+        return path
+    books = [f['path'] for f in finder.scan_dir(path) if f['kind'] == 'book']
+    if not books:
+        raise ValueError('kein_buch_dort')
+    score = {b: _tail(old, b) for b in books}
+    best = max(score.values())
+    top = [b for b in books if score[b] == best]
+    if len(top) > 1:
+        raise ValueError('mehrere_buecher')
+    return top[0]
+
+
+def lib_relocate(bid, path):
+    """Ein Buch ist umgezogen: Der Eintrag zeigt auf den neuen Ort und behält Titel und Datum. Ist ein ganzer Arbeitsordner
+    umgezogen, kommen die übrigen vermissten Bücher von dort gleich mit – wer zehn Bücher verschiebt, soll nicht zehnmal
+    suchen müssen. Die Adresse /buch/<id> hängt am Pfad und ändert sich; alles andere liegt im Buchordner und reist mit.
+    Liefert dict(id, folder, more=[Titel der mitgefundenen Bücher])."""
+    path = os.path.abspath((path or '').strip().strip('"'))
+    with LIBLOCK:
+        lib = lib_load()
+        e = next((x for x in lib if book_id(x['folder']) == bid), None)
+        if e is None:
+            raise ValueError('quelle_fehlt')
+        old = os.path.abspath(e['folder'])
+        new = moved_book(old, path)
+        ids = {book_id(x['folder']) for x in lib}
+
+        def move(x, folder):
+            BOOKS.pop(book_id(x['folder']), None)
+            same = next((y for y in lib if y is not x and book_id(y['folder']) == book_id(folder)), None)
+            if same is not None:  # schon unter dem neuen Ort eingetragen (»Öffnen …«): ein Eintrag genügt, der alte Titel gilt
+                same['title'] = x.get('title') or same.get('title')
+                same['last'] = max(same.get('last', ''), x.get('last', ''))
+                lib.remove(x)
+            else:
+                x['folder'] = folder
+
+        move(e, new)
+        more = []
+        k = _tail(old, new)
+        if k:
+            old_root, new_root = _up(old, k), _up(new, k)
+            for x in list(lib):
+                f = os.path.abspath(x['folder'])
+                if page_files(f) or not os.path.normcase(f).startswith(os.path.normcase(old_root) + os.sep):
+                    continue
+                cand = os.path.join(new_root, f[len(old_root) + 1:])
+                if page_files(cand) and book_id(cand) not in ids:
+                    move(x, cand)
+                    more.append(x.get('title') or default_title(cand))
+        write_atomic(LIBFILE, json.dumps(lib, ensure_ascii=False, indent=1))
+    return dict(id=book_id(new), folder=new, more=more)
+
+
 MARKS = {}  # Buchordner -> läuft die Nachberechnung noch? (je Programmlauf einmal)
 
 
@@ -2636,7 +2713,7 @@ class H(BaseHTTPRequestHandler):
         if m and m.group(1) in JOBS and self.local():
             JOBS[m.group(1)]['cancel'] = True
             return self.sendjson({})
-        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/export_epub', '/api/epub_preview', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/epub_markup', '/api/rename', '/api/kindle_scan', '/api/kindle_notes', '/api/beispiel'):
+        if u.path in ('/api/choose', '/api/open', '/api/import_transkribus', '/api/import_ocr', '/api/import_epub', '/api/scan', '/api/discard', '/api/pdf_info', '/api/scantailor', '/api/set_tool', '/api/forget', '/api/relocate', '/api/reveal', '/api/add_transkribus', '/api/add_images', '/api/prepare', '/api/restore', '/api/export_pdf', '/api/export_epub', '/api/epub_preview', '/api/import_pdfbuch', '/api/scans_check', '/api/prepare_scans', '/api/epub_pair', '/api/add_pdf', '/api/epub_markup', '/api/rename', '/api/kindle_scan', '/api/kindle_notes', '/api/beispiel'):
             if not self.local():
                 return self.sendjson(dict(error='nur_lokal'), 403)
             if u.path == '/api/choose':
@@ -2730,6 +2807,11 @@ class H(BaseHTTPRequestHandler):
             if u.path == '/api/forget':
                 lib_forget(body.get('id'))
                 return self.sendjson({})
+            if u.path == '/api/relocate':
+                try:
+                    return self.sendjson(lib_relocate(body.get('id'), body.get('path')))
+                except ValueError as e:
+                    return self.sendjson(dict(error=str(e)), 400)
             if u.path == '/api/rename':
                 try:
                     return self.sendjson(lib_rename(body.get('id'), body.get('title')))

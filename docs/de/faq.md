@@ -73,8 +73,9 @@ angeschlossen. Suchen Sie die Datei mit dem Knopf *Datei wählen …* noch einma
 
 **In der Bibliothek steht bei einem Buch „Ordner nicht gefunden“.**
 Der Buchordner liegt nicht mehr dort, wo das Programm ihn kennt. Liegt er auf einem Stick oder Netzlaufwerk, schließen
-Sie es an. Haben Sie ihn verschoben: Eintrag mit dem ✕ aus der Liste nehmen und den Ordner am neuen Ort mit
-**Öffnen …** wieder aufnehmen – die Dateien und Ihre Arbeit bleiben unangetastet.
+Sie es an. Haben Sie ihn verschoben: Klicken Sie auf **Wo liegt es jetzt? …** und zeigen Sie auf den neuen Ort – Titel
+und Arbeit bleiben, und andere Bücher, die mit umgezogen sind, findet das Programm gleich mit. Siehe
+[Bücher verschieben](add-book.md).
 
 **„In diesem Ordner liegen keine Seitendateien (001.txt, 002.txt, …).“**
 Der Ordner ist kein Buchordner des Programms. Zeigen Sie mit **Öffnen …** stattdessen auf das PDF, die Bilder oder den

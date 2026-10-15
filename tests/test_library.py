@@ -205,3 +205,38 @@ def test_community_dateien_in_beiden_sprachen():
     # BETATEST verlinkt das Formular über ?template=<datei>; ein umbenanntes Formular ergäbe eine leere Seite
     for de_en in ('', '.en'):
         assert 'template=betatest%s.yml' % de_en in open(os.path.join(ROOT, 'BETATEST%s.md' % de_en), encoding='utf-8').read()
+
+
+def test_arbeitsordner_umgezogen(lib, tmp_path):
+    """Ganzer Arbeitsordner verschoben: »Wo liegt es jetzt?« für ein Buch – das gleich endende Buch im gewählten Ordner
+    wird es, die übrigen vermissten Bücher von dort kommen mit; Titel und Datum bleiben, die Adresse ist neu."""
+    import shutil
+    alt, neu = tmp_path / 'E' / 'Gescannte Bücher', tmp_path / 'D' / 'Bücher'
+    for sub in ('Leibbrandt1928/ocr/korr', 'Fatma/ocr/korr', 'Hagis'):
+        make_book(str(alt / sub))
+    ids = [lib.lpost('/api/open', dict(folder=str(alt / sub)))[1]['id'] for sub in ('Leibbrandt1928', 'Fatma', 'Hagis')]
+    lib.lpost('/api/rename', dict(id=ids[0], title='Leibbrandt: Die Auswanderung'))
+    os.makedirs(neu.parent)
+    shutil.move(str(alt), str(neu))
+    shutil.move(str(neu / 'Hagis'), str(tmp_path / 'woanders'))  # liegt nicht mehr am selben Ort: bleibt vermisst
+    assert [b['pages'] for b in lib.lget('/api/library')[1]['books']] == [0, 0, 0]
+
+    assert lib.lpost('/api/relocate', dict(id=ids[0], path=str(tmp_path / 'leer'))) == (400, dict(error='quelle_fehlt'))
+    os.makedirs(tmp_path / 'leer')
+    assert lib.lpost('/api/relocate', dict(id=ids[0], path=str(tmp_path / 'leer'))) == (400, dict(error='kein_buch_dort'))
+    code, r = lib.lpost('/api/relocate', dict(id=ids[0], path=str(neu)))  # der Ordner darüber genügt
+    assert code == 200 and r['folder'] == str(neu / 'Leibbrandt1928' / 'ocr' / 'korr') and r['more'] == ['Fatma']
+    books = {b['title']: b for b in lib.lget('/api/library')[1]['books']}
+    assert books['Leibbrandt: Die Auswanderung']['id'] == r['id'] != ids[0] and books['Leibbrandt: Die Auswanderung']['pages'] == 2
+    assert books['Fatma']['folder'] == str(neu / 'Fatma' / 'ocr' / 'korr') and books['Fatma']['pages'] == 2
+    assert books['Hagis']['pages'] == 0
+    assert lib.lget('/buch/%s/api/overview' % r['id'])[1]['title'] == 'Leibbrandt: Die Auswanderung'
+    # Zwei Bücher, keins endet wie das alte: lieber fragen als raten
+    make_book(str(tmp_path / 'zwei' / 'a')); make_book(str(tmp_path / 'zwei' / 'b'))
+    assert lib.lpost('/api/relocate', dict(id=ids[2], path=str(tmp_path / 'zwei'))) == (400, dict(error='mehrere_buecher'))
+    # Schon am neuen Ort geöffnet: ein Eintrag bleibt, mit dem Titel des alten
+    lib.lpost('/api/rename', dict(id=ids[2], title='Hagis: Gottvertrauen'))
+    lib.lpost('/api/open', dict(folder=str(tmp_path / 'woanders')))
+    code, r = lib.lpost('/api/relocate', dict(id=ids[2], path=str(tmp_path / 'woanders' / '001.txt')))  # auch eine Datei darin
+    assert code == 200 and r['more'] == []
+    assert sorted(b['title'] for b in lib.lget('/api/library')[1]['books']) == ['Fatma', 'Hagis: Gottvertrauen', 'Leibbrandt: Die Auswanderung']
