@@ -33,6 +33,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   oder darüber eine Kapitelnummer, gilt die Zahl, die zu den Nachbarseiten passt – bisher immer die unterste. Das
   Rauschen darunter kommt so auch nicht mehr ins E-Book. Steht die Lesezeile auf der blassen Seitenzahl, sagt die
   Statuszeile, welche Seitenzahl gilt, was gelesen wurde und dass `F2` sie ändert (Seitendaten: `pnum`).
+- **Nach dem Sichern als E-Book oder PDF** stehen nur noch **Verzeichnis öffnen** und **Weiterarbeiten** da. „Buch
+  öffnen“ las sich, als öffne es die eben gesicherte Datei als neues Buch – gemeint war das Buch, an dem man arbeitet.
 
 ### Behoben
 - **Vorschläge mit Bindestrich oder Leerzeichen wuchsen an:** Wer bei einem roten Wort mit `↓`/`↑` mehrmals zwischen den

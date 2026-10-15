@@ -668,7 +668,7 @@ function editPick(only) {
   eact = null; $('emsg').textContent = ''; $('ehead').textContent = t(only ? 'ed_save_what' : 'ed_what');
   $('ebody').style.display = ''; $('edone').style.display = 'none';
   $('eBack').style.display = $('eGo').style.display = $('eBook').style.display = $('eShow').style.display = 'none';
-  $('eClose').textContent = t('cancel');
+  $('eClose').textContent = t('cancel'); $('eClose').style.display = '';
   $('ebody').innerHTML = Object.keys(ACTS).filter(k => ACTS[k][1](eb) && (!only || only.includes(k))).map(k => { const w = unneeded(k, eb);
     return '<a href="#" class="act' + (w ? ' muted' : '') + '" data-a="' + k + '"><span class="ic">' + ACTS[k][0] + '</span><span><b>' + t('act_' + k) + '</b><small>' +
       t('act_' + k + '_hint') + '</small>' + (w ? '<small class="why">' + t(w, { n: eb.corrections }) + '</small>' : '') + '</span></a>'; }).join('');
@@ -740,8 +740,11 @@ function savedFiles(folder, files) {
   return '<p class="files">' + files.filter(x => x).map(([f, note]) => '<b>' + esc(base(f)) + '</b>' + (note ? ' – ' + note : '')).join('<br>') +
     '<small>' + t('ed_saved_in', { f: esc(folder) }) + '</small></p><div class="hint" id="eShown"></div>';
 }
+// Gesichert (PDF, E-Book): »Buch öffnen« läse sich, als öffne es die eben gesicherte Datei als neues Buch. Gemeint ist
+// das Buch, an dem man gearbeitet hat – also nur zwei Wege: zur Datei im Ordner oder zurück an die Arbeit.
 function showButton(file) {
-  $('eShow').style.display = '';
+  $('eShow').style.display = ''; $('eShow').textContent = t('btn_open_dir');
+  $('eBook').textContent = t('btn_continue'); $('eClose').style.display = 'none';
   $('eShow').onclick = async () => {
     try { await post('/api/reveal', { path: file }); $('eShown').textContent = t('shown_file'); }
     catch (err) { fail('eShown', err); }
