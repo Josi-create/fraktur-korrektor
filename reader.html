@@ -398,7 +398,9 @@ function showPos() {
 }
 let hits = null, hi = -1, ask = null;  // Suche: Fundstellen im ganzen Buch, die aktuelle, offene Eingabezeile (find | goto)
 let stelle = null;  // Rücksprung vom Zettel (#74): {page, a, b} – diese Zeilen (ab 0) sind hervorgehoben
-const WRE = /^[A-Za-zÄÖÜäöüß]+/;
+// Das Wort im Eingabefeld, das ein Vorschlag ersetzt: auch mit Bindestrich oder Apostroph darin (»Zweispänner-wagen«) – sonst
+// ersetzte der nächste Vorschlag nur den Teil davor, und hinten wuchs »-wagen-wagen« an. »Ein-« (Ergänzungsstrich) bleibt »Ein«
+const WRE = /^\p{L}+(?:[-'’]\p{L}+)*/u;
 const READ_POS = 0.25;  // Lesezeile bei 1/4 der Fensterhöhe (Text und Bild)
 if (NOTRANS) { $('imgwrap').style.transition = 'none'; $('lines').style.transition = 'none'; }  // für Screenshots/Tests
 
@@ -879,13 +881,18 @@ function applySug(k) {
   const f = cf, e1 = $('edit'); if (!sug || !f || mode != 'fix') return;
   sug.i = Math.max(-1, Math.min(sug.items.length - 1, k));
   let nw = sug.i < 0 ? sug.orig : sug.items[sug.i]; const fs = fpos(f);
-  const cur = (e1.value.slice(fs).match(f.kind == 'fnref' ? /^[*\d⁰¹²³⁴⁵⁶⁷⁸⁹]+/ : WRE) || [''])[0];  // was dort gerade steht (der Nutzer kann schon getippt haben)
+  // Was dort gerade steht: der zuletzt eingesetzte Vorschlag, solange er unverändert dasteht – er kann ein Leerzeichen oder einen
+  // Bindestrich enthalten (»Zweispänner wagen«) –, sonst das Wort (der Nutzer kann schon getippt haben)
+  const here = (v, put, re) => put && v.startsWith(put) ? put : (v.match(re) || [''])[0];
+  const cur = here(e1.value.slice(fs), sug.put, f.kind == 'fnref' ? /^[*\d⁰¹²³⁴⁵⁶⁷⁸⁹]+/ : WRE);
   if (isJoin(f)) {  // getrenntes Wort: die erste Hälfte bleibt so lang wie bisher, der Rest kommt in die Folgezeile
-    const e2 = $('edit2'), cur2 = (e2.value.match(WRE) || [''])[0];
+    const e2 = $('edit2'), cur2 = here(e2.value, sug.put2, WRE);
     e1.setRangeText(nw.slice(0, f.len), fs, fs + cur.length, 'select'); e2.setRangeText(nw.slice(f.len), 0, cur2.length, 'select');
+    sug.put = nw.slice(0, f.len); sug.put2 = nw.slice(f.len);
   } else {
     if (f.cross) nw = f.cross == 'next' ? nw.slice(0, f.word.indexOf('¬')) : nw.slice(f.word.indexOf('¬'));  // nur die Hälfte auf dieser Seite
     e1.setRangeText(nw, fs, fs + cur.length, 'select');
+    sug.put = nw;
   }
   renderSug();
 }

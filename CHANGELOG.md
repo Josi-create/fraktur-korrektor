@@ -34,6 +34,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Rauschen darunter kommt so auch nicht mehr ins E-Book. Steht die Lesezeile auf der blassen Seitenzahl, sagt die
   Statuszeile, welche Seitenzahl gilt, was gelesen wurde und dass `F2` sie ändert (Seitendaten: `pnum`).
 
+### Behoben
+- **Vorschläge mit Bindestrich oder Leerzeichen wuchsen an:** Wer bei einem roten Wort mit `↓`/`↑` mehrmals zwischen den
+  Vorschlägen wechselte, bekam aus »Zweispännerwagen« erst »Zweispänner-wagen«, dann »Zweispänner-wagen-wagen« – ersetzt
+  wurde nur der Teil bis zum Bindestrich oder Leerzeichen. Jetzt ersetzt ein Vorschlag genau den zuvor eingesetzten; als
+  Wort gelten auch Bindestrich und Apostroph darin und alle Buchstaben (ſ, é …). In die Datei kam der Fehler nur, wenn man
+  so übernahm.
+
 ## [0.13.0] – 2026-10-14
 
 ### Neu
