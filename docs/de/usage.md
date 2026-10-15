@@ -12,6 +12,11 @@ Zeile gelesen hat: Er erscheint blass, wird nicht geprüft und gehört nicht zum
 Eintragen müssen Sie nichts, die Dateien bleiben, wie sie sind; fehlt die Zahl auf einer Seite (Kapitelanfang), ergibt
 sie sich aus den Nachbarseiten.
 
+Stehen unten mehrere Zahlen – darunter noch Rauschen vom Seitenrand (»428« / »ı10«) oder darüber eine Kapitelnummer –,
+gilt die, die zu den Nachbarseiten passt. Steht die Lesezeile auf der blassen Seitenzahl, sagt die Zeile unten, welche
+Seitenzahl gilt und was gelesen wurde. **Ändern** können Sie sie wie jede Zeile mit `F2`: Die Seitenzahl ist das, was in
+dieser Zeile steht. Nennt das Programm eine falsche Zeile als Seitenzahl, nehmen Sie dort mit `F2` die Ziffern heraus.
+
 Das Programm kennt drei Zustände, oben in der Leiste angezeigt: **Lesen** (grün), **Korrektur** (rot) –
 ein rotes Wort wird geändert – und **Zeile bearbeiten** (orange).
 

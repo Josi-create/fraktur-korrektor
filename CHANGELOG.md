@@ -28,6 +28,12 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   Einlesen eines EPUB werden `<hr/>` und `<p class="abstand">` zum doppelten Absatz, auch auf dem Weg EPUB + PDF und
   beim Nachtragen der Auszeichnung.
 
+### Verbessert
+- **Seitenzahl unten unter mehreren Zahlen:** Steht unter der Seitenzahl noch Rauschen mit einer Ziffer (»428« / »ı10«)
+  oder darüber eine Kapitelnummer, gilt die Zahl, die zu den Nachbarseiten passt – bisher immer die unterste. Das
+  Rauschen darunter kommt so auch nicht mehr ins E-Book. Steht die Lesezeile auf der blassen Seitenzahl, sagt die
+  Statuszeile, welche Seitenzahl gilt, was gelesen wurde und dass `F2` sie ändert (Seitendaten: `pnum`).
+
 ## [0.13.0] – 2026-10-14
 
 ### Neu

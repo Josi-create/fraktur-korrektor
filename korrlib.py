@@ -322,22 +322,26 @@ def head_number(lines):
     """(zahl, zeile, position, länge) aus der Kopfzeile oder None."""
     m = NUM.search(lines[0]) if lines and lines[0].startswith('#') else None
     return (int(m.group()), 0, m.start(), len(m.group())) if m else None
-def foot_number(lines):
-    """(zahl, zeile, position, länge) einer Zahl am Seitenende oder None. Von zwei Zahlen gilt die hintere (»8 | 4«)."""
-    top, seen = (1 if lines and lines[0].startswith('#') else 0), 0
+def foot_candidates(lines):
+    """Die Zahlen am Seitenende, die eine Seitenzahl sein könnten, von unten nach oben: [(zahl, zeile, position, länge)].
+    Von zwei Zahlen in einer Zeile gilt die hintere (»8 | 4«)."""
+    top, seen, out = (1 if lines and lines[0].startswith('#') else 0), 0, []
     for i in range(len(lines) - 1, top - 1, -1):
         s = lines[i].strip()
         if not s or s == '---':
             continue
         seen += 1
         if seen > 3:
-            return None
+            break
         ms = list(NUM.finditer(lines[i]))
         if len(s) <= 8 and 1 <= len(ms) <= 2 and max(len(m.group()) for m in ms) <= 4 and '*' not in s and '<' not in s \
                 and sum(c.isalpha() for c in s) <= 1:
             m = ms[-1]
-            return int(m.group()), i, m.start(), len(m.group())
-    return None
+            out.append((int(m.group()), i, m.start(), len(m.group())))
+    return out
+def foot_number(lines):
+    """(zahl, zeile, position, länge) der untersten Zahl am Seitenende oder None."""
+    return (foot_candidates(lines) or [None])[0]
 def head_lines(pages):
     """{seite: (seitenzahl oder None, [zeilen])}: der lebende Kolumnentitel, den die Erkennung als gewöhnliche Zeile oben
     auf der Seite gelesen hat – »Stalins Bauernopfer am Schwarzen Meer 9«, auch als zwei Zeilen Titel und Zahl, oder links
@@ -388,6 +392,13 @@ def foot_numbers(pages, heads=None):
         if f:
             feet[pg] = f
         num[pg] = (h or f or (None,))[0]
+    # Unter der Seitenzahl noch Rauschen mit einer Ziffer (»428« / »ı10«): Es gilt die Zahl, die zu den Nachbarseiten passt
+    for k, pg in enumerate(keys):
+        near = {num[keys[k + d]] - d for d in (-2, -1, 1, 2) if 0 <= k + d < len(keys) and num[keys[k + d]] is not None}
+        if pg in feet and feet[pg][0] not in near:
+            alt = next((c for c in foot_candidates(pages[pg]) if c[0] in near), None)
+            if alt:
+                feet[pg], num[pg] = alt, alt[0]
     ok = sum(1 for k, pg in enumerate(keys) if pg in feet and
              any(0 <= k + d < len(keys) and num[keys[k + d]] == feet[pg][0] + d for d in (-2, -1, 1, 2)))
     without = sum(1 for pg in keys if num[pg] is None or pg in feet)

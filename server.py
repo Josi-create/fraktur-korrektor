@@ -742,9 +742,12 @@ class Book:
             # size: damit der Reader die Nachbarseiten schon richtig platziert, bevor ihre Bilder geladen sind
             # foot: Zeile der Seitenzahl unten – der Reader zeigt sie blass wie die Kopfzeile
             # bilder: die markierten Abbildungen (#76) – der Reader umrahmt sie im Seitenbild
+            # pnum: in welcher Zeile die gedruckte Seitenzahl steht, was dort gelesen wurde und was gilt (nach den Nachbarseiten) –
+            # steht die Lesezeile dort, sagt der Reader es und wie man sie ändert
+            n = self.page_number(pg)
             return dict(page=pg, lines=lines, geo=self.geo_lines(pg, lines), flags=self.flags(pg), img=self.img_url(pg), size=self.img_size(pg),
                         conflicts=self.conflicts(pg), foot=self.feet[pg][1] if pg in self.feet else None, kopf=sorted(self.kopf(pg)),
-                        bilder=self.figures(pg))
+                        bilder=self.figures(pg), pnum=dict(line=n[1], read=n[0], printed=self.printed_page(pg)) if n else None)
 
     def headings(self):
         """Die mit H ausgezeichneten Überschriften für die Übersicht (Taste I) und das Inhaltsverzeichnis des PDFs:

@@ -597,6 +597,10 @@ function render() {
     e1.style.display = 'none'; e2.style.display = 'none'; e1.blur(); e2.blur();
     const n = data.flags.filter(f => f.line == li).length, k = conflictAt(li);
     $('word').innerHTML = n ? '<span style="color:#c00">' + t(n > 1 ? 'flags_n' : 'flags_1', { n }) + '</span>' : '<span style="color:#888">' + t('reading') + '</span>';
+    // Auf der Zeile mit der gedruckten Seitenzahl: welche gilt – und dass sie sich wie jede Zeile ändern lässt
+    const pn = !n && data.pnum && data.pnum.line == li ? data.pnum : null;
+    if (pn) $('word').innerHTML = '<span style="color:#666">' + esc(t('pnum_here', { p: pn.printed }) + (String(pn.read) != pn.printed ? t('pnum_read', { n: pn.read }) : '') +
+      ' · ' + t(TOUCH ? 'pnum_how_t' : 'pnum_how')) + '</span>';
     if (k) $('word').innerHTML += ' <span style="color:#b35c00">· ' + t('konf_hint') + '</span>';
   } else if (mode == 'konf') { e1.style.display = 'none'; e2.style.display = 'none'; renderConflict(); }
   else if (mode == 'bild') { e1.style.display = 'none'; e2.style.display = 'none'; renderBild(); }

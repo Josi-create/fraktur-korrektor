@@ -12,6 +12,11 @@ text recognition read as an ordinary line: it appears in pale grey, is not check
 number is taken as the page number. You do not need to enter anything, and the files stay as they are; if a page has no
 number (chapter opening), it follows from the neighbouring pages.
 
+If there are several numbers at the bottom – noise from the page margin below it (»428« / »ı10«) or a chapter number
+above it –, the one that fits the neighbouring pages counts. With the reading line on the pale page number, the line at
+the bottom says which page number counts and what was read. You **change** it like any line with `F2`: the page number
+is whatever stands in that line. If the program takes a wrong line for the page number, take the digits out of it with `F2`.
+
 The program has three states, shown in the top bar: **Reading** (green), **Correction** (red) – a red word
 is being changed – and **Edit line** (orange).
 

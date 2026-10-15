@@ -372,6 +372,27 @@ def test_seitenzahl_unten_auf_der_seite(tmp_path):
     assert o.feet == {} and o.printed_page('001') == '1' and all(f['kind'] != 'page' for pg in o.pages for f in o.flags(pg))
 
 
+def test_rauschen_unter_der_seitenzahl(tmp_path):
+    """Unter der Seitenzahl noch eine Zahl aus Rauschen (»#428« / »ı10«) oder darüber eine Kapitelnummer: Es gilt die, die zu
+    den Nachbarseiten passt. Die Seitendaten sagen dem Reader, in welcher Zeile sie steht, was gelesen wurde und was gilt."""
+    import korrlib, server
+    assert [c[0] for c in korrlib.foot_candidates(['# ', 'Mein Heimatland, das war ja Polen,', '#428', 'ı10'])] == [10, 428]
+    folder = tmp_path / 'buch'
+    folder.mkdir()
+    pages = [['Die Kolonisten zogen.', '425'], ['Die Kolonisten zogen.', '426'], ['Die Kolonisten zogen.', '427'],
+             ['Mein Heimatland, das war ja Polen,', '#428', 'ı10'], ['Die Kolonisten zogen.', '3', '429'],
+             ['Die Kolonisten zogen.', '480'], ['Die Kolonisten zogen.', '431'], ['Die Kolonisten zogen.', '432']]
+    for i, p in enumerate(pages):
+        (folder / ('%03d.txt' % (i + 1))).write_text('\n'.join(['# '] + p) + '\n', encoding='utf-8')
+    b = server.Book(str(folder))
+    b.refresh()
+    assert b.feet['004'][:2] == (428, 2) and b.feet['005'][:2] == (429, 3)    # nicht 10, nicht 3
+    assert [b.printed_page(pg) for pg in b.pages] == [str(n) for n in range(425, 433)]
+    assert b.page_data('004')['pnum'] == dict(line=2, read=428, printed='428')
+    assert b.page_data('006')['pnum'] == dict(line=2, read=480, printed='430')  # Lesefehler: der Reader nennt beide
+    assert server.Book(str(folder)).page_data('001')['pnum']['line'] == 2
+
+
 def test_korrekturvorschlaege(app):
     """#41: gelernt aus dem Protokoll, dann OCR-Verwechslungen (häufige im Buch zuerst), zuletzt Hunspell."""
     old = app.text('001')[2]
