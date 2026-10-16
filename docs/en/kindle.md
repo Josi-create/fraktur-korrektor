@@ -18,8 +18,9 @@ the browser: [Highlights from purchased books](kindle-notizbuch.md).
 
 ## How it works
 
-1. Connect the Kindle to the computer with the USB cable and **unlock** it (tap the screen) – while the lock screen
-   is showing, the computer cannot see its files.
+1. Connect the Kindle to the computer with the USB cable and **unlock** it (tap or swipe the screen) – while the
+   lock screen is showing, the computer cannot see its files. If the Kindle shows a message about the USB
+   connection, do **not** tap the button that ends the connection there: otherwise the computer no longer sees it.
 2. In the library, below the list of books, click **Kindle highlights to Obsidian …**. In Windows the program finds
    the Kindle by itself and reads its highlights; this takes a few seconds. Otherwise choose the file
    `My Clippings.txt` with **Choose file …** (where it comes from is explained below).
@@ -33,6 +34,14 @@ the browser: [Highlights from purchased books](kindle-notizbuch.md).
 5. **Create notes.** The window says how many there are and shows the folder if you like.
 
 You can also point to the file with **Open …**: the program recognises it and takes you to the same window.
+
+## If the Kindle does not show up
+
+- Is the Kindle **unlocked**? Tap the screen and click **Search again** in the window.
+- Did you tap the button on the Kindle that ends the USB connection? Then unplug the USB cable and plug it in again.
+- If that does not help, plug the cable into another USB socket of the computer.
+- Use **another USB cable**. Some cables only charge and carry no data – the Kindle then charges, but the computer
+  does not see it.
 
 ## Where the Kindle keeps the highlights
 

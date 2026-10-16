@@ -39,7 +39,7 @@ button:disabled{opacity:.5;cursor:default}
 .dlg input[type=text]{width:100%;box-sizing:border-box;font:15px Consolas,monospace;padding:6px 8px;border:1px solid #999;border-radius:3px}
 .dlg .radio{display:flex;gap:26px;flex-wrap:wrap} .dlg .radio label{display:flex;align-items:center;gap:6px;cursor:pointer}
 .dlg .row{display:flex;gap:8px} .dlg .row input{flex:1} .dlg .row button{flex:none;padding:5px 10px;font-size:14px}
-.dlg .hint{color:#777;font-size:13px;margin-top:10px;line-height:1.5} .dlg .msg{color:#a40;margin-top:12px;min-height:20px;line-height:1.5}
+.dlg .hint{color:#777;font-size:13px;margin-top:10px;line-height:1.5} .dlg .hint ol{margin:4px 0 8px;padding-left:22px} .dlg .msg{color:#a40;margin-top:12px;min-height:20px;line-height:1.5}
 .dlg .btns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px} .dlg .btns .sp{flex:1}
 #pick{display:flex;gap:12px;margin:6px 0 4px} #pick button{flex:1;padding:16px;font-size:16px}
 .cand{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid #ccc;border-radius:5px;margin-top:8px;cursor:pointer}
@@ -163,6 +163,7 @@ button:disabled{opacity:.5;cursor:default}
   <label class="f" data-t="kindle_file"></label>
   <div class="row"><input type="text" id="kSrc" spellcheck="false"><button type="button" id="kFile">📄 <span data-t="pick_file"></span></button></div>
   <div class="hint" id="kHow"></div>
+  <div id="kAgainBox" style="display:none;margin-top:10px"><button type="button" id="kAgain">🔄 <span data-t="kindle_again"></span></button></div>
   <div class="hint" id="kAge"></div>
   <div id="kBooks"></div>
   <div class="hint" id="kOnly"></div>
@@ -952,7 +953,9 @@ async function kindleScan(first) {
   try {
     const r = await post('/api/kindle_scan', { path: p });
     $('kmsg').textContent = '';
-    $('kHow').innerHTML = r.path && !p ? t('kindle_found') : t('kindle_how') + ' ' + help('kindle', t('help'));
+    // Kein Kindle gefunden: erklären, wie man ihn anschließt, und nach dem Umstecken ohne neues Fenster noch einmal suchen lassen
+    $('kHow').innerHTML = r.path && !p ? t('kindle_found') : t('kindle_connect') + t('kindle_trouble') + '<p>' + t('kindle_how') + ' ' + help('kindle', t('help')) + '</p>';
+    $('kAgainBox').style.display = r.path && !p ? 'none' : '';
     if (!r.path) { $('kSrc').focus(); return; }
     $('kSrc').value = r.path; kb = r.books;
     // Eine Kopie auf dem Schreibtisch bleibt stehen, während auf dem Kindle weitergelesen wird: das Datum macht das sichtbar
@@ -969,7 +972,7 @@ async function kindleScan(first) {
       (lk('missing') ? '<p>' + t('kindle_missing', { t: lk('missing') }) + '</p>' : '');
     for (const el of document.querySelectorAll('input[name=kbook]')) el.onchange = () => kindlePick(+el.value);
     if (kb.length) kindlePick(0);
-  } catch (err) { fail('kmsg', err); }
+  } catch (err) { fail('kmsg', err); if (!p) $('kAgainBox').style.display = ''; }
 }
 function kindlePick(n) {
   for (const el of document.querySelectorAll('#kBooks .cand')) { const on = +el.dataset.n == n; el.classList.toggle('sel', on); el.querySelector('input').checked = on; }
@@ -979,6 +982,7 @@ function kindlePick(n) {
   $('kDirBox').style.display = ''; $('kGo').disabled = !$('kDir').value.trim();
 }
 $('kindleLink').onclick = e => { e.preventDefault(); openKindle(''); };
+$('kAgain').onclick = () => openKindle('');
 $('kFile').onclick = async () => {
   try { const p = (await post('/api/choose', { kind: 'any' })).path; if (p) { $('kSrc').value = p; await kindleScan(); } }
   catch (err) { fail('kmsg', err); }

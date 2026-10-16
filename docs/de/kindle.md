@@ -20,8 +20,9 @@ Markierungen beim Namen. Deren Text finden Sie in Amazons Notizbuch im Browser:
 
 ## So geht es
 
-1. Den Kindle mit dem USB-Kabel an den Rechner anschließen und **entsperren** (auf den Bildschirm tippen) – solange
-   die Sperre davor ist, sieht der Rechner seine Dateien nicht.
+1. Den Kindle mit dem USB-Kabel an den Rechner anschließen und **entsperren** (auf den Bildschirm tippen bzw.
+   wischen) – solange die Sperre davor ist, sieht der Rechner seine Dateien nicht. Zeigt der Kindle eine Meldung zur
+   USB-Verbindung, tippen Sie dort **nicht** auf **Verbindung trennen**: Sonst sieht der Rechner den Kindle nicht mehr.
 2. In der Bibliothek unter der Liste der Bücher auf **Kindle-Markierungen nach Obsidian …** klicken. Unter Windows
    findet das Programm den Kindle von selbst und liest seine Markierungen, das dauert einige Sekunden. Sonst wählen
    Sie die Datei `My Clippings.txt` mit **Datei wählen …** (woher sie kommt, steht weiter unten).
@@ -35,6 +36,14 @@ Markierungen beim Namen. Deren Text finden Sie in Amazons Notizbuch im Browser:
 5. **Zettel anlegen.** Das Fenster sagt, wie viele es geworden sind, und zeigt auf Wunsch den Ordner.
 
 Die Datei lässt sich auch über **Öffnen …** zeigen: Das Programm erkennt sie und führt zum selben Fenster.
+
+## Wenn der Kindle nicht erscheint
+
+- Ist der Kindle **entsperrt**? Auf den Bildschirm tippen und im Fenster auf **Noch einmal suchen** klicken.
+- Haben Sie auf dem Kindle **Verbindung trennen** getippt? Dann das USB-Kabel abziehen und wieder anstecken.
+- Hilft das nicht, stecken Sie das Kabel in eine andere USB-Buchse des Rechners.
+- Nehmen Sie ein **anderes USB-Kabel**. Manche Kabel laden nur und übertragen keine Daten – der Kindle lädt dann,
+  aber der Rechner sieht ihn nicht.
 
 ## Wo der Kindle die Markierungen ablegt
 
