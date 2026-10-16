@@ -2236,28 +2236,39 @@ def notes_suggestion(title):
     return os.path.join(os.path.dirname(near), name) if near else ''
 
 
+KINDLE = os.path.join(korrlib.HOME, 'kindle')  # was vom angeschlossenen Kindle (Mediengerät) geholt wurde
+
+
 def kindle_scan(path):
-    """Die Bücher in »My Clippings.txt«, je mit Vorschlag für den Notizordner. Ohne Pfad sucht das Programm einen
-    angeschlossenen Kindle. Dazu die Titel, zu denen es nur Lesezeichen gibt (der Nutzer vermisst sie sonst in der
-    Liste), und der Tag des jüngsten Eintrags: Eine Kopie der Datei veraltet, sobald auf dem Kindle weitergelesen wird."""
-    found = kindle.find()
+    """Die Bücher in »My Clippings.txt« und – bei neuerer Firmware – in der Datenbank der Markierungen, je mit Vorschlag
+    für den Notizordner. Ohne Pfad sucht das Programm einen angeschlossenen Kindle: als Laufwerk, unter Windows auch als
+    Mediengerät, das es dann nach KINDLE holt. Dazu die Titel, zu denen es nur Lesezeichen gibt, und die Bücher, deren
+    neue Markierungen sich nicht lesen lassen (gekauft) – der Nutzer vermisst sie sonst in der Liste –, und der Tag des
+    jüngsten Eintrags: Eine Kopie von My Clippings.txt veraltet, sobald auf dem Kindle weitergelesen wird."""
+    found, name = kindle.find(), ''
+    if not path and not found:
+        try:
+            name = kindle.fetch(KINDLE)
+        except OSError:  # PowerShell fehlt oder scheitert: dann wählt der Nutzer die Datei wie bisher
+            name = None
+        found = [KINDLE] if name else []
     path = path or (found[0] if found else '')
     if not path:
         return dict(path='', found=[], books=[])
-    if not os.path.isfile(path):
-        raise ValueError('quelle_fehlt')
     try:
-        every = kindle.books(kindle.read(path))
-    except OSError:
+        entries, info = kindle.load(path)
+    except (OSError, ValueError):
         raise ValueError('quelle_fehlt')
+    every = kindle.books(entries)
     books = [b for b in every if kindle.usable(b)]
-    if not books:
+    if not books and not info['locked']:
         raise ValueError('keine_markierungen')
     for b in books:
         b['folder'] = notes_suggestion(b['title'])
     on_kindle = any(os.path.normcase(os.path.abspath(f)) == os.path.normcase(os.path.abspath(path)) for f in found)
-    return dict(path=path, found=found, books=books, marks_only=[b['title'] for b in every if not kindle.usable(b)],
-                day=max(b['day'] for b in every), copy=not on_kindle)
+    return dict(path=path, found=found, device=name or '', books=books, locked=info['locked'],
+                marks_only=[b['title'] for b in every if not kindle.usable(b)], day=max((b['day'] for b in every), default=''),
+                copy=not on_kindle and not info['device'])
 
 
 def kindle_notes(path, key, folder, lang='de'):
@@ -2269,8 +2280,8 @@ def kindle_notes(path, key, folder, lang='de'):
     ohne Zitat dazu – ein vorhandener Zettel wird nie verändert."""
     W = NOTE_WORDS.get(lang) or NOTE_WORDS['de']
     try:
-        entries = kindle.read(path or '')
-    except OSError:
+        entries = kindle.load(path or '')[0]
+    except (OSError, ValueError):
         raise ValueError('quelle_fehlt')
     b = next((b for b in kindle.books(entries) if b['key'] == key and kindle.usable(b)), None)
     if not b:
@@ -2503,7 +2514,7 @@ pre{background:#f4f4f4;padding:10px;overflow:auto} pre code{border:0;padding:0} 
 <div id="wrap"><nav>%(nav)s</nav><main>%(body)s</main></div></body></html>'''
 
 
-HELP_ORDER = ['index', 'first-steps', 'add-book', 'fotografieren', 'pdf-import','transkribus', 'usage', 'kindle', 'pdf-sichern', 'epub-sichern', 'install', 'install-tools', 'vergleich', 'faq', 'code-signing']
+HELP_ORDER = ['index', 'first-steps', 'add-book', 'fotografieren', 'pdf-import','transkribus', 'usage', 'kindle', 'kindle-notizbuch', 'pdf-sichern', 'epub-sichern', 'install', 'install-tools', 'vergleich', 'faq', 'code-signing']
 
 
 def help_pages(lang):

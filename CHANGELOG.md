@@ -5,6 +5,18 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
 ## [Unveröffentlicht]
 
 ### Neu
+- **Kindle-Markierungen von neuerer Firmware** (#61): Seit einer Kindle-Software vom Sommer 2026 (5.19) kommen neue
+  Markierungen nicht mehr in `My Clippings.txt`, sondern in eine Datenbank im verborgenen Ordner
+  `system/ksdk/.annotations` – nur als Stelle im Buch, ohne Text. Das Programm liest beides und nimmt jede Markierung
+  einmal. Den Text holt es aus dem Buch: Ein eigener kleiner KFX-Leser (`kfx.py`, ohne Zusatzbibliotheken) zählt die
+  Positionen wie der Kindle, gibt die Fundstelle („Position“) an und die gedruckte Seite, wo das Buch eine Seitenliste
+  hat; Zeilen eines Scans, die als eigene Absätze ins E-Book kamen, werden mit Leerzeichen verbunden, am Zeilenende
+  getrennte Wörter wieder eins. Unter Windows liest das Fenster einen als Mediengerät angeschlossenen Kindle selbst
+  (PowerShell über das Shell-Objekt des Explorers) und kopiert Datei, Datenbank und die nötigen Bücher nach
+  `~/.fraktur-korrektor/kindle`; auf dem Kindle ändert sich nichts. Gekaufte Bücher sind verschlüsselt – das Fenster
+  nennt die, deren neue Markierungen sich deshalb nicht übernehmen lassen, und verweist auf die neue Hilfeseite
+  *Markierungen aus gekauften Büchern* (Amazons Notizbuch im Browser). Ein gesperrter Kindle bekommt eine eigene
+  Meldung. Die Hilfe sagt jetzt vorneweg, welche Bücher gehen.
 - **Projektordner von ABBYY FineReader öffnen:** Ältere FineReader-Versionen (bis 12) legen den ursprünglichen Scan
   als `{GUID}.source` in ihren Projektordner. **Öffnen …** erkennt das jetzt – am Ordner, an der `.source`-Datei oder
   an `_FRBatch.pac` – und liest den Scan wie ein PDF ein, unter dem Namen des Ordners. FineReaders eigener Text bleibt

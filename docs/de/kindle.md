@@ -5,12 +5,26 @@ Wer auf dem Kindle liest und dabei markiert, kann die Markierungen als Zettel in
 [Bedienung](usage.md)). Nach dem Vorbild von Niklas Luhmanns Zettelkasten: eine Markierung je Zettel, jeder mit
 Quellenangabe.
 
+## Welche Bücher gehen?
+
+**Alle Bücher ohne Kopierschutz** – das sind vor allem die, die Sie selbst auf den Kindle gebracht haben: per
+*Send to Kindle* geschickt oder mit dem Kabel kopiert, etwa ein E-Book, das Sie mit dem Fraktur-Korrektor gesichert
+haben (siehe [Ein Buch als E-Book sichern](epub-sichern.md)). Ihre Markierungen darin werden immer zu Zetteln.
+
+**Gekaufte Bücher** aus dem Kindle-Shop sind kopiergeschützt. Neuere Kindles speichern zu einer Markierung nur noch die
+Stelle im Buch, nicht den Text (siehe unten), und an den verschlüsselten Text kommt das Programm nicht heran. Aus
+gekauften Büchern übernimmt es deshalb nur, was der Kindle noch in die Datei `My Clippings.txt` geschrieben hat – bei
+Ihrem Gerät meist alles bis zu einem Tag im Sommer 2026. Das Fenster nennt die gekauften Bücher mit neueren
+Markierungen beim Namen. Deren Text finden Sie in Amazons Notizbuch im Browser:
+[Markierungen aus gekauften Büchern](kindle-notizbuch.md).
+
 ## So geht es
 
-1. Den Kindle mit dem USB-Kabel an den Rechner anschließen.
-2. In der Bibliothek unter der Liste der Bücher auf **Kindle-Markierungen nach Obsidian …** klicken. Erscheint der
-   Kindle als Laufwerk, hat das Programm die Datei schon gefunden; sonst wählen Sie sie mit **Datei wählen …**
-   (woher sie kommt, steht im nächsten Abschnitt).
+1. Den Kindle mit dem USB-Kabel an den Rechner anschließen und **entsperren** (auf den Bildschirm tippen) – solange
+   die Sperre davor ist, sieht der Rechner seine Dateien nicht.
+2. In der Bibliothek unter der Liste der Bücher auf **Kindle-Markierungen nach Obsidian …** klicken. Unter Windows
+   findet das Programm den Kindle von selbst und liest seine Markierungen, das dauert einige Sekunden. Sonst wählen
+   Sie die Datei `My Clippings.txt` mit **Datei wählen …** (woher sie kommt, steht weiter unten).
 3. Das **Buch** wählen. Die zuletzt gelesenen stehen oben, jeweils mit der Zahl der Markierungen und eigenen Notizen
    und dem Tag der letzten. Bücher, in denen Sie nur Lesezeichen gesetzt haben, stehen darunter mit Namen: Zu einem
    Lesezeichen speichert der Kindle keinen Text, daraus wird kein Zettel.
@@ -22,20 +36,27 @@ Quellenangabe.
 
 Die Datei lässt sich auch über **Öffnen …** zeigen: Das Programm erkennt sie und führt zum selben Fenster.
 
-## Die Datei My Clippings.txt
+## Wo der Kindle die Markierungen ablegt
 
-Der Kindle schreibt alle Markierungen, Notizen und Lesezeichen in eine einzige Datei: `My Clippings.txt` im Ordner
-`documents` – sie heißt auch auf deutschen Geräten so.
+Bis Sommer 2026 schrieb der Kindle alle Markierungen, Notizen und Lesezeichen in eine einzige Datei:
+`My Clippings.txt` im Ordner `documents` – sie heißt auch auf deutschen Geräten so. Seit einer Aktualisierung der
+Kindle-Software (Version 5.19, Sommer 2026) kommt dort nichts Neues mehr hinzu. Neue Markierungen stehen in einer
+Datenbank in einem verborgenen Ordner des Kindle, und zwar nur als Stelle im Buch; den Text dazu liest das Programm
+aus dem Buch selbst. Beides erledigt das Fenster, Sie müssen dafür nichts tun – es nimmt aus beiden Quellen, was es
+findet, und jede Markierung nur einmal.
 
-- **Ältere Kindles** erscheinen am Rechner als Laufwerk, wie ein USB-Stick. Das Programm findet die Datei dann selbst.
-- **Kindles ab 2024** (etwa der Paperwhite der 12. Generation, der Colorsoft und der Scribe) melden sich als
-  Mediengerät. Unter **Windows** erscheint der Kindle im Explorer als Gerät: dort den Ordner `documents` öffnen,
-  `My Clippings.txt` auf den Schreibtisch ziehen und diese Kopie wählen. Am **Mac** braucht es ein Zusatzprogramm,
-  etwa Amazons App *Send to Kindle* für Mac; darin öffnet das Menü *Tools* → *USB File Manager* die Dateien des
-  Kindle (Stand September 2026).
-- Markierungen aus der **Kindle-App** auf Handy oder Tablet stehen nicht in dieser Datei, nur die vom Gerät selbst.
-- **Eine Kopie veraltet.** Was Sie nach dem Kopieren auf dem Kindle markieren, steht nur in der Datei auf dem Kindle.
-  Das Fenster nennt deshalb den Tag des jüngsten Eintrags. Fehlt ein Buch, kopieren Sie die Datei neu vom Kindle.
+- **Unter Windows** liest das Programm beides vom angeschlossenen Kindle. Dabei kopiert es die Datei, die Datenbank
+  und die Bücher, zu denen es Markierungen gibt, in seinen eigenen Ordner; auf dem Kindle verändert es nichts.
+- **Ältere Kindles** erscheinen am Rechner als Laufwerk, wie ein USB-Stick. Auch dort findet das Programm alles
+  selbst.
+- **Am Mac** erscheinen Kindles ab 2024 (etwa der Paperwhite der 12. Generation, der Colorsoft und der Scribe) nicht
+  im Finder. Mit Amazons App *Send to Kindle* für Mac öffnet das Menü *Tools* → *USB File Manager* die Dateien des
+  Kindle (Stand September 2026); kopieren Sie dort `My Clippings.txt` aus dem Ordner `documents` und wählen Sie
+  diese Kopie. Die neuen Markierungen aus der Datenbank kommen am Mac bisher nicht an.
+- Markierungen aus der **Kindle-App** auf Handy oder Tablet stehen weder in der Datei noch in der Datenbank des
+  Geräts.
+- **Eine Kopie veraltet.** Haben Sie `My Clippings.txt` von Hand kopiert, nennt das Fenster den Tag des jüngsten
+  Eintrags. Fehlt ein Buch, schließen Sie den Kindle an und öffnen Sie das Fenster noch einmal.
 
 ## Was in den Zetteln steht
 
@@ -66,7 +87,7 @@ Jede Markierung wird ein Zettel, fortlaufend nummeriert wie die Zettel aus `F4`,
 
 ## Nach dem Weiterlesen
 
-Lesen Sie die Datei einfach wieder ein. Markierungen, die schon als Zettel im Ordner stehen, übergeht das Programm
+Öffnen Sie das Fenster einfach wieder. Markierungen, die schon als Zettel im Ordner stehen, übergeht das Programm
 – es erkennt sie am Zitat und an der Stelle (Seite, Position). Neue Zettel bekommen die nächsten Nummern. Haben Sie
 auf dem Kindle später eine Notiz zu einer schon übernommenen Markierung geschrieben, kommt sie als eigener Zettel mit
 derselben Stelle dazu; den vorhandenen Zettel ändert das Programm nicht. Haben Sie das Zitat oder die Quellenzeile in

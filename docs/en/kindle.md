@@ -4,12 +4,25 @@ If you read on a Kindle and highlight as you go, you can take the highlights int
 notes – just like the notes made with `F4` while reading in Fraktur-Korrektor (see [Usage](usage.md)). Following
 Niklas Luhmann’s card index: one highlight per note, each with its source.
 
+## Which books work?
+
+**All books without copy protection** – mainly the ones you put on the Kindle yourself: sent with *Send to Kindle*
+or copied with the cable, for instance an e-book you saved with Fraktur-Korrektor (see
+[Saving a book as e-book](epub-sichern.md)). Your highlights in them always become notes.
+
+**Purchased books** from the Kindle Store are copy-protected. Newer Kindles store only the place in the book for a
+highlight, not the text (see below), and the program cannot get at the encrypted text. From purchased books it
+therefore takes only what the Kindle still wrote into the file `My Clippings.txt` – usually everything up to a day in
+summer 2026. The window names the purchased books with newer highlights. You find their text in Amazon’s notebook in
+the browser: [Highlights from purchased books](kindle-notizbuch.md).
+
 ## How it works
 
-1. Connect the Kindle to the computer with the USB cable.
-2. In the library, below the list of books, click **Kindle highlights to Obsidian …**. If the Kindle appears as a
-   drive, the program has already found the file; otherwise choose it with **Choose file …** (where it comes from
-   is explained in the next section).
+1. Connect the Kindle to the computer with the USB cable and **unlock** it (tap the screen) – while the lock screen
+   is showing, the computer cannot see its files.
+2. In the library, below the list of books, click **Kindle highlights to Obsidian …**. In Windows the program finds
+   the Kindle by itself and reads its highlights; this takes a few seconds. Otherwise choose the file
+   `My Clippings.txt` with **Choose file …** (where it comes from is explained below).
 3. Choose the **book**. The ones read most recently are at the top, each with the number of highlights and notes of
    your own and the day of the latest. Books in which you only set bookmarks are named below the list: the Kindle
    stores no text with a bookmark, so it gives no note.
@@ -21,20 +34,25 @@ Niklas Luhmann’s card index: one highlight per note, each with its source.
 
 You can also point to the file with **Open …**: the program recognises it and takes you to the same window.
 
-## The file My Clippings.txt
+## Where the Kindle keeps the highlights
 
-The Kindle writes all highlights, notes and bookmarks into a single file: `My Clippings.txt` in the `documents`
-folder.
+Until summer 2026 the Kindle wrote all highlights, notes and bookmarks into a single file: `My Clippings.txt` in the
+`documents` folder. Since an update of the Kindle software (version 5.19, summer 2026) nothing new is added there.
+New highlights are kept in a database in a hidden folder of the Kindle, and only as the place in the book; the
+program reads the text from the book itself. The window does both, you need not do anything for it – it takes what it
+finds in both sources, and every highlight only once.
 
-- **Older Kindles** appear on the computer as a drive, like a USB stick. The program then finds the file by itself.
-- **Kindles from 2024 on** (such as the 12th-generation Paperwhite, the Colorsoft and the Scribe) connect as a media
-  device. In **Windows** the Kindle appears in Explorer as a device: open the `documents` folder there, drag
-  `My Clippings.txt` to the desktop and choose that copy. On a **Mac** you need an extra program, for instance
-  Amazon’s *Send to Kindle* app for Mac; its menu *Tools* → *USB File Manager* opens the files on the Kindle (as of
-  September 2026).
-- Highlights made in the **Kindle app** on a phone or tablet are not in this file, only those made on the device.
-- **A copy goes out of date.** What you highlight on the Kindle after copying is only in the file on the Kindle. The
-  window therefore names the day of the latest entry. If a book is missing, copy the file from the Kindle again.
+- **In Windows** the program reads both from the connected Kindle. It copies the file, the database and the books
+  that have highlights into a folder of its own; it changes nothing on the Kindle.
+- **Older Kindles** appear on the computer as a drive, like a USB stick. There, too, the program finds everything by
+  itself.
+- **On a Mac**, Kindles from 2024 on (such as the 12th-generation Paperwhite, the Colorsoft and the Scribe) do not
+  appear in the Finder. With Amazon’s *Send to Kindle* app for Mac, the menu *Tools* → *USB File Manager* opens the
+  files on the Kindle (as of September 2026); copy `My Clippings.txt` from the `documents` folder there and choose
+  that copy. The new highlights from the database do not reach a Mac yet.
+- Highlights made in the **Kindle app** on a phone or tablet are neither in the file nor in the device’s database.
+- **A copy goes out of date.** If you copied `My Clippings.txt` by hand, the window names the day of the latest
+  entry. If a book is missing, connect the Kindle and open the window again.
 
 ## What the notes contain
 
@@ -64,7 +82,7 @@ Every highlight becomes a note, numbered consecutively like the notes from `F4`,
 
 ## After reading on
 
-Simply read the file in again. Highlights that are already notes in the folder are skipped – the program recognises
+Simply open the window again. Highlights that are already notes in the folder are skipped – the program recognises
 them by the quotation and the place (page, location). New notes get the next numbers. If you later wrote a note on
 the Kindle to a highlight that was already taken over, it is added as a note of its own with the same place; the
 existing note is left unchanged. If you changed the quotation or the source line in a note by hand, the program no
