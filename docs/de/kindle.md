@@ -11,7 +11,9 @@ Quellenangabe.
 2. In der Bibliothek unter der Liste der Bücher auf **Kindle-Markierungen nach Obsidian …** klicken. Erscheint der
    Kindle als Laufwerk, hat das Programm die Datei schon gefunden; sonst wählen Sie sie mit **Datei wählen …**
    (woher sie kommt, steht im nächsten Abschnitt).
-3. Das **Buch** wählen. Die zuletzt gelesenen stehen oben, jeweils mit der Zahl der Markierungen und eigenen Notizen.
+3. Das **Buch** wählen. Die zuletzt gelesenen stehen oben, jeweils mit der Zahl der Markierungen und eigenen Notizen
+   und dem Tag der letzten. Bücher, in denen Sie nur Lesezeichen gesetzt haben, stehen darunter mit Namen: Zu einem
+   Lesezeichen speichert der Kindle keinen Text, daraus wird kein Zettel.
 4. Den **Ordner im Obsidian-Vault** prüfen, in den die Zettel zu diesem Buch kommen. Das Programm schlägt einen vor:
    Liegt ein Buch mit demselben Titel in Ihrer Bibliothek und hat es schon einen Notizordner, dann diesen – so liegen
    die Zettel aus dem Kindle und aus dem Fraktur-Korrektor beisammen. Sonst einen neuen Ordner mit dem Titel des
@@ -32,6 +34,8 @@ Der Kindle schreibt alle Markierungen, Notizen und Lesezeichen in eine einzige D
   etwa Amazons App *Send to Kindle* für Mac; darin öffnet das Menü *Tools* → *USB File Manager* die Dateien des
   Kindle (Stand September 2026).
 - Markierungen aus der **Kindle-App** auf Handy oder Tablet stehen nicht in dieser Datei, nur die vom Gerät selbst.
+- **Eine Kopie veraltet.** Was Sie nach dem Kopieren auf dem Kindle markieren, steht nur in der Datei auf dem Kindle.
+  Das Fenster nennt deshalb den Tag des jüngsten Eintrags. Fehlt ein Buch, kopieren Sie die Datei neu vom Kindle.
 
 ## Was in den Zetteln steht
 

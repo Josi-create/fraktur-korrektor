@@ -99,6 +99,23 @@ def test_zettel_anlegen_und_nicht_doppelt(lib, tmp_path):
     assert '04 Seite 60.md' in os.listdir(folder)
 
 
+def test_nur_lesezeichen_und_datum(lib, tmp_path):
+    # Ein Buch mit nur Lesezeichen gibt keinen Zettel, wird aber genannt; das Datum zeigt, wie alt eine Kopie ist
+    assert [kindle.day(a) for a in ['Mittwoch, 30. April 2025 17:03:43', 'Friday, 7 March 2025 10:00:00',
+                                    'Wednesday, April 30, 2025 5:03:43 PM', 'Mittwoch, 1. Jänner 2025', 'irgendwann']] == \
+        ['2025-04-30', '2025-03-07', '2025-04-30', '2025-01-01', '']
+    src = write(tmp_path, CLIPPINGS + '\r\n'.join([
+        'Nur gelesen (Leser, Lea)', '- Dein Lesezeichen auf Seite 138 | Position 2200 | Hinzugefügt am Mittwoch, 30. April 2025 17:03:43',
+        '', '', '==========', '']))
+    code, r = lib.lpost('/api/kindle_scan', dict(path=src))
+    assert code == 200 and [b['title'] for b in r['books']] == ['A Book (with Brackets)', 'Die Reise nach Rußland']
+    assert (r['marks_only'], r['day'], r['copy']) == (['Nur gelesen'], '2025-04-30', True)
+    assert r['books'][1]['day'] == '2025-03-04'
+    key = kindle.key(dict(book='Nur gelesen', author='Leser, Lea'))
+    assert lib.lpost('/api/kindle_notes', dict(path=src, key=key, folder=str(tmp_path / 'V'))) == (400, dict(error='keine_markierungen'))
+    assert finder.kindle_info(src)['books'] == 2
+
+
 def test_wiedererkennen_genau(lib, tmp_path):
     # Wiedererkannt wird am ganzen Zitat samt Stelle – auch in einem Ordner mit eckigen Klammern im Namen. Ein kurzes Zitat,
     # das wie ein längeres anfängt, ist neu; eine Notiz »Osten« ist neu, obwohl ein Zitat das Wort enthält; eine Notiz, die

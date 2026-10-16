@@ -170,7 +170,7 @@ def kindle_info(path):
     """Markierungen vom Kindle: wie viele Bücher und Markierungen darin stehen – oder None, wenn es keine solche Datei ist."""
     try:
         import kindle
-        books = kindle.books(kindle.read(path))
+        books = [b for b in kindle.books(kindle.read(path)) if kindle.usable(b)]
     except (OSError, ValueError):
         return None
     if not books:

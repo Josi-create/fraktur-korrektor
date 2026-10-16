@@ -11,7 +11,8 @@ Niklas Luhmann’s card index: one highlight per note, each with its source.
    drive, the program has already found the file; otherwise choose it with **Choose file …** (where it comes from
    is explained in the next section).
 3. Choose the **book**. The ones read most recently are at the top, each with the number of highlights and notes of
-   your own.
+   your own and the day of the latest. Books in which you only set bookmarks are named below the list: the Kindle
+   stores no text with a bookmark, so it gives no note.
 4. Check the **folder in your Obsidian vault** the notes on this book go into. The program suggests one: if a book
    with the same title is in your library and already has a notes folder, that one – so the notes from the Kindle
    and from Fraktur-Korrektor sit together. Otherwise a new folder named after the book, next to the notes folder of
@@ -32,6 +33,8 @@ folder.
   Amazon’s *Send to Kindle* app for Mac; its menu *Tools* → *USB File Manager* opens the files on the Kindle (as of
   September 2026).
 - Highlights made in the **Kindle app** on a phone or tablet are not in this file, only those made on the device.
+- **A copy goes out of date.** What you highlight on the Kindle after copying is only in the file on the Kindle. The
+  window therefore names the day of the latest entry. If a book is missing, copy the file from the Kindle again.
 
 ## What the notes contain
 

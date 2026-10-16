@@ -29,6 +29,10 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/), Versionen nach [
   beim Nachtragen der Auszeichnung.
 
 ### Verbessert
+- **Kindle-Markierungen: wie alt die Datei ist und was fehlt** (#61): Je Buch steht der Tag der letzten Markierung;
+  bei einer Kopie der Datei (nicht auf dem Kindle selbst) sagt das Fenster, bis wann sie reicht – was danach markiert
+  wurde, braucht eine frische Kopie. Bücher mit nur Lesezeichen fehlten bisher kommentarlos; sie stehen jetzt mit
+  Namen unter der Liste, mit dem Hinweis, dass daraus kein Zettel wird (`kindle.day`, `kindle.usable`).
 - **Seitenzahl unten unter mehreren Zahlen:** Steht unter der Seitenzahl noch Rauschen mit einer Ziffer (»428« / »ı10«)
   oder darüber eine Kapitelnummer, gilt die Zahl, die zu den Nachbarseiten passt – bisher immer die unterste. Das
   Rauschen darunter kommt so auch nicht mehr ins E-Book. Steht die Lesezeile auf der blassen Seitenzahl, sagt die

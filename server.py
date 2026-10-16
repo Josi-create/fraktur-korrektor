@@ -2238,7 +2238,8 @@ def notes_suggestion(title):
 
 def kindle_scan(path):
     """Die Bücher in »My Clippings.txt«, je mit Vorschlag für den Notizordner. Ohne Pfad sucht das Programm einen
-    angeschlossenen Kindle."""
+    angeschlossenen Kindle. Dazu die Titel, zu denen es nur Lesezeichen gibt (der Nutzer vermisst sie sonst in der
+    Liste), und der Tag des jüngsten Eintrags: Eine Kopie der Datei veraltet, sobald auf dem Kindle weitergelesen wird."""
     found = kindle.find()
     path = path or (found[0] if found else '')
     if not path:
@@ -2246,14 +2247,17 @@ def kindle_scan(path):
     if not os.path.isfile(path):
         raise ValueError('quelle_fehlt')
     try:
-        books = kindle.books(kindle.read(path))
+        every = kindle.books(kindle.read(path))
     except OSError:
         raise ValueError('quelle_fehlt')
+    books = [b for b in every if kindle.usable(b)]
     if not books:
         raise ValueError('keine_markierungen')
     for b in books:
         b['folder'] = notes_suggestion(b['title'])
-    return dict(path=path, found=found, books=books)
+    on_kindle = any(os.path.normcase(os.path.abspath(f)) == os.path.normcase(os.path.abspath(path)) for f in found)
+    return dict(path=path, found=found, books=books, marks_only=[b['title'] for b in every if not kindle.usable(b)],
+                day=max(b['day'] for b in every), copy=not on_kindle)
 
 
 def kindle_notes(path, key, folder, lang='de'):
@@ -2268,7 +2272,7 @@ def kindle_notes(path, key, folder, lang='de'):
         entries = kindle.read(path or '')
     except OSError:
         raise ValueError('quelle_fehlt')
-    b = next((b for b in kindle.books(entries) if b['key'] == key), None)
+    b = next((b for b in kindle.books(entries) if b['key'] == key and kindle.usable(b)), None)
     if not b:
         raise ValueError('keine_markierungen')
     folder = os.path.abspath(folder) if folder else ''

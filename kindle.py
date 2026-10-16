@@ -19,6 +19,9 @@ KINDS = [('note', re.compile(r'\b(?:Notiz|Note)\b', re.I)), ('bookmark', re.comp
 PAGE = re.compile(r'\b(?:Seite|page)\s+([0-9ivxlcdm]+)', re.I)
 LOC = re.compile(r'\b(?:Position|Location|Loc\.)\s+(\d+)(?:-(\d+))?', re.I)
 ADDED = re.compile(r'\b(?:Hinzugefügt am|Added on)\s+(.+?)\s*$')
+# Monate an den ersten drei Buchstaben, deutsch und englisch (»Jänner« aus Österreich inbegriffen)
+MONTHS = dict(jan=1, jän=1, feb=2, mär=3, mar=3, apr=4, mai=5, may=5, jun=6, jul=7, aug=8, sep=9, okt=10, oct=10, nov=11,
+              dez=12, dec=12)
 
 
 def _loc(m):
@@ -30,6 +33,17 @@ def _loc(m):
     if int(b) < a:
         b = str(a)[:len(str(a)) - len(b)] + b
     return a, int(b)
+
+
+def day(added):
+    """Das Datum aus »Mittwoch, 30. April 2025 17:03:43«, »Friday, 7 March 2025 10:00:00« oder »Wednesday, April 30, 2025
+    5:03:43 PM« als »2025-04-30« – leer, wenn es sich nicht lesen lässt."""
+    m = re.search(r'(\d{1,2})\.?\s+([^\W\d]{3,})\.?\s+(\d{4})', added) or re.search(r'([^\W\d]{3,})\.?\s+(\d{1,2}),?\s+(\d{4})', added)
+    if not m:
+        return ''
+    d, mon = (m.group(1), m.group(2)) if m.group(1).isdigit() else (m.group(2), m.group(1))
+    mo = MONTHS.get(mon[:3].casefold())
+    return '%s-%02d-%02d' % (m.group(3), mo, int(d)) if mo and 1 <= int(d) <= 31 else ''
 
 
 def parse(raw):
@@ -58,15 +72,25 @@ def key(e):
 
 
 def books(entries):
-    """Die Bücher der Datei, zuletzt bearbeitetes zuerst: [{key, title, author, highlights, notes}]."""
+    """Die Bücher der Datei, zuletzt bearbeitetes zuerst: [{key, title, author, highlights, notes, bookmarks, day}], day
+    ist der Tag des jüngsten Eintrags. Auch Bücher mit nur Lesezeichen stehen darin – daraus wird zwar kein Zettel, aber
+    wer das Buch in der Liste vermisst, soll sehen, warum."""
     seen = {}
     for e in entries:
-        b = seen.setdefault(key(e), dict(key=key(e), title=e['book'], author=e['author'], highlights=0, notes=0, last=0))
-        b['last'] = e['n']
+        b = seen.setdefault(key(e), dict(key=key(e), title=e['book'], author=e['author'], highlights=0, notes=0, bookmarks=0,
+                                         day='', last=0))
+        b['last'], b['day'] = e['n'], max(b['day'], day(e['added']))
         if e['kind'] in ('highlight', 'note') and e['text']:
             b['highlights' if e['kind'] == 'highlight' else 'notes'] += 1
+        elif e['kind'] == 'bookmark':
+            b['bookmarks'] += 1
     return [dict((k, v) for k, v in b.items() if k != 'last') for b in sorted(seen.values(), key=lambda b: -b['last'])
-            if b['highlights'] or b['notes']]
+            if b['highlights'] or b['notes'] or b['bookmarks']]
+
+
+def usable(b):
+    """Wird aus diesem Buch mindestens ein Zettel?"""
+    return bool(b['highlights'] or b['notes'])
 
 
 def limited(text):

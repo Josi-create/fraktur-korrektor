@@ -163,7 +163,9 @@ button:disabled{opacity:.5;cursor:default}
   <label class="f" data-t="kindle_file"></label>
   <div class="row"><input type="text" id="kSrc" spellcheck="false"><button type="button" id="kFile">📄 <span data-t="pick_file"></span></button></div>
   <div class="hint" id="kHow"></div>
+  <div class="hint" id="kAge"></div>
   <div id="kBooks"></div>
+  <div class="hint" id="kOnly"></div>
   <div id="kDirBox" style="display:none"><label class="f" data-t="kindle_folder"></label>
    <div class="row"><input type="text" id="kDir" spellcheck="false"><button type="button" id="kDirBtn">📁 <span data-t="pick_folder"></span></button></div>
    <div class="hint" data-t="kindle_folder_hint"></div></div>
@@ -931,13 +933,14 @@ $('eClose').onclick = () => $('edlg').classList.remove('on');
 // ---- Markierungen vom Kindle als Zettel für Obsidian (#61): Datei finden, Buch wählen, Ordner im Vault – wie F4 beim Lesen
 let kb = null, kSuggested = '';  // die Bücher in der Datei; der zuletzt vorgeschlagene Notizordner
 const kcount = (k, n) => t(k + (n == 1 ? '_1' : '_n'), { n });  // »1 Markierung«, »3 Markierungen«
+const kday = d => new Date(d + 'T12:00').toLocaleDateString(LANG == 'de' ? 'de-DE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 function kindleStep(done) {
   $('kstep').style.display = done ? 'none' : ''; $('kdone').style.display = done ? '' : 'none';
   $('kGo').style.display = done ? 'none' : ''; $('kClose').textContent = t(done ? 'close' : 'cancel');
 }
 async function openKindle(path) {
   $('kdlg').classList.add('on'); kindleStep(false);
-  $('kmsg').textContent = ''; $('kBooks').innerHTML = ''; $('kDirBox').style.display = 'none'; $('kGo').disabled = true;
+  $('kmsg').textContent = ''; $('kBooks').innerHTML = $('kAge').innerHTML = $('kOnly').innerHTML = ''; $('kDirBox').style.display = 'none'; $('kGo').disabled = true;
   $('kSrc').value = path || ''; $('kDir').value = ''; kb = null; kSuggested = '';  // der Ordner vom letzten Mal gehörte zu einem anderen Buch
   await kindleScan(true);
 }
@@ -951,10 +954,13 @@ async function kindleScan(first) {
     $('kHow').innerHTML = r.path && !p ? t('kindle_found') : t('kindle_how') + ' ' + help('kindle', t('help'));
     if (!r.path) { $('kSrc').focus(); return; }
     $('kSrc').value = r.path; kb = r.books;
+    // Eine Kopie auf dem Schreibtisch bleibt stehen, während auf dem Kindle weitergelesen wird: das Datum macht das sichtbar
+    $('kAge').innerHTML = r.copy && r.day ? t('kindle_upto', { d: kday(r.day) }) : '';
     $('kBooks').innerHTML = '<label class="f">' + t('kindle_book') + '</label>' + kb.map((b, n) =>
       '<label class="cand" data-n="' + n + '"><input type="radio" name="kbook" value="' + n + '"><span class="ic">🔖</span><span><b>' + esc(b.title) + '</b>' +
       '<small>' + esc(b.author) + '</small><small>' + [b.highlights ? kcount('kindle_h', b.highlights) : '', b.notes ? kcount('kindle_n', b.notes) : ''].filter(x => x).join(', ') +
-      '</small></span></label>').join('');
+      (b.day ? ' · ' + t('kindle_last', { d: kday(b.day) }) : '') + '</small></span></label>').join('');
+    $('kOnly').innerHTML = r.marks_only && r.marks_only.length ? t('kindle_marks_only', { t: r.marks_only.map(x => '<i>' + esc(x) + '</i>').join(', ') }) : '';
     for (const el of document.querySelectorAll('input[name=kbook]')) el.onchange = () => kindlePick(+el.value);
     kindlePick(0);
   } catch (err) { fail('kmsg', err); }
